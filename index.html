@@ -1146,7 +1146,7 @@ function App(){
     showCierre&&e(CierreDia,{
       projects:projects.filter(p=>p.status!=='archived'),
       intenciones,setIntenciones,
-      sessions,
+      sessions,ctxs,
       onClose:()=>setShowCierre(false),
       showNotif,
       onDone:()=>{setShowCierre(false);showNotif('Día cerrado ✓ — Mañana está listo');}
@@ -1867,34 +1867,35 @@ function StartFlow({project,tasks,mode,onClose,onStart,pomoCfg,setPomoCfg}){
             project&&e('div',{style:{width:6,height:6,borderRadius:'50%',background:project.color,flexShrink:0}}),
             e('div',{className:'modal-title'},project?.name||'Proyecto')
           ),
-          e('div',{className:'modal-sub'},'¿En qué vas a trabajar?')
+          e('div',{className:'modal-sub'},'¿En qué vas a trabajar ahora?')
         ),
         e('button',{className:'modal-x',onClick:onClose},'✕')
       ),
       e('div',{className:'modal-body'},
-        tasks.length>0&&e('div',{className:'fg'},
-          e('label',{className:'flabel'},'Tareas pendientes'),
-          e('div',{style:{display:'flex',flexDirection:'column',gap:4}},
-            tasks.map(t=>e('div',{key:t.id,className:`task-opt${sel===t.id?' on':''}`,onClick:()=>{setSel(t.id);setNewName('');}},
-              e('div',{style:{width:5,height:5,borderRadius:'50%',background:t.status==='inprog'?'var(--accent)':'var(--border3)',flexShrink:0}}),
-              e('span',{className:'task-opt-name'},t.name),
-              e('span',{className:`pri pri-${t.priority}`},{high:'Alta',mid:'Media',low:'Baja'}[t.priority])
-            ))
-          )
-        ),
         e('div',{className:'fg'},
-          e('label',{className:'flabel'},tasks.length>0?'O escribe una tarea nueva':'¿Qué vas a hacer?'),
-          e('input',{className:'finput',value:newName,placeholder:'Ej. Revisar brief...',autoFocus:tasks.length===0,onChange:ev=>{setNewName(ev.target.value);if(ev.target.value)setSel(null);},onKeyDown:ev=>{if(ev.key==='Enter'&&(mode==='pomo'||mode==='ask'))goToPomo(sel,newName);else if(ev.key==='Enter')startFree();}})
+          e('input',{
+            className:'finput',
+            value:newName,
+            placeholder:'Describe lo que harás...',
+            autoFocus:true,
+            onChange:ev=>setNewName(ev.target.value),
+            onKeyDown:ev=>{
+              if(ev.key==='Enter'){
+                if(mode==='pomo'||mode==='ask') goToPomo(null,newName);
+                else startFree();
+              }
+            }
+          })
         ),
         (mode==='ask')&&e('div',{style:{marginTop:4}},
           e('button',{className:'btn',style:{width:'100%',fontSize:11},onClick:startFree},'▶ Sesión libre (sin Pomodoro)')
         )
       ),
       e('div',{className:'modal-foot'},
-        e('button',{className:'btn btn-ghost',style:{marginRight:'auto'},onClick:()=>{if(mode==='pomo'||mode==='ask')goToPomo(null,null);else onStart(null,null,'free');}},'Sin tarea'),
+        e('button',{className:'btn btn-ghost',style:{marginRight:'auto'},onClick:()=>{if(mode==='pomo'||mode==='ask')goToPomo(null,null);else onStart(null,null,'free');}},'Sin descripción'),
         e('button',{className:'btn',onClick:onClose},'Cancelar'),
         (mode==='pomo'||mode==='ask')
-          ?e('button',{className:'btn btn-primary',onClick:()=>goToPomo(sel,newName)},'Iniciar Pomodoro →')
+          ?e('button',{className:'btn btn-primary',onClick:()=>goToPomo(null,newName)},'Iniciar Pomodoro →')
           :e('button',{className:'btn btn-primary',onClick:startFree},'Iniciar sesión')
       )
     )
@@ -2099,8 +2100,7 @@ function FocusPanel({intenciones,setIntenciones,projects,selectedDay,onStartProj
 // ═══════════════════════════════════════════
 // CIERRE DÍA — intenciones only
 // ═══════════════════════════════════════════
-function CierreDia({projects,intenciones,setIntenciones,sessions,onClose,showNotif,onDone}){
-  // Tomorrow's date
+function CierreDia({projects,intenciones,setIntenciones,sessions,ctxs,onClose,showNotif,onDone}){
   const tomorrowStr=(()=>{
     const d=new Date(dayKey()+'T12:00:00Z');
     d.setUTCDate(d.getUTCDate()+1);
@@ -2108,8 +2108,18 @@ function CierreDia({projects,intenciones,setIntenciones,sessions,onClose,showNot
   })();
   const tomorrowLabel=new Date(tomorrowStr+'T12:00:00Z').toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'long'});
 
+  // Get last nextStep for each project from ctxs
+  function lastNextStep(projId){
+    if(!ctxs) return null;
+    const sorted=[...ctxs].filter(c=>c.projectId===projId&&c.nextStep).sort((a,b)=>b.createdAt-a.createdAt);
+    return sorted[0]?.nextStep||null;
+  }
+
   const[intents,setIntents]=useState(()=>Object.fromEntries(
-    projects.map(p=>([p.id,{text:(intenciones[tomorrowStr]||[]).find(i=>i.projId===p.id)?.text||'',skip:false}]))
+    projects.map(p=>{
+      const existing=(intenciones[tomorrowStr]||[]).find(i=>i.projId===p.id)?.text||'';
+      return [p.id,{text:existing,skip:false,usedSuggestion:false}];
+    })
   ));
 
   function setIntent(pid,field,val){setIntents(prev=>({...prev,[pid]:{...prev[pid],[field]:val}}));}
@@ -2142,6 +2152,8 @@ function CierreDia({projects,intenciones,setIntenciones,sessions,onClose,showNot
         projects.map(proj=>{
           const st=intents[proj.id];
           const todaySecs=sessions.filter(s=>s.projectId===proj.id&&s.day===dayKey()&&s.endAt).reduce((a,s)=>a+s.duration,0);
+          const suggestion=lastNextStep(proj.id);
+          const showSuggestion=suggestion&&!st.usedSuggestion&&!st.text;
           return e('div',{key:proj.id,className:'cierre-proj-row',style:{opacity:st.skip?.45:1}},
             e('div',{className:'cierre-proj-hdr'},
               e('div',{className:'cierre-proj-dot',style:{background:proj.color}}),
@@ -2151,12 +2163,32 @@ function CierreDia({projects,intenciones,setIntenciones,sessions,onClose,showNot
               e('button',{className:'cierre-skip',onClick:()=>setIntent(proj.id,'skip',!st.skip)},
                 st.skip?'+ incluir':'× omitir')
             ),
-            !st.skip&&e('input',{
-              className:'finput',
-              placeholder:'Próximo paso concreto...',
-              value:st.text,
-              onChange:ev=>setIntent(proj.id,'text',ev.target.value)
-            })
+            !st.skip&&e(React.Fragment,null,
+              // Suggestion chip — last recorded nextStep
+              showSuggestion&&e('div',{
+                style:{
+                  display:'flex',alignItems:'flex-start',gap:8,padding:'8px 10px',
+                  background:'var(--bg3)',border:'1px dashed var(--border2)',
+                  borderRadius:'var(--r-md)',cursor:'pointer',marginBottom:6,
+                  transition:'all .1s',
+                },
+                onClick:()=>setIntent(proj.id,'text',suggestion),
+                title:'Clic para usar esta sugerencia'
+              },
+                e('div',{style:{fontSize:10,color:'var(--accent2)',marginTop:1,flexShrink:0}},'↩'),
+                e('div',{style:{flex:1}},
+                  e('div',{style:{fontSize:9,color:'var(--text4)',marginBottom:2,textTransform:'uppercase',letterSpacing:'.5px'}},'Último paso anotado'),
+                  e('div',{style:{fontSize:11,color:'var(--text2)',lineHeight:1.4}},suggestion)
+                ),
+                e('div',{style:{fontSize:9,color:'var(--accent2)',flexShrink:0,marginTop:1}},'usar →')
+              ),
+              e('input',{
+                className:'finput',
+                placeholder: suggestion ? 'O escribe uno nuevo...' : 'Próximo paso concreto...',
+                value:st.text,
+                onChange:ev=>setIntent(proj.id,'text',ev.target.value)
+              })
+            )
           );
         })
       ),
