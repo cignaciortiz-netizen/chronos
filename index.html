@@ -526,6 +526,36 @@ const GS={
   },
 
   sheetUrl(){ return this.spreadsheetId?`https://docs.google.com/spreadsheets/d/${this.spreadsheetId}/edit`:''; },
+
+  // Read all data back from Sheets and return parsed objects
+  async readAll(){
+    await this.ensureSheet();
+    const sid=this.spreadsheetId;
+    const res=await this.fetch('GET',`/${sid}/values:batchGet?ranges=Proyectos!A2:G10000&ranges=Sesiones!A2:J10000&ranges=Intenciones!A2:E10000`);
+    const [projSheet, sessSheet, intSheet]=(res.valueRanges||[]).map(vr=>vr.values||[]);
+
+    const projects=(projSheet||[]).filter(r=>r[0]&&r[1]).map(r=>({
+      id:r[0], name:r[1], category:r[2]||'', color:r[3]||'#7c6af7',
+      dailyLimit:Number(r[4])||0, status:r[5]||'active',
+    }));
+
+    const sessions=(sessSheet||[]).filter(r=>r[0]&&r[5]&&r[6]).map(r=>({
+      id:r[0], projectId:r[2]||'', taskId:r[3]||null, mode:r[4]||'libre',
+      startAt:Math.floor(new Date(r[5]).getTime()/1000),
+      endAt:Math.floor(new Date(r[6]).getTime()/1000),
+      duration:Math.round((Number(r[7])||0)*60),
+      pomos:Number(r[8])||0, day:r[9]||'',
+    }));
+
+    const intenciones={};
+    (intSheet||[]).filter(r=>r[0]&&r[2]).forEach(r=>{
+      const day=r[0];
+      if(!intenciones[day]) intenciones[day]=[];
+      intenciones[day].push({projId:r[2],text:r[3]||'',done:r[4]==='Sí'});
+    });
+
+    return {projects, sessions, intenciones};
+  },
 };
 
 // Version guard — if schema version changed, clear seeded demo data only
@@ -717,12 +747,23 @@ function App(){
   const[gsSyncing,setGsSyncing]=useState(false);
   const[gsClientId,setGsClientId]=useState(()=>load('gs_client_id',''));
   const gsSyncRef=useRef(null);
+  const[gsImportData,setGsImportData]=useState(null); // {projects,sessions,intenciones} pending confirmation
 
   useEffect(()=>{const id=setInterval(()=>setTick(t=>t+1),20000);return()=>clearInterval(id);},[]);
 
-  // GS: listen for status changes
+  // GS: listen for status changes — on connect, read sheet and offer import
   useEffect(()=>{
-    GS.onStatusChange((st,sid)=>{ setGsStatus(st); setGsSheetId(sid||''); });
+    GS.onStatusChange(async(st,sid)=>{
+      setGsStatus(st); setGsSheetId(sid||'');
+      if(st==='connected'){
+        try{
+          const data=await GS.readAll();
+          if(data.projects.length>0||data.sessions.length>0){
+            setGsImportData(data);
+          }
+        }catch(e){ console.warn('[GS] read error',e); }
+      }
+    });
   },[]);
 
   // GS: debounced auto-sync — fires 3s after any data change
@@ -1157,7 +1198,7 @@ function App(){
       clientId:gsClientId,
       onClientIdChange:v=>setGsClientId(v),
       onConnect:async(cid)=>{
-        try{await GS.connect(cid);}catch(e){console.warn(e);}
+        try{await GS.connect(cid); setShowGsModal(false);}catch(e){console.warn(e);}
       },
       onDisconnect:()=>GS.disconnect(),
       onClose:()=>setShowGsModal(false),
@@ -1168,6 +1209,18 @@ function App(){
         showNotif('Datos enviados a Sheets ✓');
       },
       syncing:gsSyncing,
+    }),
+    gsImportData&&e(GsImportModal,{
+      data:gsImportData,
+      hasLocalData: projects.filter(p=>!p._demo).length>0||sessions.length>0,
+      onImport:()=>{
+        setProjects(gsImportData.projects);
+        setSessions(gsImportData.sessions);
+        setIntenciones(gsImportData.intenciones);
+        setGsImportData(null);
+        showNotif(`Importado: ${gsImportData.projects.length} proyectos · ${gsImportData.sessions.length} sesiones ✓`);
+      },
+      onSkip:()=>setGsImportData(null),
     }),
     showThemeCfg&&e(ThemeCfgModal,{cfg:themeCfg,onChange:c=>{setThemeCfg(c);save('chr4_theme',c);},onClose:()=>setShowThemeCfg(false),tlZoom,setTlZoom}),
     // block reminder toast
@@ -2414,6 +2467,58 @@ function GsModal({status,sheetId,clientId,onClientIdChange,onConnect,onDisconnec
         )
       ),
       e('div',{className:'modal-body'},STEPS[wizStep]||STEPS['connect'])
+    )
+  );
+}
+
+// ═══════════════════════════════════════════
+// GOOGLE SHEETS IMPORT CONFIRMATION MODAL
+// ═══════════════════════════════════════════
+function GsImportModal({data,hasLocalData,onImport,onSkip}){
+  const{projects,sessions,intenciones}=data;
+  const intentDays=Object.keys(intenciones).length;
+
+  return e('div',{className:'overlay'},
+    e('div',{className:'modal',style:{maxWidth:420}},
+      e('div',{className:'modal-head'},
+        e('div',{style:{flex:1}},
+          e('div',{className:'modal-title'},'☁ Datos encontrados en Sheets'),
+          e('div',{className:'modal-sub'},'Tu hoja de Google tiene datos guardados')
+        )
+      ),
+      e('div',{className:'modal-body',style:{display:'flex',flexDirection:'column',gap:12}},
+        // Summary cards
+        e('div',{style:{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:8}},
+          e('div',{style:{background:'var(--bg3)',border:'1px solid var(--border)',borderRadius:'var(--r-md)',padding:'12px',textAlign:'center'}},
+            e('div',{style:{fontSize:22,fontWeight:700,color:'var(--text0)',fontFamily:"'JetBrains Mono',monospace"}},projects.length),
+            e('div',{style:{fontSize:10,color:'var(--text3)',marginTop:3}},projects.length===1?'proyecto':'proyectos')
+          ),
+          e('div',{style:{background:'var(--bg3)',border:'1px solid var(--border)',borderRadius:'var(--r-md)',padding:'12px',textAlign:'center'}},
+            e('div',{style:{fontSize:22,fontWeight:700,color:'var(--text0)',fontFamily:"'JetBrains Mono',monospace"}},sessions.length),
+            e('div',{style:{fontSize:10,color:'var(--text3)',marginTop:3}},sessions.length===1?'sesión':'sesiones')
+          ),
+          e('div',{style:{background:'var(--bg3)',border:'1px solid var(--border)',borderRadius:'var(--r-md)',padding:'12px',textAlign:'center'}},
+            e('div',{style:{fontSize:22,fontWeight:700,color:'var(--text0)',fontFamily:"'JetBrains Mono',monospace"}},intentDays),
+            e('div',{style:{fontSize:10,color:'var(--text3)',marginTop:3}},intentDays===1?'día planif.':'días planif.')
+          )
+        ),
+        hasLocalData&&e('div',{style:{
+          background:'var(--amber-bg,rgba(212,148,58,.08))',
+          border:'1px solid var(--amber-border,rgba(212,148,58,.25))',
+          borderRadius:'var(--r-md)',padding:'10px 12px',
+          fontSize:11,color:'var(--text2)',lineHeight:1.6,
+        }},
+          '⚠ ',e('strong',null,'Ya tienes datos en este navegador.'),
+          ' Si importas, se reemplazarán con los datos de Sheets.'
+        ),
+        e('div',{style:{fontSize:11,color:'var(--text3)',lineHeight:1.6}},
+          '¿Quieres cargar estos datos en la app?'
+        )
+      ),
+      e('div',{className:'modal-foot'},
+        e('button',{className:'btn btn-ghost',style:{marginRight:'auto'},onClick:onSkip},'No, mantener lo que hay'),
+        e('button',{className:'btn btn-primary',onClick:onImport},'✓ Importar desde Sheets')
+      )
     )
   );
 }
