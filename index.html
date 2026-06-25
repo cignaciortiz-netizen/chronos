@@ -446,6 +446,80 @@ const SB = {
   },
 };
 
+// ── SEED DATA ──
+const TODAY=dayKey();
+const INIT_PROJECTS=[];
+const INIT_TASKS=[];
+const INIT_BLOCKS=[
+  {id:'b1',label:'Profesional',color:'#4a9de0',startMin:480,endMin:720,days:['mon','tue','wed','thu','fri'],reminder:true,reminderSound:'chime'},
+  {id:'b2',label:'Música',color:'#7c6af7',startMin:720,endMin:840,days:['mon','tue','wed','thu','fri'],reminder:true,reminderSound:'gentle'},
+  {id:'b3',label:'Personal',color:'#2fb87a',startMin:900,endMin:960,days:['mon','tue','wed','thu','fri'],reminder:false,reminderSound:'gentle'},
+];
+// Helper: convert JS getDay() to 3-letter key
+const DOW=['sun','mon','tue','wed','thu','fri','sat'];
+function dowKey(dateStr){
+  // dateStr = 'YYYY-MM-DD'
+  // Use noon UTC to avoid DST shifts
+  return DOW[new Date(dateStr+'T12:00:00Z').getDay()];
+}
+function blocksForDay(allBlocks,dateStr){
+  const dow=dowKey(dateStr);
+  return allBlocks.filter(b=>{
+    // Legacy blocks with date field
+    if(b.date) return b.date===dateStr;
+    // New blocks with days array
+    if(b.days&&Array.isArray(b.days)) return b.days.includes(dow);
+    return false;
+  });
+}
+const INIT_SESSIONS=[];
+const INIT_CTXS=[];
+const INIT_SOUND_CFG={
+  blockSound:'chime',blockVol:0.5,
+  idleSound:'nudge',idleVol:0.4,idleInterval:10,idleEnabled:true
+};
+
+// ── THEMES ──
+const THEMES=[
+  {id:'obsidian',label:'Obsidian',desc:'Gris carbón sofisticado. El original.',vars:{
+    '--bg0':'#16161b','--bg1':'#1c1c22','--bg2':'#232329','--bg3':'#2b2b33','--bg4':'#34343d','--bg5':'#3f3f4a',
+    '--border':'#ffffff14','--border2':'#ffffff20','--border3':'#ffffff2e',
+    '--text0':'#f3f3f6','--text1':'#cfcfd8','--text2':'#93939f','--text3':'#65656f','--text4':'#48484f',
+    '--accent':'#7c6af7','--accent2':'#a394ff','--accentd':'#5a4bd4','--accent-bg':'#7c6af714','--accent-border':'#7c6af73a',
+  }},
+  {id:'graphite',label:'Graphite',desc:'Gris cálido con acento cian.',vars:{
+    '--bg0':'#181a1d','--bg1':'#1e2024','--bg2':'#25282e','--bg3':'#2d3038','--bg4':'#363a43','--bg5':'#42464f',
+    '--border':'#ffffff15','--border2':'#ffffff22','--border3':'#ffffff30',
+    '--text0':'#eef0f2','--text1':'#c5c9d2','--text2':'#8b91a3','--text3':'#5c6172','--text4':'#3f434f',
+    '--accent':'#38b2c4','--accent2':'#5fd3e4','--accentd':'#279aaa','--accent-bg':'#38b2c414','--accent-border':'#38b2c43a',
+  }},
+  {id:'midnight',label:'Midnight',desc:'Azul medianoche sobrio.',vars:{
+    '--bg0':'#16171f','--bg1':'#1b1d27','--bg2':'#21232f','--bg3':'#292c3a','--bg4':'#323548','--bg5':'#3c4056',
+    '--border':'#8899ff14','--border2':'#8899ff20','--border3':'#8899ff2e',
+    '--text0':'#eeeffd','--text1':'#c4c8e6','--text2':'#8a8fb8','--text3':'#5b5f82','--text4':'#3f4260',
+    '--accent':'#6c8fff','--accent2':'#94aaff','--accentd':'#4a6fe0','--accent-bg':'#6c8fff14','--accent-border':'#6c8fff3a',
+  }},
+  {id:'forest',label:'Forest',desc:'Verde mineral sofisticado.',vars:{
+    '--bg0':'#14181a','--bg1':'#191e1c','--bg2':'#1f2522','--bg3':'#272e29','--bg4':'#303832','--bg5':'#3a443c',
+    '--border':'#4aff8a14','--border2':'#4aff8a20','--border3':'#4aff8a2a',
+    '--text0':'#eaf2ec','--text1':'#bdd2c4','--text2':'#7fa48c','--text3':'#516e5c','--text4':'#374d3f',
+    '--accent':'#3dcf7a','--accent2':'#68e89e','--accentd':'#28a85e','--accent-bg':'#3dcf7a14','--accent-border':'#3dcf7a3a',
+  }},
+  {id:'ember',label:'Ember',desc:'Marrón cálido con acento ámbar.',vars:{
+    '--bg0':'#191510','--bg1':'#1f1a14','--bg2':'#26201a','--bg3':'#2f2821','--bg4':'#383029','--bg5':'#433a31',
+    '--border':'#ff9a3a14','--border2':'#ff9a3a20','--border3':'#ff9a3a2a',
+    '--text0':'#f5ede4','--text1':'#d4c2b0','--text2':'#a08770','--text3':'#6e5a48','--text4':'#4a3c30',
+    '--accent':'#d4843a','--accent2':'#f0a55c','--accentd':'#b06828','--accent-bg':'#d4843a14','--accent-border':'#d4843a3a',
+  }},
+  {id:'slate',label:'Slate',desc:'Azul pizarra frío y sobrio.',vars:{
+    '--bg0':'#15171c','--bg1':'#1a1d23','--bg2':'#20242b','--bg3':'#282d36','--bg4':'#313742','--bg5':'#3b4350',
+    '--border':'#7090c014','--border2':'#7090c020','--border3':'#7090c02e',
+    '--text0':'#e8eef5','--text1':'#bcc7d6','--text2':'#7e90ab','--text3':'#525f76','--text4':'#384357',
+    '--accent':'#4a8ef5','--accent2':'#74aaff','--accentd':'#2a6ed4','--accent-bg':'#4a8ef514','--accent-border':'#4a8ef53a',
+  }},
+];
+
+
 function App(){
   const[view,setView]=useState('workspace');
   const[projects,setProjects]=useState(()=>load('chr4_proj',INIT_PROJECTS));
