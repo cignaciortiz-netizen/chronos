@@ -132,6 +132,8 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .proj-item.sel{background:var(--bg2)}
 .proj-item.live{border-left:2px solid var(--accent);padding-left:20px}
 .proj-color{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.proj-icon-badge{width:18px;height:18px;border-radius:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;background:rgba(0,0,0,0.15);border:1px solid rgba(255,255,255,0.08);line-height:1;position:relative;overflow:hidden}
+.proj-icon-badge::before{content:'';position:absolute;inset:0;background:var(--proj-color,#888);opacity:.18;border-radius:inherit}
 .proj-label{font-size:11px;font-weight:500;color:var(--text1);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .proj-item.sel .proj-label,.proj-item.live .proj-label{color:var(--text0)}
 .proj-inline-meta{display:flex;align-items:center;gap:4px;flex-shrink:0}
@@ -375,9 +377,59 @@ const{createRoot}=ReactDOM;
 })();
 const e=React.createElement;
 
+// ── SOUNDS ──
+const SOUNDS={
+  chime:{label:'Chime',freq:880,type:'sine',dur:0.6},
+  gentle:{label:'Gentle',freq:528,type:'sine',dur:0.8},
+  nudge:{label:'Nudge',freq:660,type:'triangle',dur:0.3},
+  bell:{label:'Bell',freq:1046,type:'sine',dur:1.0},
+  soft:{label:'Soft',freq:440,type:'sine',dur:0.5},
+};
+let _audioCtx=null;
+function getAudioCtx(){
+  if(!_audioCtx||_audioCtx.state==='closed'){
+    try{_audioCtx=new(window.AudioContext||window.webkitAudioContext)();}catch(e){return null;}
+  }
+  return _audioCtx;
+}
+function playSound(key,vol){
+  vol=vol!=null?vol:0.5;
+  const ctx=getAudioCtx();
+  if(!ctx)return;
+  const resume=ctx.state==='suspended'?ctx.resume():Promise.resolve();
+  resume.then(()=>{
+    const s=SOUNDS[key]||SOUNDS.chime;
+    const osc=ctx.createOscillator();
+    const gain=ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type=s.type||'sine';
+    osc.frequency.setValueAtTime(s.freq,ctx.currentTime);
+    gain.gain.setValueAtTime(Math.min(1,Math.max(0.01,vol)),ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+s.dur);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime+s.dur);
+    if(key==='chime'||key==='bell'){
+      const osc2=ctx.createOscillator();
+      const gain2=ctx.createGain();
+      osc2.connect(gain2);
+      gain2.connect(ctx.destination);
+      osc2.type='sine';
+      osc2.frequency.setValueAtTime(s.freq*1.5,ctx.currentTime+0.08);
+      gain2.gain.setValueAtTime(Math.min(1,Math.max(0.01,vol*0.6)),ctx.currentTime+0.08);
+      gain2.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+s.dur*0.8);
+      osc2.start(ctx.currentTime+0.08);
+      osc2.stop(ctx.currentTime+s.dur);
+    }
+  }).catch(()=>{});
+}
+
 // ── HELPERS ──
 const COLORS=['#7c6af7','#2fb87a','#4a9de0','#d4943a','#e05555','#b06ef5','#3abdc4','#d47a3a'];
 const CATS=['Profesional','Música','Creativo','Estudio','Personal','Administración'];
+const CAT_ICONS={
+  'Profesional':'💼','Música':'🎵','Creativo':'🎨','Estudio':'📚','Personal':'🌿','Administración':'🗂️'
+};
 const fmt=s=>{const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sc=s%60;return`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sc).padStart(2,'0')}`};
 const fmtS=s=>{const h=Math.floor(s/3600),m=Math.floor((s%3600)/60);return h>0?`${h}h ${m}m`:`${m}m`};
 const fmtHM=s=>{const h=Math.floor(s/3600),m=Math.floor((s%3600)/60);return`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`};
@@ -918,7 +970,7 @@ function App(){
                     const showCtxStrip=expandCtx===proj.id&&st.lastCtx;
                     return e(React.Fragment,{key:proj.id},
                       e('div',{className:`proj-item${isSel?' sel':''}${isLive?' live':''}`,onClick:()=>onProjClick(proj.id),onDoubleClick:ev=>onProjDbl(ev,proj.id)},
-                        e('div',{className:'proj-color',style:{background:proj.color}}),
+                        e('div',{className:'proj-icon-badge',style:{'--proj-color':proj.color}},CAT_ICONS[proj.category]||'📁'),
                         e('span',{className:'proj-label'},proj.name),
                         e('div',{className:'proj-inline-meta'},
                           todaySecs>0&&e('span',{className:'proj-time-chip'},fmtS(todaySecs)),
@@ -986,7 +1038,7 @@ function App(){
                   intenciones,setIntenciones,
                   projects,
                   selectedDay,
-                  onStartProj:(projId)=>{setSelProj(projId);setStartFlow({projId,mode:'free'});setRightPanel('timer');},
+                  onStartProj:(projId)=>{setSelProj(projId);setStartFlow({projId,mode:'pomo'});setRightPanel('timer');},
                   onCierre:()=>setShowCierre(true)
                 })
           )
@@ -1010,7 +1062,7 @@ function App(){
     showCtxModal&&e(CtxModal,{session:showCtxModal,project:projects.find(p=>p.id===showCtxModal.projectId),onSave:handleSaveCtx,onSkip:()=>setShowCtxModal(null)}),
     showHist&&e(HistModal,{project:projects.find(p=>p.id===showHist),ctxs:ctxs.filter(c=>c.projectId===showHist).sort((a,b)=>b.createdAt-a.createdAt),sessions:sessions.filter(s=>s.projectId===showHist&&s.endAt),onClose:()=>setShowHist(null)}),
     showNewProj&&e(ProjModal,{onClose:()=>setShowNewProj(false),onSave:p=>{setProjects(ps=>[...ps,{...p,id:uid(),status:'active',createdAt:Date.now()}]);setShowNewProj(false);}}),
-    editProj&&e(ProjModal,{project:editProj,onClose:()=>setEditProj(null),onSave:p=>{setProjects(ps=>ps.map(pp=>pp.id===p.id?p:pp));setEditProj(null);}}),
+    editProj&&e(ProjModal,{project:editProj,onClose:()=>setEditProj(null),onSave:p=>{setProjects(ps=>ps.map(pp=>pp.id===p.id?p:pp));setEditProj(null);},onDelete:id=>{setProjects(ps=>ps.filter(p=>p.id!==id));if(selProj===id)setSelProj(null);setEditProj(null);}}),
     (editBlock||showNewBlock)&&e(BlockModal,{
       block:editBlock||null,
       preset:newBlockPreset,
@@ -1055,6 +1107,7 @@ function App(){
       },
       syncing:sbSyncing,
     }),
+    showSoundCfg&&e(SoundCfgModal,{cfg:soundCfg,onChange:c=>{setSoundCfg(c);save('chr4_sound',c);},onClose:()=>setShowSoundCfg(false)}),
     showThemeCfg&&e(ThemeCfgModal,{cfg:themeCfg,onChange:c=>{setThemeCfg(c);save('chr4_theme',c);},onClose:()=>setShowThemeCfg(false),tlZoom,setTlZoom}),
     // block reminder toast
     blockToast&&e('div',{className:'block-toast'},
@@ -1642,11 +1695,12 @@ function ThemeCfgModal({cfg,onChange,onClose,tlZoom,setTlZoom}){
 // ═══════════════════════════════════════════
 // PROJECT MODAL
 // ═══════════════════════════════════════════
-function ProjModal({project,onClose,onSave}){
+function ProjModal({project,onClose,onSave,onDelete}){
   const[name,setName]=useState(project?.name||'');
   const[cat,setCat]=useState(project?.category||'Profesional');
   const[color,setColor]=useState(project?.color||COLORS[0]);
   const[limit,setLimit]=useState(project?.dailyLimit||180);
+  const[confirmDel,setConfirmDel]=useState(false);
   return e('div',{className:'overlay',onClick:ev=>{if(ev.target===ev.currentTarget)onClose();}},
     e('div',{className:'modal modal-sm'},
       e('div',{className:'modal-head'},e('div',{className:'modal-title'},project?'Editar proyecto':'Nuevo proyecto'),e('button',{className:'modal-x',onClick:onClose},'✕')),
@@ -1654,14 +1708,19 @@ function ProjModal({project,onClose,onSave}){
         e('div',{className:'fg'},e('label',{className:'flabel'},'Nombre'),e('input',{className:'finput',value:name,onChange:ev=>setName(ev.target.value),placeholder:'ej. Cliente X',autoFocus:true})),
         e('div',{className:'fg'},e('label',{className:'flabel'},'Categoría'),e('select',{className:'fselect',value:cat,onChange:ev=>setCat(ev.target.value)},CATS.map(c=>e('option',{key:c,value:c},c)))),
         e('div',{className:'fg'},e('label',{className:'flabel'},'Color'),e('div',{className:'swatch-row'},COLORS.map(c=>e('div',{key:c,className:`swatch${color===c?' on':''}`,style:{background:c},onClick:()=>setColor(c)})))),
-        e('div',{className:'fg'},e('label',{className:'flabel'},'Límite diario (min)'),e('input',{className:'finput',type:'number',value:limit,onChange:ev=>setLimit(Number(ev.target.value)),min:15,max:720}))
+        e('div',{className:'fg'},e('label',{className:'flabel'},'Límite diario (min)'),e('input',{className:'finput',type:'number',value:limit,onChange:ev=>setLimit(Number(ev.target.value)),min:15,max:720})),
+        confirmDel&&e('div',{style:{padding:'8px 10px',background:'var(--red-bg)',border:'1px solid var(--red-border)',borderRadius:'var(--r-md)',fontSize:11,color:'var(--red)',lineHeight:1.5}},'¿Eliminar este proyecto? Esta acción no se puede deshacer.')
       ),
       e('div',{className:'modal-foot'},
-        e('button',{className:'btn',onClick:onClose},'Cancelar'),
-        e('button',{className:'btn btn-primary',onClick:()=>{if(name.trim())onSave({...(project||{}),name:name.trim(),category:cat,color,dailyLimit:limit});}},project?'Guardar':'Crear')
+        project&&onDelete&&!confirmDel&&e('button',{className:'btn btn-danger',style:{marginRight:'auto'},onClick:()=>setConfirmDel(true)},'Eliminar'),
+        project&&onDelete&&confirmDel&&e('button',{className:'btn btn-danger',style:{marginRight:'auto'},onClick:()=>onDelete(project.id)},'Confirmar eliminación'),
+        confirmDel&&e('button',{className:'btn',onClick:()=>setConfirmDel(false)},'Cancelar'),
+        !confirmDel&&e('button',{className:'btn',onClick:onClose},'Cancelar'),
+        !confirmDel&&e('button',{className:'btn btn-primary',onClick:()=>{if(name.trim())onSave({...(project||{}),name:name.trim(),category:cat,color,dailyLimit:limit});}},project?'Guardar':'Crear')
       )
     )
   );
+
 }
 
 // ═══════════════════════════════════════════
@@ -1929,6 +1988,26 @@ function FocusPanel({intenciones,setIntenciones,projects,selectedDay,onStartProj
     });
   }
 
+  function postponeItem(idx){
+    const item=(intenciones[selectedDay]||[])[idx];
+    if(!item)return;
+    // Compute tomorrow relative to selectedDay
+    const base=new Date(selectedDay+'T12:00:00Z');
+    base.setUTCDate(base.getUTCDate()+1);
+    const nextDay=base.toISOString().slice(0,10);
+    setIntenciones(prev=>{
+      // Remove from current day
+      const today=[...(prev[selectedDay]||[])];
+      today.splice(idx,1);
+      // Add to next day (avoid duplicate)
+      const next=[...(prev[nextDay]||[])];
+      if(!next.some(i=>i.projId===item.projId&&i.text===item.text)){
+        next.push({...item,done:false});
+      }
+      return{...prev,[selectedDay]:today,[nextDay]:next};
+    });
+  }
+
   return e('div',{className:'focus-panel'},
     e('div',{className:'focus-panel-hdr'},
       e('div',{className:'focus-panel-title'},'Foco del día'),
@@ -1950,14 +2029,15 @@ function FocusPanel({intenciones,setIntenciones,projects,selectedDay,onStartProj
               const globalIdx=items.indexOf(item);
               return e('div',{key:i,className:'focus-card'},
                 e('div',{className:'focus-card-hdr'},
-                  e('div',{className:'focus-card-dot',style:{background:proj?.color||'var(--text4)'}}),
+                  e('div',{className:'proj-icon-badge',style:{'--proj-color':proj?.color||'var(--text4)'},title:proj?.category},CAT_ICONS[proj?.category]||'📁'),
                   e('span',{className:'focus-card-proj'},proj?.name||'Proyecto'),
                   proj?.category&&e('span',{style:{fontSize:9,color:'var(--text4)',padding:'1px 5px',background:'var(--bg4)',borderRadius:8}},proj.category)
                 ),
                 e('div',{className:'focus-card-intent'},item.text),
                 e('div',{className:'focus-card-actions'},
                   e('button',{className:'focus-start-btn',onClick:()=>onStartProj(item.projId)},'▶ Iniciar sesión'),
-                  e('button',{className:'focus-done-btn',onClick:()=>markDone(globalIdx)},'✓ Listo')
+                  e('button',{className:'focus-done-btn',onClick:()=>markDone(globalIdx)},'✓ Listo'),
+                  e('button',{className:'focus-done-btn',style:{fontSize:10,color:'var(--amber)',borderColor:'var(--amber-border)'},onClick:()=>postponeItem(globalIdx)},'↷ Posponer')
                 )
               );
             })
@@ -1969,7 +2049,7 @@ function FocusPanel({intenciones,setIntenciones,projects,selectedDay,onStartProj
               const globalIdx=items.indexOf(item);
               return e('div',{key:i,className:'focus-card done'},
                 e('div',{className:'focus-card-hdr'},
-                  e('div',{className:'focus-card-dot',style:{background:proj?.color||'var(--text4)'}}),
+                  e('div',{className:'proj-icon-badge',style:{'--proj-color':proj?.color||'var(--text4)'}},CAT_ICONS[proj?.category]||'📁'),
                   e('span',{className:'focus-card-proj'},proj?.name||'Proyecto'),
                   e('span',{style:{fontSize:9,color:'var(--green)'}}, '✓')
                 ),
