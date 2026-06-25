@@ -391,7 +391,12 @@ const GS={
   K_SHEET:   'chr_gs_sheetid',
 
   SCOPES: 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file',
-  get REDIRECT(){ return window.location.origin+window.location.pathname.replace(/\/+$/,'')+'/'; },
+  get REDIRECT(){
+    // Must exactly match what's registered in Google Cloud Console
+    // For GitHub Pages: https://user.github.io/repo/
+    const p = window.location.pathname.replace(/index\.html$/,'').replace(/\/?$/,'/');
+    return window.location.origin + p;
+  },
 
   // Runtime state
   accessToken: null,
@@ -423,8 +428,11 @@ const GS={
     const challenge = this._b64url(await this._sha256(verifier));
     const state = this._b64url(crypto.getRandomValues(new Uint8Array(16)));
 
+    // Save in both — sessionStorage can be lost across redirects on some hosts
     sessionStorage.setItem('gs_v', verifier);
     sessionStorage.setItem('gs_s', state);
+    localStorage.setItem('gs_v', verifier);
+    localStorage.setItem('gs_s', state);
 
     const params = new URLSearchParams({
       client_id: cid,
@@ -446,14 +454,14 @@ const GS={
     const url = new URL(window.location.href);
     const code  = url.searchParams.get('code');
     const state = url.searchParams.get('state');
-    const verifier = sessionStorage.getItem('gs_v');
-    const savedState = sessionStorage.getItem('gs_s');
+    const verifier = sessionStorage.getItem('gs_v') || localStorage.getItem('gs_v');
+    const savedState = sessionStorage.getItem('gs_s') || localStorage.getItem('gs_s');
 
     if(code && verifier && state && state===savedState){
       // Clean URL immediately so refresh doesn't re-run the exchange
       history.replaceState(null,'', window.location.pathname);
-      sessionStorage.removeItem('gs_v');
-      sessionStorage.removeItem('gs_s');
+      sessionStorage.removeItem('gs_v'); sessionStorage.removeItem('gs_s');
+      localStorage.removeItem('gs_v');  localStorage.removeItem('gs_s');
       this._set('connecting');
       try{
         await this._exchange(code, verifier);
@@ -2445,7 +2453,7 @@ function GsModal({status,sheetId,clientId,onClientIdChange,onConnect,onDisconnec
           'Tipo de aplicación: ',e('strong',null,'Aplicación web'),
           '. En ',e('strong',null,'"URIs de redireccionamiento autorizados"'),' agrega esta URL exacta: ',
           e('code',{style:{fontSize:10,background:'var(--bg4)',padding:'2px 5px',borderRadius:3,display:'block',marginTop:4,wordBreak:'break-all'}},
-            window.location.origin+(window.location.pathname||'/')),
+            GS.REDIRECT),
           ' Luego haz clic en ',e('strong',null,'"Crear"'),'.'
         )
       ),
