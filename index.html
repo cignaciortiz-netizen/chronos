@@ -806,7 +806,7 @@ function App(){
 
   useEffect(()=>{const id=setInterval(()=>setTick(t=>t+1),20000);return()=>clearInterval(id);},[]);
 
-  // GS: listen for status changes — on connect, read sheet and offer import
+  // GS: register listener first, THEN init — so we never miss the status event
   useEffect(()=>{
     GS.onStatusChange(async(st,sid)=>{
       setGsStatus(st); setGsSheetId(sid||'');
@@ -819,6 +819,8 @@ function App(){
         }catch(e){ console.warn('[GS] read error',e); }
       }
     });
+    // Init AFTER listener is registered — silent reconnect if refresh_token exists
+    GS.init().catch(e=>console.warn('[GS] init error',e));
   },[]);
 
   // GS: debounced auto-sync — fires 3s after any data change
@@ -2571,8 +2573,6 @@ function GsImportModal({data,hasLocalData,onImport,onSkip}){
   );
 }
 
-// Auto-init Google Sheets on page load (silent reconnect if refresh_token exists)
-GS.init().catch(e=>console.warn('[GS] init error',e));
 createRoot(document.getElementById('root')).render(e(App));
 </script>
 </body>
