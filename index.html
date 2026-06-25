@@ -382,104 +382,156 @@ function load(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;
 function save(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch{}}
 
 // ── GOOGLE SHEETS SYNC ENGINE ──
-// Uses Google Identity Services (GIS) + Sheets REST API v4
-// No server required — runs entirely in the browser
+// Flow: Authorization Code + PKCE → refresh_token persisted in localStorage
+// On every page load: silent token refresh → no popup, no manual steps
 const GS={
-  // OAuth 2.0 Authorization Code + PKCE — persistent refresh_token, fully silent after first login
-  CLIENT_ID: load('gs_client_id',''),
+  // localStorage keys
+  K_CLIENT:  'chr_gs_clientid',
+  K_REFRESH: 'chr_gs_refresh',
+  K_SHEET:   'chr_gs_sheetid',
+
   SCOPES: 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file',
-  REDIRECT_URI(){ return window.location.origin+window.location.pathname; },
-  spreadsheetId: load('gs_sheet_id',''),
+  get REDIRECT(){ return window.location.origin+window.location.pathname.replace(/\/+$/,'')+'/'; },
+
+  // Runtime state
   accessToken: null,
   expiresAt: 0,
-  status: 'disconnected',
+  status: 'disconnected', // 'disconnected'|'connecting'|'connected'|'error'
+  spreadsheetId: '',
   listeners: [],
 
-  onStatusChange(fn){ this.listeners.push(fn); },
-  emit(){ this.listeners.forEach(fn=>fn(this.status, this.spreadsheetId)); },
-
+  // ── helpers ──
+  _load(k){ try{ return localStorage.getItem(k)||''; }catch{ return ''; } },
+  _save(k,v){ try{ localStorage.setItem(k,v); }catch{} },
   _b64url(buf){ return btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); },
-  async _pkce(){
-    const v=this._b64url(crypto.getRandomValues(new Uint8Array(32)));
-    const c=this._b64url(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(v)));
-    return{verifier:v,challenge:c};
-  },
+  async _sha256(s){ return crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)); },
 
-  // First-time connect: redirect to Google (one-time consent, then never again)
+  get clientId(){ return this._load(this.K_CLIENT); },
+  get refreshToken(){ return this._load(this.K_REFRESH); },
+
+  onStatusChange(fn){ this.listeners.push(fn); },
+  _emit(){ this.listeners.forEach(fn=>{ try{ fn(this.status, this.spreadsheetId); }catch{} }); },
+  _set(status){ this.status=status; this._emit(); },
+
+  // ── Step 1: user clicks "Connect" → redirect to Google ──
   async startOAuth(clientId){
-    if(clientId){ this.CLIENT_ID=clientId; save('gs_client_id',clientId); }
-    const{verifier,challenge}=await this._pkce();
-    const state=this._b64url(crypto.getRandomValues(new Uint8Array(8)));
-    sessionStorage.setItem('gs_verifier',verifier);
-    sessionStorage.setItem('gs_state',state);
-    const p=new URLSearchParams({
-      client_id:this.CLIENT_ID, redirect_uri:this.REDIRECT_URI(),
-      response_type:'code', scope:this.SCOPES,
-      code_challenge:challenge, code_challenge_method:'S256',
-      access_type:'offline', prompt:'consent', state,
+    const cid=(clientId||this.clientId).trim();
+    if(!cid){ alert('Necesitas pegar tu Client ID primero.'); return; }
+    this._save(this.K_CLIENT, cid);
+
+    const verifier = this._b64url(crypto.getRandomValues(new Uint8Array(32)));
+    const challenge = this._b64url(await this._sha256(verifier));
+    const state = this._b64url(crypto.getRandomValues(new Uint8Array(16)));
+
+    sessionStorage.setItem('gs_v', verifier);
+    sessionStorage.setItem('gs_s', state);
+
+    const params = new URLSearchParams({
+      client_id: cid,
+      redirect_uri: this.REDIRECT,
+      response_type: 'code',
+      scope: this.SCOPES,
+      code_challenge: challenge,
+      code_challenge_method: 'S256',
+      access_type: 'offline',
+      prompt: 'consent',
+      state,
     });
-    window.location.href='https://accounts.google.com/o/oauth2/v2/auth?'+p;
+    window.location.href = 'https://accounts.google.com/o/oauth2/v2/auth?' + params;
   },
 
-  // Called on every page load — handles redirect AND silent reconnect
+  // ── Step 2: called on every page load ──
   async init(){
-    const url=new URL(window.location.href);
-    const code=url.searchParams.get('code');
-    const state=url.searchParams.get('state');
-    const savedState=sessionStorage.getItem('gs_state');
-    const verifier=sessionStorage.getItem('gs_verifier');
-    if(code&&state&&state===savedState&&verifier){
-      window.history.replaceState({},'',window.location.pathname);
-      sessionStorage.removeItem('gs_verifier'); sessionStorage.removeItem('gs_state');
-      this.status='connecting'; this.emit();
-      try{ await this._exchangeCode(code,verifier); this.status='connected'; this.emit(); }
-      catch(e){ this.status='error'; this.emit(); console.warn('[GS] code exchange failed',e); }
+    // A) Handle redirect back from Google
+    const url = new URL(window.location.href);
+    const code  = url.searchParams.get('code');
+    const state = url.searchParams.get('state');
+    const verifier = sessionStorage.getItem('gs_v');
+    const savedState = sessionStorage.getItem('gs_s');
+
+    if(code && verifier && state && state===savedState){
+      // Clean URL immediately so refresh doesn't re-run the exchange
+      history.replaceState(null,'', window.location.pathname);
+      sessionStorage.removeItem('gs_v');
+      sessionStorage.removeItem('gs_s');
+      this._set('connecting');
+      try{
+        await this._exchange(code, verifier);
+        this.spreadsheetId = this._load(this.K_SHEET);
+        this._set('connected');
+      }catch(e){
+        console.error('[GS] exchange failed', e);
+        this._set('error');
+      }
       return;
     }
-    // Silent reconnect on every subsequent load
-    const rt=load('gs_refresh_token','');
-    if(rt&&this.CLIENT_ID){
-      this.status='connecting'; this.emit();
-      try{ await this._refresh(); this.status='connected'; this.emit(); }
-      catch(e){ this.status='disconnected'; this.emit(); console.warn('[GS] silent refresh failed',e); }
+
+    // B) Silent reconnect — runs on every subsequent page open
+    const rt = this.refreshToken;
+    const cid = this.clientId;
+    if(rt && cid){
+      this._set('connecting');
+      try{
+        await this._refresh();
+        this.spreadsheetId = this._load(this.K_SHEET);
+        this._set('connected');
+      }catch(e){
+        console.error('[GS] silent refresh failed', e);
+        // Refresh token expired/revoked — clear it so user is prompted to reconnect
+        this._save(this.K_REFRESH, '');
+        this._set('disconnected');
+      }
     }
   },
 
-  async _exchangeCode(code,verifier){
-    const resp=await fetch('https://oauth2.googleapis.com/token',{
-      method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
-      body:new URLSearchParams({code,client_id:this.CLIENT_ID,redirect_uri:this.REDIRECT_URI(),code_verifier:verifier,grant_type:'authorization_code'}),
+  // ── Token exchange: authorization code → access + refresh tokens ──
+  async _exchange(code, verifier){
+    const body = new URLSearchParams({
+      code,
+      client_id: this.clientId,
+      redirect_uri: this.REDIRECT,
+      code_verifier: verifier,
+      grant_type: 'authorization_code',
     });
-    const d=await resp.json();
-    if(d.error) throw new Error(d.error_description||d.error);
-    this.accessToken=d.access_token; this.expiresAt=Date.now()+(d.expires_in-60)*1000;
-    if(d.refresh_token) save('gs_refresh_token',d.refresh_token);
+    const r = await fetch('https://oauth2.googleapis.com/token', {
+      method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body,
+    });
+    const d = await r.json();
+    if(d.error) throw new Error(d.error+': '+d.error_description);
+    this.accessToken = d.access_token;
+    this.expiresAt = Date.now() + (d.expires_in - 60)*1000;
+    if(d.refresh_token) this._save(this.K_REFRESH, d.refresh_token);
+    else console.warn('[GS] No refresh_token in response — check prompt:consent was included');
   },
 
+  // ── Silent token refresh ──
   async _refresh(){
-    const rt=load('gs_refresh_token','');
-    if(!rt) throw new Error('No refresh token');
-    const resp=await fetch('https://oauth2.googleapis.com/token',{
-      method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
-      body:new URLSearchParams({client_id:this.CLIENT_ID,refresh_token:rt,grant_type:'refresh_token'}),
+    const rt = this.refreshToken;
+    const cid = this.clientId;
+    if(!rt||!cid) throw new Error('Missing refresh_token or client_id');
+    const body = new URLSearchParams({ client_id:cid, refresh_token:rt, grant_type:'refresh_token' });
+    const r = await fetch('https://oauth2.googleapis.com/token', {
+      method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body,
     });
-    const d=await resp.json();
-    if(d.error) throw new Error(d.error_description||d.error);
-    this.accessToken=d.access_token; this.expiresAt=Date.now()+(d.expires_in-60)*1000;
-    if(d.refresh_token) save('gs_refresh_token',d.refresh_token);
+    const d = await r.json();
+    if(d.error) throw new Error(d.error+': '+d.error_description);
+    this.accessToken = d.access_token;
+    this.expiresAt = Date.now() + (d.expires_in - 60)*1000;
+    if(d.refresh_token) this._save(this.K_REFRESH, d.refresh_token);
   },
 
   async _getToken(){
-    if(Date.now()>=this.expiresAt-5000) await this._refresh();
+    if(!this.accessToken || Date.now() >= this.expiresAt-10000) await this._refresh();
     return this.accessToken;
   },
 
-  // Legacy compat — modal "Conectar" button calls this
-  async connect(clientId){ await this.startOAuth(clientId||this.CLIENT_ID); },
+  async connect(clientId){ await this.startOAuth(clientId||this.clientId); },
 
   disconnect(){
-    this.accessToken=null; this.expiresAt=0; this.spreadsheetId=''; this.status='disconnected';
-    save('gs_refresh_token',''); save('gs_sheet_id',''); this.emit();
+    this.accessToken=null; this.expiresAt=0;
+    this.spreadsheetId=''; this.status='disconnected';
+    this._save(this.K_REFRESH,''); this._save(this.K_SHEET,'');
+    this._emit();
   },
 
   async fetch(method, path, body){
@@ -488,7 +540,7 @@ const GS={
       method, headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'},
       body: body?JSON.stringify(body):undefined,
     });
-    if(resp.status===401){ this.status='disconnected'; this.emit(); throw new Error('Token expired'); }
+    if(resp.status===401){ this.status='disconnected'; this._emit(); throw new Error('Token expired'); }
     if(!resp.ok){ const t=await resp.text(); throw new Error(t); }
     return resp.json();
   },
@@ -508,7 +560,7 @@ const GS={
           });
         }
         return;
-      }catch(e){ this.spreadsheetId=''; save('gs_sheet_id',''); }
+      }catch(e){ this.spreadsheetId=''; this._save(this.K_SHEET,''); }
     }
     // Create new spreadsheet
     const res=await this.fetch('POST','',{
@@ -520,7 +572,7 @@ const GS={
       ]
     });
     this.spreadsheetId=res.spreadsheetId;
-    save('gs_sheet_id',this.spreadsheetId);
+    this._save(this.K_SHEET, this.spreadsheetId);
     // Write headers
     await this.fetch('PUT',`/${this.spreadsheetId}/values:batchUpdate`,{
       valueInputOption:'RAW',
@@ -800,7 +852,7 @@ function App(){
   const[gsSheetId,setGsSheetId]=useState(GS.spreadsheetId);
   const[showGsModal,setShowGsModal]=useState(false);
   const[gsSyncing,setGsSyncing]=useState(false);
-  const[gsClientId,setGsClientId]=useState(()=>load('gs_client_id',''));
+  const[gsClientId,setGsClientId]=useState(()=>GS.clientId);
   const gsSyncRef=useRef(null);
   const[gsImportData,setGsImportData]=useState(null); // {projects,sessions,intenciones} pending confirmation
 
