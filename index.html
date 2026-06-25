@@ -6,8 +6,6 @@
 <title>Chronos — Personal OS</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-<script src="https://apis.google.com/js/api.js"></script>
-<script src="https://accounts.google.com/gsi/client"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -387,50 +385,107 @@ function save(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch{}}
 // Uses Google Identity Services (GIS) + Sheets REST API v4
 // No server required — runs entirely in the browser
 const GS={
-  // ⚙️  Replace with your own Client ID from console.cloud.google.com
-  // (APIs & Services → Credentials → OAuth 2.0 Client ID → Web application)
-  // Add  http://localhost  and the URL where you open this file to "Authorized JS origins"
+  // OAuth 2.0 Authorization Code + PKCE — persistent refresh_token, fully silent after first login
   CLIENT_ID: load('gs_client_id',''),
-  SCOPES: 'https://www.googleapis.com/auth/spreadsheets',
-  tokenClient: null,
-  token: null,
+  SCOPES: 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file',
+  REDIRECT_URI(){ return window.location.origin+window.location.pathname; },
   spreadsheetId: load('gs_sheet_id',''),
-  status: 'disconnected', // 'disconnected' | 'connecting' | 'connected' | 'error'
+  accessToken: null,
+  expiresAt: 0,
+  status: 'disconnected',
   listeners: [],
 
   onStatusChange(fn){ this.listeners.push(fn); },
   emit(){ this.listeners.forEach(fn=>fn(this.status, this.spreadsheetId)); },
 
-  // Request a new access token (shows Google popup on first use, silent after)
-  async connect(clientId){
-    if(clientId) this.CLIENT_ID=clientId;
-    if(!this.CLIENT_ID){ this.status='error'; this.emit(); return; }
-    save('gs_client_id', this.CLIENT_ID);
-    this.status='connecting'; this.emit();
-    return new Promise((resolve,reject)=>{
-      this.tokenClient=google.accounts.oauth2.initTokenClient({
-        client_id: this.CLIENT_ID,
-        scope: this.SCOPES,
-        callback:(resp)=>{
-          if(resp.error){ this.status='error'; this.emit(); reject(resp.error); return; }
-          this.token=resp.access_token;
-          this.status='connected'; this.emit();
-          resolve();
-        }
-      });
-      this.tokenClient.requestAccessToken({prompt:''});
-    });
+  _b64url(buf){ return btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); },
+  async _pkce(){
+    const v=this._b64url(crypto.getRandomValues(new Uint8Array(32)));
+    const c=this._b64url(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(v)));
+    return{verifier:v,challenge:c};
   },
 
+  // First-time connect: redirect to Google (one-time consent, then never again)
+  async startOAuth(clientId){
+    if(clientId){ this.CLIENT_ID=clientId; save('gs_client_id',clientId); }
+    const{verifier,challenge}=await this._pkce();
+    const state=this._b64url(crypto.getRandomValues(new Uint8Array(8)));
+    sessionStorage.setItem('gs_verifier',verifier);
+    sessionStorage.setItem('gs_state',state);
+    const p=new URLSearchParams({
+      client_id:this.CLIENT_ID, redirect_uri:this.REDIRECT_URI(),
+      response_type:'code', scope:this.SCOPES,
+      code_challenge:challenge, code_challenge_method:'S256',
+      access_type:'offline', prompt:'consent', state,
+    });
+    window.location.href='https://accounts.google.com/o/oauth2/v2/auth?'+p;
+  },
+
+  // Called on every page load — handles redirect AND silent reconnect
+  async init(){
+    const url=new URL(window.location.href);
+    const code=url.searchParams.get('code');
+    const state=url.searchParams.get('state');
+    const savedState=sessionStorage.getItem('gs_state');
+    const verifier=sessionStorage.getItem('gs_verifier');
+    if(code&&state&&state===savedState&&verifier){
+      window.history.replaceState({},'',window.location.pathname);
+      sessionStorage.removeItem('gs_verifier'); sessionStorage.removeItem('gs_state');
+      this.status='connecting'; this.emit();
+      try{ await this._exchangeCode(code,verifier); this.status='connected'; this.emit(); }
+      catch(e){ this.status='error'; this.emit(); console.warn('[GS] code exchange failed',e); }
+      return;
+    }
+    // Silent reconnect on every subsequent load
+    const rt=load('gs_refresh_token','');
+    if(rt&&this.CLIENT_ID){
+      this.status='connecting'; this.emit();
+      try{ await this._refresh(); this.status='connected'; this.emit(); }
+      catch(e){ this.status='disconnected'; this.emit(); console.warn('[GS] silent refresh failed',e); }
+    }
+  },
+
+  async _exchangeCode(code,verifier){
+    const resp=await fetch('https://oauth2.googleapis.com/token',{
+      method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
+      body:new URLSearchParams({code,client_id:this.CLIENT_ID,redirect_uri:this.REDIRECT_URI(),code_verifier:verifier,grant_type:'authorization_code'}),
+    });
+    const d=await resp.json();
+    if(d.error) throw new Error(d.error_description||d.error);
+    this.accessToken=d.access_token; this.expiresAt=Date.now()+(d.expires_in-60)*1000;
+    if(d.refresh_token) save('gs_refresh_token',d.refresh_token);
+  },
+
+  async _refresh(){
+    const rt=load('gs_refresh_token','');
+    if(!rt) throw new Error('No refresh token');
+    const resp=await fetch('https://oauth2.googleapis.com/token',{
+      method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
+      body:new URLSearchParams({client_id:this.CLIENT_ID,refresh_token:rt,grant_type:'refresh_token'}),
+    });
+    const d=await resp.json();
+    if(d.error) throw new Error(d.error_description||d.error);
+    this.accessToken=d.access_token; this.expiresAt=Date.now()+(d.expires_in-60)*1000;
+    if(d.refresh_token) save('gs_refresh_token',d.refresh_token);
+  },
+
+  async _getToken(){
+    if(Date.now()>=this.expiresAt-5000) await this._refresh();
+    return this.accessToken;
+  },
+
+  // Legacy compat — modal "Conectar" button calls this
+  async connect(clientId){ await this.startOAuth(clientId||this.CLIENT_ID); },
+
   disconnect(){
-    this.token=null; this.spreadsheetId=''; this.status='disconnected';
-    save('gs_sheet_id',''); this.emit();
+    this.accessToken=null; this.expiresAt=0; this.spreadsheetId=''; this.status='disconnected';
+    save('gs_refresh_token',''); save('gs_sheet_id',''); this.emit();
   },
 
   async fetch(method, path, body){
-    if(!this.token) throw new Error('Not authenticated');
+    const token=await this._getToken();
     const resp = await fetch(`https://sheets.googleapis.com/v4/spreadsheets${path}`,{
-      method, headers:{'Authorization':'Bearer '+this.token,'Content-Type':'application/json'},
+      method, headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'},
       body: body?JSON.stringify(body):undefined,
     });
     if(resp.status===401){ this.status='disconnected'; this.emit(); throw new Error('Token expired'); }
@@ -479,7 +534,7 @@ const GS={
 
   // Full write: overwrite all data in a tab (simpler and more reliable than upsert)
   async writeAll(projects, sessions, intenciones){
-    if(this.status!=='connected'||!this.token) return;
+    if(this.status!=='connected'||!this.accessToken) return;
     try{
       await this.ensureSheet();
       const sid=this.spreadsheetId;
@@ -2260,15 +2315,11 @@ function GsModal({status,sheetId,clientId,onClientIdChange,onConnect,onDisconnec
   const[wizStep,setWizStep]=useState(()=>clientId?'connect':'s1'); // s1|s2|s3|s4|connect|done
   const[cid,setCid]=useState(clientId||'');
   const[err,setErr]=useState('');
-  const[gapiReady,setGapiReady]=useState(typeof google!=='undefined'&&!!google.accounts);
+  const[gapiReady,setGapiReady]=useState(true); // always ready — PKCE uses fetch, no GSI lib needed
   const isConnected=status==='connected';
 
   useEffect(()=>{if(isConnected)setWizStep('done');},[isConnected]);
-  useEffect(()=>{
-    if(gapiReady) return;
-    const id=setInterval(()=>{if(typeof google!=='undefined'&&google.accounts){setGapiReady(true);clearInterval(id);}},500);
-    return()=>clearInterval(id);
-  },[gapiReady]);
+
 
   async function handleConnect(){
     if(!cid.trim()){setErr('Pega tu Client ID aquí primero.');return;}
@@ -2338,11 +2389,10 @@ function GsModal({status,sheetId,clientId,onClientIdChange,onConnect,onDisconnec
         e('div',{className:'gs-step-num'},'3b'),
         e('div',{className:'gs-step-text'},
           'Tipo de aplicación: ',e('strong',null,'Aplicación web'),
-          '. En ',e('strong',null,'"Orígenes de JavaScript autorizados"'),' haz clic en ',
-          e('strong',null,'"+ Agregar URI"'),' y pega la URL donde tienes abierto Chronos ahora mismo',
-          ' (ej. ',e('code',{style:{fontSize:10,background:'var(--bg4)',padding:'1px 4px',borderRadius:3}},
-            window.location.origin||'https://tuusuario.github.io'),
-          '). Luego haz clic en ',e('strong',null,'"Crear"'),'.'
+          '. En ',e('strong',null,'"URIs de redireccionamiento autorizados"'),' agrega esta URL exacta: ',
+          e('code',{style:{fontSize:10,background:'var(--bg4)',padding:'2px 5px',borderRadius:3,display:'block',marginTop:4,wordBreak:'break-all'}},
+            window.location.origin+(window.location.pathname||'/')),
+          ' Luego haz clic en ',e('strong',null,'"Crear"'),'.'
         )
       ),
       e('div',{style:{display:'flex',gap:8,justifyContent:'space-between'}},
@@ -2373,16 +2423,14 @@ function GsModal({status,sheetId,clientId,onClientIdChange,onConnect,onDisconnec
         onChange:ev=>{setCid(ev.target.value);setErr('');},
       }),
       err&&e('div',{style:{fontSize:11,color:'var(--red)'}},err),
-      !gapiReady&&e('div',{style:{fontSize:11,color:'var(--amber)'}},
-        '⏳ Cargando librería de Google… asegúrate de tener internet.'
-      ),
+
       e('div',{style:{display:'flex',gap:8,justifyContent:'space-between'}},
         e('button',{className:'gs-connect-btn',style:{width:'auto',padding:'8px 14px',background:'var(--bg3)',color:'var(--text2)',border:'1px solid var(--border2)'},onClick:()=>setWizStep('s3')},'← Atrás'),
         e('button',{
           className:'gs-connect-btn',
           style:{width:'auto',padding:'8px 20px'},
           onClick:handleConnect,
-          disabled:!cid.trim()||!gapiReady||status==='connecting',
+          disabled:!cid.trim()||status==='connecting',
         },status==='connecting'?'Conectando…':'Conectar con Google ✓')
       )
     ),
@@ -2390,7 +2438,7 @@ function GsModal({status,sheetId,clientId,onClientIdChange,onConnect,onDisconnec
     connect: e('div',{style:{display:'flex',flexDirection:'column',gap:14}},
       e('div',{style:{fontSize:13,fontWeight:600,color:'var(--text0)'}},'Conectar con Google'),
       e('div',{style:{fontSize:12,color:'var(--text3)',lineHeight:1.6}},
-        'Tu Client ID ya está guardado. Solo haz clic para abrir el popup de Google y autorizar.'
+        'Tu Client ID ya está guardado. Al hacer clic serás redirigido a Google para autorizar — solo una vez. Después de eso la app se reconecta sola cada vez que la abres.'
       ),
       e('input',{
         className:'gs-input',
@@ -2406,8 +2454,8 @@ function GsModal({status,sheetId,clientId,onClientIdChange,onConnect,onDisconnec
       e('button',{
         className:'gs-connect-btn',
         onClick:handleConnect,
-        disabled:!cid.trim()||!gapiReady||status==='connecting',
-      },status==='connecting'?'Abriendo popup de Google…':'🔗 Conectar con Google')
+        disabled:!cid.trim()||status==='connecting',
+      },status==='connecting'?'Redirigiendo a Google…':'🔗 Conectar con Google (una sola vez)')
     ),
 
     done: e('div',{style:{display:'flex',flexDirection:'column',gap:14}},
@@ -2523,6 +2571,8 @@ function GsImportModal({data,hasLocalData,onImport,onSkip}){
   );
 }
 
+// Auto-init Google Sheets on page load (silent reconnect if refresh_token exists)
+GS.init().catch(e=>console.warn('[GS] init error',e));
 createRoot(document.getElementById('root')).render(e(App));
 </script>
 </body>
