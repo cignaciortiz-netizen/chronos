@@ -132,8 +132,8 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .proj-item.sel{background:var(--bg2)}
 .proj-item.live{border-left:2px solid var(--accent);padding-left:20px}
 .proj-color{width:6px;height:6px;border-radius:50%;flex-shrink:0}
-.proj-icon-badge{width:18px;height:18px;border-radius:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;background:rgba(0,0,0,0.15);border:1px solid rgba(255,255,255,0.08);line-height:1;position:relative;overflow:hidden}
-.proj-icon-badge::before{content:'';position:absolute;inset:0;background:var(--proj-color,#888);opacity:.18;border-radius:inherit}
+.proj-icon-badge{width:20px;height:20px;border-radius:5px;flex-shrink:0;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;border:1px solid rgba(255,255,255,0.08)}
+.proj-icon-badge::before{content:'';position:absolute;inset:0;background:var(--proj-color,#888);opacity:.15;border-radius:inherit}
 .proj-label{font-size:11px;font-weight:500;color:var(--text1);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .proj-item.sel .proj-label,.proj-item.live .proj-label{color:var(--text0)}
 .proj-inline-meta{display:flex;align-items:center;gap:4px;flex-shrink:0}
@@ -427,9 +427,81 @@ function playSound(key,vol){
 // ── HELPERS ──
 const COLORS=['#7c6af7','#2fb87a','#4a9de0','#d4943a','#e05555','#b06ef5','#3abdc4','#d47a3a'];
 const CATS=['Profesional','Música','Creativo','Estudio','Personal','Administración'];
-const CAT_ICONS={
-  'Profesional':'💼','Música':'🎵','Creativo':'🎨','Estudio':'📚','Personal':'🌿','Administración':'🗂️'
+// ── SVG ICON SET ──
+// Each icon is a tiny inline SVG path (viewBox 0 0 24 24, stroke-based)
+const PROJ_ICONS = {
+  // Trabajo / Profesional
+  briefcase: '<path d="M20 7H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/>',
+  chart: '<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>',
+  target: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
+  lightning: '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
+  users: '<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/>',
+  // Música / Audio
+  music: '<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>',
+  headphones: '<path d="M3 18v-6a9 9 0 0118 0v6"/><path d="M21 19a2 2 0 01-2 2h-1a2 2 0 01-2-2v-3a2 2 0 012-2h3zM3 19a2 2 0 002 2h1a2 2 0 002-2v-3a2 2 0 00-2-2H3z"/>',
+  mic: '<path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/>',
+  radio: '<circle cx="12" cy="12" r="2"/><path d="M4.93 4.93l1.41 1.41"/><path d="M17.66 17.66l1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="M6.34 17.66l-1.41 1.41"/><path d="M19.07 4.93l-1.41 1.41"/><circle cx="12" cy="12" r="8" fill="none"/>',
+  // Creativo / Arte
+  pen: '<path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/>',
+  brush: '<path d="M9.06 11.9l8.07-8.06a2.85 2.85 0 114.03 4.03l-8.06 8.08"/><path d="M7.07 14.94C3.79 16.3 2 19 2 19c3.17 0 5.94-.93 7.97-2.98l-2.9-1.08z"/>',
+  layers: '<polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/>',
+  // Estudio / Aprendizaje
+  book: '<path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/>',
+  terminal: '<polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/>',
+  cpu: '<rect x="9" y="9" width="6" height="6"/><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="1" x2="9" y2="3"/><line x1="15" y1="1" x2="15" y2="3"/><line x1="9" y1="21" x2="9" y2="23"/><line x1="15" y1="21" x2="15" y2="23"/><line x1="1" y1="9" x2="3" y2="9"/><line x1="1" y1="15" x2="3" y2="15"/><line x1="21" y1="9" x2="23" y2="9"/><line x1="21" y1="15" x2="23" y2="15"/>',
+  // Personal / Vida
+  heart: '<path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>',
+  sun: '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>',
+  home: '<path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>',
+  // Administración / Gestión
+  folder: '<path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>',
+  clipboard: '<path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>',
+  settings: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>',
+  // Finanzas
+  dollar: '<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>',
+  // Fitness / Salud
+  activity: '<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>',
+  // Viaje / Exploración
+  map: '<polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/>',
+  // Código
+  code: '<polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>',
+  // Cámara / Video
+  camera: '<path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/>',
+  // Cohete / Proyecto grande
+  rocket: '<path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 00-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 012-3.95A12.88 12.88 0 0122 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 01-4 2z"/>',
+  // Estrella / Favorito
+  star: '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
+  // Calendario
+  calendar: '<rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
+  // Globo / Internacional
+  globe: '<circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/>',
 };
+
+const ICON_GROUPS = [
+  { label: 'Trabajo', keys: ['briefcase','chart','target','lightning','users','dollar'] },
+  { label: 'Creativo', keys: ['pen','brush','camera','layers','star','rocket'] },
+  { label: 'Música', keys: ['music','headphones','mic','radio','activity'] },
+  { label: 'Estudio', keys: ['book','terminal','cpu','code','globe'] },
+  { label: 'Personal', keys: ['heart','sun','home','map','calendar'] },
+  { label: 'Gestión', keys: ['folder','clipboard','settings'] },
+];
+
+const DEFAULT_ICON = 'briefcase';
+
+function ProjIconSVG({iconKey, size=14, color='currentColor', style={}}){
+  const path = PROJ_ICONS[iconKey] || PROJ_ICONS[DEFAULT_ICON];
+  return e('svg', {
+    width: size, height: size,
+    viewBox: '0 0 24 24',
+    fill: 'none',
+    stroke: color,
+    strokeWidth: 2,
+    strokeLinecap: 'round',
+    strokeLinejoin: 'round',
+    style: {display:'block',flexShrink:0,...style},
+    dangerouslySetInnerHTML: {__html: path}
+  });
+}
 const fmt=s=>{const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sc=s%60;return`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sc).padStart(2,'0')}`};
 const fmtS=s=>{const h=Math.floor(s/3600),m=Math.floor((s%3600)/60);return h>0?`${h}h ${m}m`:`${m}m`};
 const fmtHM=s=>{const h=Math.floor(s/3600),m=Math.floor((s%3600)/60);return`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`};
@@ -970,7 +1042,9 @@ function App(){
                     const showCtxStrip=expandCtx===proj.id&&st.lastCtx;
                     return e(React.Fragment,{key:proj.id},
                       e('div',{className:`proj-item${isSel?' sel':''}${isLive?' live':''}`,onClick:()=>onProjClick(proj.id),onDoubleClick:ev=>onProjDbl(ev,proj.id)},
-                        e('div',{className:'proj-icon-badge',style:{'--proj-color':proj.color}},CAT_ICONS[proj.category]||'📁'),
+                        e('div',{className:'proj-icon-badge',style:{'--proj-color':proj.color}},
+                          e(ProjIconSVG,{iconKey:proj.icon||DEFAULT_ICON,size:12,color:proj.color})
+                        ),
                         e('span',{className:'proj-label'},proj.name),
                         e('div',{className:'proj-inline-meta'},
                           todaySecs>0&&e('span',{className:'proj-time-chip'},fmtS(todaySecs)),
@@ -1700,14 +1774,40 @@ function ProjModal({project,onClose,onSave,onDelete}){
   const[cat,setCat]=useState(project?.category||'Profesional');
   const[color,setColor]=useState(project?.color||COLORS[0]);
   const[limit,setLimit]=useState(project?.dailyLimit||180);
+  const[icon,setIcon]=useState(project?.icon||DEFAULT_ICON);
   const[confirmDel,setConfirmDel]=useState(false);
   return e('div',{className:'overlay',onClick:ev=>{if(ev.target===ev.currentTarget)onClose();}},
-    e('div',{className:'modal modal-sm'},
+    e('div',{className:'modal',style:{width:420,maxHeight:'88vh'}},
       e('div',{className:'modal-head'},e('div',{className:'modal-title'},project?'Editar proyecto':'Nuevo proyecto'),e('button',{className:'modal-x',onClick:onClose},'✕')),
       e('div',{className:'modal-body'},
         e('div',{className:'fg'},e('label',{className:'flabel'},'Nombre'),e('input',{className:'finput',value:name,onChange:ev=>setName(ev.target.value),placeholder:'ej. Cliente X',autoFocus:true})),
         e('div',{className:'fg'},e('label',{className:'flabel'},'Categoría'),e('select',{className:'fselect',value:cat,onChange:ev=>setCat(ev.target.value)},CATS.map(c=>e('option',{key:c,value:c},c)))),
         e('div',{className:'fg'},e('label',{className:'flabel'},'Color'),e('div',{className:'swatch-row'},COLORS.map(c=>e('div',{key:c,className:`swatch${color===c?' on':''}`,style:{background:c},onClick:()=>setColor(c)})))),
+        e('div',{className:'fg'},
+          e('label',{className:'flabel'},'Ícono'),
+          e('div',{style:{display:'flex',flexDirection:'column',gap:8,background:'var(--bg3)',border:'1px solid var(--border2)',borderRadius:'var(--r-md)',padding:'10px 10px 6px'}},
+            ICON_GROUPS.map(grp=>e('div',{key:grp.label},
+              e('div',{style:{fontSize:9,color:'var(--text4)',textTransform:'uppercase',letterSpacing:'.6px',marginBottom:5}},grp.label),
+              e('div',{style:{display:'flex',gap:5,flexWrap:'wrap'}},
+                grp.keys.map(k=>e('div',{
+                  key:k,
+                  onClick:()=>setIcon(k),
+                  title:k,
+                  style:{
+                    width:32,height:32,borderRadius:'var(--r-md)',
+                    display:'flex',alignItems:'center',justifyContent:'center',
+                    cursor:'pointer',transition:'all .1s',
+                    border: icon===k?'2px solid '+color:'1px solid var(--border2)',
+                    background: icon===k?color+'22':'var(--bg4)',
+                    boxSizing:'border-box',
+                  }
+                },
+                  e(ProjIconSVG,{iconKey:k,size:15,color:icon===k?color:'var(--text3)'})
+                ))
+              )
+            ))
+          )
+        ),
         e('div',{className:'fg'},e('label',{className:'flabel'},'Límite diario (min)'),e('input',{className:'finput',type:'number',value:limit,onChange:ev=>setLimit(Number(ev.target.value)),min:15,max:720})),
         confirmDel&&e('div',{style:{padding:'8px 10px',background:'var(--red-bg)',border:'1px solid var(--red-border)',borderRadius:'var(--r-md)',fontSize:11,color:'var(--red)',lineHeight:1.5}},'¿Eliminar este proyecto? Esta acción no se puede deshacer.')
       ),
@@ -1716,7 +1816,7 @@ function ProjModal({project,onClose,onSave,onDelete}){
         project&&onDelete&&confirmDel&&e('button',{className:'btn btn-danger',style:{marginRight:'auto'},onClick:()=>onDelete(project.id)},'Confirmar eliminación'),
         confirmDel&&e('button',{className:'btn',onClick:()=>setConfirmDel(false)},'Cancelar'),
         !confirmDel&&e('button',{className:'btn',onClick:onClose},'Cancelar'),
-        !confirmDel&&e('button',{className:'btn btn-primary',onClick:()=>{if(name.trim())onSave({...(project||{}),name:name.trim(),category:cat,color,dailyLimit:limit});}},project?'Guardar':'Crear')
+        !confirmDel&&e('button',{className:'btn btn-primary',onClick:()=>{if(name.trim())onSave({...(project||{}),name:name.trim(),category:cat,color,icon,dailyLimit:limit});}},project?'Guardar':'Crear')
       )
     )
   );
@@ -2029,7 +2129,9 @@ function FocusPanel({intenciones,setIntenciones,projects,selectedDay,onStartProj
               const globalIdx=items.indexOf(item);
               return e('div',{key:i,className:'focus-card'},
                 e('div',{className:'focus-card-hdr'},
-                  e('div',{className:'proj-icon-badge',style:{'--proj-color':proj?.color||'var(--text4)'},title:proj?.category},CAT_ICONS[proj?.category]||'📁'),
+                  e('div',{className:'proj-icon-badge',style:{'--proj-color':proj?.color||'var(--text4)'}},
+                    e(ProjIconSVG,{iconKey:proj?.icon||DEFAULT_ICON,size:12,color:proj?.color||'var(--text3)'})
+                  ),
                   e('span',{className:'focus-card-proj'},proj?.name||'Proyecto'),
                   proj?.category&&e('span',{style:{fontSize:9,color:'var(--text4)',padding:'1px 5px',background:'var(--bg4)',borderRadius:8}},proj.category)
                 ),
@@ -2049,7 +2151,9 @@ function FocusPanel({intenciones,setIntenciones,projects,selectedDay,onStartProj
               const globalIdx=items.indexOf(item);
               return e('div',{key:i,className:'focus-card done'},
                 e('div',{className:'focus-card-hdr'},
-                  e('div',{className:'proj-icon-badge',style:{'--proj-color':proj?.color||'var(--text4)'}},CAT_ICONS[proj?.category]||'📁'),
+                  e('div',{className:'proj-icon-badge',style:{'--proj-color':proj?.color||'var(--text4)'}},
+                    e(ProjIconSVG,{iconKey:proj?.icon||DEFAULT_ICON,size:12,color:proj?.color||'var(--text3)'})
+                  ),
                   e('span',{className:'focus-card-proj'},proj?.name||'Proyecto'),
                   e('span',{style:{fontSize:9,color:'var(--green)'}}, '✓')
                 ),
