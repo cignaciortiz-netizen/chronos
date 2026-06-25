@@ -385,6 +385,96 @@ const SOUNDS={
   bell:{label:'Bell',freq:1046,type:'sine',dur:1.0},
   soft:{label:'Soft',freq:440,type:'sine',dur:0.5},
 };
+
+// UI micro-sounds — independent from notification sounds
+// Each has hover + click variants
+const UI_SOUNDS = {
+  none:    { label: 'Ninguno' },
+  clack:   { label: 'Clack' },       // keyboard-like click
+  wood:    { label: 'Madera' },       // muted wood tap
+  glass:   { label: 'Cristal' },      // glassy ping
+  plastic: { label: 'Plástico' },     // soft plastic click
+  sine:    { label: 'Suave' },        // smooth sine blip
+};
+
+// Global UI sound config — read by playUI(), written by SoundCfgModal
+let _uiSoundCfg = { hoverSound:'clack', clickSound:'glass', uiVol:0.25, uiEnabled:true };
+function setUISoundCfg(cfg){ _uiSoundCfg = cfg; }
+
+function _uiTone(ctx, now, type, freq, vol, dur){
+  const osc = ctx.createOscillator();
+  const g = ctx.createGain();
+  osc.connect(g); g.connect(ctx.destination);
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, now);
+  g.gain.setValueAtTime(vol, now);
+  g.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+  osc.start(now); osc.stop(now + dur);
+}
+
+function playUI(kind){ // kind: 'hover' | 'click'
+  if(!_uiSoundCfg.uiEnabled) return;
+  const key = kind === 'hover' ? _uiSoundCfg.hoverSound : _uiSoundCfg.clickSound;
+  if(!key || key === 'none') return;
+  const ctx = getAudioCtx();
+  if(!ctx) return;
+  const vol = Math.min(1, Math.max(0.001, _uiSoundCfg.uiVol));
+  const resume = ctx.state === 'suspended' ? ctx.resume() : Promise.resolve();
+  resume.then(()=>{
+    const now = ctx.currentTime;
+    if(key === 'clack'){
+      // Short noise burst — simulates a keyboard key
+      const buf = ctx.createBuffer(1, ctx.sampleRate * 0.03, ctx.sampleRate);
+      const data = buf.getChannelData(0);
+      for(let i=0;i<data.length;i++) data[i]=(Math.random()*2-1)*(1-i/data.length);
+      const src = ctx.createBufferSource();
+      const filt = ctx.createBiquadFilter();
+      const g = ctx.createGain();
+      src.buffer = buf;
+      filt.type = 'bandpass'; filt.frequency.value = kind==='hover'?3200:2400; filt.Q.value=1.2;
+      src.connect(filt); filt.connect(g); g.connect(ctx.destination);
+      g.gain.setValueAtTime(vol*(kind==='hover'?0.55:1), now);
+      g.gain.exponentialRampToValueAtTime(0.0001, now+0.04);
+      src.start(now);
+    } else if(key === 'wood'){
+      // Low thud — bandpassed noise + sine
+      const buf = ctx.createBuffer(1, ctx.sampleRate*0.05, ctx.sampleRate);
+      const data = buf.getChannelData(0);
+      for(let i=0;i<data.length;i++) data[i]=(Math.random()*2-1)*(1-i/data.length)**2;
+      const src = ctx.createBufferSource();
+      const filt = ctx.createBiquadFilter();
+      const g = ctx.createGain();
+      src.buffer=buf; filt.type='lowpass'; filt.frequency.value=300;
+      src.connect(filt); filt.connect(g); g.connect(ctx.destination);
+      g.gain.setValueAtTime(vol*(kind==='hover'?0.4:0.85), now);
+      g.gain.exponentialRampToValueAtTime(0.0001, now+0.06);
+      src.start(now);
+      _uiTone(ctx, now, 'sine', kind==='hover'?180:140, vol*0.3*(kind==='hover'?0.4:1), 0.05);
+    } else if(key === 'glass'){
+      // High-pitch sine blip with quick decay
+      const f = kind==='hover' ? 1600 : 1200;
+      _uiTone(ctx, now, 'sine', f, vol*(kind==='hover'?0.4:0.9), kind==='hover'?0.07:0.12);
+      if(kind==='click') _uiTone(ctx, now+0.02, 'sine', f*0.75, vol*0.4, 0.1);
+    } else if(key === 'plastic'){
+      // Mid-range soft click
+      const buf = ctx.createBuffer(1, ctx.sampleRate*0.025, ctx.sampleRate);
+      const data = buf.getChannelData(0);
+      for(let i=0;i<data.length;i++) data[i]=(Math.random()*2-1)*(1-i/data.length)**1.5;
+      const src = ctx.createBufferSource();
+      const filt = ctx.createBiquadFilter();
+      const g = ctx.createGain();
+      src.buffer=buf; filt.type='bandpass'; filt.frequency.value=1800; filt.Q.value=0.8;
+      src.connect(filt); filt.connect(g); g.connect(ctx.destination);
+      g.gain.setValueAtTime(vol*(kind==='hover'?0.3:0.75), now);
+      g.gain.exponentialRampToValueAtTime(0.0001, now+0.035);
+      src.start(now);
+    } else if(key === 'sine'){
+      // Smooth minimal blip
+      const f = kind==='hover' ? 540 : 480;
+      _uiTone(ctx, now, 'sine', f, vol*(kind==='hover'?0.25:0.6), kind==='hover'?0.06:0.1);
+    }
+  }).catch(()=>{});
+}
 let _audioCtx=null;
 function getAudioCtx(){
   if(!_audioCtx||_audioCtx.state==='closed'){
@@ -600,7 +690,8 @@ const INIT_SESSIONS=[];
 const INIT_CTXS=[];
 const INIT_SOUND_CFG={
   blockSound:'chime',blockVol:0.5,
-  idleSound:'nudge',idleVol:0.4,idleInterval:10,idleEnabled:true
+  idleSound:'nudge',idleVol:0.4,idleInterval:10,idleEnabled:true,
+  hoverSound:'clack',clickSound:'glass',uiVol:0.25,uiEnabled:true,
 };
 
 // ── THEMES ──
@@ -741,6 +832,16 @@ function App(){
   useEffect(()=>{pomoPhaseDoneRef.current=pomoPhaseDone;},[pomoPhaseDone]);
   useEffect(()=>{pomoCfgRef.current=pomoCfg;},[pomoCfg]);
   useEffect(()=>{pomoPhaseRef.current=pomoPhase;},[pomoPhase]);
+
+  // sync UI sound config into global (used by playUI outside React)
+  useEffect(()=>{
+    setUISoundCfg({
+      hoverSound:soundCfg.hoverSound||'clack',
+      clickSound:soundCfg.clickSound||'glass',
+      uiVol:soundCfg.uiVol!=null?soundCfg.uiVol:0.25,
+      uiEnabled:soundCfg.uiEnabled!==false,
+    });
+  },[soundCfg]);
 
   // persist
   useEffect(()=>save('chr4_proj',projects),[projects]);
@@ -979,8 +1080,8 @@ function App(){
         e('div',{className:'logo'},e('div',{className:'logo-gem'},'Ch'),' Chronos'),
         e('div',{className:'topbar-sep'}),
         e('div',{className:'topbar-nav'},
-          e('button',{className:`nav-btn${view==='workspace'?' active':''}`,onClick:()=>setView('workspace')},'Workspace'),
-          e('button',{className:`nav-btn${view==='analytics'?' active':''}`,onClick:()=>setView('analytics')},'Analíticas')
+          e('button',{className:`nav-btn${view==='workspace'?' active':''}`,onMouseEnter:()=>playUI('hover'),onClick:()=>{playUI('click');setView('workspace');}},'Workspace'),
+          e('button',{className:`nav-btn${view==='analytics'?' active':''}`,onMouseEnter:()=>playUI('hover'),onClick:()=>{playUI('click');setView('analytics');}},'Analíticas')
         ),
         e('div',{className:'topbar-right'},
           // idle reminder indicator
@@ -1041,7 +1142,7 @@ function App(){
                     const isSel=selProj===proj.id;
                     const showCtxStrip=expandCtx===proj.id&&st.lastCtx;
                     return e(React.Fragment,{key:proj.id},
-                      e('div',{className:`proj-item${isSel?' sel':''}${isLive?' live':''}`,onClick:()=>onProjClick(proj.id),onDoubleClick:ev=>onProjDbl(ev,proj.id)},
+                      e('div',{className:`proj-item${isSel?' sel':''}${isLive?' live':''}`,onMouseEnter:()=>playUI('hover'),onClick:()=>{playUI('click');onProjClick(proj.id);},onDoubleClick:ev=>onProjDbl(ev,proj.id)},
                         e('div',{className:'proj-icon-badge',style:{'--proj-color':proj.color}},
                           e(ProjIconSVG,{iconKey:proj.icon||DEFAULT_ICON,size:12,color:proj.color})
                         ),
@@ -1051,8 +1152,8 @@ function App(){
                           st.sessions>0&&e('span',{className:'proj-sess-chip'},st.sessions)
                         ),
                         e('div',{className:'proj-actions'},
-                          e('button',{className:'pa-btn go',onClick:ev=>{ev.stopPropagation();setStartFlow({projId:proj.id,mode:'ask'});}},isLive?'■':'▶'),
-                          e('button',{className:'pa-btn',onClick:ev=>{ev.stopPropagation();setEditProj(proj);}},'···')
+                          e('button',{className:'pa-btn go',onMouseEnter:()=>playUI('hover'),onClick:ev=>{ev.stopPropagation();playUI('click');setStartFlow({projId:proj.id,mode:'ask'});}},isLive?'■':'▶'),
+                          e('button',{className:'pa-btn',onMouseEnter:()=>playUI('hover'),onClick:ev=>{ev.stopPropagation();playUI('click');setEditProj(proj);}},'···')
                         )
                       ),
                       pct>0&&e('div',{className:'limit-bar',key:'bar_'+proj.id},e('div',{className:'limit-bar-fill',style:{width:pct+'%',background:barColor}})),
@@ -1095,8 +1196,8 @@ function App(){
           ?e(React.Fragment,null,
             // panel toggle tabs
             e('div',{style:{display:'flex',gap:1,padding:'6px 12px 0',flexShrink:0,borderBottom:'1px solid var(--border)'}},
-              e('button',{className:`nav-btn${rightPanel==='timer'?' active':''}`,onClick:()=>setRightPanel('timer')},'Timer'),
-              e('button',{className:`nav-btn${rightPanel==='focus'?' active':''}`,onClick:()=>setRightPanel('focus')},
+              e('button',{className:`nav-btn${rightPanel==='timer'?' active':''}`,onMouseEnter:()=>playUI('hover'),onClick:()=>{playUI('click');setRightPanel('timer');}},'Timer'),
+              e('button',{className:`nav-btn${rightPanel==='focus'?' active':''}`,onMouseEnter:()=>playUI('hover'),onClick:()=>{playUI('click');setRightPanel('focus');}},
                 'Foco hoy',
                 (intenciones[dayKey()]||[]).filter(i=>!i.done).length>0&&e('span',{style:{marginLeft:5,fontSize:9,background:'var(--accent)',color:'#fff',borderRadius:8,padding:'0 5px'}},
                   (intenciones[dayKey()]||[]).filter(i=>!i.done).length
@@ -1628,6 +1729,42 @@ function SoundCfgModal({cfg,onChange,onClose}){
             e('input',{className:'finput',type:'number',min:1,max:120,value:c.idleInterval,onChange:ev=>upd('idleInterval',parseInt(ev.target.value)||5)})
           ),
           e('div',{className:'hint-row'},'💡 Cuando no tengas una sesión activa, sonará cada '+c.idleInterval+' min. Puedes silenciarlo desde la topbar con "Silenciar" sin apagar el sistema.')
+        ),
+        e('div',{style:{height:1,background:'var(--border)',margin:'4px 0'}}),
+        // Section: UI micro-sounds
+        e('div',{style:{fontSize:10,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.8px',marginBottom:6,marginTop:4}},'Sonido de interfaz'),
+        e('div',{className:'fg'},
+          e('div',{className:'toggle-row'},
+            e('span',{className:'toggle-lbl'},'Activar sonidos al pasar el mouse y hacer click'),
+            e('div',{className:`toggle${c.uiEnabled!==false?' on':''}`,onClick:()=>upd('uiEnabled',c.uiEnabled===false)})
+          )
+        ),
+        c.uiEnabled!==false&&e(React.Fragment,null,
+          e('div',{style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}},
+            e('div',{className:'fg'},
+              e('label',{className:'flabel'},'Sonido al pasar el mouse'),
+              e('div',{className:'sound-row'},
+                e('select',{className:'fselect',style:{flex:1},value:c.hoverSound||'clack',onChange:ev=>upd('hoverSound',ev.target.value)},
+                  Object.entries(UI_SOUNDS).map(([k,s])=>e('option',{key:k,value:k},s.label))
+                ),
+                e('button',{className:'sound-play',onClick:()=>{const tmp={...c};setUISoundCfg({hoverSound:tmp.hoverSound||'clack',clickSound:tmp.clickSound||'glass',uiVol:tmp.uiVol!=null?tmp.uiVol:0.25,uiEnabled:true});playUI('hover');},title:'Probar'},'▶')
+              )
+            ),
+            e('div',{className:'fg'},
+              e('label',{className:'flabel'},'Sonido al hacer click'),
+              e('div',{className:'sound-row'},
+                e('select',{className:'fselect',style:{flex:1},value:c.clickSound||'glass',onChange:ev=>upd('clickSound',ev.target.value)},
+                  Object.entries(UI_SOUNDS).map(([k,s])=>e('option',{key:k,value:k},s.label))
+                ),
+                e('button',{className:'sound-play',onClick:()=>{const tmp={...c};setUISoundCfg({hoverSound:tmp.hoverSound||'clack',clickSound:tmp.clickSound||'glass',uiVol:tmp.uiVol!=null?tmp.uiVol:0.25,uiEnabled:true});playUI('click');},title:'Probar'},'▶')
+              )
+            )
+          ),
+          e('div',{className:'fg'},
+            e('label',{className:'flabel'},'Volumen de interfaz ({0}%)'.replace('{0}',Math.round((c.uiVol!=null?c.uiVol:0.25)*100))),
+            e('input',{type:'range',min:0,max:0.6,step:.025,value:c.uiVol!=null?c.uiVol:0.25,onChange:ev=>upd('uiVol',parseFloat(ev.target.value)),style:{width:'100%',accentColor:'var(--accent)'}})
+          ),
+          e('div',{className:'hint-row'},'Los sonidos de interfaz son suaves y no interrumpen el trabajo. Se activan en proyectos, botones y paneles.')
         )
       ),
       e('div',{className:'modal-foot'},
@@ -2137,9 +2274,9 @@ function FocusPanel({intenciones,setIntenciones,projects,selectedDay,onStartProj
                 ),
                 e('div',{className:'focus-card-intent'},item.text),
                 e('div',{className:'focus-card-actions'},
-                  e('button',{className:'focus-start-btn',onClick:()=>onStartProj(item.projId)},'▶ Iniciar sesión'),
-                  e('button',{className:'focus-done-btn',onClick:()=>markDone(globalIdx)},'✓ Listo'),
-                  e('button',{className:'focus-done-btn',style:{fontSize:10,color:'var(--amber)',borderColor:'var(--amber-border)'},onClick:()=>postponeItem(globalIdx)},'↷ Posponer')
+                  e('button',{className:'focus-start-btn',onMouseEnter:()=>playUI('hover'),onClick:()=>{playUI('click');onStartProj(item.projId);}},'▶ Iniciar sesión'),
+                  e('button',{className:'focus-done-btn',onMouseEnter:()=>playUI('hover'),onClick:()=>{playUI('click');markDone(globalIdx);}},'✓ Listo'),
+                  e('button',{className:'focus-done-btn',style:{fontSize:10,color:'var(--amber)',borderColor:'var(--amber-border)'},onMouseEnter:()=>playUI('hover'),onClick:()=>{playUI('click');postponeItem(globalIdx);}},'↷ Posponer')
                 )
               );
             })
