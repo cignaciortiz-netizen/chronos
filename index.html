@@ -12,10 +12,10 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
-  --bg0:#16161b;--bg1:#1c1c22;--bg2:#232329;--bg3:#2b2b33;--bg4:#34343d;--bg5:#3f3f4a;
-  --border:#ffffff14;--border2:#ffffff20;--border3:#ffffff2e;--border4:#ffffff40;
-  --text0:#f3f3f6;--text1:#cfcfd8;--text2:#93939f;--text3:#65656f;--text4:#48484f;
-  --accent:#7c6af7;--accent2:#a394ff;--accentd:#5a4bd4;--accent-bg:#7c6af714;--accent-border:#7c6af73a;
+  --bg0:#171717;--bg1:#1e1e1e;--bg2:#252525;--bg3:#2e2e2e;--bg4:#383838;--bg5:#444444;
+  --border:#f2562312;--border2:#f256231e;--border3:#f2562330;--border4:#ffffff40;
+  --text0:#dedede;--text1:#b8b8b8;--text2:#888888;--text3:#5a5a5a;--text4:#3e3e3e;
+  --accent:#f25623;--accent2:#ff7a50;--accentd:#c94010;--accent-bg:#f2562314;--accent-border:#f2562338;
   --green:#34c386;--green-bg:#34c38614;--green-border:#34c3863a;
   --amber:#dba14a;--amber-bg:#dba14a14;--amber-border:#dba14a3a;
   --red:#e6675f;--red-bg:#e6675f14;--red-border:#e6675f3a;
@@ -25,11 +25,11 @@
 html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family:'Inter',sans-serif;font-size:13px;line-height:1.5;overflow:hidden}
 
 /* CIERRE DÍA */
-.cierre-btn{background:var(--bg3);border:1px solid var(--border2);color:var(--text2);font-size:11px;font-family:'Inter',sans-serif;padding:3px 10px;border-radius:var(--r-sm);cursor:pointer;transition:all .12s;white-space:nowrap}
+.cierre-btn{width:28px;height:28px;border-radius:var(--r-md);border:1px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .12s;flex-shrink:0}
 .cierre-btn:hover{border-color:var(--border3);color:var(--text0)}
 /* GOOGLE SHEETS SYNC */
-.gs-btn{display:flex;align-items:center;gap:5px;background:var(--bg3);border:1px solid var(--border2);color:var(--text2);font-size:11px;font-family:'Inter',sans-serif;padding:3px 10px;border-radius:var(--r-sm);cursor:pointer;transition:all .12s;white-space:nowrap}
-.gs-btn:hover{border-color:var(--border3);color:var(--text0)}
+.gs-btn{width:28px;height:28px;border-radius:var(--r-md);border:1px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .12s;flex-shrink:0}
+.gs-btn:hover{background:var(--bg3);color:var(--text1);border-color:var(--border3)}
 .gs-btn.connected{border-color:var(--green-border);color:var(--green);background:var(--green-bg)}
 .gs-btn.syncing{border-color:var(--accent-border);color:var(--accent2);background:var(--accent-bg)}
 .gs-dot{width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0}
@@ -104,13 +104,18 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 @keyframes pa{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.8)}}
 .focus-pill-label{font-size:11px;color:var(--text2);max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .focus-pill-time{font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--accent2);font-weight:500}
+.tb-icon-btn{width:28px;height:28px;border-radius:var(--r-md);border:1px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .12s;flex-shrink:0}
+.tb-icon-btn:hover{background:var(--bg3);color:var(--text1);border-color:var(--border3)}
+.tb-icon-btn.tb-icon-active{color:var(--accent);border-color:var(--accent-border);background:var(--accent-bg)}
+.tb-icon-btn.tb-icon-syncing{color:var(--text2);border-color:var(--border2)}
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
 .tz-badge{font-size:10px;color:var(--text3);padding:2px 7px;border-radius:var(--r-sm);border:1px solid var(--border2);cursor:pointer;transition:all .1s}
 .tz-badge:hover{color:var(--text1);border-color:var(--border3)}
 /* idle reminder pill */
 .idle-pill{display:flex;align-items:center;gap:6px;background:var(--amber-bg);border:1px solid var(--amber-border);border-radius:20px;padding:3px 10px 3px 8px;cursor:pointer}
 .idle-pill-dot{width:5px;height:5px;border-radius:50%;background:var(--amber);animation:pa 1.4s ease-in-out infinite}
 .idle-pill-text{font-size:11px;color:var(--amber)}
-.idle-pill-stop{font-size:10px;color:var(--text3);margin-left:2px;padding:1px 5px;border-radius:3px;background:var(--bg3);border:none;cursor:pointer;font-family:'Inter',sans-serif}
+.idle-pill-stop{width:20px;height:20px;display:flex;align-items:center;justify-content:center;color:var(--text3);margin-left:2px;border-radius:3px;background:var(--bg3);border:none;cursor:pointer;font-family:'Inter',sans-serif}
 .idle-pill-stop:hover{color:var(--text0)}
 
 /* SECTION HDR */
@@ -125,23 +130,27 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .proj-list::-webkit-scrollbar{width:2px}
 .proj-list::-webkit-scrollbar-thumb{background:var(--bg5);border-radius:2px}
 .proj-group{margin-bottom:2px}
-.proj-group-hdr{display:flex;align-items:center;gap:6px;padding:6px 14px 3px;position:sticky;top:0;background:var(--bg0);z-index:2}
-.proj-group-label{font-size:9px;font-weight:600;color:var(--text4);text-transform:uppercase;letter-spacing:.8px;flex:1}
-.proj-item{display:flex;align-items:center;gap:7px;padding:4px 14px 4px 22px;cursor:pointer;transition:background .1s;user-select:none;position:relative;min-height:26px}
+.proj-group-hdr{display:flex;align-items:center;gap:6px;padding:6px 16px 2px;position:sticky;top:0;background:var(--bg0);z-index:2}
+.proj-group-label{font-size:9px;font-weight:600;color:var(--text4);text-transform:uppercase;letter-spacing:.8px;flex:1;padding-left:2px}
+.proj-item{display:flex;align-items:center;gap:7px;padding:4px 10px 4px 10px;cursor:pointer;transition:background .12s;user-select:none;position:relative;min-height:28px;margin:1px 6px;border-radius:7px}
 .proj-item:hover{background:var(--bg2)}
 .proj-item.sel{background:var(--bg2)}
-.proj-item.live{border-left:2px solid var(--accent);padding-left:20px}
+.proj-item.live .proj-label{color:var(--text0)}
+/* Stripe: 3px color bar on the left */
+.proj-stripe{width:3px;border-radius:2px;height:20px;flex-shrink:0;transition:height .12s}
+.proj-item:hover .proj-stripe,.proj-item.sel .proj-stripe,.proj-item.live .proj-stripe{height:26px}
 .proj-color{width:6px;height:6px;border-radius:50%;flex-shrink:0}
-.proj-icon-badge{width:20px;height:20px;border-radius:5px;flex-shrink:0;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;border:1px solid rgba(255,255,255,0.08)}
-.proj-icon-badge::before{content:'';position:absolute;inset:0;background:var(--proj-color,#888);opacity:.15;border-radius:inherit}
-.proj-label{font-size:11px;font-weight:500;color:var(--text1);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.proj-item.sel .proj-label,.proj-item.live .proj-label{color:var(--text0)}
+.proj-icon-badge{width:18px;height:18px;border-radius:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.proj-icon-badge::before{content:'';position:absolute;inset:0;background:var(--proj-color,#888);opacity:.14;border-radius:inherit}
+.proj-label{font-size:11px;font-weight:400;color:var(--text1);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.proj-item.sel .proj-label{color:var(--text0);font-weight:500}
 .proj-inline-meta{display:flex;align-items:center;gap:4px;flex-shrink:0}
-.proj-time-chip{font-size:9px;font-family:'JetBrains Mono',monospace;color:var(--text3)}
-.proj-sess-chip{font-size:8px;color:var(--text4);padding:0px 4px;border-radius:20px;background:var(--bg4)}
+.proj-time-chip{font-size:9.5px;font-family:'JetBrains Mono',monospace;color:var(--text3)}
+.proj-live-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0;background:var(--green,#2fb87a);box-shadow:0 0 4px var(--green,#2fb87a)}
+.proj-sess-chip{font-size:8px;color:var(--text4);padding:0 4px;border-radius:20px;background:var(--bg4)}
 .proj-cat-chip{display:none}
-.limit-bar{height:2px;margin:0 22px 2px;background:var(--bg3);border-radius:1px;overflow:hidden}
-.limit-bar-fill{height:100%;border-radius:1px;transition:width .4s}
+.limit-bar{display:none}
+.limit-bar-fill{display:none}
 /* hover actions — appear inline on hover */
 .proj-item .proj-actions{display:none;gap:3px;flex-shrink:0}
 .proj-item:hover .proj-actions,.proj-item.sel .proj-actions{display:flex}
@@ -732,6 +741,12 @@ const THEMES=[
     '--text0':'#e8eef5','--text1':'#bcc7d6','--text2':'#7e90ab','--text3':'#525f76','--text4':'#384357',
     '--accent':'#4a8ef5','--accent2':'#74aaff','--accentd':'#2a6ed4','--accent-bg':'#4a8ef514','--accent-border':'#4a8ef53a',
   }},
+  {id:'combustion',label:'Combustion',desc:'Negro puro con acento naranja industrial.',vars:{
+    '--bg0':'#171717','--bg1':'#1e1e1e','--bg2':'#252525','--bg3':'#2e2e2e','--bg4':'#383838','--bg5':'#444444',
+    '--border':'#f2562312','--border2':'#f256231e','--border3':'#f2562330',
+    '--text0':'#dedede','--text1':'#b8b8b8','--text2':'#888888','--text3':'#5a5a5a','--text4':'#3e3e3e',
+    '--accent':'#f25623','--accent2':'#ff7a50','--accentd':'#c94010','--accent-bg':'#f2562314','--accent-border':'#f2562338',
+  }},
 ];
 
 
@@ -744,7 +759,7 @@ function App(){
   const[ctxs,setCtxs]=useState(()=>load('chr4_ctxs',INIT_CTXS));
   const[pomoCfg,setPomoCfg]=useState(()=>load('chr4_pomo',{work:25,brk:5,mode:'25/5'}));
   const[soundCfg,setSoundCfg]=useState(()=>load('chr4_sound',INIT_SOUND_CFG));
-  const[themeCfg,setThemeCfg]=useState(()=>load('chr4_theme',{themeId:'obsidian',blockOpacity:0.45,blockStyle:'stripe',realStyle:'solid'}));
+  const[themeCfg,setThemeCfg]=useState(()=>load('chr4_theme',{themeId:'combustion',blockOpacity:0.45,blockStyle:'stripe',realStyle:'solid'}));
   const[tlZoom,setTlZoom]=useState(0.5);
   const[selectedDay,setSelectedDay]=useState(()=>dayKey());
 
@@ -1088,27 +1103,42 @@ function App(){
           showIdleReminder&&e('div',{className:'idle-pill'},
             e('div',{className:'idle-pill-dot'}),
             e('span',{className:'idle-pill-text'},'Sin sesión activa'),
-            e('button',{className:'idle-pill-stop',onClick:()=>setIdleSilenced(true),title:'Silenciar recordatorio'},'Silenciar')
+            e('button',{className:'idle-pill-stop',onClick:()=>setIdleSilenced(true),title:'Silenciar'},e('svg',{width:12,height:12,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2.5,strokeLinecap:'round',style:{display:'block'}},e('line',{x1:1,y1:1,x2:23,y2:23}),e('path',{d:'M9 9v3a3 3 0 005.12 2.12M15 9.34V4a3 3 0 00-5.94-.6'}),e('path',{d:'M17 16.95A7 7 0 015 12v-2m14 0v2a7 7 0 01-.11 1.23'}),e('line',{x1:12,y1:19,x2:12,y2:23}),e('line',{x1:8,y1:23,x2:16,y2:23})))
           ),
           tState!=='idle'&&activeProj&&e('div',{className:'focus-pill'},
             e('div',{className:'pulse-dot'}),
             e('span',{className:'focus-pill-label'},activeProj.name+(activeTask?' · '+activeTask.name:'')),
             e('span',{className:'focus-pill-time'},fmt(workElapsed))
           ),
-          e('button',{className:'cierre-btn',onClick:()=>setShowCierre(true),title:'Cerrar día y planificar mañana'},'🌙 Cerrar día'),
-          e('button',{
-            className:`gs-btn${sbStatus==='connected'?' connected':sbSyncing?' syncing':''}`,
-            onClick:()=>setShowSbModal(true),
-            title:'Sincronizar con Google Sheets'
-          },
-            e('div',{className:'gs-dot'}),
-            sbStatus==='connected'
-              ? (sbSyncing?e(React.Fragment,null,e('span',{className:'gs-spin'},'↻'),'Sincronizando…'):'☁ Sync ✓')
-              : '☁ Sync'
+          e('button',{className:'tb-icon-btn',onClick:()=>setShowCierre(true),title:'Cerrar día y planificar mañana'},
+            e('svg',{width:15,height:15,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round',style:{display:'block'}},
+              e('path',{d:'M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z'})
+            )
           ),
-          e('button',{className:'ghost-btn',onClick:()=>setShowThemeCfg(true),title:'Temas',style:{fontSize:13}},'◑'),
-          e('button',{className:'ghost-btn',onClick:()=>setShowSoundCfg(true),title:'Sonidos',style:{fontSize:14}},'♪'),
-          e('span',{className:'tz-badge',onClick:()=>setShowTZ(v=>!v)},sclOffset()+' Santiago')
+          e('button',{
+            className:'tb-icon-btn'+(sbStatus==='connected'?' tb-icon-active':sbSyncing?' tb-icon-syncing':''),
+            onClick:()=>setShowSbModal(true),
+            title:sbStatus==='connected'?(sbSyncing?'Sincronizando…':'Sincronizado'):'Conectar Google Sheets'
+          },
+            sbSyncing
+              ? e('svg',{width:15,height:15,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round',style:{display:'block',animation:'spin 1s linear infinite'}},
+                  e('path',{d:'M23 4v6h-6'}),e('path',{d:'M1 20v-6h6'}),e('path',{d:'M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15'})
+                )
+              : e('svg',{width:15,height:15,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round',style:{display:'block'}},
+                  e('polyline',{points:'22 12 18 12 15 21 9 3 6 12 2 12'})
+                )
+          ),
+          e('button',{className:'tb-icon-btn',onClick:()=>setShowThemeCfg(true),title:'Apariencia'},
+            e('svg',{width:15,height:15,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round',style:{display:'block'}},
+              e('circle',{cx:12,cy:12,r:10}),e('path',{d:'M12 2a10 10 0 010 20z'})
+            )
+          ),
+          e('button',{className:'tb-icon-btn',onClick:()=>setShowSoundCfg(true),title:'Sonidos'},
+            e('svg',{width:15,height:15,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round',style:{display:'block'}},
+              e('path',{d:'M9 18V5l12-2v13'}),e('circle',{cx:6,cy:18,r:3}),e('circle',{cx:18,cy:16,r:3})
+            )
+          ),
+          e('span',{className:'tz-badge',onClick:()=>setShowTZ(v=>!v),style:{display:'none'}},sclOffset()+' Santiago')
         )
       ),
 
@@ -1143,20 +1173,21 @@ function App(){
                     const showCtxStrip=expandCtx===proj.id&&st.lastCtx;
                     return e(React.Fragment,{key:proj.id},
                       e('div',{className:`proj-item${isSel?' sel':''}${isLive?' live':''}`,onMouseEnter:()=>playUI('hover'),onClick:()=>{playUI('click');onProjClick(proj.id);},onDoubleClick:ev=>onProjDbl(ev,proj.id)},
+                        e('div',{className:'proj-stripe',style:{background:proj.color}}),
                         e('div',{className:'proj-icon-badge',style:{'--proj-color':proj.color}},
-                          e(ProjIconSVG,{iconKey:proj.icon||DEFAULT_ICON,size:12,color:proj.color})
+                          e(ProjIconSVG,{iconKey:proj.icon||DEFAULT_ICON,size:11,color:proj.color})
                         ),
                         e('span',{className:'proj-label'},proj.name),
                         e('div',{className:'proj-inline-meta'},
                           todaySecs>0&&e('span',{className:'proj-time-chip'},fmtS(todaySecs)),
-                          st.sessions>0&&e('span',{className:'proj-sess-chip'},st.sessions)
+                          isLive&&e('span',{className:'proj-live-dot'})
                         ),
                         e('div',{className:'proj-actions'},
                           e('button',{className:'pa-btn go',onMouseEnter:()=>playUI('hover'),onClick:ev=>{ev.stopPropagation();playUI('click');setStartFlow({projId:proj.id,mode:'ask'});}},isLive?'■':'▶'),
                           e('button',{className:'pa-btn',onMouseEnter:()=>playUI('hover'),onClick:ev=>{ev.stopPropagation();playUI('click');setEditProj(proj);}},'···')
                         )
                       ),
-                      pct>0&&e('div',{className:'limit-bar',key:'bar_'+proj.id},e('div',{className:'limit-bar-fill',style:{width:pct+'%',background:barColor}})),
+
                       showCtxStrip&&e('div',{className:'ctx-strip',key:'ctx_'+proj.id},
                         e('div',{className:'ctx-eyebrow'},'Última sesión · '+new Date(st.lastCtx.createdAt).toLocaleDateString('es-CL',{weekday:'short',day:'numeric',month:'short'})),
                         e('div',{className:'ctx-grid'},
