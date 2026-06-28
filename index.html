@@ -111,6 +111,84 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
 .tz-badge{font-size:10px;color:var(--text3);padding:2px 7px;border-radius:var(--r-sm);border:1px solid var(--border2);cursor:pointer;transition:all .1s}
 .tz-badge:hover{color:var(--text1);border-color:var(--border3)}
+/* REMINDERS FLOAT PANEL */
+.rem-float{position:fixed;top:46px;right:10px;width:300px;background:var(--bg1);border:1px solid var(--border3);border-radius:var(--r-lg,10px);box-shadow:0 8px 32px #00000070;z-index:9000;display:flex;flex-direction:column;max-height:calc(100vh - 60px);overflow:hidden}
+.rem-float-hdr{display:flex;align-items:center;padding:9px 12px 8px;border-bottom:1px solid var(--border2);gap:6px;flex-shrink:0}
+.rem-float-title{font-size:11px;font-weight:600;color:var(--text0);flex:1}
+.rem-float-close{width:18px;height:18px;border-radius:4px;border:none;background:transparent;color:var(--text3);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px}
+.rem-float-close:hover{background:var(--bg3);color:var(--text1)}
+.rem-quick{padding:8px 10px;border-bottom:1px solid var(--border2);display:flex;flex-direction:column;gap:6px;flex-shrink:0;position:relative}
+.rem-quick-row{display:flex;align-items:center;gap:6px}
+.rem-q-input{flex:1;background:var(--bg2);border:1px solid var(--border3);border-radius:5px;padding:5px 8px;font-size:11px;color:var(--text0);outline:none;font-family:inherit}
+.rem-q-input:focus{border-color:var(--accent)}
+.rem-q-input::placeholder{color:var(--text4)}
+.rem-q-send{width:26px;height:26px;border-radius:5px;background:var(--accent);border:none;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:opacity .1s}
+.rem-q-send:hover{opacity:.85}
+/* Compact selector row (Propuesta B) */
+.rem-sel-row{display:flex;gap:5px;align-items:center}
+.rem-sel{display:flex;align-items:center;gap:4px;background:var(--bg2);border:1px solid var(--border2);border-radius:5px;padding:4px 7px;cursor:pointer;transition:border-color .1s;font-family:inherit;font-size:10px;color:var(--text1);white-space:nowrap;position:relative;user-select:none}
+.rem-sel:hover{border-color:var(--border3)}
+.rem-sel.open{border-color:var(--accent-border);background:var(--accent-bg)}
+.rem-sel.proj-sel{flex:1;min-width:0}
+.rem-sel-icon{font-size:11px;color:var(--text3);flex-shrink:0}
+.rem-sel-val{flex:1;overflow:hidden;text-overflow:ellipsis}
+.rem-sel-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.rem-sel-caret{font-size:9px;color:var(--text4);margin-left:1px;flex-shrink:0}
+/* Dropdown */
+.rem-dd{position:fixed;min-width:130px;background:var(--bg2);border:1px solid var(--border3);border-radius:var(--r-md);box-shadow:0 6px 24px #00000080;z-index:99999;padding:3px;display:flex;flex-direction:column;gap:1px;max-height:220px;overflow-y:auto}
+.rem-dd-item{display:flex;align-items:center;gap:6px;padding:5px 7px;border-radius:4px;cursor:pointer;font-size:10px;color:var(--text1);transition:background .1s;white-space:nowrap;background:none;border:none;font-family:inherit;width:100%;text-align:left}
+.rem-dd-item:hover{background:var(--bg3)}
+.rem-dd-item.active{color:var(--accent);background:var(--accent-bg)}
+.rem-dd-item-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+/* chips kept for nothing, remove usage in render but keep class inert */
+.rem-chips{display:none}
+.rem-chip{display:none}
+.rem-list{flex:1;overflow-y:auto;padding:6px 0}
+.rem-empty{padding:24px;text-align:center;font-size:11px;color:var(--text4)}
+.rem-section-lbl{font-size:9px;font-weight:600;color:var(--text4);text-transform:uppercase;letter-spacing:.07em;padding:4px 12px 2px}
+.rem-item{display:flex;align-items:center;gap:7px;padding:6px 12px;transition:background .1s}
+.rem-item:hover{background:var(--bg2)}
+.rem-item-stripe{width:3px;border-radius:2px;flex-shrink:0;height:20px}
+.rem-item-body{flex:1;min-width:0}
+.rem-item-title{font-size:11px;color:var(--text0);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rem-item-meta{font-size:9.5px;color:var(--text3);margin-top:1px;display:flex;align-items:center;gap:4px}
+.rem-item-meta.over{color:var(--red,#e05555)}
+.rem-overdue-dot{width:6px;height:6px;border-radius:50%;background:var(--red,#e05555);flex-shrink:0;animation:remPulse 1.2s infinite}
+@keyframes remPulse{0%,100%{opacity:1}50%{opacity:.3}}
+.rem-check{width:16px;height:16px;border-radius:4px;border:1px solid var(--border3);background:transparent;flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .1s}
+.rem-check:hover{border-color:var(--green,#3ab87a)}
+.rem-check.done{background:var(--green-bg,#3ab87a14);border-color:var(--green,#3ab87a)}
+.rem-del{width:16px;height:16px;border-radius:3px;border:none;background:transparent;color:var(--text4);cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .1s}
+.rem-item:hover .rem-del{opacity:1}
+.rem-del:hover{color:var(--red,#e05555)}
+/* ── Time Picker C: botón compacto → mini drum popup ── */
+.mini-drum-popup{background:var(--bg2);border:1px solid var(--accent-border);border-radius:8px;overflow:hidden;margin-top:4px;width:100%}
+.mini-drum-hdr{display:flex;gap:2px;padding:4px 6px;border-bottom:1px solid var(--border)}
+.mini-col-lbl{flex:1;font-size:8px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text4);text-align:center}
+.mini-drum-body{display:flex;height:110px}
+.mini-col{flex:1;overflow:hidden;position:relative;border-right:1px solid var(--border)}
+.mini-col:last-child{border-right:none}
+.mini-fade-t{position:absolute;top:0;left:0;right:0;height:32px;background:linear-gradient(to bottom,var(--bg2),transparent);z-index:2;pointer-events:none}
+.mini-fade-b{position:absolute;bottom:0;left:0;right:0;height:32px;background:linear-gradient(to top,var(--bg2),transparent);z-index:2;pointer-events:none}
+.mini-highlight{position:absolute;top:50%;left:3px;right:3px;height:26px;transform:translateY(-50%);border-top:1px solid var(--accent-border);border-bottom:1px solid var(--accent-border);border-radius:3px;z-index:1;pointer-events:none}
+.mini-list{display:flex;flex-direction:column;align-items:stretch;position:absolute;width:100%;transition:transform .12s ease}
+.mini-item{height:26px;line-height:26px;font-size:12px;color:var(--text3);flex-shrink:0;font-family:'JetBrains Mono',monospace;cursor:pointer;user-select:none;text-align:center;width:100%}
+.mini-item.sel{color:var(--accent2);font-weight:500}
+.mini-item.near{color:var(--text1)}
+.mini-drum-footer{padding:5px 8px;display:flex;justify-content:flex-end;border-top:1px solid var(--border)}
+.mini-ok{background:var(--accent);border:none;border-radius:4px;color:#fff;font-size:10px;font-weight:500;padding:3px 10px;cursor:pointer;font-family:'Inter',sans-serif}
+.mini-ok:hover{background:var(--accentd)}
+
+/* rem toast */
+.rem-toast{position:fixed;bottom:16px;right:16px;background:var(--bg2);border:1px solid var(--red,#e05555);border-radius:var(--r-lg,10px);padding:11px 13px;min-width:230px;max-width:280px;box-shadow:0 4px 24px #00000060;z-index:9999}
+.rem-toast-hdr{display:flex;align-items:center;gap:6px;margin-bottom:3px}
+.rem-toast-dot{width:7px;height:7px;border-radius:50%;background:var(--red,#e05555);flex-shrink:0}
+.rem-toast-title{font-size:11px;font-weight:600;color:var(--text0);flex:1}
+.rem-toast-x{background:none;border:none;color:var(--text3);cursor:pointer;font-size:12px;padding:0;line-height:1}
+.rem-toast-proj{font-size:10px;color:var(--text3);margin-bottom:6px}
+.rem-toast-actions{display:flex;gap:5px}
+.tb-icon-alert{color:var(--red,#e05555) !important;border-color:color-mix(in srgb,var(--red,#e05555) 35%,transparent) !important}
+
 /* idle reminder pill */
 .idle-pill{display:flex;align-items:center;gap:6px;background:var(--amber-bg);border:1px solid var(--amber-border);border-radius:20px;padding:3px 10px 3px 8px;cursor:pointer}
 .idle-pill-dot{width:5px;height:5px;border-radius:50%;background:var(--amber);animation:pa 1.4s ease-in-out infinite}
@@ -209,15 +287,16 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .tl-hour-line{flex:1;border-top:1px solid var(--border)}
 .tl-hour-line.maj{border-top-color:var(--border2)}
 /* plan block — full-width background zone with left accent border */
-.tl-plan{position:absolute;left:33px;right:6px;border-radius:3px;padding:3px 7px;font-size:9px;font-weight:500;letter-spacing:.25px;text-transform:uppercase;overflow:hidden;cursor:pointer;white-space:nowrap;text-overflow:ellipsis;transition:opacity .12s,filter .1s;border-left:2px solid}
-.tl-plan:hover{filter:brightness(1.15)}
-/* real block — compact inset bar with bold left accent and solid bg */
-.tl-real{position:absolute;left:42px;right:6px;border-radius:4px;padding:2px 7px 2px 8px;font-size:9px;font-weight:600;overflow:hidden;pointer-events:none;white-space:nowrap;text-overflow:ellipsis;border-left:3px solid;box-shadow:0 1px 5px #00000028}
+/* ── Timeline: barra de color plan (izq) + bloque real (der, pegado) ── */
+.tl-plan{position:absolute;left:33px;width:6px;border-radius:2px;padding:0;overflow:hidden;cursor:pointer;transition:opacity .12s,filter .1s;border-left:none;border-top:none;border-right:none;border-bottom:none}
+.tl-plan:hover{filter:brightness(1.3)}
+.tl-lane-div{display:none}
+.tl-real{position:absolute;left:43px;right:6px;border-radius:4px;padding:2px 7px 2px 8px;font-size:9px;font-weight:600;overflow:hidden;pointer-events:none;white-space:nowrap;text-overflow:ellipsis;border-left:3px solid}
 /* now line */
 .tl-now{position:absolute;left:30px;right:6px;height:1px;z-index:8;pointer-events:none;background:var(--red);opacity:.55}
 .tl-now::before{content:'';position:absolute;left:-3px;top:-2.5px;width:6px;height:6px;border-radius:50%;background:var(--red);opacity:1}
 /* double-click hint overlay */
-.tl-dclick-hint{position:absolute;left:36px;right:6px;border:1px dashed var(--accent);border-radius:3px;opacity:.4;pointer-events:none;background:var(--accent-bg)}
+.tl-dclick-hint{position:absolute;left:33px;width:18px;border:1px dashed var(--accent);border-radius:3px;opacity:.4;pointer-events:none;background:var(--accent-bg)}
 
 /* TIMER */
 .timer-top-bar{display:flex;align-items:center;padding:8px 20px;border-bottom:1px solid var(--border);gap:0;flex-shrink:0}
@@ -399,11 +478,16 @@ const SOUNDS={
 // Each has hover + click variants
 const UI_SOUNDS = {
   none:    { label: 'Ninguno' },
-  clack:   { label: 'Clack' },       // keyboard-like click
-  wood:    { label: 'Madera' },       // muted wood tap
-  glass:   { label: 'Cristal' },      // glassy ping
-  plastic: { label: 'Plástico' },     // soft plastic click
-  sine:    { label: 'Suave' },        // smooth sine blip
+  clack:   { label: 'Clack' },        // keyboard-like
+  wood:    { label: 'Madera' },        // muted wood tap
+  glass:   { label: 'Cristal' },       // glassy ping
+  plastic: { label: 'Plástico' },      // soft plastic
+  sine:    { label: 'Suave' },         // smooth sine blip
+  tick:    { label: 'Reloj' },         // clock tick
+  drop:    { label: 'Gota' },          // water drop
+  pop:     { label: 'Pop' },           // bubble pop
+  metal:   { label: 'Metal' },         // metallic ping
+  thump:   { label: 'Golpe' },         // deep thump
 };
 
 // Global UI sound config — read by playUI(), written by SoundCfgModal
@@ -481,6 +565,90 @@ function playUI(kind){ // kind: 'hover' | 'click'
       // Smooth minimal blip
       const f = kind==='hover' ? 540 : 480;
       _uiTone(ctx, now, 'sine', f, vol*(kind==='hover'?0.25:0.6), kind==='hover'?0.06:0.1);
+
+    } else if(key === 'tick'){
+      // Clock tick — two-layer noise transient, very short
+      const len = ctx.sampleRate * 0.018;
+      const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+      const d = buf.getChannelData(0);
+      for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*Math.exp(-i/(len*0.18));
+      const src=ctx.createBufferSource(), filt=ctx.createBiquadFilter(), g=ctx.createGain();
+      src.buffer=buf; filt.type='highpass'; filt.frequency.value=kind==='hover'?5000:4200;
+      src.connect(filt); filt.connect(g); g.connect(ctx.destination);
+      g.gain.setValueAtTime(vol*(kind==='hover'?0.5:0.9), now);
+      src.start(now);
+      // soft sub-click underneath
+      _uiTone(ctx, now, 'sine', kind==='hover'?800:600, vol*0.15, 0.015);
+
+    } else if(key === 'drop'){
+      // Water drop — fast pitch-drop sine
+      const osc=ctx.createOscillator(), g=ctx.createGain();
+      osc.connect(g); g.connect(ctx.destination);
+      osc.type='sine';
+      const f0=kind==='hover'?1400:1100, f1=kind==='hover'?600:400;
+      const dur=kind==='hover'?0.09:0.14;
+      osc.frequency.setValueAtTime(f0, now);
+      osc.frequency.exponentialRampToValueAtTime(f1, now+dur);
+      g.gain.setValueAtTime(vol*(kind==='hover'?0.35:0.75), now);
+      g.gain.exponentialRampToValueAtTime(0.0001, now+dur);
+      osc.start(now); osc.stop(now+dur);
+
+    } else if(key === 'pop'){
+      // Bubble pop — very short sine with hard attack
+      const osc=ctx.createOscillator(), g=ctx.createGain();
+      osc.connect(g); g.connect(ctx.destination);
+      osc.type='sine';
+      const f=kind==='hover'?320:220;
+      osc.frequency.setValueAtTime(f*2.5, now);
+      osc.frequency.exponentialRampToValueAtTime(f, now+0.025);
+      g.gain.setValueAtTime(vol*(kind==='hover'?0.4:0.85), now);
+      g.gain.exponentialRampToValueAtTime(0.0001, now+0.055);
+      osc.start(now); osc.stop(now+0.06);
+      // noise burst on click
+      if(kind==='click'){
+        const len=ctx.sampleRate*0.012, buf=ctx.createBuffer(1,len,ctx.sampleRate);
+        const d=buf.getChannelData(0);
+        for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*(1-i/d.length);
+        const src2=ctx.createBufferSource(), g2=ctx.createGain();
+        src2.buffer=buf; src2.connect(g2); g2.connect(ctx.destination);
+        g2.gain.setValueAtTime(vol*0.3, now); src2.start(now);
+      }
+
+    } else if(key === 'metal'){
+      // Metallic ping — triangle wave + detuned overtone
+      const dur=kind==='hover'?0.08:0.18;
+      const f=kind==='hover'?2200:1800;
+      _uiTone(ctx, now, 'triangle', f, vol*(kind==='hover'?0.3:0.7), dur);
+      _uiTone(ctx, now+0.004, 'triangle', f*1.34, vol*(kind==='hover'?0.12:0.3), dur*0.7);
+      // short noise transient attack
+      const len=ctx.sampleRate*0.008, buf=ctx.createBuffer(1,len,ctx.sampleRate);
+      const d=buf.getChannelData(0);
+      for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*(1-i/d.length);
+      const src=ctx.createBufferSource(), filt=ctx.createBiquadFilter(), g=ctx.createGain();
+      src.buffer=buf; filt.type='bandpass'; filt.frequency.value=3500; filt.Q.value=2;
+      src.connect(filt); filt.connect(g); g.connect(ctx.destination);
+      g.gain.setValueAtTime(vol*(kind==='hover'?0.2:0.5), now); src.start(now);
+
+    } else if(key === 'thump'){
+      // Deep thump — low sine with fast decay + body noise
+      const osc=ctx.createOscillator(), g=ctx.createGain();
+      osc.connect(g); g.connect(ctx.destination);
+      osc.type='sine';
+      const f=kind==='hover'?90:65;
+      osc.frequency.setValueAtTime(f*3, now);
+      osc.frequency.exponentialRampToValueAtTime(f, now+0.04);
+      g.gain.setValueAtTime(vol*(kind==='hover'?0.45:0.9), now);
+      g.gain.exponentialRampToValueAtTime(0.0001, now+(kind==='hover'?0.07:0.12));
+      osc.start(now); osc.stop(now+0.15);
+      // body noise
+      const len=ctx.sampleRate*0.05, buf=ctx.createBuffer(1,len,ctx.sampleRate);
+      const d=buf.getChannelData(0);
+      for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*(1-i/d.length)**1.5;
+      const src=ctx.createBufferSource(), filt=ctx.createBiquadFilter(), g2=ctx.createGain();
+      src.buffer=buf; filt.type='lowpass'; filt.frequency.value=200;
+      src.connect(filt); filt.connect(g2); g2.connect(ctx.destination);
+      g2.gain.setValueAtTime(vol*(kind==='hover'?0.2:0.5), now);
+      g2.gain.exponentialRampToValueAtTime(0.0001, now+0.05); src.start(now);
     }
   }).catch(()=>{});
 }
@@ -799,6 +967,10 @@ function App(){
   const[showCierre,setShowCierre]=useState(false);
   const[intenciones,setIntenciones]=useState(()=>load('chr4_intenciones',{})); // {YYYY-MM-DD: [{projId, text, done}]}
   const[rightPanel,setRightPanel]=useState('timer'); // 'timer' | 'focus'
+  const[reminders,setReminders]=useState(()=>load('chr4_reminders',[]));
+  const[showRemPanel,setShowRemPanel]=useState(false);
+  const[remToast,setRemToast]=useState(null);
+  const firedRemsRef=useRef(new Set());
   const[tick,setTick]=useState(0);
   // idle reminder
   const[idleSilenced,setIdleSilenced]=useState(false);
@@ -812,6 +984,28 @@ function App(){
   const sbSyncRef=useRef(null);
 
   useEffect(()=>{const id=setInterval(()=>setTick(t=>t+1),20000);return()=>clearInterval(id);},[]);
+
+  useEffect(()=>save('chr4_reminders',reminders),[reminders]);
+
+  useEffect(()=>{
+    function check(){
+      const now=Date.now();
+      setReminders(prev=>prev.map(r=>{
+        if(r.done||firedRemsRef.current.has(r.id)) return r;
+        if(r.dueAt&&now>=r.dueAt){
+          firedRemsRef.current.add(r.id);
+          const proj=projects.find(p=>p.id===r.projId);
+          playSound(soundCfg.remindSound||'bell',soundCfg.remindVol!=null?soundCfg.remindVol:0.6);
+          setRemToast({id:r.id,title:r.title,projName:proj?.name||'',color:proj?.color||'var(--accent)'});
+          return{...r,overdue:true};
+        }
+        return r;
+      }));
+    }
+    check();
+    const id=setInterval(check,30000);
+    return()=>clearInterval(id);
+  },[projects,soundCfg]);
 
   // SB: on connect, pull and restore remote data
   useEffect(()=>{
@@ -1128,6 +1322,18 @@ function App(){
                   e('polyline',{points:'22 12 18 12 15 21 9 3 6 12 2 12'})
                 )
           ),
+          e('button',{
+            className:'tb-icon-btn'+(reminders.some(r=>r.overdue&&!r.done)?' tb-icon-alert':''),
+            onClick:()=>setShowRemPanel(v=>!v),
+            title:'Recordatorios',
+            style:{position:'relative'}
+          },
+            e('svg',{width:15,height:15,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round',style:{display:'block'}},
+              e('path',{d:'M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9'}),
+              e('path',{d:'M13.73 21a2 2 0 01-3.46 0'})
+            ),
+            reminders.some(r=>r.overdue&&!r.done)&&e('span',{style:{position:'absolute',top:4,right:4,width:6,height:6,borderRadius:'50%',background:'var(--red,#e05555)',border:'1.5px solid var(--bg1)',pointerEvents:'none'}})
+          ),
           e('button',{className:'tb-icon-btn',onClick:()=>setShowThemeCfg(true),title:'Apariencia'},
             e('svg',{width:15,height:15,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round',style:{display:'block'}},
               e('circle',{cx:12,cy:12,r:10}),e('path',{d:'M12 2a10 10 0 010 20z'})
@@ -1315,6 +1521,19 @@ function App(){
     }),
     showSoundCfg&&e(SoundCfgModal,{cfg:soundCfg,onChange:c=>{setSoundCfg(c);save('chr4_sound',c);},onClose:()=>setShowSoundCfg(false)}),
     showThemeCfg&&e(ThemeCfgModal,{cfg:themeCfg,onChange:c=>{setThemeCfg(c);save('chr4_theme',c);},onClose:()=>setShowThemeCfg(false),tlZoom,setTlZoom}),
+    showRemPanel&&e(RemindersFloatPanel,{reminders,setReminders,projects,onClose:()=>setShowRemPanel(false)}),
+    remToast&&e('div',{className:'rem-toast'},
+      e('div',{className:'rem-toast-hdr'},
+        e('div',{className:'rem-toast-dot'}),
+        e('div',{className:'rem-toast-title'},remToast.title),
+        e('button',{className:'rem-toast-x',onClick:()=>setRemToast(null)},'✕')
+      ),
+      remToast.projName&&e('div',{className:'rem-toast-proj'},remToast.projName),
+      e('div',{className:'rem-toast-actions'},
+        e('button',{className:'btn btn-primary',style:{fontSize:10,padding:'3px 10px'},onClick:()=>{setReminders(rs=>rs.map(r=>r.id===remToast.id?{...r,done:true}:r));setRemToast(null);}},'✓ Listo'),
+        e('button',{className:'btn',style:{fontSize:10,padding:'3px 10px'},onClick:()=>{setShowRemPanel(true);setRemToast(null);}},'Ver')
+      )
+    ),
     // block reminder toast
     blockToast&&e('div',{className:'block-toast'},
       e('div',{className:'block-toast-row'},
@@ -1500,52 +1719,21 @@ function Timeline({blocks,setBlocks,realBlocks,liveBlock,projects,tasks,activeSe
             e('div',{className:`tl-hour-line${isMaj?' maj':''}`,style:{flex:1}})
           );
         }),
-        // planned blocks — multi-style rendering
+        // lane divider
+        e('div',{className:'tl-lane-div'}),
+        // planned blocks — barra de color sólida, sin texto
         blocksForDay(blocks,selectedDay).map(block=>{
           const c=block.color||'#888';
-          const bStyle=blockStyle||'stripe';
-          let bgStyle={};
-          if(bStyle==='stripe'){
-            bgStyle={
-              background:c+'0d',
-              backgroundImage:`repeating-linear-gradient(135deg,${c}22 0px,${c}22 1px,transparent 1px,transparent 8px)`,
-              borderLeftColor:c+'88',
-              borderTop:'1px solid '+c+'18',borderRight:'1px solid '+c+'0a',borderBottom:'1px solid '+c+'18',
-            };
-          } else if(bStyle==='solid'){
-            bgStyle={
-              background:c+'18',
-              borderLeftColor:c+'aa',
-              borderTop:'1px solid '+c+'22',borderRight:'none',borderBottom:'1px solid '+c+'22',
-            };
-          } else if(bStyle==='ghost'){
-            bgStyle={
-              background:'transparent',
-              borderLeft:'1px dashed '+c+'66',
-              borderTop:'1px dashed '+c+'22',borderRight:'none',borderBottom:'none',
-            };
-          } else if(bStyle==='pill'){
-            bgStyle={
-              left:'33px', right:'auto', width:4,
-              background:c,
-              borderLeft:'none',borderTop:'none',borderRight:'none',borderBottom:'none',
-              borderRadius:2,
-            };
-          }
-          const labelStyle=bStyle==='pill'?{display:'none'}:bStyle==='ghost'?{color:c+'88'}:{background:c+'16',borderRadius:2,padding:'0 3px',letterSpacing:'.3px'};
           return e('div',{key:block.id,className:'tl-plan',
             style:{
               top:top(block.startMin)+'px',
               height:ht(block.startMin,block.endMin)+'px',
-              color:c+'aa',
+              background:c,
               opacity:planOpacity,
-              ...bgStyle,
             },
             onDoubleClick:ev=>{ev.stopPropagation();onEditBlock(block);},
             onContextMenu:ev=>{ev.preventDefault();ev.stopPropagation();setCtxMenu({x:ev.clientX,y:ev.clientY,block});}
-          },
-            bStyle!=='pill'&&e('span',{style:labelStyle},block.label)
-          );
+          });
         }),
         // real session blocks — multi-style rendering
         allReal.map(sess=>{
@@ -1565,10 +1753,22 @@ function Timeline({blocks,setBlocks,realBlocks,liveBlock,projects,tasks,activeSe
             rBg={background:'transparent',borderLeftColor:c,borderTop:'none',borderRight:'none',borderBottom:'none'};
           } else if(rStyle==='glow'){
             rBg={background:c+'20',borderLeftColor:c,borderTop:'1px solid '+c+'33',borderRight:'none',borderBottom:'none',boxShadow:'0 0 8px '+c+'28,-2px 0 6px '+c+'44'};
+          } else if(rStyle==='line'){
+            // Solo línea superior + texto, sin fondo
+            rBg={background:'transparent',borderLeft:'none',borderTop:'1px solid '+c,borderRight:'none',borderBottom:'none'};
+          } else if(rStyle==='tag'){
+            // Pastilla de color solo en la esquina superior izquierda
+            rBg={background:'transparent',borderLeft:'none',borderTop:'none',borderRight:'none',borderBottom:'none',
+              outline:'none',boxShadow:'inset 3px 0 0 '+c+',inset 0 2px 0 '+c+'55'};
+          } else if(rStyle==='ink'){
+            // Texto con color, borde bottom sutil, sin fondo
+            rBg={background:'transparent',borderLeft:'none',borderTop:'none',borderRight:'none',
+              borderBottom:'1px solid '+c+'40'};
           }
           const label=(proj?.name||'')+(task?' · '+task.name:'');
+          const textColor=(rStyle==='line'||rStyle==='tag'||rStyle==='ink')?c:c;
           return e('div',{key:sess.id,className:'tl-real',
-            style:{top:top(sMin)+'px',height:ht(sMin,eMin)+'px',color:c,...rBg}
+            style:{top:top(sMin)+'px',height:ht(sMin,eMin)+'px',color:textColor,...rBg}
           },
             e('span',{style:{display:'inline-flex',alignItems:'center',gap:4}},
               sess.live&&e('span',{style:{width:5,height:5,borderRadius:'50%',background:c,display:'inline-block',flexShrink:0,animation:'pa 2s ease-in-out infinite'}}),
@@ -1807,6 +2007,341 @@ function SoundCfgModal({cfg,onChange,onClose}){
 }
 
 // ═══════════════════════════════════════════
+// REMINDERS FLOAT PANEL
+// ═══════════════════════════════════════════
+// Portal dropdown: renders into document.body to escape overflow:hidden
+function RemSelDropdown({anchorEl,children,alignRight}){
+  const[style,setStyle]=useState({visibility:'hidden'});
+  useEffect(()=>{
+    if(!anchorEl) return;
+    const r=anchorEl.getBoundingClientRect();
+    const base={position:'fixed',top:r.bottom+4,zIndex:99999};
+    setStyle(alignRight?{...base,right:window.innerWidth-r.right}:{...base,left:r.left});
+  },[anchorEl,alignRight]);
+  return ReactDOM.createPortal(e('div',{className:'rem-dd',style},children),document.body);
+}
+
+// ── Mini Drum Column (Opción C) ──────────────────────────────────
+function MiniDrumCol({items,selIdx,onChange,colRef}){
+  const H=26,pad=2;
+  const listRef=useRef(null);
+  const stateRef=useRef({cur:selIdx,dragging:false,startY:0,startIdx:0});
+  const onChangeRef=useRef(onChange);
+  const itemsRef=useRef(items);
+  useEffect(()=>{ onChangeRef.current=onChange; },[onChange]);
+  useEffect(()=>{ itemsRef.current=items; },[items]);
+
+  useEffect(()=>{
+    stateRef.current.cur=selIdx;
+    if(listRef.current) listRef.current.style.transform='translateY('+(-selIdx*H)+'px)';
+  },[selIdx]);
+
+  useEffect(()=>{
+    const col=colRef?colRef.current:null;
+    if(!col) return;
+    function snap(idx){
+      const clamped=Math.max(0,Math.min(itemsRef.current.length-1,idx));
+      stateRef.current.cur=clamped;
+      if(listRef.current) listRef.current.style.transform='translateY('+(-(clamped*H))+'px)';
+      onChangeRef.current(clamped);
+    }
+    function onMD(e){stateRef.current.dragging=true;stateRef.current.startY=e.clientY;stateRef.current.startIdx=stateRef.current.cur;e.preventDefault();}
+    function onMM(e){if(!stateRef.current.dragging)return;const dy=stateRef.current.startY-e.clientY;snap(Math.round(stateRef.current.startIdx+dy/H));}
+    function onMU(){stateRef.current.dragging=false;}
+    function onWH(e){e.preventDefault();snap(stateRef.current.cur+(e.deltaY>0?1:-1));}
+    col.addEventListener('mousedown',onMD);
+    window.addEventListener('mousemove',onMM);
+    window.addEventListener('mouseup',onMU);
+    col.addEventListener('wheel',onWH,{passive:false});
+    return()=>{col.removeEventListener('mousedown',onMD);window.removeEventListener('mousemove',onMM);window.removeEventListener('mouseup',onMU);col.removeEventListener('wheel',onWH);};
+  },[colRef]);
+
+  const pads=Array(pad).fill(null);
+  return e('div',{style:{display:'flex',flexDirection:'column',alignItems:'stretch',position:'absolute',width:'100%',transition:'transform .12s ease'},ref:listRef},
+    ...pads.map((_,i)=>e('div',{key:'pt'+i,className:'mini-item',style:{height:H,lineHeight:H+'px'}},' ')),
+    ...items.map((v,i)=>e('div',{key:v,className:'mini-item'+(i===selIdx?' sel':Math.abs(i-selIdx)===1?' near':''),style:{height:H,lineHeight:H+'px'}},v)),
+    ...pads.map((_,i)=>e('div',{key:'pb'+i,className:'mini-item',style:{height:H,lineHeight:H+'px'}},' '))
+  );
+}
+
+const DRUM_HOURS=['06','07','08','09','10','11','12','13','14','15','16','17','18','19','20','21'];
+const DRUM_MINS=['00','05','10','15','20','25','30','45'];
+
+function RemindersFloatPanel({reminders,setReminders,projects,onClose}){
+  const[qTitle,setQTitle]=useState('');
+  const[qTime,setQTime]=useState('09:00');
+  const[qProjId,setQProjId]=useState('');
+  const[openDd,setOpenDd]=useState(null);
+  const[drumH,setDrumH]=useState(3);
+  const[drumM,setDrumM]=useState(0);
+  // Fecha drum — día y mes independientes
+  const _initDate=(()=>{const t=new Date();t.setDate(t.getDate()+1);return t;})();
+  const[drumDay,setDrumDay]=useState(_initDate.getDate()-1);   // 0-based index → día 1-31
+  const[drumMonth,setDrumMonth]=useState(_initDate.getMonth()); // 0-based index → mes 0-11
+  const panelRef=useRef(null);
+  const projEl=useRef(null);
+  const dateEl=useRef(null);
+  const timeEl=useRef(null);
+  const miniColHRef=useRef(null);
+  const miniColMRef=useRef(null);
+  const miniColDRef=useRef(null);
+  const miniColMoRef=useRef(null);
+
+  useEffect(()=>{
+    function h(ev){
+      const inPanel=panelRef.current&&panelRef.current.contains(ev.target);
+      const inDd=ev.target.closest('.rem-dd');
+      if(!inPanel&&!inDd) onClose();
+    }
+    setTimeout(()=>document.addEventListener('mousedown',h),0);
+    return()=>document.removeEventListener('mousedown',h);
+  },[onClose]);
+
+  useEffect(()=>{
+    if(!openDd) return;
+    function h(ev){
+      const inPanel=panelRef.current&&panelRef.current.contains(ev.target);
+      const inDd=ev.target.closest('.rem-dd');
+      const onSel=ev.target.closest('.rem-sel');
+      const inDrum=ev.target.closest('.mini-drum-popup');
+      if(!inDd&&!inDrum&&(!inPanel||!onSel)) setOpenDd(null);
+    }
+    document.addEventListener('mousedown',h,true);
+    return()=>document.removeEventListener('mousedown',h,true);
+  },[openDd]);
+
+  function toggleDd(name,el){
+    if(openDd===name){setOpenDd(null);return;}
+    setOpenDd(name);
+  }
+
+  function computeDueAt(){
+    const base=new Date();
+    base.setMonth(drumMonth,drumDay+1);
+    if(base<new Date()) base.setFullYear(base.getFullYear()+1);
+    const[h,m]=(qTime||'09:00').split(':').map(Number);
+    base.setHours(h||9,m||0,0,0);
+    return base.getTime();
+  }
+
+  function addReminder(){
+    if(!qTitle.trim()) return;
+    const dueAt=computeDueAt();
+    const r={id:uid(),title:qTitle.trim(),projId:qProjId||null,dueAt,done:false,overdue:false,createdAt:Date.now()};
+    setReminders(prev=>[r,...prev]);
+    setQTitle('');
+    setOpenDd(null);
+  }
+
+  function toggleDone(id){
+    setReminders(prev=>prev.map(r=>r.id===id?{...r,done:!r.done,overdue:r.done?r.overdue:false}:r));
+  }
+
+  function deleteRem(id){setReminders(prev=>prev.filter(r=>r.id!==id));}
+
+  function fmtDue(ts){
+    if(!ts) return '—';
+    const d=new Date(ts);
+    const now=new Date();
+    const diffH=(ts-Date.now())/3600000;
+    if(diffH<0) return 'Vencido · '+d.toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'});
+    if(diffH<24&&d.getDate()===now.getDate()) return 'Hoy '+d.toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'});
+    const tom=new Date(now); tom.setDate(now.getDate()+1);
+    if(d.getDate()===tom.getDate()&&d.getMonth()===tom.getMonth()) return 'Mañana '+d.toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'});
+    return d.toLocaleDateString('es-CL',{day:'numeric',month:'short'})+' '+d.toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'});
+  }
+
+  const pending=reminders.filter(r=>!r.done).sort((a,b)=>(a.dueAt||0)-(b.dueAt||0));
+  const done=reminders.filter(r=>r.done);
+  const overdueCount=pending.filter(r=>r.overdue).length;
+
+  const DATE_OPTS=[{k:'today',label:'Hoy'},{k:'tomorrow',label:'Mañana'},{k:'week',label:'+1 semana'}];
+  const TIME_OPTS=['08:00','09:00','10:00','12:00','15:00','18:00','20:00'];
+  const DRUM_DAYS=Array.from({length:31},(_,i)=>String(i+1).padStart(2,'0'));
+  const DRUM_MONTHS=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  const selDateLabel=DRUM_DAYS[drumDay]+' '+DRUM_MONTHS[drumMonth];
+  const activeProjs=projects.filter(p=>p.status!=='archived');
+  const selProj=activeProjs.find(p=>p.id===qProjId);
+  const chevron=e('svg',{width:8,height:8,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2.5,strokeLinecap:'round',style:{display:'block',flexShrink:0}},e('polyline',{points:'6 9 12 15 18 9'}));
+
+  return e('div',{className:'rem-float',ref:panelRef},
+    e('div',{className:'rem-float-hdr'},
+      e('span',{className:'rem-float-title'},
+        'Recordatorios',
+        overdueCount>0&&e('span',{style:{marginLeft:6,fontSize:9,background:'var(--red,#e05555)',color:'#fff',borderRadius:6,padding:'1px 5px'}},overdueCount)
+      ),
+      e('button',{className:'rem-float-close',onClick:onClose},'✕')
+    ),
+
+    e('div',{className:'rem-quick'},
+      e('div',{className:'rem-quick-row'},
+        e('input',{
+          className:'rem-q-input',
+          placeholder:'Nuevo recordatorio...',
+          value:qTitle,
+          autoFocus:true,
+          onChange:ev=>setQTitle(ev.target.value),
+          onKeyDown:ev=>{if(ev.key==='Enter')addReminder();}
+        }),
+        e('button',{className:'rem-q-send',onClick:addReminder,title:'Agregar'},
+          e('svg',{width:12,height:12,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2.5,strokeLinecap:'round',style:{display:'block'}},
+            e('line',{x1:12,y1:19,x2:12,y2:5}),e('polyline',{points:'5 12 12 5 19 12'})
+          )
+        )
+      ),
+      e('div',{className:'rem-sel-row'},
+        // Proyecto
+        e('div',{
+          ref:projEl,
+          className:'rem-sel'+(openDd==='proj'?' open':''),
+          style:{flex:1},
+          onClick:()=>toggleDd('proj')
+        },
+          selProj
+            ?e('span',{className:'rem-sel-dot',style:{background:selProj.color}})
+            :e('svg',{width:11,height:11,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',style:{display:'block',flexShrink:0,color:'var(--text3)'}},e('rect',{x:2,y:7,width:20,height:14,rx:2}),e('path',{d:'M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2'})),
+          e('span',{className:'rem-sel-val'},selProj?selProj.name:'Proyecto'),
+          chevron
+        ),
+        // Fecha — botón compacto (mismo estilo Opción C)
+        e('div',{
+          ref:dateEl,
+          className:'rem-sel'+(openDd==='date'?' open':''),
+          onClick:()=>toggleDd('date'),
+          style:{color:openDd==='date'?'var(--accent2)':undefined}
+        },
+          e('svg',{width:11,height:11,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',style:{display:'block',flexShrink:0,color:openDd==='date'?'var(--accent2)':'var(--text3)'}},e('rect',{x:3,y:4,width:18,height:18,rx:2}),e('line',{x1:16,y1:2,x2:16,y2:6}),e('line',{x1:8,y1:2,x2:8,y2:6}),e('line',{x1:3,y1:10,x2:21,y2:10})),
+          e('span',{className:'rem-sel-val',style:{color:openDd==='date'?'var(--accent2)':undefined}},selDateLabel),
+          chevron
+        ),
+        // Hora — botón compacto (Opción C)
+        e('div',{
+          ref:timeEl,
+          className:'rem-sel'+(openDd==='time'?' open':''),
+          onClick:()=>toggleDd('time'),
+          style:{color:openDd==='time'?'var(--accent2)':undefined}
+        },
+          e('svg',{width:11,height:11,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',style:{display:'block',flexShrink:0,color:openDd==='time'?'var(--accent2)':'var(--text3)'}},e('circle',{cx:12,cy:12,r:10}),e('polyline',{points:'12 6 12 12 16 14'})),
+          e('span',{className:'rem-sel-val',style:{color:openDd==='time'?'var(--accent2)':undefined}},qTime),
+          chevron
+        )
+      ),
+      // Mini drum popup de fecha — inline bajo la fila de selectors
+      openDd==='date'&&e('div',{className:'mini-drum-popup'},
+        e('div',{className:'mini-drum-hdr'},
+          e('div',{className:'mini-col-lbl'},'Día'),
+          e('div',{className:'mini-col-lbl'},'Mes')
+        ),
+        e('div',{className:'mini-drum-body'},
+          e('div',{className:'mini-col',ref:miniColDRef},
+            e('div',{className:'mini-fade-t'}),
+            e('div',{className:'mini-fade-b'}),
+            e('div',{className:'mini-highlight'}),
+            e(MiniDrumCol,{items:DRUM_DAYS,selIdx:drumDay,onChange:setDrumDay,colRef:miniColDRef})
+          ),
+          e('div',{className:'mini-col',ref:miniColMoRef},
+            e('div',{className:'mini-fade-t'}),
+            e('div',{className:'mini-fade-b'}),
+            e('div',{className:'mini-highlight'}),
+            e(MiniDrumCol,{items:DRUM_MONTHS,selIdx:drumMonth,onChange:setDrumMonth,colRef:miniColMoRef})
+          )
+        ),
+        e('div',{className:'mini-drum-footer'},
+          e('button',{className:'mini-ok',onClick:()=>setOpenDd(null)},'Listo')
+        )
+      ),
+      // Mini drum popup de hora (Opción C) — inline bajo la fila de selectors
+      openDd==='time'&&e('div',{className:'mini-drum-popup'},
+        e('div',{className:'mini-drum-hdr'},
+          e('div',{className:'mini-col-lbl'},'Hora'),
+          e('div',{className:'mini-col-lbl'},'Min')
+        ),
+        e('div',{className:'mini-drum-body'},
+          e('div',{className:'mini-col',ref:miniColHRef},
+            e('div',{className:'mini-fade-t'}),
+            e('div',{className:'mini-fade-b'}),
+            e('div',{className:'mini-highlight'}),
+            e(MiniDrumCol,{items:DRUM_HOURS,selIdx:drumH,onChange:setDrumH,colRef:miniColHRef})
+          ),
+          e('div',{className:'mini-col',ref:miniColMRef},
+            e('div',{className:'mini-fade-t'}),
+            e('div',{className:'mini-fade-b'}),
+            e('div',{className:'mini-highlight'}),
+            e(MiniDrumCol,{items:DRUM_MINS,selIdx:drumM,onChange:setDrumM,colRef:miniColMRef})
+          )
+        ),
+        e('div',{className:'mini-drum-footer'},
+          e('button',{className:'mini-ok',onClick:()=>{
+            const val=DRUM_HOURS[drumH]+':'+DRUM_MINS[drumM];
+            setQTime(val);
+            setOpenDd(null);
+          }},'Listo')
+        )
+      ),
+      // Portal dropdown — proyecto
+      openDd==='proj'&&e(RemSelDropdown,{anchorEl:projEl.current,alignRight:false},
+        e('button',{className:'rem-dd-item'+(qProjId===''?' active':''),onClick:()=>{setQProjId('');setOpenDd(null);}},
+          e('span',{style:{width:5,height:5,borderRadius:'50%',background:'var(--text4)',display:'inline-block',flexShrink:0}}),
+          'Sin proyecto'
+        ),
+        activeProjs.map(p=>e('button',{key:p.id,className:'rem-dd-item'+(qProjId===p.id?' active':''),onClick:()=>{setQProjId(p.id);setOpenDd(null);}},
+          e('span',{className:'rem-dd-item-dot',style:{background:p.color}}),p.name
+        ))
+      ),
+      openDd==='date'&&false // fecha usa mini drum inline (ver arriba)
+          ),
+
+    // List
+    e('div',{className:'rem-list'},
+      pending.length===0&&done.length===0&&e('div',{className:'rem-empty'},'Sin recordatorios'),
+      pending.length>0&&e(React.Fragment,null,
+        e('div',{className:'rem-section-lbl'},'Pendientes'),
+        pending.map(r=>{
+          const proj=projects.find(p=>p.id===r.projId);
+          return e('div',{key:r.id,className:'rem-item'},
+            e('div',{className:'rem-check'+(r.done?' done':''),onClick:()=>toggleDone(r.id)},
+              e('svg',{width:9,height:9,viewBox:'0 0 24 24',fill:'none',stroke:'var(--green,#3ab87a)',strokeWidth:3,strokeLinecap:'round',style:{display:'block',opacity:r.done?1:0}},
+                e('polyline',{points:'20 6 9 17 4 12'})
+              )
+            ),
+            e('div',{className:'rem-item-stripe',style:{background:proj?.color||'var(--text4)'}}),
+            e('div',{className:'rem-item-body'},
+              e('div',{className:'rem-item-title'},r.title),
+              e('div',{className:'rem-item-meta'+(r.overdue?' over':'')},
+                proj&&e('span',null,proj.name),
+                proj&&e('span',null,'·'),
+                e('span',null,fmtDue(r.dueAt))
+              )
+            ),
+            r.overdue&&e('div',{className:'rem-overdue-dot'}),
+            e('button',{className:'rem-del',onClick:()=>deleteRem(r.id),title:'Eliminar'},'✕')
+          );
+        })
+      ),
+      done.length>0&&e(React.Fragment,null,
+        e('div',{className:'rem-section-lbl'},'Completados'),
+        done.slice(0,3).map(r=>{
+          const proj=projects.find(p=>p.id===r.projId);
+          return e('div',{key:r.id,className:'rem-item',style:{opacity:.45}},
+            e('div',{className:'rem-check done',onClick:()=>toggleDone(r.id)},
+              e('svg',{width:9,height:9,viewBox:'0 0 24 24',fill:'none',stroke:'var(--green,#3ab87a)',strokeWidth:3,strokeLinecap:'round',style:{display:'block'}},
+                e('polyline',{points:'20 6 9 17 4 12'})
+              )
+            ),
+            e('div',{className:'rem-item-stripe',style:{background:'var(--text4)'}}),
+            e('div',{className:'rem-item-body'},
+              e('div',{className:'rem-item-title',style:{textDecoration:'line-through'}},r.title),
+              proj&&e('div',{className:'rem-item-meta'},proj.name)
+            ),
+            e('button',{className:'rem-del',onClick:()=>deleteRem(r.id),title:'Eliminar'},'✕')
+          );
+        })
+      )
+    )
+  );
+}
+
+// ═══════════════════════════════════════════
 // THEME CONFIG MODAL
 // ═══════════════════════════════════════════
 function ThemeCfgModal({cfg,onChange,onClose,tlZoom,setTlZoom}){
@@ -1822,10 +2357,13 @@ function ThemeCfgModal({cfg,onChange,onClose,tlZoom,setTlZoom}){
     {k:'pill',label:'Pill',desc:'Barra lateral delgada'},
   ];
   const REAL_STYLES=[
-    {k:'solid',label:'Sólido',desc:'Fondo con acento'},
+    {k:'solid',label:'Sólido',desc:'Fondo semitransparente'},
     {k:'filled',label:'Relleno',desc:'Más opaco y visible'},
     {k:'minimal',label:'Minimal',desc:'Solo borde izquierdo'},
     {k:'glow',label:'Glow',desc:'Con halo de color'},
+    {k:'line',label:'Línea',desc:'Solo trazo superior'},
+    {k:'tag',label:'Tag',desc:'Esquina marcada, sin fondo'},
+    {k:'ink',label:'Ink',desc:'Texto con subrayado sutil'},
   ];
 
   function preview(id){
