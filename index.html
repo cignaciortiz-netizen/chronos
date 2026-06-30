@@ -236,6 +236,8 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .pa-btn:hover{background:var(--bg4);color:var(--text1);border-color:var(--border3)}
 .pa-btn.go{border-color:var(--accent-border);color:var(--accent2)}
 .pa-btn.go:hover{background:var(--accent-bg);border-color:var(--accent)}
+.proj-habit-bell{width:18px;height:18px;border-radius:var(--r-sm);border:1px solid var(--red-border,#e6675f3a);background:var(--red-bg,#e6675f14);color:var(--red,#e6675f);display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;transition:all .12s}
+.proj-habit-bell:hover{background:var(--red,#e6675f);color:#fff}
 /* ctx strip — compact */
 .ctx-strip{padding:4px 14px 6px 22px;background:var(--bg0);border-bottom:1px solid var(--border)}
 .ctx-eyebrow{font-size:9px;color:var(--text4);text-transform:uppercase;letter-spacing:.7px;margin-bottom:3px}
@@ -1497,6 +1499,7 @@ function App(){
                     const barColor=pct>=100?'var(--red)':pct>70?'var(--amber)':'var(--green)';
                     const isLive=activeSess?.projectId===proj.id&&tState!=='idle';
                     const isSel=selProj===proj.id;
+                    const habitRem=reminders.find(r=>r.habitId&&!r.done&&r.projId===proj.id);
                     const showCtxStrip=expandCtx===proj.id&&st.lastCtx;
                     return e(React.Fragment,{key:proj.id},
                       e('div',{className:`proj-item${isSel?' sel':''}${isLive?' live':''}`,onMouseEnter:()=>playUI('hover'),onClick:()=>{playUI('click');onProjClick(proj.id);},onDoubleClick:ev=>onProjDbl(ev,proj.id)},
@@ -1508,6 +1511,9 @@ function App(){
                         e('div',{className:'proj-inline-meta'},
                           todaySecs>0&&e('span',{className:'proj-time-chip'},fmtS(todaySecs)),
                           isLive&&e('span',{className:'proj-live-dot'})
+                        ),
+                        habitRem&&e('div',{className:'proj-habit-bell',title:'Hábito: '+habitRem.title,onClick:ev=>{ev.stopPropagation();playUI('click');setShowRemPanel(true);}},
+                          e(BellIcon,{active:true,size:11,color:'currentColor'})
                         ),
                         e('div',{className:'proj-actions'},
                           e('button',{className:'pa-btn go',onMouseEnter:()=>playUI('hover'),onClick:ev=>{ev.stopPropagation();playUI('click');setStartFlow({projId:proj.id,mode:'ask'});}},isLive?'■':'▶'),
