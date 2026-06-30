@@ -448,6 +448,20 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .toggle::after{content:'';position:absolute;top:2px;left:2px;width:10px;height:10px;border-radius:50%;background:#fff;transition:left .15s}
 .toggle.on::after{left:16px}
 .hint-row{font-size:10px;color:var(--text4);line-height:1.5;padding:6px 8px;background:var(--bg3);border-radius:var(--r-sm)}
+/* HABITS */
+.habit-tabs{display:flex;gap:4px;background:var(--bg1);border-radius:var(--r-md);padding:3px}
+.habit-tab{flex:1;background:transparent;border:none;border-radius:5px;color:var(--text3);font-size:11px;padding:7px 0;cursor:pointer;font-family:'Inter',sans-serif;transition:all .12s}
+.habit-tab.on{background:var(--accent-bg);color:var(--accent2)}
+.rec-mode-row{display:flex;gap:5px}
+.rec-mode-btn{flex:1;background:transparent;border:1px solid var(--border2);border-radius:var(--r-md);color:var(--text2);font-size:10.5px;padding:7px 0;cursor:pointer;font-family:'Inter',sans-serif;transition:all .12s}
+.rec-mode-btn.on{background:var(--accent-bg);border-color:var(--accent-border);color:var(--accent2)}
+.day-chip-row{display:flex;gap:5px}
+.day-chip{width:26px;height:26px;border-radius:50%;border:1px solid var(--border2);color:var(--text3);font-size:10px;line-height:24px;text-align:center;cursor:pointer;transition:all .12s;flex-shrink:0}
+.day-chip.on{background:var(--accent-bg);border-color:var(--accent-border);color:var(--accent2)}
+.habit-row{display:flex;align-items:center;gap:10px;padding:8px 2px;cursor:pointer;border-radius:var(--r-sm);transition:background .1s}
+.habit-row:hover{background:var(--bg3)}
+.habit-add-btn{width:100%;margin-top:4px;background:transparent;border:1px dashed var(--border3);border-radius:var(--r-md);color:var(--text3);font-size:11px;padding:8px 0;font-family:'Inter',sans-serif;cursor:pointer;transition:all .12s}
+.habit-add-btn:hover{color:var(--text1);border-color:var(--border4)}
 </style>
 </head>
 <body>
@@ -918,6 +932,78 @@ const THEMES=[
 ];
 
 
+// ═══════════════════════════════════════════
+// HABITS — recurrence helpers
+// ═══════════════════════════════════════════
+const WEEK_DAYS=[
+  {k:'mon',l:'L',full:'lunes'},{k:'tue',l:'M',full:'martes'},{k:'wed',l:'X',full:'miércoles'},
+  {k:'thu',l:'J',full:'jueves'},{k:'fri',l:'V',full:'viernes'},{k:'sat',l:'S',full:'sábado'},{k:'sun',l:'D',full:'domingo'}
+];
+const DOW_KEYS=['sun','mon','tue','wed','thu','fri','sat']; // matches Date.getDay()
+const ORDINAL_LABELS={1:'primer',2:'segundo',3:'tercer',4:'cuarto',last:'último'};
+const ORDINAL_SHORT={1:'1er',2:'2do',3:'3er',4:'4to',last:'Últ.'};
+
+function nthWeekdayInfo(date){
+  const d=date.getDate();
+  const ordinal=Math.ceil(d/7);
+  const lastDateOfMonth=new Date(date.getFullYear(),date.getMonth()+1,0).getDate();
+  const isLast=(d+7)>lastDateOfMonth;
+  return{ordinal,isLast};
+}
+
+function habitOccursOn(habit,date){
+  const r=habit.recurrence||{};
+  if(r.type==='weekly') return (r.days||[]).includes(DOW_KEYS[date.getDay()]);
+  if(r.type==='monthly_date'){
+    if(r.day==='last'){
+      const lastDate=new Date(date.getFullYear(),date.getMonth()+1,0).getDate();
+      return date.getDate()===lastDate;
+    }
+    return date.getDate()===Number(r.day);
+  }
+  if(r.type==='monthly_ordinal'){
+    if(DOW_KEYS[date.getDay()]!==r.weekday) return false;
+    const{ordinal,isLast}=nthWeekdayInfo(date);
+    return r.ordinal==='last'?isLast:ordinal===Number(r.ordinal);
+  }
+  return false;
+}
+
+function habitDaysLabel(h){
+  const r=h.recurrence||{};
+  if(r.type==='weekly'){
+    if(!(r.days||[]).length) return '—';
+    return WEEK_DAYS.filter(w=>r.days.includes(w.k)).map(w=>w.l).join(' · ');
+  }
+  if(r.type==='monthly_date') return r.day==='last'?'Último día':'Día '+r.day;
+  if(r.type==='monthly_ordinal'){
+    const wd=WEEK_DAYS.find(w=>w.k===r.weekday);
+    return (ORDINAL_SHORT[r.ordinal]||r.ordinal)+' '+(wd?wd.l:'');
+  }
+  return '—';
+}
+
+function habitSummary(rec,time){
+  if(rec.type==='weekly'){
+    if(!(rec.days||[]).length) return 'Elige al menos un día';
+    const lbl=WEEK_DAYS.filter(w=>rec.days.includes(w.k)).map(w=>w.full).join(', ');
+    return 'Se repite '+lbl+', a las '+time;
+  }
+  if(rec.type==='monthly_date'){
+    return (rec.day==='last'?'El último día de cada mes':'El día '+rec.day+' de cada mes')+', a las '+time;
+  }
+  const wd=WEEK_DAYS.find(w=>w.k===rec.weekday);
+  return 'El '+(ORDINAL_LABELS[rec.ordinal]||rec.ordinal)+' '+(wd?wd.full:'')+' de cada mes, a las '+time;
+}
+
+function BellIcon({active,size=13,color}){
+  return e('svg',{width:size,height:size,viewBox:'0 0 24 24',fill:'none',stroke:color||(active?'var(--accent2)':'var(--text4)'),strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round',style:{display:'block',flexShrink:0}},
+    active
+      ?e(React.Fragment,null,e('path',{d:'M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9'}),e('path',{d:'M13.73 21a2 2 0 01-3.46 0'}))
+      :e(React.Fragment,null,e('path',{d:'M18 8A6 6 0 0016.7 4.4'}),e('path',{d:'M6.26 6.26A6 6 0 006 8c0 7-3 9-3 9h13'}),e('path',{d:'M13.73 21a2 2 0 01-3.46 0'}),e('line',{x1:2,y1:2,x2:22,y2:22}))
+  );
+}
+
 function App(){
   const[view,setView]=useState('workspace');
   const[projects,setProjects]=useState(()=>load('chr4_proj',INIT_PROJECTS));
@@ -971,6 +1057,7 @@ function App(){
   const[showRemPanel,setShowRemPanel]=useState(false);
   const[remToast,setRemToast]=useState(null);
   const firedRemsRef=useRef(new Set());
+  const[habits,setHabits]=useState(()=>load('chr4_habits',[]));
   const[tick,setTick]=useState(0);
   // idle reminder
   const[idleSilenced,setIdleSilenced]=useState(false);
@@ -986,6 +1073,39 @@ function App(){
   useEffect(()=>{const id=setInterval(()=>setTick(t=>t+1),20000);return()=>clearInterval(id);},[]);
 
   useEffect(()=>save('chr4_reminders',reminders),[reminders]);
+  useEffect(()=>save('chr4_habits',habits),[habits]);
+
+  // HABITS → REMINDERS engine: once a day, per habit, if it occurs today and the
+  // scheduled time has arrived, push a reminder into the same `reminders` array
+  // used everywhere else (rem-float panel, rem-toast, bell badge).
+  useEffect(()=>{
+    function checkHabits(){
+      const now=new Date();
+      const todayStr=now.toISOString().slice(0,10);
+      setHabits(prev=>{
+        let changed=false;
+        const next=prev.map(h=>{
+          if(!h.reminder) return h;
+          if(h.lastFiredDate===todayStr) return h;
+          if(!habitOccursOn(h,now)) return h;
+          const[hh,mm]=(h.time||'09:00').split(':').map(Number);
+          if(now.getHours()<(hh||0)||(now.getHours()===(hh||0)&&now.getMinutes()<(mm||0))) return h;
+          changed=true;
+          const due=new Date(now);due.setHours(hh||9,mm||0,0,0);
+          const proj=projects.find(p=>p.id===h.projectId);
+          const r={id:uid(),title:h.name,projId:h.projectId,dueAt:due.getTime(),done:false,overdue:true,createdAt:Date.now(),habitId:h.id};
+          setReminders(rs=>[r,...rs]);
+          playSound(soundCfg.remindSound||'bell',soundCfg.remindVol!=null?soundCfg.remindVol:0.6);
+          setRemToast({id:r.id,title:r.title,projName:proj?.name||'',color:proj?.color||'var(--accent)'});
+          return{...h,lastFiredDate:todayStr};
+        });
+        return changed?next:prev;
+      });
+    }
+    checkHabits();
+    const id=setInterval(checkHabits,30000);
+    return()=>clearInterval(id);
+  },[projects,soundCfg]);
 
   useEffect(()=>{
     function check(){
@@ -1019,6 +1139,7 @@ function App(){
           if(remote.intenciones)       setIntenciones(remote.intenciones);
           if(remote.tasks?.length)     setTasks(remote.tasks);
           if(remote.blocks?.length)    setBlocks(remote.blocks);
+          if(remote.habits?.length)    setHabits(remote.habits);
         }
       }catch(e){ console.warn('[SB] pull error',e); }
     })();
@@ -1030,12 +1151,12 @@ function App(){
     clearTimeout(sbSyncRef.current);
     sbSyncRef.current=setTimeout(async()=>{
       setSbSyncing(true);
-      try{ await SB.push({projects,sessions,intenciones,tasks,blocks}); }
+      try{ await SB.push({projects,sessions,intenciones,tasks,blocks,habits}); }
       catch(e){ console.warn('[SB] push error',e); }
       setSbSyncing(false);
     },3000);
     return()=>clearTimeout(sbSyncRef.current);
-  },[projects,sessions,intenciones,tasks,blocks,sbStatus]);
+  },[projects,sessions,intenciones,tasks,blocks,habits,sbStatus]);
 
   // Keep refs in sync so the timer interval always reads the latest value without stale closures
   useEffect(()=>{pomoPhaseDoneRef.current=pomoPhaseDone;},[pomoPhaseDone]);
@@ -1472,7 +1593,7 @@ function App(){
       }
     }),
     showCtxModal&&e(CtxModal,{session:showCtxModal,project:projects.find(p=>p.id===showCtxModal.projectId),onSave:handleSaveCtx,onSkip:()=>setShowCtxModal(null)}),
-    showHist&&e(HistModal,{project:projects.find(p=>p.id===showHist),ctxs:ctxs.filter(c=>c.projectId===showHist).sort((a,b)=>b.createdAt-a.createdAt),sessions:sessions.filter(s=>s.projectId===showHist&&s.endAt),onClose:()=>setShowHist(null)}),
+    showHist&&e(HistModal,{project:projects.find(p=>p.id===showHist),ctxs:ctxs.filter(c=>c.projectId===showHist).sort((a,b)=>b.createdAt-a.createdAt),sessions:sessions.filter(s=>s.projectId===showHist&&s.endAt),habits:habits.filter(h=>h.projectId===showHist),onAddHabit:h=>setHabits(hs=>[...hs,h]),onUpdateHabit:h=>setHabits(hs=>hs.map(x=>x.id===h.id?h:x)),onDeleteHabit:id=>setHabits(hs=>hs.filter(x=>x.id!==id)),onClose:()=>setShowHist(null)}),
     showNewProj&&e(ProjModal,{onClose:()=>setShowNewProj(false),onSave:p=>{setProjects(ps=>[...ps,{...p,id:uid(),status:'active',createdAt:Date.now()}]);setShowNewProj(false);}}),
     editProj&&e(ProjModal,{project:editProj,onClose:()=>setEditProj(null),onSave:p=>{setProjects(ps=>ps.map(pp=>pp.id===p.id?p:pp));setEditProj(null);},onDelete:id=>{setProjects(ps=>ps.filter(p=>p.id!==id));if(selProj===id)setSelProj(null);setEditProj(null);}}),
     (editBlock||showNewBlock)&&e(BlockModal,{
@@ -1504,6 +1625,7 @@ function App(){
             if(remote.intenciones)      setIntenciones(remote.intenciones);
             if(remote.tasks?.length)    setTasks(remote.tasks);
             if(remote.blocks?.length)   setBlocks(remote.blocks);
+            if(remote.habits?.length)   setHabits(remote.habits);
             showNotif('☁ Datos restaurados desde Supabase ✓');
           } else {
             showNotif('☁ Conectado. Tus datos se guardarán aquí.');
@@ -1513,7 +1635,7 @@ function App(){
       onDisconnect:()=>{ SB.disconnect(); setSbStatus('disconnected'); },
       onManualSync:async()=>{
         setSbSyncing(true);
-        try{ await SB.push({projects,sessions,intenciones,tasks,blocks}); showNotif('☁ Sincronizado ✓'); }
+        try{ await SB.push({projects,sessions,intenciones,tasks,blocks,habits}); showNotif('☁ Sincronizado ✓'); }
         catch(e){ console.warn(e); }
         setSbSyncing(false);
       },
@@ -2310,7 +2432,8 @@ function RemindersFloatPanel({reminders,setReminders,projects,onClose}){
               e('div',{className:'rem-item-meta'+(r.overdue?' over':'')},
                 proj&&e('span',null,proj.name),
                 proj&&e('span',null,'·'),
-                e('span',null,fmtDue(r.dueAt))
+                e('span',null,fmtDue(r.dueAt)),
+                r.habitId&&e('span',{style:{color:'var(--text4)'}},'· hábito')
               )
             ),
             r.overdue&&e('div',{className:'rem-overdue-dot'}),
@@ -2687,34 +2810,184 @@ function CtxModal({session,project,onSave,onSkip}){
 // ═══════════════════════════════════════════
 // HISTORY MODAL
 // ═══════════════════════════════════════════
-function HistModal({project,ctxs,sessions,onClose}){
+function HistModal({project,ctxs,sessions,habits,onAddHabit,onUpdateHabit,onDeleteHabit,onClose}){
   if(!project)return null;
+  const[tab,setTab]=useState('habitos'); // 'historial' | 'habitos' — historial content below is never removed, only hidden
+  const[habitForm,setHabitForm]=useState(null); // null | 'new' | habit object being edited
   const sessMap={};sessions.forEach(s=>{sessMap[s.id]=s;});
+  return e(React.Fragment,null,
+    e('div',{className:'overlay',onClick:ev=>{if(ev.target===ev.currentTarget)onClose();}},
+      e('div',{className:'modal modal-md'},
+        e('div',{className:'modal-head'},
+          e('div',{style:{flex:1}},
+            e('div',{style:{display:'flex',alignItems:'center',gap:7}},
+              e('div',{style:{width:6,height:6,borderRadius:'50%',background:project.color,flexShrink:0}}),
+              e('div',{className:'modal-title'},project.name)
+            ),
+            e('div',{className:'modal-sub'},tab==='historial'?(ctxs.length+' registros'):(habits.length+' hábitos'))
+          ),
+          e('button',{className:'modal-x',onClick:onClose},'✕')
+        ),
+        e('div',{style:{padding:'10px 18px 0'}},
+          e('div',{className:'habit-tabs'},
+            e('button',{className:'habit-tab'+(tab==='historial'?' on':''),onClick:()=>setTab('historial')},'Historial'),
+            e('button',{className:'habit-tab'+(tab==='habitos'?' on':''),onClick:()=>setTab('habitos')},'Hábitos')
+          )
+        ),
+        e('div',{className:'modal-body'},
+          // ── HISTORIAL — contenido original intacto, solo se oculta cuando tab!=='historial' ──
+          e('div',{style:{display:tab==='historial'?'flex':'none',flexDirection:'column',gap:11}},
+            ctxs.length===0&&e('div',{className:'empty'},'Sin registros aún.\nFinaliza una sesión y guarda el contexto.'),
+            ctxs.map(ctx=>{
+              const sess=sessMap[ctx.sessionId];
+              return e('div',{key:ctx.id,className:'hist-entry'},
+                e('div',{className:'hist-date'},new Date(ctx.createdAt).toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'short',year:'numeric'}),sess&&e('span',{className:'hist-dur'},fmtS(sess.duration))),
+                ctx.advanced&&e('div',{className:'hist-field'},e('div',{className:'hist-field-lbl'},'Logré'),e('div',{className:'hist-field-val'},ctx.advanced)),
+                ctx.pending&&e('div',{className:'hist-field'},e('div',{className:'hist-field-lbl'},'Pendiente'),e('div',{className:'hist-field-val'},ctx.pending)),
+                ctx.nextStep&&e('div',{className:'hist-field'},e('div',{className:'hist-field-lbl'},'Próximo paso'),e('div',{className:'hist-field-val'},ctx.nextStep))
+              );
+            })
+          ),
+          // ── HÁBITOS ──
+          tab==='habitos'&&e(React.Fragment,null,
+            habits.length===0&&e('div',{className:'empty'},'Sin hábitos aún.\nCréalos para recibir recordatorios recurrentes en este proyecto.'),
+            habits.map(h=>e('div',{key:h.id,className:'habit-row',onClick:()=>setHabitForm(h)},
+              e('span',{style:{flex:1,fontSize:12,color:'var(--text0)'}},h.name),
+              e('span',{style:{fontSize:10,color:'var(--text3)'}},habitDaysLabel(h)),
+              e('span',{style:{fontSize:10,fontFamily:"'JetBrains Mono',monospace",color:'var(--text2)'}},h.time),
+              e(BellIcon,{active:h.reminder,color:h.reminder?project.color:'var(--text4)'})
+            )),
+            e('button',{className:'habit-add-btn',onClick:()=>setHabitForm('new')},'+ Agregar hábito a este proyecto')
+          )
+        ),
+        e('div',{className:'modal-foot'},e('button',{className:'btn btn-primary',onClick:onClose},'Cerrar'))
+      )
+    ),
+    habitForm&&e(HabitFormModal,{
+      habit:habitForm==='new'?null:habitForm,
+      project,
+      onSave:h=>{if(habitForm==='new')onAddHabit(h);else onUpdateHabit(h);setHabitForm(null);},
+      onDelete:id=>{onDeleteHabit(id);setHabitForm(null);},
+      onClose:()=>setHabitForm(null)
+    })
+  );
+}
+
+// ═══════════════════════════════════════════
+// HABIT FORM MODAL — create / edit a recurring habit
+// ═══════════════════════════════════════════
+function HabitFormModal({habit,project,onSave,onDelete,onClose}){
+  const initRec=habit?.recurrence||{type:'weekly',days:[]};
+  const[name,setName]=useState(habit?.name||'');
+  const[topTab,setTopTab]=useState(initRec.type==='weekly'?'weekly':'monthly');
+  const[monthMode,setMonthMode]=useState(initRec.type==='monthly_ordinal'?'ordinal':'date');
+  const[days,setDays]=useState(initRec.type==='weekly'?(initRec.days||[]):[]);
+  const[monthLastDay,setMonthLastDay]=useState(initRec.type==='monthly_date'&&initRec.day==='last');
+  const[monthDay,setMonthDay]=useState(initRec.type==='monthly_date'&&initRec.day!=='last'?Number(initRec.day)||15:15);
+  const[ordinal,setOrdinal]=useState(initRec.type==='monthly_ordinal'?(initRec.ordinal||1):1);
+  const[weekday,setWeekday]=useState(initRec.type==='monthly_ordinal'?(initRec.weekday||'mon'):'mon');
+  const[time,setTime]=useState(habit?.time||'09:00');
+  const[reminder,setReminder]=useState(habit?habit.reminder!==false:true);
+
+  function toggleDay(k){setDays(d=>d.includes(k)?d.filter(x=>x!==k):[...d,k]);}
+
+  function buildRecurrence(){
+    if(topTab==='weekly') return{type:'weekly',days};
+    if(monthMode==='date') return{type:'monthly_date',day:monthLastDay?'last':Number(monthDay)};
+    return{type:'monthly_ordinal',ordinal,weekday};
+  }
+
+  const rec=buildRecurrence();
+  const isValid=name.trim()&&(rec.type!=='weekly'||rec.days.length>0);
+
+  function handleSave(){
+    if(!isValid)return;
+    onSave({
+      id:habit?.id||uid(),
+      projectId:project.id,
+      name:name.trim(),
+      recurrence:rec,
+      time,
+      reminder,
+      lastFiredDate:habit?.lastFiredDate||null
+    });
+  }
+
   return e('div',{className:'overlay',onClick:ev=>{if(ev.target===ev.currentTarget)onClose();}},
-    e('div',{className:'modal modal-md'},
+    e('div',{className:'modal modal-sm'},
       e('div',{className:'modal-head'},
         e('div',{style:{flex:1}},
-          e('div',{style:{display:'flex',alignItems:'center',gap:7}},
-            e('div',{style:{width:6,height:6,borderRadius:'50%',background:project.color,flexShrink:0}}),
-            e('div',{className:'modal-title'},project.name)
-          ),
-          e('div',{className:'modal-sub'},'Historial · '+ctxs.length+' registros')
+          e('div',{className:'modal-title'},habit?'Editar hábito':'Nuevo hábito'),
+          e('div',{className:'modal-sub'},project.name)
         ),
         e('button',{className:'modal-x',onClick:onClose},'✕')
       ),
       e('div',{className:'modal-body'},
-        ctxs.length===0&&e('div',{className:'empty'},'Sin registros aún.\nFinaliza una sesión y guarda el contexto.'),
-        ctxs.map(ctx=>{
-          const sess=sessMap[ctx.sessionId];
-          return e('div',{key:ctx.id,className:'hist-entry'},
-            e('div',{className:'hist-date'},new Date(ctx.createdAt).toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'short',year:'numeric'}),sess&&e('span',{className:'hist-dur'},fmtS(sess.duration))),
-            ctx.advanced&&e('div',{className:'hist-field'},e('div',{className:'hist-field-lbl'},'Logré'),e('div',{className:'hist-field-val'},ctx.advanced)),
-            ctx.pending&&e('div',{className:'hist-field'},e('div',{className:'hist-field-lbl'},'Pendiente'),e('div',{className:'hist-field-val'},ctx.pending)),
-            ctx.nextStep&&e('div',{className:'hist-field'},e('div',{className:'hist-field-lbl'},'Próximo paso'),e('div',{className:'hist-field-val'},ctx.nextStep))
-          );
-        })
+        e('div',{className:'fg'},
+          e('div',{className:'flabel'},'Nombre'),
+          e('input',{className:'finput',value:name,onChange:ev=>setName(ev.target.value),placeholder:'Ej. Práctica guitarra',autoFocus:true})
+        ),
+        e('div',{className:'fg'},
+          e('div',{className:'flabel'},'Repetir'),
+          e('div',{className:'habit-tabs'},
+            e('button',{className:'habit-tab'+(topTab==='weekly'?' on':''),onClick:()=>setTopTab('weekly')},'Semana'),
+            e('button',{className:'habit-tab'+(topTab==='monthly'?' on':''),onClick:()=>setTopTab('monthly')},'Mes')
+          )
+        ),
+        topTab==='weekly'&&e('div',{className:'fg'},
+          e('div',{className:'flabel'},'Días'),
+          e('div',{className:'day-chip-row'},
+            WEEK_DAYS.map(w=>e('span',{
+              key:w.k,
+              className:'day-chip'+(days.includes(w.k)?' on':''),
+              onClick:()=>toggleDay(w.k)
+            },w.l))
+          )
+        ),
+        topTab==='monthly'&&e(React.Fragment,null,
+          e('div',{className:'fg'},
+            e('div',{className:'rec-mode-row'},
+              e('button',{className:'rec-mode-btn'+(monthMode==='date'?' on':''),onClick:()=>setMonthMode('date')},'Fecha fija'),
+              e('button',{className:'rec-mode-btn'+(monthMode==='ordinal'?' on':''),onClick:()=>setMonthMode('ordinal')},'Posición')
+            )
+          ),
+          monthMode==='date'&&e('div',{className:'fg'},
+            e('div',{className:'flabel'},'El día'),
+            e('select',{className:'fselect',value:monthDay,disabled:monthLastDay,onChange:ev=>setMonthDay(Number(ev.target.value))},
+              Array.from({length:31},(_,i)=>i+1).map(d=>e('option',{key:d,value:d},d))
+            ),
+            e('div',{className:'toggle-row',style:{marginTop:6}},
+              e('span',{className:'toggle-lbl'},'Último día del mes'),
+              e('div',{className:'toggle'+(monthLastDay?' on':''),onClick:()=>setMonthLastDay(v=>!v)})
+            )
+          ),
+          monthMode==='ordinal'&&e('div',{className:'fg'},
+            e('div',{className:'flabel'},'El'),
+            e('div',{style:{display:'flex',gap:6}},
+              e('select',{className:'fselect',value:ordinal,onChange:ev=>setOrdinal(ev.target.value==='last'?'last':Number(ev.target.value))},
+                e('option',{value:1},'primer'),e('option',{value:2},'segundo'),e('option',{value:3},'tercer'),e('option',{value:4},'cuarto'),e('option',{value:'last'},'último')
+              ),
+              e('select',{className:'fselect',value:weekday,onChange:ev=>setWeekday(ev.target.value)},
+                WEEK_DAYS.map(w=>e('option',{key:w.k,value:w.k},w.full))
+              )
+            )
+          )
+        ),
+        e('div',{className:'fg'},
+          e('div',{className:'flabel'},'Hora'),
+          e('input',{type:'time',className:'finput',value:time,onChange:ev=>setTime(ev.target.value)})
+        ),
+        e('div',{className:'toggle-row'},
+          e('span',{className:'toggle-lbl'},'Notificarme en Recordatorios'),
+          e('div',{className:'toggle'+(reminder?' on':''),onClick:()=>setReminder(v=>!v)})
+        ),
+        e('div',{className:'hint-row'},habitSummary(rec,time))
       ),
-      e('div',{className:'modal-foot'},e('button',{className:'btn btn-primary',onClick:onClose},'Cerrar'))
+      e('div',{className:'modal-foot'},
+        habit&&e('button',{className:'btn btn-danger',style:{marginRight:'auto'},onClick:()=>onDelete(habit.id)},'Eliminar'),
+        e('button',{className:'btn btn-ghost',onClick:onClose},'Cancelar'),
+        e('button',{className:'btn btn-primary',disabled:!isValid,onClick:handleSave},habit?'Guardar':'Crear')
+      )
     )
   );
 }
