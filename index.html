@@ -529,6 +529,118 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .habit-grid-cell.today{border-style:dashed}
 .habit-mark-btn{font-size:9px;background:transparent;border:1px solid var(--border2);border-radius:5px;color:var(--text3);padding:4px 0;cursor:pointer;font-family:'Inter',sans-serif;transition:all .1s}
 .habit-mark-btn:hover{border-color:var(--border4);color:var(--text1)}
+
+/* ═══════════════════════════════════════════
+   PROJECT DASHBOARD — Chronos 2.0
+   ═══════════════════════════════════════════ */
+.dashboard-view{grid-column:1/-1;grid-row:2;overflow-y:auto;background:var(--bg0);display:flex;flex-direction:column}
+.dashboard-view::-webkit-scrollbar{width:6px}
+.dashboard-view::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:3px}
+.dash-header{padding:20px 26px 0;flex-shrink:0}
+.dash-back{background:transparent;border:none;color:var(--text3);font-size:11px;cursor:pointer;font-family:'Inter',sans-serif;display:flex;align-items:center;gap:5px;padding:0 0 12px;transition:color .1s}
+.dash-back:hover{color:var(--text1)}
+.dash-head-row{display:flex;align-items:flex-start;gap:14px}
+.dash-avatar{width:40px;height:40px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.dash-avatar::before{content:'';position:absolute;inset:0;background:var(--proj-color,#888);opacity:.16;border-radius:inherit}
+.dash-title-block{flex:1;min-width:0}
+.dash-title-row{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.dash-title{font-size:20px;font-weight:600;color:var(--text0);letter-spacing:-.2px}
+.dash-cat-pill{font-size:10px;color:var(--text3);border:1px solid var(--border2);border-radius:20px;padding:2px 9px}
+.dash-status-pill{font-size:9.5px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;border-radius:20px;padding:2px 9px}
+.dash-status-pill.active{color:var(--green);background:var(--green-bg);border:1px solid var(--green-border)}
+.dash-status-pill.archived{color:var(--text3);background:var(--bg3);border:1px solid var(--border2)}
+.dash-desc{font-size:12px;color:var(--text2);margin-top:4px;max-width:640px;line-height:1.5}
+.dash-meta-row{display:flex;gap:18px;margin-top:8px;flex-wrap:wrap}
+.dash-meta-item{font-size:10.5px;color:var(--text3)}
+.dash-meta-item b{color:var(--text1);font-weight:500}
+.dash-head-actions{display:flex;gap:8px;flex-shrink:0;margin-top:2px}
+.dash-tabs{display:flex;gap:2px;padding:16px 26px 0;border-bottom:1px solid var(--border);flex-shrink:0}
+.dash-tab{background:transparent;border:none;color:var(--text3);font-size:12px;font-family:'Inter',sans-serif;padding:8px 12px 10px;cursor:pointer;position:relative;transition:color .12s;border-radius:6px 6px 0 0}
+.dash-tab:hover{color:var(--text1)}
+.dash-tab.on{color:var(--accent2)}
+.dash-tab.on::after{content:'';position:absolute;left:10px;right:10px;bottom:-1px;height:2px;border-radius:2px;background:var(--accent)}
+.dash-body{padding:20px 26px 100px;flex:1;display:flex;flex-direction:column;gap:18px}
+.dash-stats-row{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
+.dash-stat-card{background:var(--bg1);border:1px solid var(--border2);border-radius:var(--r-lg);padding:12px 14px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.dash-stat-lbl{font-size:9px;color:var(--text4);text-transform:uppercase;letter-spacing:.6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dash-stat-val{font-size:18px;font-weight:600;color:var(--text0);font-family:'JetBrains Mono',monospace;line-height:1.1}
+.dash-stat-sub{font-size:9.5px;color:var(--text3)}
+.dash-cols{display:grid;grid-template-columns:1fr 1.3fr 1fr;gap:14px;align-items:start}
+.dash-panel{background:var(--bg1);border:1px solid var(--border2);border-radius:var(--r-lg);display:flex;flex-direction:column;overflow:hidden}
+.dash-panel-hdr{display:flex;align-items:center;padding:11px 14px;border-bottom:1px solid var(--border);gap:8px}
+.dash-panel-title{font-size:11px;font-weight:600;color:var(--text0);flex:1}
+.dash-panel-link{font-size:10px;color:var(--accent2);background:transparent;border:none;cursor:pointer;font-family:'Inter',sans-serif}
+.dash-panel-link:hover{text-decoration:underline}
+.dash-panel-body{padding:6px 8px;display:flex;flex-direction:column;gap:2px;max-height:340px;overflow-y:auto}
+.dash-panel-body::-webkit-scrollbar{width:3px}
+.dash-panel-body::-webkit-scrollbar-thumb{background:var(--bg5);border-radius:2px}
+.dash-timeline-wrap{background:var(--bg1);border:1px solid var(--border2);border-radius:var(--r-lg);overflow:hidden;display:flex;flex-direction:column;height:320px}
+.dash-add-btn{background:transparent;border:none;color:var(--text3);cursor:pointer;font-size:15px;padding:0 2px;line-height:1;border-radius:4px}
+.dash-add-btn:hover{color:var(--accent2)}
+/* SYSTEM CARDS */
+.systems-grid{display:flex;flex-direction:column;gap:8px}
+.system-card{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r-md);padding:11px 13px;transition:border-color .12s}
+.system-card:hover{border-color:var(--border3)}
+.system-card-top{display:flex;align-items:center;gap:8px}
+.system-card-name{font-size:12.5px;font-weight:500;color:var(--text0);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.system-status-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.system-status-dot.active{background:var(--green)}
+.system-status-dot.paused{background:var(--amber)}
+.system-open-btn{font-size:9.5px;background:transparent;border:1px solid var(--border2);border-radius:var(--r-sm);color:var(--text2);padding:3px 9px;cursor:pointer;font-family:'Inter',sans-serif;transition:all .1s;flex-shrink:0}
+.system-open-btn:hover{border-color:var(--border4);color:var(--text0)}
+.system-open-btn.on{background:var(--accent-bg);border-color:var(--accent-border);color:var(--accent2)}
+.system-track{height:4px;border-radius:3px;background:var(--bg4);margin-top:9px;overflow:hidden}
+.system-fill{height:100%;border-radius:3px;background:var(--accent)}
+.system-meta-row{display:flex;gap:14px;margin-top:8px;flex-wrap:wrap}
+.system-meta{font-size:9.5px;color:var(--text3)}
+.system-meta b{color:var(--text1);font-weight:500}
+.system-stages{display:flex;flex-direction:column;gap:6px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)}
+.stage-row{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);padding:8px 10px}
+.stage-hdr{display:flex;align-items:center;gap:8px;cursor:pointer}
+.stage-num{width:16px;height:16px;border-radius:50%;background:var(--bg4);color:var(--text3);font-size:9px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.stage-num.done{background:var(--green-bg);color:var(--green)}
+.stage-name{flex:1;font-size:11.5px;color:var(--text1)}
+.stage-status-select{font-size:9.5px;background:var(--bg2);border:1px solid var(--border2);border-radius:4px;color:var(--text2);padding:2px 5px;font-family:'Inter',sans-serif}
+.stage-time{font-size:9.5px;color:var(--text3);font-family:'JetBrains Mono',monospace;width:52px;background:var(--bg2);border:1px solid var(--border2);border-radius:4px;padding:2px 5px;text-align:center}
+.stage-caret{font-size:9px;color:var(--text4);flex-shrink:0;transition:transform .12s}
+.stage-caret.open{transform:rotate(90deg)}
+.stage-body{margin-top:8px;padding-top:8px;border-top:1px solid var(--border2);display:flex;flex-direction:column;gap:6px}
+.stage-task-row{display:flex;align-items:center;gap:7px}
+.stage-task-check{width:13px;height:13px;border-radius:3px;border:1px solid var(--border3);flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.stage-task-check.done{background:var(--green-bg);border-color:var(--green)}
+.stage-task-name{flex:1;font-size:11px;color:var(--text1)}
+.stage-task-name.done{color:var(--text4);text-decoration:line-through}
+.stage-add-row{display:flex;gap:5px;margin-top:2px}
+.stage-add-row input{flex:1;background:var(--bg2);border:1px solid var(--border2);border-radius:4px;padding:4px 7px;font-size:10.5px;color:var(--text0);font-family:'Inter',sans-serif;outline:none}
+.stage-comment-input{background:var(--bg2);border:1px solid var(--border2);border-radius:4px;padding:5px 7px;font-size:10.5px;color:var(--text1);font-family:'Inter',sans-serif;outline:none;resize:none;width:100%;margin-top:2px}
+.stages-editor{display:flex;flex-direction:column;gap:5px}
+.stages-editor-row{display:flex;align-items:center;gap:6px}
+.stages-editor-row input{flex:1}
+.template-btn{font-size:10px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);color:var(--text2);padding:5px 9px;cursor:pointer;font-family:'Inter',sans-serif;transition:all .1s}
+.template-btn:hover{border-color:var(--border4);color:var(--text0)}
+/* PROGRESS SIDE PANEL */
+.progress-row{display:flex;flex-direction:column;gap:3px;padding:8px 6px}
+.progress-row-top{display:flex;align-items:center;justify-content:space-between}
+.progress-row-name{font-size:11px;color:var(--text1)}
+.progress-row-pct{font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace}
+.progress-track{height:5px;border-radius:3px;background:var(--bg4);overflow:hidden}
+.progress-fill{height:100%;border-radius:3px}
+/* TIMER WIDGET — floating, compact */
+.timer-widget{position:fixed;bottom:18px;right:18px;width:230px;background:var(--bg1);border:1px solid var(--border3);border-radius:var(--r-xl);box-shadow:0 12px 40px #00000080;z-index:500;overflow:hidden;transition:all .15s}
+.timer-widget.collapsed{width:auto}
+.timer-widget-hdr{display:flex;align-items:center;gap:7px;padding:9px 11px;border-bottom:1px solid var(--border2);cursor:pointer}
+.timer-widget.collapsed .timer-widget-hdr{border-bottom:none}
+.timer-widget-dot{width:6px;height:6px;border-radius:50%;background:var(--text4);flex-shrink:0}
+.timer-widget-dot.running{background:var(--green);animation:pa 2.2s ease-in-out infinite}
+.timer-widget-dot.paused{background:var(--amber)}
+.timer-widget-time{font-size:12px;font-family:'JetBrains Mono',monospace;color:var(--text0);font-weight:500;flex:1}
+.timer-widget-caret{font-size:10px;color:var(--text4)}
+.timer-widget-body{padding:10px 12px 12px;display:flex;flex-direction:column;gap:8px}
+.timer-widget-proj{font-size:11px;color:var(--text1);display:flex;align-items:center;gap:6px}
+.timer-widget-task{font-size:10.5px;color:var(--text3)}
+.timer-widget-pomo{font-size:9.5px;color:var(--text3);display:flex;align-items:center;gap:4px}
+.timer-widget-ctrls{display:flex;gap:6px}
+.timer-widget-ctrls .btn{flex:1;font-size:10px;padding:5px 0;text-align:center}
 </style>
 </head>
 <body>
@@ -946,6 +1058,13 @@ function blocksForDay(allBlocks,dateStr){
 }
 const INIT_SESSIONS=[];
 const INIT_CTXS=[];
+const INIT_SYSTEMS=[];
+const SYSTEM_TEMPLATES=[
+  {label:'Contenido Orgánico',stages:['Planificación','Investigación','Guiones','Grabación','Edición','Miniaturas','Programación','Publicación','Análisis']},
+  {label:'Meta Ads',stages:['Briefing','Segmentación','Creativos','Configuración','Lanzamiento','Optimización','Reporte']},
+  {label:'Prospección',stages:['Lista de leads','Primer contacto','Seguimiento','Reunión','Propuesta','Cierre']},
+  {label:'Ventas',stages:['Calificación','Demo','Propuesta','Negociación','Cierre','Onboarding']},
+];
 const INIT_SOUND_CFG={
   blockSound:'chime',blockVol:0.5,
   idleSound:'nudge',idleVol:0.4,idleInterval:10,idleEnabled:true,
@@ -1142,6 +1261,9 @@ function App(){
   const[remToast,setRemToast]=useState(null);
   const firedRemsRef=useRef(new Set());
   const[habits,setHabits]=useState(()=>load('chr4_habits',[]));
+  const[systems,setSystems]=useState(()=>load('chr4_systems',INIT_SYSTEMS));
+  const[showSystemModal,setShowSystemModal]=useState(false);
+  const[editSystem,setEditSystem]=useState(null);
   const[tick,setTick]=useState(0);
   // idle reminder
   const[idleSilenced,setIdleSilenced]=useState(false);
@@ -1158,6 +1280,7 @@ function App(){
 
   useEffect(()=>save('chr4_reminders',reminders),[reminders]);
   useEffect(()=>save('chr4_habits',habits),[habits]);
+  useEffect(()=>save('chr4_systems',systems),[systems]);
 
   // HABITS → REMINDERS engine: once a day, per habit, if it occurs today and the
   // scheduled time has arrived, push a reminder into the same `reminders` array
@@ -1226,6 +1349,7 @@ function App(){
           if(remote.tasks?.length)     setTasks(remote.tasks);
           if(remote.blocks?.length)    setBlocks(remote.blocks);
           if(remote.habits?.length)    setHabits(remote.habits);
+          if(remote.systems?.length)   setSystems(remote.systems);
           if(remote.reminders?.length) setReminders(remote.reminders);
           if(remote.ctxs?.length)      setCtxs(remote.ctxs);
         }
@@ -1239,12 +1363,12 @@ function App(){
     clearTimeout(sbSyncRef.current);
     sbSyncRef.current=setTimeout(async()=>{
       setSbSyncing(true);
-      try{ await SB.push({projects,sessions,intenciones,tasks,blocks,habits,reminders,ctxs}); }
+      try{ await SB.push({projects,sessions,intenciones,tasks,blocks,habits,reminders,ctxs,systems}); }
       catch(e){ console.warn('[SB] push error',e); }
       setSbSyncing(false);
     },3000);
     return()=>clearTimeout(sbSyncRef.current);
-  },[projects,sessions,intenciones,tasks,blocks,habits,reminders,ctxs,sbStatus]);
+  },[projects,sessions,intenciones,tasks,blocks,habits,reminders,ctxs,systems,sbStatus]);
 
   // Keep refs in sync so the timer interval always reads the latest value without stale closures
   useEffect(()=>{pomoPhaseDoneRef.current=pomoPhaseDone;},[pomoPhaseDone]);
@@ -1455,6 +1579,22 @@ function App(){
 
   function handleSaveCtx(ctx){setCtxs(cs=>[...cs,{...ctx,id:uid(),createdAt:Date.now()}]);setShowCtxModal(null);showNotif('Contexto guardado');}
 
+  function systemProgress(sys){
+    const stages=sys.stages||[];
+    if(stages.length===0)return 0;
+    const done=stages.filter(s=>s.status==='done').length;
+    return Math.round((done/stages.length)*100);
+  }
+  function fmtWhen(ts){
+    if(!ts)return '—';
+    const diff=Date.now()-ts;
+    const day=86400000;
+    if(diff<0){const d=Math.round(-diff/day);return d<=0?'hoy':d===1?'mañana':`en ${d}d`;}
+    if(diff<3600000)return `hace ${Math.max(1,Math.round(diff/60000))}m`;
+    if(diff<day)return `hace ${Math.round(diff/3600000)}h`;
+    const d=Math.round(diff/day);
+    return d===1?'ayer':`hace ${d}d`;
+  }
   function pStats(proj){
     const isToday=selectedDay===dayKey();
     const daySess=sessions.filter(s=>s.projectId===proj.id&&s.day===selectedDay&&s.endAt);
@@ -1483,7 +1623,7 @@ function App(){
     if(selProj===pid)setExpandCtx(v=>v===pid?null:pid);
     else{setSelProj(pid);setExpandCtx(pid);}
   }
-  function onProjDbl(ev,pid){ev.preventDefault();setShowHist(pid);}
+  function onProjDbl(ev,pid){ev.preventDefault();setSelProj(pid);setView('dashboard');}
 
   // timeline double-click → create block at that time
   function onTimelineDblClick(startMin){
@@ -1556,6 +1696,36 @@ function App(){
           e('span',{className:'tz-badge',onClick:()=>setShowTZ(v=>!v),style:{display:'none'}},sclOffset()+' Santiago')
         )
       ),
+
+      view==='dashboard'&&selectedProjObj
+        ?e(ProjectDashboard,{
+            project:selectedProjObj,
+            projects,tasks,sessions,ctxs,habits,systems,
+            blocks,setBlocks,realBlocks,liveBlock,tick,
+            blockOpacity:themeCfg.blockOpacity,blockStyle:themeCfg.blockStyle||'stripe',realStyle:themeCfg.realStyle||'solid',
+            tlZoom,setTlZoom,selectedDay,setSelectedDay,
+            onDblClickTime:onTimelineDblClick,
+            onEditBlock:b=>setEditBlock(b),
+            onNewBlock:()=>{setNewBlockPreset(null);setShowNewBlock(true);},
+            tState,activeSess,
+            onAddTask:name=>setTasks(ts=>[...ts,{id:uid(),projectId:selectedProjObj.id,name,status:'pending',priority:'mid',createdAt:Date.now()}]),
+            onCycleTaskStatus:id=>setTasks(ts=>ts.map(t=>{if(t.id!==id)return t;const next={pending:'inprog',inprog:'done',done:'pending'};return{...t,status:next[t.status]||'pending'};})),
+            onDeleteTask:id=>setTasks(ts=>ts.filter(t=>t.id!==id)),
+            onPlayTask:taskId=>{const t=tasks.find(x=>x.id===taskId);setStartFlow({projId:selectedProjObj.id,mode:'pomo',taskId,taskName:t?t.name:null});},
+            onFinishTask:handleStop,
+            onAddHabit:h=>setHabits(hs=>[...hs,{...h,id:uid(),projectId:selectedProjObj.id}]),
+            onUpdateHabit:h=>setHabits(hs=>hs.map(x=>x.id===h.id?h:x)),
+            onDeleteHabit:id=>setHabits(hs=>hs.filter(x=>x.id!==id)),
+            onToggleHabitLog:(id,day)=>setHabits(hs=>hs.map(x=>{if(x.id!==id)return x;const log=x.log||[];return{...x,log:log.includes(day)?log.filter(d=>d!==day):[...log,day]};})),
+            onAddSystem:sys=>setSystems(ss=>[...ss,{...sys,id:uid(),projectId:selectedProjObj.id,status:'active',createdAt:Date.now(),lastRun:null,nextRun:null}]),
+            onUpdateSystem:sys=>setSystems(ss=>ss.map(s=>s.id===sys.id?sys:s)),
+            onDeleteSystem:id=>setSystems(ss=>ss.filter(s=>s.id!==id)),
+            onStartTimer:()=>setStartFlow({projId:selectedProjObj.id,mode:'ask'}),
+            onEditProject:()=>setEditProj(selectedProjObj),
+            onBack:()=>setView('workspace'),
+            systemProgress,fmtWhen,pStats
+          })
+        :e(React.Fragment,null,
 
       // LEFT COL
       e('div',{className:'col-left',ref:leftColRef},
@@ -1669,7 +1839,15 @@ function App(){
           )
           :e(AnalyticsView,{projects,sessions,tasks})
       )
+        )
     ),
+
+    // TIMER WIDGET — floating, compact, visible while inside a Project Dashboard
+    view==='dashboard'&&selectedProjObj&&e(TimerWidget,{
+      tState,elapsed,workElapsed,activeSess,activeProj,activeTask,pomoCfg,pomoPhase,pomoCount,pomoElapsed,pomoPhaseDone,
+      onStart:()=>setStartFlow({projId:selectedProjObj.id,mode:'ask'}),
+      onPause:handlePause,onStop:handleStop,onStartNextPhase:handleStartNextPhase
+    }),
 
     // MODALS
     startFlow&&e(StartFlow,{
@@ -1720,6 +1898,7 @@ function App(){
             if(remote.tasks?.length)    setTasks(remote.tasks);
             if(remote.blocks?.length)   setBlocks(remote.blocks);
             if(remote.habits?.length)   setHabits(remote.habits);
+          if(remote.systems?.length)  setSystems(remote.systems);
             if(remote.reminders?.length)setReminders(remote.reminders);
             if(remote.ctxs?.length)     setCtxs(remote.ctxs);
             showNotif('☁ Datos restaurados desde Supabase ✓');
@@ -1731,7 +1910,7 @@ function App(){
       onDisconnect:()=>{ SB.disconnect(); setSbStatus('disconnected'); },
       onManualSync:async()=>{
         setSbSyncing(true);
-        try{ await SB.push({projects,sessions,intenciones,tasks,blocks,habits,reminders,ctxs}); showNotif('☁ Sincronizado ✓'); }
+        try{ await SB.push({projects,sessions,intenciones,tasks,blocks,habits,reminders,ctxs,systems}); showNotif('☁ Sincronizado ✓'); }
         catch(e){ console.warn(e); }
         setSbSyncing(false);
       },
@@ -2627,6 +2806,8 @@ function ThemeCfgModal({cfg,onChange,onClose,tlZoom,setTlZoom}){
 // ═══════════════════════════════════════════
 function ProjModal({project,onClose,onSave,onDelete}){
   const[name,setName]=useState(project?.name||'');
+  const[desc,setDesc]=useState(project?.description||'');
+  const[client,setClient]=useState(project?.client||'');
   const[cat,setCat]=useState(project?.category||'Profesional');
   const[color,setColor]=useState(project?.color||COLORS[0]);
   const[limit,setLimit]=useState(project?.dailyLimit||180);
@@ -2637,6 +2818,8 @@ function ProjModal({project,onClose,onSave,onDelete}){
       e('div',{className:'modal-head'},e('div',{className:'modal-title'},project?'Editar proyecto':'Nuevo proyecto'),e('button',{className:'modal-x',onClick:onClose},'✕')),
       e('div',{className:'modal-body'},
         e('div',{className:'fg'},e('label',{className:'flabel'},'Nombre'),e('input',{className:'finput',value:name,onChange:ev=>setName(ev.target.value),placeholder:'ej. Cliente X',autoFocus:true})),
+        e('div',{className:'fg'},e('label',{className:'flabel'},'Cliente / Marca (opcional)'),e('input',{className:'finput',value:client,onChange:ev=>setClient(ev.target.value),placeholder:'ej. Orizon Media'})),
+        e('div',{className:'fg'},e('label',{className:'flabel'},'Descripción (opcional)'),e('textarea',{className:'finput ftextarea',value:desc,onChange:ev=>setDesc(ev.target.value),placeholder:'De qué se trata este proyecto...'})),
         e('div',{className:'fg'},e('label',{className:'flabel'},'Categoría'),e('select',{className:'fselect',value:cat,onChange:ev=>setCat(ev.target.value)},CATS.map(c=>e('option',{key:c,value:c},c)))),
         e('div',{className:'fg'},e('label',{className:'flabel'},'Color'),e('div',{className:'swatch-row'},COLORS.map(c=>e('div',{key:c,className:`swatch${color===c?' on':''}`,style:{background:c},onClick:()=>setColor(c)})))),
         e('div',{className:'fg'},
@@ -2672,7 +2855,7 @@ function ProjModal({project,onClose,onSave,onDelete}){
         project&&onDelete&&confirmDel&&e('button',{className:'btn btn-danger',style:{marginRight:'auto'},onClick:()=>onDelete(project.id)},'Confirmar eliminación'),
         confirmDel&&e('button',{className:'btn',onClick:()=>setConfirmDel(false)},'Cancelar'),
         !confirmDel&&e('button',{className:'btn',onClick:onClose},'Cancelar'),
-        !confirmDel&&e('button',{className:'btn btn-primary',onClick:()=>{if(name.trim())onSave({...(project||{}),name:name.trim(),category:cat,color,icon,dailyLimit:limit});}},project?'Guardar':'Crear')
+        !confirmDel&&e('button',{className:'btn btn-primary',onClick:()=>{if(name.trim())onSave({...(project||{}),name:name.trim(),category:cat,color,icon,dailyLimit:limit,description:desc.trim(),client:client.trim()});}},project?'Guardar':'Crear')
       )
     )
   );
@@ -3413,6 +3596,411 @@ function SbModal({status,onClose,onSaved,onDisconnect,onManualSync,syncing}){
             )
       )
     )
+  );
+}
+
+// ═══════════════════════════════════════════
+// TIMER WIDGET — compact, floating, persistent
+// ═══════════════════════════════════════════
+function TimerWidget({tState,elapsed,workElapsed,activeSess,activeProj,activeTask,pomoCfg,pomoPhase,pomoCount,pomoElapsed,pomoPhaseDone,onStart,onPause,onStop,onStartNextPhase}){
+  const[collapsed,setCollapsed]=useState(false);
+  const isPomo=activeSess?.mode==='pomo';
+  const displayTime=isPomo?elapsed:workElapsed;
+  const phLen=(pomoPhase==='work'?pomoCfg.work:pomoCfg.brk)*60;
+  const rem=Math.max(0,phLen-pomoElapsed);
+  return e('div',{className:'timer-widget'+(collapsed?' collapsed':'')},
+    e('div',{className:'timer-widget-hdr',onClick:()=>setCollapsed(v=>!v)},
+      e('div',{className:'timer-widget-dot'+(tState==='running'?' running':tState==='paused'?' paused':'')}),
+      e('div',{className:'timer-widget-time'},fmt(displayTime)),
+      !collapsed&&e('span',{className:'timer-widget-caret'},'▾'),
+      collapsed&&e('span',{className:'timer-widget-caret'},'▸')
+    ),
+    !collapsed&&e('div',{className:'timer-widget-body'},
+      e('div',{className:'timer-widget-proj'},
+        activeProj&&e('div',{style:{width:6,height:6,borderRadius:'50%',background:activeProj.color,flexShrink:0}}),
+        activeProj?activeProj.name:'Sin sesión activa'
+      ),
+      activeTask&&e('div',{className:'timer-widget-task'},activeTask.name),
+      isPomo&&e('div',{className:'timer-widget-pomo'},'🍅 '+pomoCount+' completados · '+(pomoPhaseDone?'listo':fmtHM(rem)+' '+(pomoPhase==='work'?'restante':'descanso'))),
+      pomoPhaseDone
+        ?e('div',{className:'timer-widget-ctrls'},
+            e('button',{className:'btn btn-primary',onClick:onStartNextPhase},pomoPhase==='work'?'☕ Descanso':'▶ Siguiente'),
+            e('button',{className:'btn',onClick:onStop},'■')
+          )
+        :e('div',{className:'timer-widget-ctrls'},
+            tState==='idle'&&e('button',{className:'btn btn-primary',onClick:onStart},'▶ Iniciar timer'),
+            tState!=='idle'&&e('button',{className:'btn',onClick:onPause},tState==='running'?'⏸ Pausar':'▶ Reanudar'),
+            tState!=='idle'&&e('button',{className:'btn btn-danger',onClick:onStop},'■')
+          )
+    )
+  );
+}
+
+// ═══════════════════════════════════════════
+// SYSTEM STAGES — expandable pipeline within a System
+// ═══════════════════════════════════════════
+function SystemStages({system,onUpdateSystem}){
+  const[openStage,setOpenStage]=useState(null);
+  const[newTaskText,setNewTaskText]=useState({});
+  function patchStage(stageId,patch){
+    onUpdateSystem({...system,stages:system.stages.map(st=>st.id===stageId?{...st,...patch}:st)});
+  }
+  function addStageTask(stageId){
+    const text=(newTaskText[stageId]||'').trim();
+    if(!text)return;
+    const st=system.stages.find(s=>s.id===stageId);
+    patchStage(stageId,{tasks:[...(st.tasks||[]),{id:uid(),name:text,done:false}]});
+    setNewTaskText(v=>({...v,[stageId]:''}));
+  }
+  function toggleStageTask(stageId,taskId){
+    const st=system.stages.find(s=>s.id===stageId);
+    patchStage(stageId,{tasks:(st.tasks||[]).map(t=>t.id===taskId?{...t,done:!t.done}:t)});
+  }
+  return e('div',{className:'system-stages'},
+    (system.stages||[]).map((st,i)=>{
+      const isOpen=openStage===st.id;
+      const doneCount=(st.tasks||[]).filter(t=>t.done).length;
+      return e('div',{key:st.id,className:'stage-row'},
+        e('div',{className:'stage-hdr',onClick:()=>setOpenStage(v=>v===st.id?null:st.id)},
+          e('div',{className:'stage-num'+(st.status==='done'?' done':'')},i+1),
+          e('span',{className:'stage-name'},st.name),
+          (st.tasks||[]).length>0&&e('span',{style:{fontSize:9.5,color:'var(--text4)'}},doneCount+'/'+st.tasks.length),
+          e('select',{className:'stage-status-select',value:st.status||'pending',onClick:ev=>ev.stopPropagation(),onChange:ev=>patchStage(st.id,{status:ev.target.value})},
+            e('option',{value:'pending'},'Pendiente'),e('option',{value:'active'},'En curso'),e('option',{value:'done'},'Listo')
+          ),
+          e('input',{className:'stage-time',type:'number',value:st.timeSpent||0,onClick:ev=>ev.stopPropagation(),onChange:ev=>patchStage(st.id,{timeSpent:Number(ev.target.value)}),title:'Minutos invertidos'}),
+          e('span',{className:'stage-caret'+(isOpen?' open':'')},'▸')
+        ),
+        isOpen&&e('div',{className:'stage-body'},
+          (st.tasks||[]).map(t=>e('div',{key:t.id,className:'stage-task-row'},
+            e('div',{className:'stage-task-check'+(t.done?' done':''),onClick:()=>toggleStageTask(st.id,t.id)},t.done?'✓':''),
+            e('span',{className:'stage-task-name'+(t.done?' done':'')},t.name)
+          )),
+          e('div',{className:'stage-add-row'},
+            e('input',{value:newTaskText[st.id]||'',placeholder:'+ tarea / checklist...',onChange:ev=>setNewTaskText(v=>({...v,[st.id]:ev.target.value})),onKeyDown:ev=>{if(ev.key==='Enter')addStageTask(st.id);}}),
+            e('button',{className:'task-add-submit',onClick:()=>addStageTask(st.id)},'+')
+          ),
+          e('textarea',{className:'stage-comment-input',rows:2,placeholder:'Comentarios de esta etapa...',value:st.comment||'',onChange:ev=>patchStage(st.id,{comment:ev.target.value})})
+        )
+      );
+    }),
+    (system.stages||[]).length===0&&e('div',{className:'empty'},'Este sistema no tiene etapas configuradas.')
+  );
+}
+
+// ═══════════════════════════════════════════
+// SYSTEM MODAL — create / edit a System (operational process)
+// ═══════════════════════════════════════════
+function SystemModal({system,onClose,onSave,onDelete}){
+  const[name,setName]=useState(system?.name||'');
+  const[stages,setStages]=useState(()=>system?.stages?.map(s=>s.name)||[]);
+  const[newStage,setNewStage]=useState('');
+  const[confirmDel,setConfirmDel]=useState(false);
+  function applyTemplate(tpl){setName(n=>n||tpl.label);setStages(tpl.stages);}
+  function addStage(){if(!newStage.trim())return;setStages(s=>[...s,newStage.trim()]);setNewStage('');}
+  function removeStage(i){setStages(s=>s.filter((_,idx)=>idx!==i));}
+  function save(){
+    if(!name.trim())return;
+    const stageObjs=stages.map(sName=>{
+      const existing=system?.stages?.find(s=>s.name===sName);
+      return existing||{id:uid(),name:sName,status:'pending',tasks:[],timeSpent:0,comment:''};
+    });
+    onSave({...(system||{}),name:name.trim(),stages:stageObjs});
+  }
+  return e('div',{className:'overlay',onClick:ev=>{if(ev.target===ev.currentTarget)onClose();}},
+    e('div',{className:'modal',style:{width:440,maxHeight:'88vh'}},
+      e('div',{className:'modal-head'},e('div',{className:'modal-title'},system?'Editar sistema':'Nuevo sistema'),e('button',{className:'modal-x',onClick:onClose},'✕')),
+      e('div',{className:'modal-body'},
+        e('div',{className:'fg'},e('label',{className:'flabel'},'Nombre del sistema'),e('input',{className:'finput',value:name,onChange:ev=>setName(ev.target.value),placeholder:'ej. Contenido Orgánico',autoFocus:true})),
+        !system&&e('div',{className:'fg'},
+          e('label',{className:'flabel'},'Plantillas rápidas'),
+          e('div',{style:{display:'flex',gap:6,flexWrap:'wrap'}},SYSTEM_TEMPLATES.map(t=>e('button',{key:t.label,className:'template-btn',onClick:()=>applyTemplate(t)},t.label)))
+        ),
+        e('div',{className:'fg'},
+          e('label',{className:'flabel'},'Etapas del proceso'),
+          e('div',{className:'stages-editor'},
+            stages.map((s,i)=>e('div',{key:i,className:'stages-editor-row'},
+              e('span',{style:{fontSize:9,color:'var(--text4)',width:14}},i+1),
+              e('input',{className:'finput',value:s,onChange:ev=>setStages(arr=>arr.map((x,idx)=>idx===i?ev.target.value:x))}),
+              e('button',{className:'rem-del',onClick:()=>removeStage(i)},'✕')
+            )),
+            e('div',{className:'stages-editor-row'},
+              e('input',{className:'finput',value:newStage,placeholder:'+ agregar etapa...',onChange:ev=>setNewStage(ev.target.value),onKeyDown:ev=>{if(ev.key==='Enter')addStage();}}),
+              e('button',{className:'task-add-submit',onClick:addStage},'+')
+            )
+          )
+        ),
+        confirmDel&&e('div',{style:{padding:'8px 10px',background:'var(--red-bg)',border:'1px solid var(--red-border)',borderRadius:'var(--r-md)',fontSize:11,color:'var(--red)'}},'¿Eliminar este sistema? Esta acción no se puede deshacer.')
+      ),
+      e('div',{className:'modal-foot'},
+        system&&onDelete&&!confirmDel&&e('button',{className:'btn btn-danger',style:{marginRight:'auto'},onClick:()=>setConfirmDel(true)},'Eliminar'),
+        system&&onDelete&&confirmDel&&e('button',{className:'btn btn-danger',style:{marginRight:'auto'},onClick:()=>onDelete(system.id)},'Confirmar eliminación'),
+        e('button',{className:'btn',onClick:onClose},'Cancelar'),
+        e('button',{className:'btn btn-primary',onClick:save},system?'Guardar':'Crear')
+      )
+    )
+  );
+}
+
+// ═══════════════════════════════════════════
+// SYSTEM CARD
+// ═══════════════════════════════════════════
+function SystemCard({system,expanded,onToggle,onEdit,onUpdateSystem,systemProgress,fmtWhen}){
+  const pct=systemProgress(system);
+  const taskCount=(system.stages||[]).reduce((a,s)=>a+(s.tasks?.length||0),0);
+  return e('div',{className:'system-card'},
+    e('div',{className:'system-card-top'},
+      e('div',{className:'system-status-dot '+(system.status||'active')}),
+      e('span',{className:'system-card-name'},system.name),
+      e('button',{className:'ghost-btn',onClick:onEdit,title:'Editar'},'···'),
+      e('button',{className:'system-open-btn'+(expanded?' on':''),onClick:onToggle},expanded?'Cerrar':'Abrir ▾')
+    ),
+    e('div',{className:'system-track'},e('div',{className:'system-fill',style:{width:pct+'%'}})),
+    e('div',{className:'system-meta-row'},
+      e('span',{className:'system-meta'},e('b',null,pct+'%'),' progreso'),
+      e('span',{className:'system-meta'},'Últ: ',e('b',null,fmtWhen(system.lastRun))),
+      e('span',{className:'system-meta'},'Próx: ',e('b',null,fmtWhen(system.nextRun))),
+      e('span',{className:'system-meta'},e('b',null,taskCount),' tareas')
+    ),
+    expanded&&e(SystemStages,{system,onUpdateSystem})
+  );
+}
+
+// ═══════════════════════════════════════════
+// PROJECT DASHBOARD — Chronos 2.0
+// ═══════════════════════════════════════════
+function ProjectDashboard(props){
+  const{
+    project,projects,tasks,sessions,ctxs,habits,systems,
+    blocks,setBlocks,realBlocks,liveBlock,tick,blockOpacity,blockStyle,realStyle,tlZoom,setTlZoom,selectedDay,setSelectedDay,onDblClickTime,onEditBlock,onNewBlock,
+    tState,activeSess,
+    onAddTask,onCycleTaskStatus,onDeleteTask,onPlayTask,onFinishTask,
+    onAddHabit,onUpdateHabit,onDeleteHabit,onToggleHabitLog,
+    onAddSystem,onUpdateSystem,onDeleteSystem,
+    onStartTimer,onEditProject,onBack,
+    systemProgress,fmtWhen,pStats
+  }=props;
+
+  const[tab,setTab]=useState('resumen');
+  const[expandedSystem,setExpandedSystem]=useState(null);
+  const[systemForm,setSystemForm]=useState(null); // null | 'new' | system object
+  const[habitForm,setHabitForm]=useState(null);
+  const[newTask,setNewTask]=useState('');
+
+  const pTasks=tasks.filter(t=>t.projectId===project.id);
+  const pendingTasks=pTasks.filter(t=>t.status!=='done');
+  const doneTasks=pTasks.filter(t=>t.status==='done');
+  const pSystems=systems.filter(s=>s.projectId===project.id);
+  const pHabits=habits.filter(h=>h.projectId===project.id);
+  const pSessions=sessions.filter(s=>s.projectId===project.id&&s.endAt).sort((a,b)=>b.endAt-a.endAt);
+  const pCtxs=ctxs.filter(c=>c.projectId===project.id).sort((a,b)=>b.createdAt-a.createdAt);
+  const stats=pStats(project);
+  const totalSecs=pSessions.reduce((a,s)=>a+s.duration,0);
+  const lastActivity=pSessions[0]?pSessions[0].endAt*1000:null;
+  const isRunningHere=(tState==='running'||tState==='paused')&&activeSess&&activeSess.projectId===project.id;
+  const week=currentWeekDays();
+  const today=dayKey();
+  const todayPomos=pSessions.filter(s=>s.day===today).reduce((a,s)=>a+(s.pomos||0),0);
+
+  function addTaskNow(){if(!newTask.trim())return;onAddTask(newTask.trim());setNewTask('');}
+
+  const TABS=[
+    {k:'resumen',label:'Resumen'},
+    {k:'tareas',label:'Tareas'},
+    {k:'sistemas',label:'Sistemas'},
+    {k:'habitos',label:'Hábitos'},
+    {k:'tiempo',label:'Tiempo'},
+    {k:'ajustes',label:'Ajustes'},
+  ];
+
+  return e('div',{className:'dashboard-view'},
+    e('div',{className:'dash-header'},
+      e('button',{className:'dash-back',onClick:onBack},'← Volver a Workspace'),
+      e('div',{className:'dash-head-row'},
+        e('div',{className:'dash-avatar',style:{'--proj-color':project.color}},e(ProjIconSVG,{iconKey:project.icon||DEFAULT_ICON,size:18,color:project.color})),
+        e('div',{className:'dash-title-block'},
+          e('div',{className:'dash-title-row'},
+            e('span',{className:'dash-title'},project.name),
+            project.client&&e('span',{className:'dash-cat-pill'},project.client),
+            e('span',{className:'dash-status-pill '+(project.status==='archived'?'archived':'active')},project.status==='archived'?'Archivado':'Activo')
+          ),
+          project.description&&e('div',{className:'dash-desc'},project.description),
+          e('div',{className:'dash-meta-row'},
+            e('span',{className:'dash-meta-item'},'Tiempo total: ',e('b',null,fmtS(totalSecs))),
+            e('span',{className:'dash-meta-item'},'Última actividad: ',e('b',null,lastActivity?fmtWhen(lastActivity):'—'))
+          )
+        ),
+        e('div',{className:'dash-head-actions'},
+          e('button',{className:'btn',onClick:()=>setTab('tareas')},'+ Nueva tarea'),
+          e('button',{className:'btn btn-primary',onClick:onStartTimer},isRunningHere?'■ En curso':'▶ Iniciar timer')
+        )
+      ),
+      e('div',{className:'dash-tabs'},TABS.map(t=>e('button',{key:t.k,className:'dash-tab'+(tab===t.k?' on':''),onClick:()=>setTab(t.k)},t.label)))
+    ),
+
+    tab==='resumen'&&e('div',{className:'dash-body'},
+      e('div',{className:'dash-stats-row'},
+        e(StatCard,{label:'Tiempo hoy',value:fmtS(stats.todaySecs)}),
+        e(StatCard,{label:'Tiempo semanal',value:fmtS(pSessions.filter(s=>{const d=Date.now()-s.endAt*1000;return d<7*86400000;}).reduce((a,s)=>a+s.duration,0))}),
+        e(StatCard,{label:'Tareas pendientes',value:pendingTasks.length}),
+        e(StatCard,{label:'Hábitos activos',value:pHabits.length}),
+        e(StatCard,{label:'Sistemas activos',value:pSystems.filter(s=>s.status!=='paused').length}),
+        e(StatCard,{label:'Pomodoros hoy',value:todayPomos})
+      ),
+      e('div',{className:'dash-cols'},
+        e('div',{className:'dash-panel'},
+          e('div',{className:'dash-panel-hdr'},e('span',{className:'dash-panel-title'},'Tareas prioritarias'),e('button',{className:'dash-panel-link',onClick:()=>setTab('tareas')},'Ver todas')),
+          e('div',{className:'dash-panel-body'},
+            pendingTasks.length===0&&e('div',{className:'empty'},'Sin tareas pendientes.'),
+            pendingTasks.slice(0,6).map(t=>e(TaskRow,{key:t.id,t,onCycleTaskStatus,onDeleteTask,isActive:isRunningHere&&activeSess.taskId===t.id,onPlay:onPlayTask,onFinish:onFinishTask}))
+          )
+        ),
+        e('div',{className:'dash-panel'},
+          e('div',{className:'dash-panel-hdr'},e('span',{className:'dash-panel-title'},'Sistemas'),e('button',{className:'dash-panel-link',onClick:()=>setTab('sistemas')},'Ver todos')),
+          e('div',{className:'dash-panel-body'},
+            pSystems.length===0&&e('div',{className:'empty'},'Sin sistemas aún.\\nCréalos en la pestaña Sistemas.'),
+            e('div',{className:'systems-grid'},pSystems.slice(0,3).map(s=>e(SystemCard,{key:s.id,system:s,expanded:expandedSystem===s.id,onToggle:()=>setExpandedSystem(v=>v===s.id?null:s.id),onEdit:()=>setSystemForm(s),onUpdateSystem,systemProgress,fmtWhen})))
+          )
+        ),
+        e('div',{className:'dash-panel'},
+          e('div',{className:'dash-panel-hdr'},e('span',{className:'dash-panel-title'},'Hábitos'),e('button',{className:'dash-panel-link',onClick:()=>setTab('habitos')},'Ver todos')),
+          e('div',{className:'dash-panel-body'},
+            pHabits.length===0&&e('div',{className:'empty'},'Sin hábitos aún.'),
+            pHabits.map(h=>{
+              const log=h.log||[];
+              const dueToday=habitOccursOn(h,dateFromDayKey(today))&&!log.includes(today);
+              return e('div',{key:h.id,className:'proj-item',style:{cursor:'default'}},
+                e('span',{className:'proj-label'},(dueToday?'🔔 ':'')+h.name),
+                e('button',{className:'habit-mark-btn'+(log.includes(today)?' on':''),style:{width:'auto',padding:'3px 8px'},onClick:()=>onToggleHabitLog(h.id,today)},log.includes(today)?'✓':'Marcar')
+              );
+            })
+          )
+        )
+      ),
+      e('div',{style:{display:'grid',gridTemplateColumns:'1fr 260px',gap:14}},
+        e('div',{className:'dash-timeline-wrap'},
+          e(Timeline,{blocks,setBlocks,realBlocks,liveBlock,projects,tasks,activeSess,tState,tick,onEditBlock,onNewBlock,onDblClickTime,blockOpacity,blockStyle,realStyle,tlZoom,setTlZoom,selectedDay,setSelectedDay})
+        ),
+        e('div',{className:'dash-panel'},
+          e('div',{className:'dash-panel-hdr'},e('span',{className:'dash-panel-title'},'Progreso de sistemas')),
+          e('div',{className:'dash-panel-body'},
+            pSystems.length===0&&e('div',{className:'empty'},'Sin sistemas.'),
+            pSystems.map(s=>{const pct=systemProgress(s);return e('div',{key:s.id,className:'progress-row'},
+              e('div',{className:'progress-row-top'},e('span',{className:'progress-row-name'},s.name),e('span',{className:'progress-row-pct'},pct+'%')),
+              e('div',{className:'progress-track'},e('div',{className:'progress-fill',style:{width:pct+'%',background:project.color}}))
+            );})
+          )
+        )
+      )
+    ),
+
+    tab==='tareas'&&e('div',{className:'dash-body'},
+      e('div',{className:'dash-panel',style:{maxWidth:640}},
+        e('div',{className:'dash-panel-hdr'},e('span',{className:'dash-panel-title'},'Tareas · pendientes ('+pendingTasks.length+')')),
+        e('div',{className:'dash-panel-body',style:{maxHeight:'none'}},
+          pendingTasks.length===0&&e('div',{className:'empty'},'Sin tareas pendientes. Agrega la primera abajo.'),
+          pendingTasks.map(t=>e(TaskRow,{key:t.id,t,onCycleTaskStatus,onDeleteTask,isActive:isRunningHere&&activeSess.taskId===t.id,onPlay:onPlayTask,onFinish:onFinishTask})),
+          e('div',{className:'task-add-row'},
+            e('input',{className:'finput',placeholder:'+ Nueva tarea...',value:newTask,onChange:ev=>setNewTask(ev.target.value),onKeyDown:ev=>{if(ev.key==='Enter')addTaskNow();}}),
+            e('button',{className:'task-add-submit',onClick:addTaskNow},'+')
+          )
+        ),
+        doneTasks.length>0&&e('div',{className:'panel-divider'}),
+        doneTasks.length>0&&e('div',{className:'panel-sec-lbl'},'Completadas ',e('span',{className:'panel-sec-count'},'('+doneTasks.length+')')),
+        doneTasks.length>0&&e('div',{className:'dash-panel-body',style:{maxHeight:'none'}},doneTasks.map(t=>e('div',{key:t.id,className:'done-task-row'},
+          e('span',{className:'done-task-name'},t.name),
+          e('button',{className:'done-task-reopen',onClick:()=>onCycleTaskStatus(t.id)},'Reabrir'),
+          e('button',{className:'rem-del',onClick:()=>onDeleteTask(t.id)},'✕')
+        )))
+      )
+    ),
+
+    tab==='sistemas'&&e('div',{className:'dash-body'},
+      e('div',{style:{display:'flex',alignItems:'center',gap:10,marginBottom:2}},
+        e('span',{className:'panel-sec-lbl'},'Sistemas · procesos operativos del negocio'),
+        e('button',{className:'btn btn-primary',style:{marginLeft:'auto',fontSize:11},onClick:()=>setSystemForm('new')},'+ Nuevo sistema')
+      ),
+      pSystems.length===0&&e('div',{className:'empty'},'Sin sistemas aún. Un Sistema representa un proceso operativo (ej. Contenido Orgánico, Meta Ads, Prospección).'),
+      e('div',{className:'systems-grid',style:{maxWidth:760}},pSystems.map(s=>e(SystemCard,{key:s.id,system:s,expanded:expandedSystem===s.id,onToggle:()=>setExpandedSystem(v=>v===s.id?null:s.id),onEdit:()=>setSystemForm(s),onUpdateSystem,systemProgress,fmtWhen})))
+    ),
+
+    tab==='habitos'&&e('div',{className:'dash-body'},
+      e('div',{style:{display:'flex',alignItems:'center',gap:10,marginBottom:2}},
+        e('span',{className:'panel-sec-lbl'},'Hábitos · esta semana'),
+      ),
+      pHabits.length>0&&e('div',{className:'habit-grid-hdr',style:{maxWidth:520}},e('div',null),week.map(w=>e('div',{key:w.key,className:'habit-grid-daylbl'+(w.isToday?' today':'')},w.label)),e('div',null)),
+      e('div',{style:{maxWidth:520}},
+        pHabits.length===0&&e('div',{className:'empty'},'Sin hábitos aún. Créalos para recibir recordatorios recurrentes en este proyecto.'),
+        pHabits.map(h=>{
+          const log=h.log||[];
+          const dueToday=habitOccursOn(h,dateFromDayKey(today))&&!log.includes(today);
+          return e('div',{key:h.id,className:'habit-grid-row'},
+            e('span',{className:'habit-grid-name',style:{display:'flex',alignItems:'center',gap:6},onClick:()=>setHabitForm(h)},
+              dueToday&&e('span',{className:'proj-habit-bell',style:{cursor:'default'},title:'Toca cumplir hoy'},e(BellIcon,{active:true,size:10,color:'currentColor'})),
+              h.name
+            ),
+            week.map(w=>{
+              const scheduled=habitOccursOn(h,dateFromDayKey(w.key));
+              const done=log.includes(w.key);
+              return e('div',{key:w.key,className:'habit-grid-cell'+(done?' done':'')+(w.isToday?' today':''),style:done?{background:project.color+'55'}:scheduled?{borderColor:project.color+'50'}:{},onClick:()=>onToggleHabitLog(h.id,w.key),title:w.key});
+            }),
+            e('button',{className:'habit-mark-btn'+(log.includes(today)?' on':''),style:log.includes(today)?{background:project.color+'22',borderColor:project.color+'60',color:project.color}:{},onClick:()=>onToggleHabitLog(h.id,today)},log.includes(today)?'✓ Hoy':'Marcar')
+          );
+        }),
+        e('button',{className:'habit-add-btn',onClick:()=>setHabitForm('new')},'+ Agregar hábito a este proyecto')
+      )
+    ),
+
+    tab==='tiempo'&&e('div',{className:'dash-body'},
+      e('div',{className:'dash-panel',style:{maxWidth:640}},
+        e('div',{className:'dash-panel-hdr'},e('span',{className:'dash-panel-title'},'Historial de sesiones')),
+        e('div',{className:'dash-panel-body',style:{maxHeight:'none'}},
+          pSessions.length===0&&e('div',{className:'empty'},'Sin sesiones registradas todavía.'),
+          pSessions.slice(0,40).map(s=>{
+            const ctx=pCtxs.find(c=>c.sessionId===s.id);
+            return e('div',{key:s.id,style:{padding:'8px 4px',borderBottom:'1px solid var(--border)'}},
+              e('div',{style:{display:'flex',justifyContent:'space-between',fontSize:11.5,color:'var(--text1)'}},
+                e('span',null,new Date(s.endAt*1000).toLocaleDateString('es-CL',{weekday:'short',day:'numeric',month:'short'})),
+                e('span',{style:{fontFamily:"'JetBrains Mono',monospace",color:'var(--text2)'}},fmtS(s.duration))
+              ),
+              ctx?.advanced&&e('div',{style:{fontSize:10.5,color:'var(--text3)',marginTop:2}},ctx.advanced)
+            );
+          })
+        )
+      )
+    ),
+
+    tab==='ajustes'&&e('div',{className:'dash-body'},
+      e('div',{className:'dash-panel',style:{maxWidth:420}},
+        e('div',{className:'dash-panel-hdr'},e('span',{className:'dash-panel-title'},'Ajustes del proyecto')),
+        e('div',{style:{padding:14,display:'flex',flexDirection:'column',gap:10}},
+          e('div',{style:{fontSize:11.5,color:'var(--text2)',lineHeight:1.6}},'Edita nombre, cliente, descripción, color, ícono y límite diario de "'+project.name+'".'),
+          e('button',{className:'btn btn-primary',onClick:onEditProject},'Editar proyecto')
+        )
+      )
+    ),
+
+    systemForm&&e(SystemModal,{
+      system:systemForm==='new'?null:systemForm,
+      onClose:()=>setSystemForm(null),
+      onSave:sys=>{if(systemForm==='new')onAddSystem(sys);else onUpdateSystem({...systemForm,...sys});setSystemForm(null);},
+      onDelete:id=>{onDeleteSystem(id);setSystemForm(null);setExpandedSystem(null);}
+    }),
+    habitForm&&e(HabitFormModal,{
+      habit:habitForm==='new'?null:habitForm,
+      project,
+      onSave:h=>{if(habitForm==='new')onAddHabit(h);else onUpdateHabit(h);setHabitForm(null);},
+      onDelete:id=>{onDeleteHabit(id);setHabitForm(null);},
+      onClose:()=>setHabitForm(null)
+    })
+  );
+}
+
+function StatCard({label,value,sub}){
+  return e('div',{className:'dash-stat-card'},
+    e('div',{className:'dash-stat-lbl'},label),
+    e('div',{className:'dash-stat-val'},value),
+    sub&&e('div',{className:'dash-stat-sub'},sub)
   );
 }
 
