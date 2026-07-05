@@ -211,6 +211,12 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .sec-hdr-title{font-size:11px;font-weight:600;color:var(--text1);text-transform:uppercase;letter-spacing:.8px;flex:1}
 .ghost-btn{background:transparent;border:none;color:var(--text3);cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:var(--r-sm);padding:2px 5px;transition:all .1s;font-family:'Inter',sans-serif;font-size:11px}
 .ghost-btn:hover{background:var(--bg3);color:var(--text1)}
+.toggle-switch{position:relative;display:inline-block;width:34px;height:19px;flex-shrink:0}
+.toggle-switch input{opacity:0;width:0;height:0}
+.toggle-slider{position:absolute;cursor:pointer;inset:0;background:var(--bg4);border:1px solid var(--border2);border-radius:20px;transition:all .15s}
+.toggle-slider:before{content:'';position:absolute;height:13px;width:13px;left:2px;top:2px;background:var(--text2);border-radius:50%;transition:all .15s}
+.toggle-switch input:checked+.toggle-slider{background:var(--accent-bg);border-color:var(--accent-border)}
+.toggle-switch input:checked+.toggle-slider:before{transform:translateX(15px);background:var(--accent)}
 
 /* PROJECTS — compact grouped */
 .proj-list{overflow-y:auto;flex:1;padding-bottom:4px}
@@ -247,6 +253,12 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .pa-btn.go:hover{background:var(--accent-bg);border-color:var(--accent)}
 .proj-habit-bell{width:18px;height:18px;border-radius:var(--r-sm);border:1px solid var(--red-border,#e6675f3a);background:var(--red-bg,#e6675f14);color:var(--red,#e6675f);display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;transition:all .12s}
 .proj-habit-bell:hover{background:var(--red,#e6675f);color:#fff}
+.habit-check{width:17px;height:17px;border-radius:5px;border:1px solid var(--border3);background:transparent;flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .12s}
+.habit-check:hover{border-color:var(--green,#3ab87a)}
+.habit-check.done{background:var(--green-bg,#3ab87a14);border-color:var(--green,#3ab87a)}
+.habit-check.due{border-color:var(--accent2);border-style:dashed}
+.habit-check svg{opacity:0;transition:opacity .1s}
+.habit-check.done svg{opacity:1}
 /* ctx strip — compact */
 .ctx-strip{padding:4px 14px 6px 22px;background:var(--bg0);border-bottom:1px solid var(--border)}
 .ctx-eyebrow{font-size:9px;color:var(--text4);text-transform:uppercase;letter-spacing:.7px;margin-bottom:3px}
@@ -475,15 +487,106 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .habit-add-btn{width:100%;margin-top:4px;background:transparent;border:1px dashed var(--border3);border-radius:var(--r-md);color:var(--text3);font-size:11px;padding:8px 0;font-family:'Inter',sans-serif;cursor:pointer;transition:all .12s}
 .habit-add-btn:hover{color:var(--text1);border-color:var(--border4)}
 /* TASKS TAB — layout tipo Notion: tarea · tag · botón */
-.task-row{display:grid;grid-template-columns:1fr 22px 72px 18px;align-items:center;gap:10px;padding:9px 4px;border-radius:var(--r-sm)}
+.task-row{display:grid;grid-template-columns:1fr 18px 22px 18px 18px;align-items:center;gap:10px;padding:9px 4px;border-radius:var(--r-sm)}
 .task-play-btn{width:22px;height:22px;border-radius:var(--r-sm);border:1px solid var(--accent-border);background:var(--accent-bg);color:var(--accent2);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .12s;padding:0}
 .task-play-btn:hover{background:var(--accent);color:#fff}
 .task-play-btn.stop{border-color:var(--red-border,#e6675f3a);background:var(--red-bg,#e6675f14);color:var(--red,#e6675f)}
 .task-play-btn.stop:hover{background:var(--red,#e6675f);color:#fff}
 .task-row:hover{background:var(--bg3)}
 .task-row:hover .rem-del{opacity:1}
-.task-main{display:flex;align-items:center;gap:10px;min-width:0}
-.task-check{width:15px;height:15px;border-radius:4px;border:1px solid var(--border3);flex-shrink:0;cursor:pointer;transition:all .12s;display:flex;align-items:center;justify-content:center}
+.task-main{display:flex;flex-direction:column;justify-content:center;gap:3px;min-width:0;cursor:default}
+.task-progress-track{height:3px;border-radius:2px;background:var(--border2);overflow:hidden;flex:1;max-width:220px}
+.task-progress-fill{height:100%;background:var(--accent);border-radius:2px;transition:width .2s}
+.task-progress-row{display:flex;align-items:center;gap:6px}
+.task-progress-lbl{font-size:9px;color:var(--text4);flex-shrink:0;font-family:'JetBrains Mono',monospace}
+.sheet{border:1px solid var(--border2);border-radius:10px;overflow:hidden;background:var(--bg2,#141414)}
+.sheet-row{display:grid;grid-template-columns:1fr 148px 138px;border-bottom:1px solid var(--border)}
+.sheet-row:last-child{border-bottom:none}
+.sheet-row.sheet-hdr{background:var(--bg3,#1b1b1b);border-bottom:1px solid var(--border3)}
+.sheet-row.sheet-hdr .sheet-cell{font-size:9.5px;color:var(--text4);text-transform:uppercase;letter-spacing:.04em;font-weight:600;padding:8px 10px}
+.sheet-row:not(.sheet-hdr):hover{background:var(--bg3,#1a1a1a)}
+.sheet-row.fill-range{background:var(--accent-bg,#f256231a)}
+.sheet-row.done .sheet-input-name{color:var(--text3);text-decoration:line-through}
+.sheet-row.sheet-add-row{background:transparent;border-top:1px dashed var(--border3)}
+.sheet-cell{padding:2px 4px;display:flex;align-items:center;border-right:1px solid var(--border);min-width:0}
+.sheet-cell:last-child{border-right:none}
+.sheet-cell-date{justify-content:flex-start}
+.sheet-cell-status{justify-content:flex-end;gap:6px;padding-right:8px}
+.sheet-input{background:transparent;border:1px solid transparent;border-radius:5px;padding:8px 8px;font-size:12.5px;color:var(--text0);font-family:'Inter',sans-serif;min-width:0;width:100%}
+.sheet-input:hover{border-color:var(--border2)}
+.sheet-input:focus{outline:none;border-color:var(--accent);background:var(--bg1,#0c0c0c)}
+.sheet-input-date{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text2);color-scheme:dark;padding:7px 6px}
+.sheet-date-cell{position:relative;display:inline-flex;width:100%}
+.sheet-fill-handle{position:absolute;width:8px;height:8px;right:-1px;bottom:-1px;background:var(--accent);border:1.5px solid var(--bg2,#141414);border-radius:1.5px;cursor:ns-resize;z-index:2}
+.sheet-fill-handle:hover{transform:scale(1.35)}
+.sheet-fill-tooltip{position:fixed;background:var(--accent);color:#fff;font-size:11px;font-weight:600;padding:3px 8px;border-radius:5px;pointer-events:none;z-index:9999;font-family:'JetBrains Mono',monospace;box-shadow:0 4px 12px rgba(0,0,0,.4)}
+.steps-done-btn{font-size:10px;background:transparent;border:1px solid var(--border2);border-radius:6px;color:var(--text2);padding:6px 10px;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;transition:all .1s;flex-shrink:0}
+.steps-done-btn:hover{border-color:var(--border4);color:var(--text0)}
+.steps-done-btn.on{background:var(--green-bg,#3ab87a14);border-color:var(--green,#3ab87a);color:var(--green,#3ab87a)}
+.view-tabs{display:flex;gap:2px;background:var(--bg3);border-radius:var(--r-sm);padding:2px;width:max-content;margin:0 20px 12px}
+.vtab{padding:5px 13px;border-radius:5px;background:transparent;border:none;font-size:11px;color:var(--text3);cursor:pointer;font-family:'Inter',sans-serif;transition:all .1s}
+.vtab.active{background:var(--bg4);color:var(--text0)}
+.tl-note{font-size:10.5px;color:var(--text4);padding:0 2px 10px}
+.tl-toolbar{display:flex;align-items:center;gap:8px;padding:0 2px 10px;flex-wrap:wrap}
+.tl-hint{font-size:10.5px;color:var(--text3)}
+.tl-scroll{overflow-x:auto;overflow-y:hidden;border:1px solid var(--border2);border-radius:10px;background:var(--bg2,#141414)}
+.tl-canvas{position:relative}
+.tl-days{position:relative;height:38px;border-bottom:1px solid var(--border3)}
+.tl-day{position:absolute;top:0;height:38px;display:flex;flex-direction:column;align-items:center;justify-content:center;border-right:1px solid var(--border);gap:1px;box-sizing:border-box}
+.tl-day.today{background:var(--accent-bg)}
+.tl-day-dow{font-size:8px;color:var(--text4);text-transform:uppercase;letter-spacing:.03em}
+.tl-day-num{font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace}
+.tl-day.today .tl-day-num{color:var(--accent2);font-weight:700}
+.tl-today-line{position:absolute;top:0;bottom:0;width:2px;background:var(--red,#e6675f);opacity:.5;z-index:1}
+.tl-pill{position:absolute;display:flex;align-items:center;gap:6px;background:var(--bg4);border:1px solid var(--border2);border-radius:7px;padding:5px 11px 5px 6px;cursor:grab;white-space:nowrap;z-index:2;max-width:280px;overflow:hidden;transition:border-color .1s,box-shadow .1s}
+.tl-pill:hover{border-color:var(--border4)}
+.tl-pill.selected{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent-border)}
+.tl-pill.dragging{cursor:grabbing;box-shadow:0 6px 16px rgba(0,0,0,.45);z-index:5;border-color:var(--accent)}
+.tl-pill.done{opacity:.5}
+.tl-pill.done .tl-pill-label{text-decoration:line-through}
+.tl-pill-check{width:16px;height:16px;border-radius:50%;border:1.5px solid var(--border3);background:transparent;color:#fff;font-size:9px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;padding:0}
+.tl-pill.done .tl-pill-check{background:var(--green,#3ab87a);border-color:var(--green,#3ab87a)}
+.tl-pill-label{font-size:11.5px;color:var(--text0);overflow:hidden;text-overflow:ellipsis}
+.rec-trigger-btn{display:flex;align-items:center;gap:6px;font-size:11px;padding:6px 11px;border-radius:7px;border:1px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;font-family:'Inter',sans-serif;transition:all .12s}
+.rec-trigger-btn:hover{border-color:var(--border4);color:var(--text0)}
+.rec-trigger-btn.set{border-color:var(--accent);background:var(--accent-bg);color:var(--accent2)}
+.task-rec-badge{display:inline-flex;align-items:center;gap:3px;font-size:9.5px;color:var(--text4);margin-top:2px}
+
+/* Recurrence modal */
+.rec-trigger{display:flex;align-items:center;gap:8px;width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:9px 11px;color:var(--text1);font-size:12.5px;cursor:pointer;font-family:'Inter',sans-serif;transition:border-color .1s}
+.rec-trigger:hover{border-color:var(--border4)}
+.rec-trigger span:first-of-type{flex:1;text-align:left}
+.rec-clear{color:var(--text4);padding:2px 4px;border-radius:4px}
+.rec-clear:hover{color:var(--text0);background:var(--bg4)}
+.rec-body{display:flex;flex-direction:column;gap:14px}
+.rec-type-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
+.rec-type-btn{padding:9px 10px;border-radius:8px;background:var(--bg3);border:1px solid var(--border2);color:var(--text2);font-size:12px;cursor:pointer;font-family:'Inter',sans-serif;transition:all .1s;text-align:center}
+.rec-type-btn:hover{border-color:var(--border4);color:var(--text0)}
+.rec-type-btn.active{background:var(--accent-bg);border-color:var(--accent);color:var(--accent2)}
+.rec-section{display:flex;flex-direction:column;gap:10px}
+.rec-row{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--text2)}
+.rec-num{width:56px;background:var(--bg3);border:1px solid var(--border2);border-radius:6px;padding:6px 8px;color:var(--text0);font-size:12.5px;font-family:'JetBrains Mono',monospace;text-align:center}
+.rec-num:focus{outline:none;border-color:var(--accent)}
+.rec-daychips{display:flex;gap:5px}
+.rec-daychip{width:32px;height:32px;border-radius:8px;background:var(--bg3);border:1px solid var(--border2);color:var(--text3);font-size:11.5px;cursor:pointer;font-family:'Inter',sans-serif;transition:all .1s}
+.rec-daychip:hover{border-color:var(--border4);color:var(--text0)}
+.rec-daychip.active{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.rec-presets{display:flex;gap:6px;flex-wrap:wrap}
+.rec-preset-btn{padding:5px 10px;border-radius:6px;background:transparent;border:1px solid var(--border2);color:var(--text3);font-size:10.5px;cursor:pointer;font-family:'Inter',sans-serif;transition:all .1s}
+.rec-preset-btn:hover{border-color:var(--accent);color:var(--accent2)}
+.rec-choice{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:8px;border:1px solid var(--border2);background:var(--bg3);cursor:pointer;font-size:12.5px;color:var(--text2);transition:all .1s}
+.rec-choice:hover{border-color:var(--border4)}
+.rec-choice.active{border-color:var(--accent);background:var(--accent-bg);color:var(--text0)}
+.rec-choice .rec-num{margin:0 2px}
+.rec-radio{width:14px;height:14px;border-radius:50%;border:1.5px solid var(--border4);flex-shrink:0;position:relative}
+.rec-choice.active .rec-radio{border-color:var(--accent)}
+.rec-choice.active .rec-radio::after{content:'';position:absolute;inset:2.5px;border-radius:50%;background:var(--accent)}
+.rec-divider{height:1px;background:var(--border);margin:-2px 0}
+.rec-label-sm{font-size:10.5px;color:var(--text4);text-transform:uppercase;letter-spacing:.03em;margin-bottom:2px}
+.rec-summary{display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--text3);background:var(--bg3);border-radius:7px;padding:9px 11px}
+.task-check{width:15px;height:15px;border-radius:4px;border:1px solid var(--border3);flex-shrink:0;cursor:pointer;transition:all .12s;display:flex;align-items:center;justify-content:center;justify-self:center}
+.task-bell{width:18px;height:18px;display:flex;align-items:center;justify-content:center;justify-self:center;color:var(--text4);flex-shrink:0}
+.task-bell.on{color:var(--red,#e6675f)}
 .task-check:hover{border-color:var(--accent-border)}
 .task-check.inprog{background:var(--accent-bg);border-color:var(--accent-border)}
 .task-check.done{background:var(--green-bg,#3ab87a14);border-color:var(--green,#3ab87a)}
@@ -553,18 +656,34 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .dash-meta-row{display:flex;gap:18px;margin-top:8px;flex-wrap:wrap}
 .dash-meta-item{font-size:10.5px;color:var(--text3)}
 .dash-meta-item b{color:var(--text1);font-weight:500}
-.dash-head-actions{display:flex;gap:8px;flex-shrink:0;margin-top:2px}
+.dash-head-actions{display:flex;gap:8px;flex-shrink:0;margin-top:2px;align-items:center}
+.dash-date-nav{display:flex;align-items:center;gap:2px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r-md);padding:3px 4px;margin-right:2px}
+.dash-date-btn{width:22px;height:22px;border-radius:6px;border:none;background:transparent;color:var(--text3);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.dash-date-btn:hover{background:var(--bg3);color:var(--text1)}
+.dash-date-lbl{font-size:10.5px;color:var(--text1);padding:0 8px;cursor:pointer;text-transform:capitalize;white-space:nowrap}
 .dash-tabs{display:flex;gap:2px;padding:16px 26px 0;border-bottom:1px solid var(--border);flex-shrink:0}
 .dash-tab{background:transparent;border:none;color:var(--text3);font-size:12px;font-family:'Inter',sans-serif;padding:8px 12px 10px;cursor:pointer;position:relative;transition:color .12s;border-radius:6px 6px 0 0}
 .dash-tab:hover{color:var(--text1)}
 .dash-tab.on{color:var(--accent2)}
 .dash-tab.on::after{content:'';position:absolute;left:10px;right:10px;bottom:-1px;height:2px;border-radius:2px;background:var(--accent)}
 .dash-body{padding:20px 26px 100px;flex:1;display:flex;flex-direction:column;gap:18px}
-.dash-stats-row{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
-.dash-stat-card{background:var(--bg1);border:1px solid var(--border2);border-radius:var(--r-lg);padding:12px 14px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.dash-stats-row{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+.dash-stat-card{background:var(--bg1);border:1px solid var(--border2);border-radius:var(--r-lg);padding:12px 14px;display:flex;flex-direction:column;gap:4px;min-width:0;position:relative}
 .dash-stat-lbl{font-size:9px;color:var(--text4);text-transform:uppercase;letter-spacing:.6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .dash-stat-val{font-size:18px;font-weight:600;color:var(--text0);font-family:'JetBrains Mono',monospace;line-height:1.1}
 .dash-stat-sub{font-size:9.5px;color:var(--text3)}
+.dash-stat-icon{width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.dash-stat-icon.editable{cursor:pointer;transition:transform .1s}
+.dash-stat-icon.editable:hover{transform:scale(1.08)}
+.stat-icon-pop{position:absolute;top:26px;right:0;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r-md);box-shadow:0 8px 28px rgba(0,0,0,.45);z-index:80;padding:9px;width:190px}
+.stat-icon-pop-grid{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}
+.stat-icon-pop-item{width:26px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;border:1px solid var(--border2);background:var(--bg4);box-sizing:border-box;transition:all .1s}
+.stat-icon-pop-reset{width:100%;margin-top:8px;background:transparent;border:1px dashed var(--border3);border-radius:var(--r-sm);color:var(--text3);font-size:10px;padding:5px 0;cursor:pointer;font-family:'Inter',sans-serif}
+.stat-icon-pop-reset:hover{color:var(--text1);border-color:var(--border4)}
+.editable-label{cursor:text;display:inline-flex;align-items:center;gap:5px}
+.editable-label-pencil{font-size:9px;opacity:0;color:var(--text4);transition:opacity .1s}
+.editable-label:hover .editable-label-pencil{opacity:1}
+.label-edit-input{background:var(--bg2);border:1px solid var(--accent-border);border-radius:4px;color:var(--text0);font-size:11px;font-weight:600;padding:1px 6px;font-family:'Inter',sans-serif;outline:none;max-width:180px}
 .dash-cols{display:grid;grid-template-columns:1fr 1.3fr 1fr;gap:14px;align-items:start}
 .dash-panel{background:var(--bg1);border:1px solid var(--border2);border-radius:var(--r-lg);display:flex;flex-direction:column;overflow:hidden}
 .dash-panel-hdr{display:flex;align-items:center;padding:11px 14px;border-bottom:1px solid var(--border);gap:8px}
@@ -574,14 +693,37 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .dash-panel-body{padding:6px 8px;display:flex;flex-direction:column;gap:2px;max-height:340px;overflow-y:auto}
 .dash-panel-body::-webkit-scrollbar{width:3px}
 .dash-panel-body::-webkit-scrollbar-thumb{background:var(--bg5);border-radius:2px}
-.dash-timeline-wrap{background:var(--bg1);border:1px solid var(--border2);border-radius:var(--r-lg);overflow:hidden;display:flex;flex-direction:column;height:320px}
+.dash-timeline-wrap{background:var(--bg1);border:1px solid var(--border2);border-radius:var(--r-lg);overflow:hidden;display:flex;flex-direction:column;padding:14px 16px 16px}
 .dash-add-btn{background:transparent;border:none;color:var(--text3);cursor:pointer;font-size:15px;padding:0 2px;line-height:1;border-radius:4px}
 .dash-add-btn:hover{color:var(--accent2)}
+/* HORIZONTAL TIMELINE — Bloques de tiempo */
+.htl{display:flex;flex-direction:column;gap:14px}
+.htl-header{display:flex;align-items:center;justify-content:space-between}
+.htl-day-select{display:flex;align-items:center;gap:2px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r-md);padding:3px 8px;font-size:10.5px;color:var(--text1);text-transform:capitalize}
+.htl-scroll{overflow-x:auto;overflow-y:hidden;padding-bottom:2px}
+.htl-scroll.scrollable{cursor:grab}
+.htl-scroll::-webkit-scrollbar{height:6px}
+.htl-scroll::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:3px}
+.htl-track-wrap{position:relative;padding-top:22px}
+.htl-ruler{position:relative;height:18px;border-bottom:1px solid var(--border2);margin-bottom:14px}
+.htl-tick{position:absolute;top:0;bottom:0;border-left:1px solid var(--border2)}
+.htl-tick-lbl{position:absolute;top:-16px;left:2px;font-size:9px;color:var(--text4);white-space:nowrap;font-family:'JetBrains Mono',monospace}
+.htl-now-pin{position:absolute;top:-24px;transform:translateX(-50%);background:var(--red);color:#fff;font-size:9.5px;font-weight:600;padding:2px 7px;border-radius:20px;font-family:'JetBrains Mono',monospace;white-space:nowrap;z-index:2}
+.htl-now-line{position:absolute;top:0;bottom:0;width:1px;background:var(--red);z-index:1}
+.htl-lane{position:relative;height:64px}
+.htl-block{position:absolute;top:0;bottom:0;border:1px solid;border-radius:var(--r-md);padding:7px 9px;overflow:hidden;display:flex;flex-direction:column;gap:2px;min-width:0}
+.htl-block-name{font-size:10.5px;font-weight:500;color:var(--text0);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.htl-block-time{font-size:9px;color:var(--text2);font-family:'JetBrains Mono',monospace;white-space:nowrap}
+.htl-block-dur{font-size:9px;color:var(--text3);font-family:'JetBrains Mono',monospace;white-space:nowrap;margin-top:auto}
 /* SYSTEM CARDS */
 .systems-grid{display:flex;flex-direction:column;gap:8px}
 .system-card{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r-md);padding:11px 13px;transition:border-color .12s}
 .system-card:hover{border-color:var(--border3)}
-.system-card-top{display:flex;align-items:center;gap:8px}
+.system-card-top{display:flex;align-items:center;gap:9px}
+.system-icon-badge{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.system-status-pill{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;border-radius:20px;padding:2px 8px;flex-shrink:0}
+.system-status-pill.active{color:var(--green);background:var(--green-bg);border:1px solid var(--green-border)}
+.system-status-pill.paused{color:var(--text3);background:var(--bg3);border:1px solid var(--border2)}
 .system-card-name{font-size:12.5px;font-weight:500;color:var(--text0);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .system-status-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
 .system-status-dot.active{background:var(--green)}
@@ -589,11 +731,19 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .system-open-btn{font-size:9.5px;background:transparent;border:1px solid var(--border2);border-radius:var(--r-sm);color:var(--text2);padding:3px 9px;cursor:pointer;font-family:'Inter',sans-serif;transition:all .1s;flex-shrink:0}
 .system-open-btn:hover{border-color:var(--border4);color:var(--text0)}
 .system-open-btn.on{background:var(--accent-bg);border-color:var(--accent-border);color:var(--accent2)}
-.system-track{height:4px;border-radius:3px;background:var(--bg4);margin-top:9px;overflow:hidden}
-.system-fill{height:100%;border-radius:3px;background:var(--accent)}
 .system-meta-row{display:flex;gap:14px;margin-top:8px;flex-wrap:wrap}
 .system-meta{font-size:9.5px;color:var(--text3)}
 .system-meta b{color:var(--text1);font-weight:500}
+.system-observations{margin-top:10px;padding-top:9px;border-top:1px solid var(--border2)}
+.obs-add-row{display:flex;gap:6px}
+.obs-add-row input{flex:1;background:var(--bg3);border:1px solid var(--border2);border-radius:4px;padding:5px 8px;font-size:11px;color:var(--text0);font-family:'Inter',sans-serif;outline:none}
+.obs-add-row input:focus{border-color:var(--border4)}
+.obs-list{display:flex;flex-direction:column;gap:6px;margin-top:8px;max-height:220px;overflow-y:auto}
+.obs-list::-webkit-scrollbar{width:3px}
+.obs-list::-webkit-scrollbar-thumb{background:var(--bg5);border-radius:2px}
+.obs-entry{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);padding:6px 9px}
+.obs-entry-date{font-size:9px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:2px}
+.obs-entry-text{font-size:11.5px;color:var(--text1);line-height:1.5;white-space:pre-wrap;word-break:break-word}
 .system-stages{display:flex;flex-direction:column;gap:6px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)}
 .stage-row{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);padding:8px 10px}
 .stage-hdr{display:flex;align-items:center;gap:8px;cursor:pointer}
@@ -618,6 +768,14 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .stages-editor-row input{flex:1}
 .template-btn{font-size:10px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);color:var(--text2);padding:5px 9px;cursor:pointer;font-family:'Inter',sans-serif;transition:all .1s}
 .template-btn:hover{border-color:var(--border4);color:var(--text0)}
+.habit-preview-row{display:flex;align-items:center;gap:9px;padding:7px 6px;border-radius:var(--r-sm)}
+.habit-preview-row:hover{background:var(--bg3)}
+.habit-preview-icon{width:24px;height:24px;border-radius:7px;background:var(--accent-bg);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.habit-preview-name{font-size:11.5px;color:var(--text1)}
+.habit-preview-streak{display:flex;align-items:center;gap:3px;font-size:9.5px;color:var(--text3);margin-top:1px}
+.habit-preview-dots{display:flex;gap:3px;flex-shrink:0}
+.habit-dot{width:6px;height:6px;border-radius:50%;background:var(--bg4)}
+.habit-dot.on{background:var(--green)}
 /* PROGRESS SIDE PANEL */
 .progress-row{display:flex;flex-direction:column;gap:3px;padding:8px 6px}
 .progress-row-top{display:flex;align-items:center;justify-content:space-between}
@@ -641,6 +799,18 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .timer-widget-pomo{font-size:9.5px;color:var(--text3);display:flex;align-items:center;gap:4px}
 .timer-widget-ctrls{display:flex;gap:6px}
 .timer-widget-ctrls .btn{flex:1;font-size:10px;padding:5px 0;text-align:center}
+@media (max-width:1100px){
+  .dash-stats-row{grid-template-columns:repeat(3,1fr)}
+  .dash-cols{grid-template-columns:1fr}
+}
+@media (max-width:700px){
+  .dash-stats-row{grid-template-columns:repeat(2,1fr)}
+  .dash-head-row{flex-wrap:wrap}
+  .dash-head-actions{flex-wrap:wrap}
+}
+.foco-widget{position:fixed;bottom:18px;left:18px;background:var(--bg1);border:1px solid var(--border3);border-radius:var(--r-xl);box-shadow:0 12px 40px #00000080;z-index:450;padding:12px 16px;display:flex;align-items:center;gap:12px}
+.foco-widget-title{font-size:9px;color:var(--text4);text-transform:uppercase;letter-spacing:.6px;margin-bottom:3px}
+.foco-widget-sub{font-size:10.5px;color:var(--text2);line-height:1.5}
 </style>
 </head>
 <body>
@@ -1124,6 +1294,107 @@ const THEMES=[
 function dayKeyFromTs(ts){const d=new Date(new Date(ts).toLocaleString('en-US',{timeZone:'America/Santiago'}));return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
 function dateFromDayKey(k){return new Date(k+'T12:00:00Z');}
 
+// ═══════════════════════════════════════════
+// TASK RECURRENCE ENGINE
+// ═══════════════════════════════════════════
+function addDaysToKey(dateStr,n){
+  const d=new Date(dateStr+'T00:00:00');
+  d.setDate(d.getDate()+n);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function daysInMonthOf(y,m){ return new Date(y,m+1,0).getDate(); } // m is 0-indexed
+function dateKeyOf(y,m,day){ return `${y}-${String(m+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`; }
+function weekdayKeyOf(dateStr){ const d=new Date(dateStr+'T00:00:00'); return DOW_KEYS[d.getDay()]; }
+function mondayOfWeekKey(dateStr){
+  const d=new Date(dateStr+'T00:00:00');
+  const dow=d.getDay();
+  d.setDate(d.getDate()+(dow===0?-6:1-dow));
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function weeksBetweenKeys(mondayA,mondayB){
+  const a=new Date(mondayA+'T00:00:00').getTime();
+  const b=new Date(mondayB+'T00:00:00').getTime();
+  return Math.round((b-a)/(7*86400000));
+}
+// Given the date a task last occurred on, returns the next occurrence date per its recurrence rule
+function computeNextOccurrence(fromDateStr,rec){
+  if(!rec||rec.type==='none')return null;
+  if(rec.type==='daily'){
+    return addDaysToKey(fromDateStr,Math.max(1,rec.interval||1));
+  }
+  if(rec.type==='weekly'){
+    const days=(rec.days&&rec.days.length)?rec.days:[weekdayKeyOf(fromDateStr)];
+    const interval=Math.max(1,rec.interval||1);
+    const anchorMonday=mondayOfWeekKey(fromDateStr);
+    for(let i=1;i<=7*interval*8;i++){
+      const cand=addDaysToKey(fromDateStr,i);
+      if(!days.includes(weekdayKeyOf(cand)))continue;
+      if(weeksBetweenKeys(anchorMonday,mondayOfWeekKey(cand))%interval===0)return cand;
+    }
+    return addDaysToKey(fromDateStr,7*interval);
+  }
+  if(rec.type==='monthly'){
+    const d=new Date(fromDateStr+'T00:00:00');
+    let y=d.getFullYear(),m=d.getMonth()+1;
+    if(m>11){m=0;y++;}
+    if(rec.monthMode==='first')return dateKeyOf(y,m,1);
+    if(rec.monthMode==='last')return dateKeyOf(y,m,daysInMonthOf(y,m));
+    const day=Math.min(rec.monthDay||d.getDate(),daysInMonthOf(y,m));
+    return dateKeyOf(y,m,day);
+  }
+  return null;
+}
+// Short, human-readable Spanish summary of a recurrence rule, e.g. "Cada 2 semanas · lunes y jueves"
+function recurrenceLabel(rec){
+  if(!rec||rec.type==='none')return'No se repite';
+  if(rec.type==='daily'){
+    const n=rec.interval||1;
+    return n===1?'Cada día':'Cada '+n+' días';
+  }
+  if(rec.type==='weekly'){
+    const n=rec.interval||1;
+    const set=new Set(rec.days||[]);
+    const isWeekdays=['mon','tue','wed','thu','fri'].every(k=>set.has(k))&&set.size===5;
+    const isWeekend=set.size===2&&set.has('sat')&&set.has('sun');
+    const isAll=set.size===7;
+    let daysTxt='';
+    if(isAll)daysTxt='todos los días';
+    else if(isWeekdays)daysTxt='de lunes a viernes';
+    else if(isWeekend)daysTxt='fines de semana';
+    else{
+      const labels=WEEK_DAYS.filter(w=>set.has(w.k)).map(w=>w.full);
+      if(labels.length===1)daysTxt=labels[0];
+      else if(labels.length>1)daysTxt=labels.slice(0,-1).join(', ')+' y '+labels[labels.length-1];
+    }
+    return(n===1?'Cada semana':'Cada '+n+' semanas')+(daysTxt?' · '+daysTxt:'');
+  }
+  if(rec.type==='monthly'){
+    if(rec.monthMode==='first')return'El primer día de cada mes';
+    if(rec.monthMode==='last')return'El último día de cada mes';
+    return'El día '+(rec.monthDay||1)+' de cada mes';
+  }
+  return'';
+}
+// Builds the next occurrence of a recurring task: fresh id, next due date per its
+// recurrence rule, steps carried over as a reset checklist (all marked pending again)
+function spawnNextTaskOccurrence(task){
+  if(!task.recurrence||task.recurrence.type==='none')return null;
+  const fromDate=task.dueDate||dayKey();
+  const nextDate=computeNextOccurrence(fromDate,task.recurrence);
+  if(!nextDate)return null;
+  return{
+    id:uid(),
+    projectId:task.projectId,
+    name:task.name,
+    status:'pending',
+    priority:task.priority||'mid',
+    createdAt:Date.now(),
+    dueDate:nextDate,
+    recurrence:task.recurrence,
+    steps:(task.steps||[]).map(s=>({...s,id:uid(),done:false}))
+  };
+}
+
 const WEEK_DAYS=[
   {k:'mon',l:'L',full:'lunes'},{k:'tue',l:'M',full:'martes'},{k:'wed',l:'X',full:'miércoles'},
   {k:'thu',l:'J',full:'jueves'},{k:'fri',l:'V',full:'viernes'},{k:'sat',l:'S',full:'sábado'},{k:'sun',l:'D',full:'domingo'}
@@ -1140,9 +1411,17 @@ function nthWeekdayInfo(date){
   return{ordinal,isLast};
 }
 
+// Habit recurrence now shares the exact same engine as task recurrence
+// (none/daily/weekly/monthly with interval, days, monthMode, monthDay).
+// habitOccursOn keeps legacy branches (monthly_date/monthly_ordinal) so
+// habits saved before this change keep working.
 function habitOccursOn(habit,date){
-  const r=habit.recurrence||{};
-  if(r.type==='weekly') return (r.days||[]).includes(DOW_KEYS[date.getDay()]);
+  const r=habit.recurrence;
+  if(!r||r.type==='none')return false;
+  const y=date.getFullYear(),mo=String(date.getMonth()+1).padStart(2,'0'),d=String(date.getDate()).padStart(2,'0');
+  const dateKey=`${y}-${mo}-${d}`;
+
+  // ── legacy shapes ──
   if(r.type==='monthly_date'){
     if(r.day==='last'){
       const lastDate=new Date(date.getFullYear(),date.getMonth()+1,0).getDate();
@@ -1155,34 +1434,65 @@ function habitOccursOn(habit,date){
     const{ordinal,isLast}=nthWeekdayInfo(date);
     return r.ordinal==='last'?isLast:ordinal===Number(r.ordinal);
   }
+
+  // ── current shape (same as task recurrence) ──
+  const anchorKey=habit.createdAt?dayKeyFromTs(habit.createdAt):dateKey;
+  if(r.type==='daily'){
+    const n=Math.max(1,r.interval||1);
+    const diff=Math.round((new Date(dateKey+'T00:00:00')-new Date(anchorKey+'T00:00:00'))/86400000);
+    return ((diff%n)+n)%n===0;
+  }
+  if(r.type==='weekly'){
+    const days=(r.days&&r.days.length)?r.days:[weekdayKeyOf(anchorKey)];
+    if(!days.includes(DOW_KEYS[date.getDay()]))return false;
+    const n=Math.max(1,r.interval||1);
+    const diffWeeks=weeksBetweenKeys(mondayOfWeekKey(anchorKey),mondayOfWeekKey(dateKey));
+    return ((diffWeeks%n)+n)%n===0;
+  }
+  if(r.type==='monthly'){
+    const lastDate=new Date(date.getFullYear(),date.getMonth()+1,0).getDate();
+    if(r.monthMode==='first')return date.getDate()===1;
+    if(r.monthMode==='last')return date.getDate()===lastDate;
+    const day=Math.min(r.monthDay||1,lastDate);
+    return date.getDate()===day;
+  }
   return false;
 }
 
 function habitDaysLabel(h){
   const r=h.recurrence||{};
-  if(r.type==='weekly'){
-    if(!(r.days||[]).length) return '—';
-    return WEEK_DAYS.filter(w=>r.days.includes(w.k)).map(w=>w.l).join(' · ');
-  }
   if(r.type==='monthly_date') return r.day==='last'?'Último día':'Día '+r.day;
   if(r.type==='monthly_ordinal'){
     const wd=WEEK_DAYS.find(w=>w.k===r.weekday);
     return (ORDINAL_SHORT[r.ordinal]||r.ordinal)+' '+(wd?wd.l:'');
   }
+  if(r.type==='daily'){
+    const n=r.interval||1;
+    return n===1?'Diario':'Cada '+n+'d';
+  }
+  if(r.type==='weekly'){
+    if(!(r.days||[]).length) return '—';
+    return WEEK_DAYS.filter(w=>r.days.includes(w.k)).map(w=>w.l).join(' · ');
+  }
+  if(r.type==='monthly'){
+    if(r.monthMode==='first')return'1er día';
+    if(r.monthMode==='last')return'Último día';
+    return'Día '+(r.monthDay||1);
+  }
   return '—';
 }
 
+// Last time a habit was marked done, formatted dd-mm-yyyy (or 'Nunca')
+function habitLastDoneLabel(log){
+  if(!log||!log.length) return 'Nunca';
+  const last=log.slice().sort().slice(-1)[0];
+  const[y,m,d]=last.split('-');
+  return d+'-'+m+'-'+y;
+}
+
 function habitSummary(rec,time){
-  if(rec.type==='weekly'){
-    if(!(rec.days||[]).length) return 'Elige al menos un día';
-    const lbl=WEEK_DAYS.filter(w=>rec.days.includes(w.k)).map(w=>w.full).join(', ');
-    return 'Se repite '+lbl+', a las '+time;
-  }
-  if(rec.type==='monthly_date'){
-    return (rec.day==='last'?'El último día de cada mes':'El día '+rec.day+' de cada mes')+', a las '+time;
-  }
-  const wd=WEEK_DAYS.find(w=>w.k===rec.weekday);
-  return 'El '+(ORDINAL_LABELS[rec.ordinal]||rec.ordinal)+' '+(wd?wd.full:'')+' de cada mes, a las '+time;
+  if(!rec||rec.type==='none')return'Elige cada cuánto se repite';
+  return recurrenceLabel(rec)+', a las '+time;
 }
 
 function BellIcon({active,size=13,color}){
@@ -1190,6 +1500,12 @@ function BellIcon({active,size=13,color}){
     active
       ?e(React.Fragment,null,e('path',{d:'M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9'}),e('path',{d:'M13.73 21a2 2 0 01-3.46 0'}))
       :e(React.Fragment,null,e('path',{d:'M18 8A6 6 0 0016.7 4.4'}),e('path',{d:'M6.26 6.26A6 6 0 006 8c0 7-3 9-3 9h13'}),e('path',{d:'M13.73 21a2 2 0 01-3.46 0'}),e('line',{x1:2,y1:2,x2:22,y2:22}))
+  );
+}
+
+function HabitCheck({done,due,onClick,title}){
+  return e('div',{className:'habit-check'+(done?' done':'')+(due&&!done?' due':''),onClick:ev=>{ev.stopPropagation();onClick();},title:title||(done?'Hecho hoy':'Marcar como hecho')},
+    e('svg',{width:10,height:10,viewBox:'0 0 24 24',fill:'none',stroke:'var(--green,#3ab87a)',strokeWidth:3,strokeLinecap:'round',strokeLinejoin:'round'},e('polyline',{points:'20 6 9 17 4 12'}))
   );
 }
 
@@ -1262,6 +1578,8 @@ function App(){
   const firedRemsRef=useRef(new Set());
   const[habits,setHabits]=useState(()=>load('chr4_habits',[]));
   const[systems,setSystems]=useState(()=>load('chr4_systems',INIT_SYSTEMS));
+  const[panelLabels,setPanelLabels]=useState(()=>load('chr4_panelLabels',{tareas:'Tareas prioritarias',sistemas:'Sistemas',habitos:'Hábitos'}));
+  const[panelVisibility,setPanelVisibility]=useState(()=>load('chr4_panelVisibility',{tareas:true,sistemas:true,habitos:true}));
   const[showSystemModal,setShowSystemModal]=useState(false);
   const[editSystem,setEditSystem]=useState(null);
   const[tick,setTick]=useState(0);
@@ -1281,6 +1599,8 @@ function App(){
   useEffect(()=>save('chr4_reminders',reminders),[reminders]);
   useEffect(()=>save('chr4_habits',habits),[habits]);
   useEffect(()=>save('chr4_systems',systems),[systems]);
+  useEffect(()=>save('chr4_panelLabels',panelLabels),[panelLabels]);
+  useEffect(()=>save('chr4_panelVisibility',panelVisibility),[panelVisibility]);
 
   // HABITS → REMINDERS engine: once a day, per habit, if it occurs today and the
   // scheduled time has arrived, push a reminder into the same `reminders` array
@@ -1350,6 +1670,8 @@ function App(){
           if(remote.blocks?.length)    setBlocks(remote.blocks);
           if(remote.habits?.length)    setHabits(remote.habits);
           if(remote.systems?.length)   setSystems(remote.systems);
+          if(remote.panelLabels)       setPanelLabels(remote.panelLabels);
+          if(remote.panelVisibility)   setPanelVisibility(remote.panelVisibility);
           if(remote.reminders?.length) setReminders(remote.reminders);
           if(remote.ctxs?.length)      setCtxs(remote.ctxs);
         }
@@ -1363,12 +1685,83 @@ function App(){
     clearTimeout(sbSyncRef.current);
     sbSyncRef.current=setTimeout(async()=>{
       setSbSyncing(true);
-      try{ await SB.push({projects,sessions,intenciones,tasks,blocks,habits,reminders,ctxs,systems}); }
+      try{ await SB.push({projects,sessions,intenciones,tasks,blocks,habits,reminders,ctxs,systems,panelLabels,panelVisibility}); }
       catch(e){ console.warn('[SB] push error',e); }
       setSbSyncing(false);
     },3000);
     return()=>clearTimeout(sbSyncRef.current);
-  },[projects,sessions,intenciones,tasks,blocks,habits,reminders,ctxs,systems,sbStatus]);
+  },[projects,sessions,intenciones,tasks,blocks,habits,reminders,ctxs,systems,panelLabels,panelVisibility,sbStatus]);
+
+  // SB: force-immediate push (bypasses the 3s debounce) — used for edits the
+  // user explicitly expects to be persisted right away (systems, panel labels)
+  const[forceSyncTick,setForceSyncTick]=useState(0);
+  const forceSync=()=>setForceSyncTick(t=>t+1);
+  useEffect(()=>{
+    if(forceSyncTick===0||sbStatus!=='connected')return;
+    (async()=>{
+      setSbSyncing(true);
+      try{ await SB.push({projects,sessions,intenciones,tasks,blocks,habits,reminders,ctxs,systems,panelLabels,panelVisibility}); }
+      catch(e){ console.warn('[SB] push error',e); }
+      setSbSyncing(false);
+    })();
+  },[forceSyncTick]);
+
+  // Recurrence engine (trigger: 'onSchedule') — for tasks whose recurrence says
+  // "create the next one on its scheduled date, regardless of status", this scans
+  // once on load and every 30s, and spawns the next occurrence once per day per
+  // task (tracked via recurrence.lastSpawnDate) without touching the original task.
+  useEffect(()=>{
+    function checkScheduledRecurrence(){
+      const today=dayKey();
+      let didChange=false;
+      setTasks(prev=>{
+        let changed=false;
+        const spawned=[];
+        const next=prev.map(t=>{
+          if(!t.recurrence||t.recurrence.type==='none'||t.recurrence.trigger!=='onSchedule')return t;
+          if(!t.dueDate||t.dueDate>today)return t;
+          if(t.recurrence.lastSpawnDate===today)return t;
+          const s=spawnNextTaskOccurrence(t);
+          changed=true;
+          if(s)spawned.push(s);
+          return{...t,recurrence:{...t.recurrence,lastSpawnDate:today}};
+        });
+        didChange=changed;
+        if(!changed)return prev;
+        return spawned.length?[...next,...spawned]:next;
+      });
+      if(didChange)forceSync();
+    }
+    checkScheduledRecurrence();
+    const id=setInterval(checkScheduledRecurrence,30000);
+    return()=>clearInterval(id);
+  },[]);
+
+  // SB: keep a ref with the latest full snapshot so the unload flush below
+  // always sends fresh data, not a stale closure from when the listener was added
+  const sbLatestRef=useRef(null);
+  useEffect(()=>{
+    sbLatestRef.current={projects,sessions,intenciones,tasks,blocks,habits,reminders,ctxs,systems,panelLabels,panelVisibility};
+  });
+
+  // SB: flush any pending change right before the tab closes/refreshes, using
+  // keepalive so the request survives page unload — this is the safety net for
+  // "marqué el hábito/tarea y recargué antes de que pasara el debounce de 3s"
+  useEffect(()=>{
+    function flush(){
+      if(sbStatus!=='connected'||!SB.configured()||!sbLatestRef.current) return;
+      try{
+        const url=`${SB.url}/rest/v1/chronos`;
+        const body=JSON.stringify({ user_id: SB.uid, data: sbLatestRef.current, updated_at: new Date().toISOString() });
+        fetch(url,{method:'POST',keepalive:true,headers:{'apikey':SB.anon,'Authorization':'Bearer '+SB.anon,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates'},body});
+      }catch(e){ /* best effort */ }
+    }
+    window.addEventListener('beforeunload',flush);
+    window.addEventListener('pagehide',flush);
+    document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden') flush(); });
+    return()=>{ window.removeEventListener('beforeunload',flush); window.removeEventListener('pagehide',flush); };
+  },[sbStatus]);
+
 
   // Keep refs in sync so the timer interval always reads the latest value without stale closures
   useEffect(()=>{pomoPhaseDoneRef.current=pomoPhaseDone;},[pomoPhaseDone]);
@@ -1579,12 +1972,6 @@ function App(){
 
   function handleSaveCtx(ctx){setCtxs(cs=>[...cs,{...ctx,id:uid(),createdAt:Date.now()}]);setShowCtxModal(null);showNotif('Contexto guardado');}
 
-  function systemProgress(sys){
-    const stages=sys.stages||[];
-    if(stages.length===0)return 0;
-    const done=stages.filter(s=>s.status==='done').length;
-    return Math.round((done/stages.length)*100);
-  }
   function fmtWhen(ts){
     if(!ts)return '—';
     const diff=Date.now()-ts;
@@ -1701,6 +2088,8 @@ function App(){
         ?e(ProjectDashboard,{
             project:selectedProjObj,
             projects,tasks,sessions,ctxs,habits,systems,
+            panelLabels,onRenameLabel:(key,val)=>{setPanelLabels(p=>({...p,[key]:val}));forceSync();},
+            panelVisibility,onTogglePanelVisibility:(key)=>{setPanelVisibility(p=>({...p,[key]:!(p[key]!==false)}));forceSync();},
             blocks,setBlocks,realBlocks,liveBlock,tick,
             blockOpacity:themeCfg.blockOpacity,blockStyle:themeCfg.blockStyle||'stripe',realStyle:themeCfg.realStyle||'solid',
             tlZoom,setTlZoom,selectedDay,setSelectedDay,
@@ -1708,22 +2097,51 @@ function App(){
             onEditBlock:b=>setEditBlock(b),
             onNewBlock:()=>{setNewBlockPreset(null);setShowNewBlock(true);},
             tState,activeSess,
-            onAddTask:name=>setTasks(ts=>[...ts,{id:uid(),projectId:selectedProjObj.id,name,status:'pending',priority:'mid',createdAt:Date.now()}]),
-            onCycleTaskStatus:id=>setTasks(ts=>ts.map(t=>{if(t.id!==id)return t;const next={pending:'inprog',inprog:'done',done:'pending'};return{...t,status:next[t.status]||'pending'};})),
-            onDeleteTask:id=>setTasks(ts=>ts.filter(t=>t.id!==id)),
+            onAddTask:(name,recurrence)=>{setTasks(ts=>[...ts,{id:uid(),projectId:selectedProjObj.id,name,status:'pending',priority:'mid',createdAt:Date.now(),steps:[],recurrence:recurrence||null,dueDate:recurrence?dayKey():null}]);forceSync();},
+            onCycleTaskStatus:id=>{
+              setTasks(ts=>{
+                const t=ts.find(x=>x.id===id);
+                if(!t)return ts;
+                const nextStatus={pending:'inprog',inprog:'done',done:'pending'}[t.status]||'pending';
+                let out=ts.map(x=>x.id===id?{...x,status:nextStatus}:x);
+                if(nextStatus==='done'&&t.recurrence&&t.recurrence.trigger==='onComplete'){
+                  const spawned=spawnNextTaskOccurrence({...t,status:nextStatus});
+                  if(spawned)out=[...out,spawned];
+                }
+                return out;
+              });
+              forceSync();
+            },
+            onUpdateTask:(id,patch)=>{setTasks(ts=>ts.map(t=>t.id===id?{...t,...patch}:t));forceSync();},
+            onUpdateTaskSteps:(id,steps)=>{setTasks(ts=>ts.map(t=>t.id===id?{...t,steps}:t));forceSync();},
+            onDeleteTask:id=>{setTasks(ts=>ts.filter(t=>t.id!==id));forceSync();},
             onPlayTask:taskId=>{const t=tasks.find(x=>x.id===taskId);setStartFlow({projId:selectedProjObj.id,mode:'pomo',taskId,taskName:t?t.name:null});},
             onFinishTask:handleStop,
-            onAddHabit:h=>setHabits(hs=>[...hs,{...h,id:uid(),projectId:selectedProjObj.id}]),
-            onUpdateHabit:h=>setHabits(hs=>hs.map(x=>x.id===h.id?h:x)),
-            onDeleteHabit:id=>setHabits(hs=>hs.filter(x=>x.id!==id)),
-            onToggleHabitLog:(id,day)=>setHabits(hs=>hs.map(x=>{if(x.id!==id)return x;const log=x.log||[];return{...x,log:log.includes(day)?log.filter(d=>d!==day):[...log,day]};})),
-            onAddSystem:sys=>setSystems(ss=>[...ss,{...sys,id:uid(),projectId:selectedProjObj.id,status:'active',createdAt:Date.now(),lastRun:null,nextRun:null}]),
-            onUpdateSystem:sys=>setSystems(ss=>ss.map(s=>s.id===sys.id?sys:s)),
-            onDeleteSystem:id=>setSystems(ss=>ss.filter(s=>s.id!==id)),
+            onAddHabit:h=>{setHabits(hs=>[...hs,{...h,id:uid(),projectId:selectedProjObj.id}]);forceSync();},
+            onUpdateHabit:h=>{setHabits(hs=>hs.map(x=>x.id===h.id?h:x));forceSync();},
+            onDeleteHabit:id=>{setHabits(hs=>hs.filter(x=>x.id!==id));forceSync();},
+            onToggleHabitLog:(id,day)=>{
+              const h0=habits.find(x=>x.id===id);
+              const wasDone=h0?(h0.log||[]).includes(day):false;
+              const nowDone=!wasDone;
+              setHabits(hs=>hs.map(x=>{
+                if(x.id!==id)return x;
+                const log=x.log||[];
+                return{...x,log:wasDone?log.filter(d=>d!==day):[...log,day]};
+              }));
+              // Mantiene sincronizado el panel de notificaciones: si el hábito
+              // ya generó un recordatorio para ese día, refleja el mismo estado.
+              setReminders(rs=>rs.map(r=>(r.habitId===id&&dayKeyFromTs(r.dueAt)===day)?{...r,done:nowDone,overdue:nowDone?false:r.overdue}:r));
+              forceSync();
+            },
+            onAddSystem:sys=>{setSystems(ss=>[...ss,{lastRun:null,nextRun:null,...sys,id:uid(),projectId:selectedProjObj.id,status:'active',createdAt:Date.now()}]);forceSync();},
+            onUpdateSystem:sys=>{setSystems(ss=>ss.map(s=>s.id===sys.id?sys:s));forceSync();},
+            onDeleteSystem:id=>{setSystems(ss=>ss.filter(s=>s.id!==id));forceSync();},
+            onPatchProject:patch=>{setProjects(ps=>ps.map(p=>p.id===selectedProjObj.id?{...p,...patch}:p));forceSync();},
             onStartTimer:()=>setStartFlow({projId:selectedProjObj.id,mode:'ask'}),
             onEditProject:()=>setEditProj(selectedProjObj),
             onBack:()=>setView('workspace'),
-            systemProgress,fmtWhen,pStats
+            fmtWhen,pStats
           })
         :e(React.Fragment,null,
 
@@ -1865,7 +2283,20 @@ function App(){
       }
     }),
     showCtxModal&&e(CtxModal,{session:showCtxModal,project:projects.find(p=>p.id===showCtxModal.projectId),onSave:handleSaveCtx,onSkip:()=>setShowCtxModal(null)}),
-    showHist&&e(HistModal,{project:projects.find(p=>p.id===showHist),ctxs:ctxs.filter(c=>c.projectId===showHist).sort((a,b)=>b.createdAt-a.createdAt),sessions:sessions.filter(s=>s.projectId===showHist&&s.endAt),habits:habits.filter(h=>h.projectId===showHist),onAddHabit:h=>setHabits(hs=>[...hs,h]),onUpdateHabit:h=>setHabits(hs=>hs.map(x=>x.id===h.id?h:x)),onDeleteHabit:id=>setHabits(hs=>hs.filter(x=>x.id!==id)),onToggleHabitLog:(id,day)=>setHabits(hs=>hs.map(x=>{if(x.id!==id)return x;const log=x.log||[];return{...x,log:log.includes(day)?log.filter(d=>d!==day):[...log,day]};})),tasks:tasks.filter(t=>t.projectId===showHist),onAddTask:name=>setTasks(ts=>[...ts,{id:uid(),projectId:showHist,name,status:'pending',priority:'mid',createdAt:Date.now()}]),onCycleTaskStatus:id=>setTasks(ts=>ts.map(t=>{if(t.id!==id)return t;const next={pending:'inprog',inprog:'done',done:'pending'};return{...t,status:next[t.status]||'pending'};})),onDeleteTask:id=>setTasks(ts=>ts.filter(t=>t.id!==id)),onClose:()=>setShowHist(null),tState,activeSess,onPlayTask:taskId=>{const t=tasks.find(x=>x.id===taskId);setStartFlow({projId:showHist,mode:'pomo',taskId,taskName:t?t.name:null});},onFinishTask:handleStop}),
+    showHist&&e(HistModal,{project:projects.find(p=>p.id===showHist),ctxs:ctxs.filter(c=>c.projectId===showHist).sort((a,b)=>b.createdAt-a.createdAt),sessions:sessions.filter(s=>s.projectId===showHist&&s.endAt),habits:habits.filter(h=>h.projectId===showHist),onAddHabit:h=>{setHabits(hs=>[...hs,h]);forceSync();},onUpdateHabit:h=>{setHabits(hs=>hs.map(x=>x.id===h.id?h:x));forceSync();},onDeleteHabit:id=>{setHabits(hs=>hs.filter(x=>x.id!==id));forceSync();},onToggleHabitLog:(id,day)=>{setHabits(hs=>hs.map(x=>{if(x.id!==id)return x;const log=x.log||[];return{...x,log:log.includes(day)?log.filter(d=>d!==day):[...log,day]};}));forceSync();},tasks:tasks.filter(t=>t.projectId===showHist),onAddTask:(name,recurrence)=>{setTasks(ts=>[...ts,{id:uid(),projectId:showHist,name,status:'pending',priority:'mid',createdAt:Date.now(),steps:[],recurrence:recurrence||null,dueDate:recurrence?dayKey():null}]);forceSync();},onCycleTaskStatus:id=>{
+      setTasks(ts=>{
+        const t=ts.find(x=>x.id===id);
+        if(!t)return ts;
+        const nextStatus={pending:'inprog',inprog:'done',done:'pending'}[t.status]||'pending';
+        let out=ts.map(x=>x.id===id?{...x,status:nextStatus}:x);
+        if(nextStatus==='done'&&t.recurrence&&t.recurrence.trigger==='onComplete'){
+          const spawned=spawnNextTaskOccurrence({...t,status:nextStatus});
+          if(spawned)out=[...out,spawned];
+        }
+        return out;
+      });
+      forceSync();
+    },onUpdateTask:(id,patch)=>{setTasks(ts=>ts.map(t=>t.id===id?{...t,...patch}:t));forceSync();},onUpdateTaskSteps:(id,steps)=>{setTasks(ts=>ts.map(t=>t.id===id?{...t,steps}:t));forceSync();},onDeleteTask:id=>{setTasks(ts=>ts.filter(t=>t.id!==id));forceSync();},onClose:()=>setShowHist(null),tState,activeSess,onPlayTask:taskId=>{const t=tasks.find(x=>x.id===taskId);setStartFlow({projId:showHist,mode:'pomo',taskId,taskName:t?t.name:null});},onFinishTask:handleStop}),
     showNewProj&&e(ProjModal,{onClose:()=>setShowNewProj(false),onSave:p=>{setProjects(ps=>[...ps,{...p,id:uid(),status:'active',createdAt:Date.now()}]);setShowNewProj(false);}}),
     editProj&&e(ProjModal,{project:editProj,onClose:()=>setEditProj(null),onSave:p=>{setProjects(ps=>ps.map(pp=>pp.id===p.id?p:pp));setEditProj(null);},onDelete:id=>{setProjects(ps=>ps.filter(p=>p.id!==id));if(selProj===id)setSelProj(null);setEditProj(null);}}),
     (editBlock||showNewBlock)&&e(BlockModal,{
@@ -1899,6 +2330,8 @@ function App(){
             if(remote.blocks?.length)   setBlocks(remote.blocks);
             if(remote.habits?.length)   setHabits(remote.habits);
           if(remote.systems?.length)  setSystems(remote.systems);
+            if(remote.panelLabels)     setPanelLabels(remote.panelLabels);
+            if(remote.panelVisibility) setPanelVisibility(remote.panelVisibility);
             if(remote.reminders?.length)setReminders(remote.reminders);
             if(remote.ctxs?.length)     setCtxs(remote.ctxs);
             showNotif('☁ Datos restaurados desde Supabase ✓');
@@ -1910,7 +2343,7 @@ function App(){
       onDisconnect:()=>{ SB.disconnect(); setSbStatus('disconnected'); },
       onManualSync:async()=>{
         setSbSyncing(true);
-        try{ await SB.push({projects,sessions,intenciones,tasks,blocks,habits,reminders,ctxs,systems}); showNotif('☁ Sincronizado ✓'); }
+        try{ await SB.push({projects,sessions,intenciones,tasks,blocks,habits,reminders,ctxs,systems,panelLabels,panelVisibility}); showNotif('☁ Sincronizado ✓'); }
         catch(e){ console.warn(e); }
         setSbSyncing(false);
       },
@@ -1918,7 +2351,7 @@ function App(){
     }),
     showSoundCfg&&e(SoundCfgModal,{cfg:soundCfg,onChange:c=>{setSoundCfg(c);save('chr4_sound',c);},onClose:()=>setShowSoundCfg(false)}),
     showThemeCfg&&e(ThemeCfgModal,{cfg:themeCfg,onChange:c=>{setThemeCfg(c);save('chr4_theme',c);},onClose:()=>setShowThemeCfg(false),tlZoom,setTlZoom}),
-    showRemPanel&&e(RemindersFloatPanel,{reminders,setReminders,habits,projects,selectedDay,onClose:()=>setShowRemPanel(false)}),
+    showRemPanel&&e(RemindersFloatPanel,{reminders,setReminders,habits,setHabits,projects,selectedDay,onClose:()=>setShowRemPanel(false),forceSync}),
     remToast&&e('div',{className:'rem-toast'},
       e('div',{className:'rem-toast-hdr'},
         e('div',{className:'rem-toast-dot'}),
@@ -1927,8 +2360,8 @@ function App(){
       ),
       remToast.projName&&e('div',{className:'rem-toast-proj'},remToast.projName),
       e('div',{className:'rem-toast-actions'},
-        e('button',{className:'btn btn-primary',style:{fontSize:10,padding:'3px 10px'},onClick:()=>{setReminders(rs=>rs.map(r=>r.id===remToast.id?{...r,done:true}:r));setRemToast(null);}},'✓ Listo'),
-        e('button',{className:'btn',style:{fontSize:10,padding:'3px 10px'},onClick:()=>{setReminders(rs=>rs.map(r=>r.id===remToast.id?{...r,dueAt:Date.now()+15*60000,overdue:false,snoozedAt:Date.now()}:r));setRemToast(null);}},'+15 min'),
+        e('button',{className:'btn btn-primary',style:{fontSize:10,padding:'3px 10px'},onClick:()=>{setReminders(rs=>rs.map(r=>r.id===remToast.id?{...r,done:true}:r));setRemToast(null);forceSync();}},'✓ Listo'),
+        e('button',{className:'btn',style:{fontSize:10,padding:'3px 10px'},onClick:()=>{setReminders(rs=>rs.map(r=>r.id===remToast.id?{...r,dueAt:Date.now()+15*60000,overdue:false,snoozedAt:Date.now()}:r));setRemToast(null);forceSync();}},'+15 min'),
         e('button',{className:'btn',style:{fontSize:10,padding:'3px 10px'},onClick:()=>{setShowRemPanel(true);setRemToast(null);}},'Ver')
       )
     ),
@@ -2465,7 +2898,7 @@ function MiniDrumCol({items,selIdx,onChange,colRef}){
 const DRUM_HOURS=['06','07','08','09','10','11','12','13','14','15','16','17','18','19','20','21'];
 const DRUM_MINS=['00','05','10','15','20','25','30','45'];
 
-function RemindersFloatPanel({reminders,setReminders,habits,projects,selectedDay,onClose}){
+function RemindersFloatPanel({reminders,setReminders,habits,setHabits,projects,selectedDay,onClose,forceSync}){
   const[qTitle,setQTitle]=useState('');
   const[qTime,setQTime]=useState('09:00');
   const[qProjId,setQProjId]=useState('');
@@ -2515,16 +2948,35 @@ function RemindersFloatPanel({reminders,setReminders,habits,projects,selectedDay
     setReminders(prev=>[r,...prev]);
     setQTitle('');
     setOpenDd(null);
+    forceSync();
   }
 
   function toggleDone(id){
-    setReminders(prev=>prev.map(r=>r.id===id?{...r,done:!r.done,overdue:r.done?r.overdue:false}:r));
+    const r0=reminders.find(x=>x.id===id);
+    if(!r0) return;
+    const newDone=!r0.done;
+    setReminders(prev=>prev.map(r=>r.id===id?{...r,done:newDone,overdue:newDone?false:r.overdue}:r));
+    // Si el recordatorio viene de un hábito, sincroniza también su casilla
+    // en el panel de hábitos del día correspondiente.
+    if(r0.habitId&&setHabits){
+      const dayK=dayKeyFromTs(r0.dueAt);
+      setHabits(hs=>hs.map(h=>{
+        if(h.id!==r0.habitId)return h;
+        const log=h.log||[];
+        const has=log.includes(dayK);
+        if(newDone&&!has) return{...h,log:[...log,dayK]};
+        if(!newDone&&has) return{...h,log:log.filter(d=>d!==dayK)};
+        return h;
+      }));
+    }
+    forceSync();
   }
 
-  function deleteRem(id){setReminders(prev=>prev.filter(r=>r.id!==id));}
+  function deleteRem(id){setReminders(prev=>prev.filter(r=>r.id!==id));forceSync();}
 
   function snoozeRem(id,mins){
     setReminders(prev=>prev.map(r=>r.id===id?{...r,dueAt:Date.now()+mins*60000,overdue:false,snoozedAt:Date.now()}:r));
+    forceSync();
   }
 
   function fmtTime(ts){return new Date(ts).toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'});}
@@ -2636,14 +3088,26 @@ function RemindersFloatPanel({reminders,setReminders,habits,projects,selectedDay
 
       dayHabits.map(h=>{
         const proj=projects.find(p=>p.id===h.projectId);
-        return e('div',{key:'h_'+h.id,className:'rem-item',style:{opacity:.65}},
-          e('div',{style:{width:9,flexShrink:0}}),
+        const doneThisDay=(h.log||[]).includes(selectedDay);
+        return e('div',{key:'h_'+h.id,className:'rem-item',style:{opacity:doneThisDay?.4:.65}},
+          e(HabitCheck,{
+            done:doneThisDay,due:true,
+            onClick:()=>{
+              if(!setHabits)return;
+              setHabits(hs=>hs.map(x=>{
+                if(x.id!==h.id)return x;
+                const log=x.log||[];
+                return{...x,log:log.includes(selectedDay)?log.filter(d=>d!==selectedDay):[...log,selectedDay]};
+              }));
+              forceSync();
+            }
+          }),
           e('div',{className:'rem-item-stripe',style:{background:proj?.color||'var(--text4)'}}),
           e('div',{className:'rem-item-body'},
-            e('div',{className:'rem-item-title'},h.name),
+            e('div',{className:'rem-item-title',style:doneThisDay?{textDecoration:'line-through'}:{}},h.name),
             e('div',{className:'rem-item-meta'},proj&&e('span',null,proj.name+' · '),e('span',null,h.time))
           ),
-          e(BellIcon,{active:true,size:11,color:proj?.color||'var(--accent2)'})
+          e(BellIcon,{active:!doneThisDay,size:11,color:proj?.color||'var(--accent2)'})
         );
       }),
 
@@ -3030,17 +3494,38 @@ function StopIcon({size=9,color}){
     e('rect',{x:5,y:5,width:14,height:14,rx:2})
   );
 }
+function RepeatIcon({size=13,color}){
+  return e('svg',{width:size,height:size,viewBox:'0 0 24 24',fill:'none',stroke:color||'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round',style:{display:'block',flexShrink:0}},
+    e('path',{d:'M17 2.5l4 4-4 4'}),
+    e('path',{d:'M3 12.5v-2a4 4 0 0 1 4-4h14'}),
+    e('path',{d:'M7 21.5l-4-4 4-4'}),
+    e('path',{d:'M21 11.5v2a4 4 0 0 1-4 4H3'})
+  );
+}
 
-function TaskRow({t,onCycleTaskStatus,onDeleteTask,isActive,onPlay,onFinish}){
+function TaskRow({t,onCycleTaskStatus,onDeleteTask,isActive,onPlay,onFinish,onOpenSteps}){
+  const steps=t.steps||[];
+  const total=steps.length;
+  const doneCount=steps.filter(s=>s.done).length;
+  const pct=total>0?Math.round(doneCount/total*100):0;
+  const today=dayKey();
+  const hasDue=steps.some(s=>!s.done&&s.dueDate&&s.dueDate<=today);
   return e('div',{className:'task-row'},
-    e('div',{className:'task-main'},
-      e('div',{className:'task-check'+(t.status==='inprog'?' inprog':''),onClick:()=>onCycleTaskStatus(t.id)}),
-      e('span',{className:'task-name'},t.name)
+    e('div',{className:'task-main',onDoubleClick:()=>onOpenSteps&&onOpenSteps(t),title:onOpenSteps?'Doble click para ver pasos':undefined},
+      e('span',{className:'task-name'},t.name),
+      total>0&&e('div',{className:'task-progress-row'},
+        e('div',{className:'task-progress-track'},e('div',{className:'task-progress-fill',style:{width:pct+'%'}})),
+        e('span',{className:'task-progress-lbl'},doneCount+'/'+total)
+      ),
+      t.recurrence&&t.recurrence.type!=='none'&&e('span',{className:'task-rec-badge',title:recurrenceLabel(t.recurrence)},
+        e(RepeatIcon,{size:9,color:'currentColor'}),recurrenceLabel(t.recurrence)
+      )
     ),
+    e('span',{className:'task-bell'+(hasDue?' on':''),title:hasDue?'Hay un paso por cumplir':'Sin pasos pendientes por hoy'},e(BellIcon,{active:hasDue,size:13,color:'currentColor'})),
     isActive
       ?e('button',{className:'task-play-btn stop',onClick:onFinish,title:'Finalizar sesión'},e(StopIcon,null))
       :e('button',{className:'task-play-btn',onClick:()=>onPlay(t.id),title:'Iniciar Pomodoro'},e(PlayIcon,null)),
-    e('button',{className:'task-mark-btn',onClick:()=>onCycleTaskStatus(t.id)},'Marcar'),
+    e('div',{className:'task-check'+(t.status==='inprog'?' inprog':''),onClick:()=>onCycleTaskStatus(t.id),title:'Marcar como hecho'}),
     e('button',{className:'rem-del',onClick:()=>onDeleteTask(t.id),title:'Eliminar'},'✕')
   );
 }
@@ -3104,7 +3589,7 @@ function HistModal({project,ctxs,sessions,habits,onAddHabit,onUpdateHabit,onDele
               const log=h.log||[];
               const dueToday=habitOccursOn(h,dateFromDayKey(today))&&!log.includes(today);
               return e('div',{key:h.id,className:'habit-grid-row'},
-                e('span',{className:'habit-grid-name',style:{display:'flex',alignItems:'center',gap:6},onClick:()=>setHabitForm(h)},
+                e('span',{className:'habit-grid-name',style:{display:'flex',alignItems:'center',gap:6,cursor:'pointer'},title:'Doble click para editar',onDoubleClick:()=>setHabitForm(h)},
                   dueToday&&e('span',{className:'proj-habit-bell',style:{cursor:'default'},title:'Toca cumplir hoy'},e(BellIcon,{active:true,size:10,color:'currentColor'})),
                   h.name
                 ),
@@ -3146,28 +3631,16 @@ function HistModal({project,ctxs,sessions,habits,onAddHabit,onUpdateHabit,onDele
 // HABIT FORM MODAL — create / edit a recurring habit
 // ═══════════════════════════════════════════
 function HabitFormModal({habit,project,onSave,onDelete,onClose}){
-  const initRec=habit?.recurrence||{type:'weekly',days:[]};
   const[name,setName]=useState(habit?.name||'');
-  const[topTab,setTopTab]=useState(initRec.type==='weekly'?'weekly':'monthly');
-  const[monthMode,setMonthMode]=useState(initRec.type==='monthly_ordinal'?'ordinal':'date');
-  const[days,setDays]=useState(initRec.type==='weekly'?(initRec.days||[]):[]);
-  const[monthLastDay,setMonthLastDay]=useState(initRec.type==='monthly_date'&&initRec.day==='last');
-  const[monthDay,setMonthDay]=useState(initRec.type==='monthly_date'&&initRec.day!=='last'?Number(initRec.day)||15:15);
-  const[ordinal,setOrdinal]=useState(initRec.type==='monthly_ordinal'?(initRec.ordinal||1):1);
-  const[weekday,setWeekday]=useState(initRec.type==='monthly_ordinal'?(initRec.weekday||'mon'):'mon');
+  const[color,setColor]=useState(habit?.color||'#2fb87a');
+  const[icon,setIcon]=useState(habit?.icon||'target');
+  const[recurrence,setRecurrence]=useState(()=>habit?.recurrence||{type:'weekly',interval:1,days:[weekdayKeyOf(dayKey())],monthMode:'same',monthDay:new Date().getDate()});
+  const[showRec,setShowRec]=useState(false);
   const[time,setTime]=useState(habit?.time||'09:00');
   const[reminder,setReminder]=useState(habit?habit.reminder!==false:true);
+  const log=habit?.log||[];
 
-  function toggleDay(k){setDays(d=>d.includes(k)?d.filter(x=>x!==k):[...d,k]);}
-
-  function buildRecurrence(){
-    if(topTab==='weekly') return{type:'weekly',days};
-    if(monthMode==='date') return{type:'monthly_date',day:monthLastDay?'last':Number(monthDay)};
-    return{type:'monthly_ordinal',ordinal,weekday};
-  }
-
-  const rec=buildRecurrence();
-  const isValid=name.trim()&&(rec.type!=='weekly'||rec.days.length>0);
+  const isValid=!!name.trim()&&!!recurrence&&recurrence.type!=='none';
 
   function handleSave(){
     if(!isValid)return;
@@ -3175,9 +3648,13 @@ function HabitFormModal({habit,project,onSave,onDelete,onClose}){
       id:habit?.id||uid(),
       projectId:project.id,
       name:name.trim(),
-      recurrence:rec,
+      recurrence,
       time,
       reminder,
+      log,
+      color,
+      icon,
+      createdAt:habit?.createdAt||Date.now(),
       lastFiredDate:habit?.lastFiredDate||null
     });
   }
@@ -3196,50 +3673,36 @@ function HabitFormModal({habit,project,onSave,onDelete,onClose}){
           e('div',{className:'flabel'},'Nombre'),
           e('input',{className:'finput',value:name,onChange:ev=>setName(ev.target.value),placeholder:'Ej. Práctica guitarra',autoFocus:true})
         ),
+        e('div',{className:'fg'},e('div',{className:'flabel'},'Color'),e('div',{className:'swatch-row'},COLORS.map(c=>e('div',{key:c,className:`swatch${color===c?' on':''}`,style:{background:c},onClick:()=>setColor(c)})))),
         e('div',{className:'fg'},
-          e('div',{className:'flabel'},'Repetir'),
-          e('div',{className:'habit-tabs'},
-            e('button',{className:'habit-tab'+(topTab==='weekly'?' on':''),onClick:()=>setTopTab('weekly')},'Semana'),
-            e('button',{className:'habit-tab'+(topTab==='monthly'?' on':''),onClick:()=>setTopTab('monthly')},'Mes')
-          )
-        ),
-        topTab==='weekly'&&e('div',{className:'fg'},
-          e('div',{className:'flabel'},'Días'),
-          e('div',{className:'day-chip-row'},
-            WEEK_DAYS.map(w=>e('span',{
-              key:w.k,
-              className:'day-chip'+(days.includes(w.k)?' on':''),
-              onClick:()=>toggleDay(w.k)
-            },w.l))
-          )
-        ),
-        topTab==='monthly'&&e(React.Fragment,null,
-          e('div',{className:'fg'},
-            e('div',{className:'rec-mode-row'},
-              e('button',{className:'rec-mode-btn'+(monthMode==='date'?' on':''),onClick:()=>setMonthMode('date')},'Fecha fija'),
-              e('button',{className:'rec-mode-btn'+(monthMode==='ordinal'?' on':''),onClick:()=>setMonthMode('ordinal')},'Posición')
-            )
-          ),
-          monthMode==='date'&&e('div',{className:'fg'},
-            e('div',{className:'flabel'},'El día'),
-            e('select',{className:'fselect',value:monthDay,disabled:monthLastDay,onChange:ev=>setMonthDay(Number(ev.target.value))},
-              Array.from({length:31},(_,i)=>i+1).map(d=>e('option',{key:d,value:d},d))
-            ),
-            e('div',{className:'toggle-row',style:{marginTop:6}},
-              e('span',{className:'toggle-lbl'},'Último día del mes'),
-              e('div',{className:'toggle'+(monthLastDay?' on':''),onClick:()=>setMonthLastDay(v=>!v)})
-            )
-          ),
-          monthMode==='ordinal'&&e('div',{className:'fg'},
-            e('div',{className:'flabel'},'El'),
-            e('div',{style:{display:'flex',gap:6}},
-              e('select',{className:'fselect',value:ordinal,onChange:ev=>setOrdinal(ev.target.value==='last'?'last':Number(ev.target.value))},
-                e('option',{value:1},'primer'),e('option',{value:2},'segundo'),e('option',{value:3},'tercer'),e('option',{value:4},'cuarto'),e('option',{value:'last'},'último')
-              ),
-              e('select',{className:'fselect',value:weekday,onChange:ev=>setWeekday(ev.target.value)},
-                WEEK_DAYS.map(w=>e('option',{key:w.k,value:w.k},w.full))
+          e('div',{className:'flabel'},'Ícono'),
+          e('div',{style:{display:'flex',flexDirection:'column',gap:8,background:'var(--bg3)',border:'1px solid var(--border2)',borderRadius:'var(--r-md)',padding:'10px 10px 6px'}},
+            ICON_GROUPS.map(grp=>e('div',{key:grp.label},
+              e('div',{style:{fontSize:9,color:'var(--text4)',textTransform:'uppercase',letterSpacing:'.6px',marginBottom:5}},grp.label),
+              e('div',{style:{display:'flex',gap:5,flexWrap:'wrap'}},
+                grp.keys.map(k=>e('div',{
+                  key:k,
+                  onClick:()=>setIcon(k),
+                  title:k,
+                  style:{
+                    width:32,height:32,borderRadius:'var(--r-md)',
+                    display:'flex',alignItems:'center',justifyContent:'center',
+                    cursor:'pointer',transition:'all .1s',
+                    border: icon===k?'2px solid '+color:'1px solid var(--border2)',
+                    background: icon===k?color+'22':'var(--bg4)',
+                    boxSizing:'border-box',
+                  }
+                },
+                  e(ProjIconSVG,{iconKey:k,size:15,color:icon===k?color:'var(--text3)'})
+                ))
               )
-            )
+            ))
+          )
+        ),
+        e('div',{className:'fg'},e('div',{className:'flabel'},'Repetición'),
+          e('button',{className:'rec-trigger',onClick:()=>setShowRec(true)},
+            e(RepeatIcon,{size:13,color:'var(--accent2)'}),
+            e('span',null,recurrenceLabel(recurrence))
           )
         ),
         e('div',{className:'fg'},
@@ -3250,14 +3713,22 @@ function HabitFormModal({habit,project,onSave,onDelete,onClose}){
           e('span',{className:'toggle-lbl'},'Notificarme en Recordatorios'),
           e('div',{className:'toggle'+(reminder?' on':''),onClick:()=>setReminder(v=>!v)})
         ),
-        e('div',{className:'hint-row'},habitSummary(rec,time))
+        habit&&e('div',{className:'hint-row'},'Última vez completado: '+habitLastDoneLabel(log)),
+        e('div',{className:'hint-row'},habitSummary(recurrence,time))
       ),
       e('div',{className:'modal-foot'},
         habit&&e('button',{className:'btn btn-danger',style:{marginRight:'auto'},onClick:()=>onDelete(habit.id)},'Eliminar'),
         e('button',{className:'btn btn-ghost',onClick:onClose},'Cancelar'),
         e('button',{className:'btn btn-primary',disabled:!isValid,onClick:handleSave},habit?'Guardar':'Crear')
       )
-    )
+    ),
+    showRec&&e(RecurrenceModal,{
+      value:recurrence,
+      anchorDate:dayKey(),
+      mode:'habit',
+      onClose:()=>setShowRec(false),
+      onSave:next=>{if(next)setRecurrence(next);setShowRec(false);}
+    })
   );
 }
 
@@ -3637,98 +4108,125 @@ function TimerWidget({tState,elapsed,workElapsed,activeSess,activeProj,activeTas
 }
 
 // ═══════════════════════════════════════════
-// SYSTEM STAGES — expandable pipeline within a System
-// ═══════════════════════════════════════════
-function SystemStages({system,onUpdateSystem}){
-  const[openStage,setOpenStage]=useState(null);
-  const[newTaskText,setNewTaskText]=useState({});
-  function patchStage(stageId,patch){
-    onUpdateSystem({...system,stages:system.stages.map(st=>st.id===stageId?{...st,...patch}:st)});
-  }
-  function addStageTask(stageId){
-    const text=(newTaskText[stageId]||'').trim();
-    if(!text)return;
-    const st=system.stages.find(s=>s.id===stageId);
-    patchStage(stageId,{tasks:[...(st.tasks||[]),{id:uid(),name:text,done:false}]});
-    setNewTaskText(v=>({...v,[stageId]:''}));
-  }
-  function toggleStageTask(stageId,taskId){
-    const st=system.stages.find(s=>s.id===stageId);
-    patchStage(stageId,{tasks:(st.tasks||[]).map(t=>t.id===taskId?{...t,done:!t.done}:t)});
-  }
-  return e('div',{className:'system-stages'},
-    (system.stages||[]).map((st,i)=>{
-      const isOpen=openStage===st.id;
-      const doneCount=(st.tasks||[]).filter(t=>t.done).length;
-      return e('div',{key:st.id,className:'stage-row'},
-        e('div',{className:'stage-hdr',onClick:()=>setOpenStage(v=>v===st.id?null:st.id)},
-          e('div',{className:'stage-num'+(st.status==='done'?' done':'')},i+1),
-          e('span',{className:'stage-name'},st.name),
-          (st.tasks||[]).length>0&&e('span',{style:{fontSize:9.5,color:'var(--text4)'}},doneCount+'/'+st.tasks.length),
-          e('select',{className:'stage-status-select',value:st.status||'pending',onClick:ev=>ev.stopPropagation(),onChange:ev=>patchStage(st.id,{status:ev.target.value})},
-            e('option',{value:'pending'},'Pendiente'),e('option',{value:'active'},'En curso'),e('option',{value:'done'},'Listo')
-          ),
-          e('input',{className:'stage-time',type:'number',value:st.timeSpent||0,onClick:ev=>ev.stopPropagation(),onChange:ev=>patchStage(st.id,{timeSpent:Number(ev.target.value)}),title:'Minutos invertidos'}),
-          e('span',{className:'stage-caret'+(isOpen?' open':'')},'▸')
-        ),
-        isOpen&&e('div',{className:'stage-body'},
-          (st.tasks||[]).map(t=>e('div',{key:t.id,className:'stage-task-row'},
-            e('div',{className:'stage-task-check'+(t.done?' done':''),onClick:()=>toggleStageTask(st.id,t.id)},t.done?'✓':''),
-            e('span',{className:'stage-task-name'+(t.done?' done':'')},t.name)
-          )),
-          e('div',{className:'stage-add-row'},
-            e('input',{value:newTaskText[st.id]||'',placeholder:'+ tarea / checklist...',onChange:ev=>setNewTaskText(v=>({...v,[st.id]:ev.target.value})),onKeyDown:ev=>{if(ev.key==='Enter')addStageTask(st.id);}}),
-            e('button',{className:'task-add-submit',onClick:()=>addStageTask(st.id)},'+')
-          ),
-          e('textarea',{className:'stage-comment-input',rows:2,placeholder:'Comentarios de esta etapa...',value:st.comment||'',onChange:ev=>patchStage(st.id,{comment:ev.target.value})})
-        )
-      );
-    }),
-    (system.stages||[]).length===0&&e('div',{className:'empty'},'Este sistema no tiene etapas configuradas.')
-  );
-}
-
-// ═══════════════════════════════════════════
 // SYSTEM MODAL — create / edit a System (operational process)
 // ═══════════════════════════════════════════
-function SystemModal({system,onClose,onSave,onDelete}){
+function SystemModal({system,onClose,onSave,onDelete,onUpdateSystem}){
   const[name,setName]=useState(system?.name||'');
-  const[stages,setStages]=useState(()=>system?.stages?.map(s=>s.name)||[]);
-  const[newStage,setNewStage]=useState('');
+  const[color,setColor]=useState(system?.color||'#4a9de0');
+  const[icon,setIcon]=useState(system?.icon||'target');
+  const[recurrence,setRecurrence]=useState(()=>system?.recurrence||{type:'monthly',interval:1,days:[weekdayKeyOf(dayKey())],monthMode:'same',monthDay:new Date().getDate()});
+  const[showRec,setShowRec]=useState(false);
   const[confirmDel,setConfirmDel]=useState(false);
-  function applyTemplate(tpl){setName(n=>n||tpl.label);setStages(tpl.stages);}
-  function addStage(){if(!newStage.trim())return;setStages(s=>[...s,newStage.trim()]);setNewStage('');}
-  function removeStage(i){setStages(s=>s.filter((_,idx)=>idx!==i));}
+  const[newObs,setNewObs]=useState('');
+  const[editingId,setEditingId]=useState(null);
+  const[editText,setEditText]=useState('');
+  const observations=(system?.observations||[]).slice().sort((a,b)=>b.createdAt-a.createdAt);
   function save(){
     if(!name.trim())return;
-    const stageObjs=stages.map(sName=>{
-      const existing=system?.stages?.find(s=>s.name===sName);
-      return existing||{id:uid(),name:sName,status:'pending',tasks:[],timeSpent:0,comment:''};
-    });
-    onSave({...(system||{}),name:name.trim(),stages:stageObjs});
+    const nextRun=recurrence?new Date(computeNextOccurrence(dayKey(),recurrence)+'T12:00:00').getTime():(system?.nextRun||null);
+    onSave({...(system||{}),name:name.trim(),recurrence,nextRun,color,icon});
+  }
+  function markMonitored(){
+    const nextRun=recurrence?new Date(computeNextOccurrence(dayKey(),recurrence)+'T12:00:00').getTime():null;
+    const updated={...system,recurrence,lastRun:Date.now(),nextRun};
+    onUpdateSystem(updated);
+  }
+  function addObservation(){
+    const text=newObs.trim();
+    if(!text||!system)return;
+    onUpdateSystem({...system,observations:[...(system.observations||[]),{id:uid(),text,createdAt:Date.now()}]});
+    setNewObs('');
+  }
+  function startEdit(o){setEditingId(o.id);setEditText(o.text);}
+  function saveEdit(){
+    if(!editText.trim()){setEditingId(null);return;}
+    onUpdateSystem({...system,observations:(system.observations||[]).map(o=>o.id===editingId?{...o,text:editText.trim()}:o)});
+    setEditingId(null);
+  }
+  function deleteObservation(id){
+    onUpdateSystem({...system,observations:(system.observations||[]).filter(o=>o.id!==id)});
+  }
+  function nextRunLabel(ts){
+    if(!ts)return '—';
+    const diff=ts-Date.now();
+    const day=86400000;
+    if(diff<=0)return 'hoy';
+    const d=Math.round(diff/day);
+    return d<=0?'hoy':d===1?'mañana':`en ${d}d`;
+  }
+  function fmtDate(ts){
+    const d=new Date(ts);
+    return d.toLocaleDateString('es-CL',{day:'numeric',month:'short',year:'numeric'})+' · '+d.toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'});
   }
   return e('div',{className:'overlay',onClick:ev=>{if(ev.target===ev.currentTarget)onClose();}},
     e('div',{className:'modal',style:{width:440,maxHeight:'88vh'}},
       e('div',{className:'modal-head'},e('div',{className:'modal-title'},system?'Editar sistema':'Nuevo sistema'),e('button',{className:'modal-x',onClick:onClose},'✕')),
       e('div',{className:'modal-body'},
-        e('div',{className:'fg'},e('label',{className:'flabel'},'Nombre del sistema'),e('input',{className:'finput',value:name,onChange:ev=>setName(ev.target.value),placeholder:'ej. Contenido Orgánico',autoFocus:true})),
-        !system&&e('div',{className:'fg'},
-          e('label',{className:'flabel'},'Plantillas rápidas'),
-          e('div',{style:{display:'flex',gap:6,flexWrap:'wrap'}},SYSTEM_TEMPLATES.map(t=>e('button',{key:t.label,className:'template-btn',onClick:()=>applyTemplate(t)},t.label)))
-        ),
+        e('div',{className:'fg'},e('label',{className:'flabel'},'Nombre del sistema'),e('input',{className:'finput',value:name,onChange:ev=>setName(ev.target.value),placeholder:'ej. Riego de plantas',autoFocus:true})),
+        e('div',{className:'fg'},e('label',{className:'flabel'},'Color'),e('div',{className:'swatch-row'},COLORS.map(c=>e('div',{key:c,className:`swatch${color===c?' on':''}`,style:{background:c},onClick:()=>setColor(c)})))),
         e('div',{className:'fg'},
-          e('label',{className:'flabel'},'Etapas del proceso'),
-          e('div',{className:'stages-editor'},
-            stages.map((s,i)=>e('div',{key:i,className:'stages-editor-row'},
-              e('span',{style:{fontSize:9,color:'var(--text4)',width:14}},i+1),
-              e('input',{className:'finput',value:s,onChange:ev=>setStages(arr=>arr.map((x,idx)=>idx===i?ev.target.value:x))}),
-              e('button',{className:'rem-del',onClick:()=>removeStage(i)},'✕')
-            )),
-            e('div',{className:'stages-editor-row'},
-              e('input',{className:'finput',value:newStage,placeholder:'+ agregar etapa...',onChange:ev=>setNewStage(ev.target.value),onKeyDown:ev=>{if(ev.key==='Enter')addStage();}}),
-              e('button',{className:'task-add-submit',onClick:addStage},'+')
-            )
+          e('label',{className:'flabel'},'Ícono'),
+          e('div',{style:{display:'flex',flexDirection:'column',gap:8,background:'var(--bg3)',border:'1px solid var(--border2)',borderRadius:'var(--r-md)',padding:'10px 10px 6px'}},
+            ICON_GROUPS.map(grp=>e('div',{key:grp.label},
+              e('div',{style:{fontSize:9,color:'var(--text4)',textTransform:'uppercase',letterSpacing:'.6px',marginBottom:5}},grp.label),
+              e('div',{style:{display:'flex',gap:5,flexWrap:'wrap'}},
+                grp.keys.map(k=>e('div',{
+                  key:k,
+                  onClick:()=>setIcon(k),
+                  title:k,
+                  style:{
+                    width:32,height:32,borderRadius:'var(--r-md)',
+                    display:'flex',alignItems:'center',justifyContent:'center',
+                    cursor:'pointer',transition:'all .1s',
+                    border: icon===k?'2px solid '+color:'1px solid var(--border2)',
+                    background: icon===k?color+'22':'var(--bg4)',
+                    boxSizing:'border-box',
+                  }
+                },
+                  e(ProjIconSVG,{iconKey:k,size:15,color:icon===k?color:'var(--text3)'})
+                ))
+              )
+            ))
           )
+        ),
+        e('div',{className:'fg'},e('label',{className:'flabel'},'Repetición del monitoreo'),
+          e('button',{className:'rec-trigger',onClick:()=>setShowRec(true)},
+            e(RepeatIcon,{size:13,color:'var(--accent2)'}),
+            e('span',null,recurrenceLabel(recurrence))
+          )
+        ),
+        system&&e('div',{className:'hint-row'},'Próximo monitoreo: '+nextRunLabel(system.nextRun)),
+        system&&e('button',{className:'btn',style:{width:'100%',display:'flex',alignItems:'center',justifyContent:'center',gap:6},onClick:markMonitored},e(DashIcon,{name:'check',size:12}),'Marcar como monitoreado hoy'),
+        system&&e('div',{className:'fg'},
+          e('label',{className:'flabel'},'Observaciones'),
+          e('div',{className:'obs-add-row'},
+            e('input',{value:newObs,placeholder:'Escribe una observación...',onChange:ev=>setNewObs(ev.target.value),onKeyDown:ev=>{if(ev.key==='Enter')addObservation();}}),
+            e('button',{className:'task-add-submit',onClick:addObservation},'OK')
+          ),
+          observations.length===0
+            ?e('div',{className:'empty',style:{padding:'8px 0'}},'Sin observaciones aún.')
+            :e('div',{className:'obs-list'},observations.map(o=>e('div',{key:o.id,className:'obs-entry'},
+                editingId===o.id
+                  ?e(React.Fragment,null,
+                      e('textarea',{className:'stage-comment-input',rows:2,value:editText,onChange:ev=>setEditText(ev.target.value),autoFocus:true}),
+                      e('div',{style:{display:'flex',gap:6,marginTop:5,justifyContent:'flex-end'}},
+                        e('button',{className:'ghost-btn',onClick:()=>setEditingId(null)},'Cancelar'),
+                        e('button',{className:'ghost-btn',onClick:saveEdit},'Guardar')
+                      )
+                    )
+                  :e(React.Fragment,null,
+                      e('div',{style:{display:'flex',alignItems:'flex-start',gap:6}},
+                        e('div',{style:{flex:1,minWidth:0}},
+                          e('div',{className:'obs-entry-date'},fmtDate(o.createdAt)),
+                          e('div',{className:'obs-entry-text'},o.text)
+                        ),
+                        e('div',{style:{display:'flex',gap:2,flexShrink:0}},
+                          e('button',{className:'ghost-btn',onClick:()=>startEdit(o),title:'Editar'},'✎'),
+                          e('button',{className:'ghost-btn',onClick:()=>deleteObservation(o.id),title:'Eliminar'},'✕')
+                        )
+                      )
+                    )
+              )))
         ),
         confirmDel&&e('div',{style:{padding:'8px 10px',background:'var(--red-bg)',border:'1px solid var(--red-border)',borderRadius:'var(--r-md)',fontSize:11,color:'var(--red)'}},'¿Eliminar este sistema? Esta acción no se puede deshacer.')
       ),
@@ -3738,31 +4236,180 @@ function SystemModal({system,onClose,onSave,onDelete}){
         e('button',{className:'btn',onClick:onClose},'Cancelar'),
         e('button',{className:'btn btn-primary',onClick:save},system?'Guardar':'Crear')
       )
-    )
+    ),
+    showRec&&e(RecurrenceModal,{
+      value:recurrence,
+      anchorDate:dayKey(),
+      mode:'system',
+      onClose:()=>setShowRec(false),
+      onSave:next=>{if(next)setRecurrence(next);setShowRec(false);}
+    })
   );
 }
 
 // ═══════════════════════════════════════════
 // SYSTEM CARD
 // ═══════════════════════════════════════════
-function SystemCard({system,expanded,onToggle,onEdit,onUpdateSystem,systemProgress,fmtWhen}){
-  const pct=systemProgress(system);
-  const taskCount=(system.stages||[]).reduce((a,s)=>a+(s.tasks?.length||0),0);
-  return e('div',{className:'system-card'},
+// ═══════════════════════════════════════════
+// DASHBOARD ICON SET — small consistent line icons
+// ═══════════════════════════════════════════
+const DASH_ICON_PATHS={
+  clock:e=>[e('circle',{cx:12,cy:12,r:9}),e('path',{d:'M12 7v5l3.5 2'})],
+  pause:e=>[e('rect',{x:6,y:4,width:4,height:16,rx:1}),e('rect',{x:14,y:4,width:4,height:16,rx:1})],
+  play:e=>[e('path',{d:'M7 4l13 8-13 8V4z'})],
+  check:e=>[e('rect',{x:4,y:4,width:16,height:16,rx:3}),e('path',{d:'M8.5 12.5l2.5 2.5 5-5'})],
+  flame:e=>[e('path',{d:'M12 22c4 0 7-2.5 7-7 0-3-1.8-4.6-3-6.5-.3 1.5-1 2.5-2 3-0.2-2.7-1.3-5-4-7.5-.5 3-2 5-3.5 7C5 13.5 5 15 5 15c0 4 3 7 7 7z'})],
+  download:e=>[e('path',{d:'M12 3v12'}),e('path',{d:'M7 10l5 5 5-5'}),e('path',{d:'M5 21h14'})],
+  chevL:e=>[e('path',{d:'M15 6l-6 6 6 6'})],
+  chevR:e=>[e('path',{d:'M9 6l6 6-6 6'})],
+  target:e=>[e('circle',{cx:12,cy:12,r:8}),e('circle',{cx:12,cy:12,r:4}),e('circle',{cx:12,cy:12,r:0.6,fill:'currentColor'})],
+  habit:e=>[e('path',{d:'M12 2v4'}),e('path',{d:'M12 18v4'}),e('circle',{cx:12,cy:12,r:6})],
+  eyeOff:e=>[e('path',{d:'M3 3l18 18'}),e('path',{d:'M10.6 5.2A10.7 10.7 0 0 1 12 5c6 0 9.5 5 9.5 7a12.6 12.6 0 0 1-3 3.6'}),e('path',{d:'M6.5 6.9C4 8.6 2.5 11.2 2.5 12c0 2 3.5 7 9.5 7 1.4 0 2.7-.3 3.9-.8'}),e('path',{d:'M9.9 10a3 3 0 0 0 4.2 4.2'})],
+};
+function DashIcon({name,size=13,color='currentColor',fill='none'}){
+  const draw=DASH_ICON_PATHS[name]||DASH_ICON_PATHS.target;
+  return e('svg',{width:size,height:size,viewBox:'0 0 24 24',fill,stroke:color,strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round',style:{display:'block',flexShrink:0}},...draw(e));
+}
+
+// ═══════════════════════════════════════════
+// DONUT RING — small circular progress indicator
+// ═══════════════════════════════════════════
+function DonutRing({pct,size=64,stroke=7,color='var(--accent)'}){
+  const r=(size-stroke)/2, c=2*Math.PI*r, off=c*(1-Math.min(100,Math.max(0,pct))/100);
+  return e('svg',{width:size,height:size,viewBox:`0 0 ${size} ${size}`,style:{display:'block',flexShrink:0}},
+    e('circle',{cx:size/2,cy:size/2,r,fill:'none',stroke:'var(--bg4)',strokeWidth:stroke}),
+    e('circle',{cx:size/2,cy:size/2,r,fill:'none',stroke:color,strokeWidth:stroke,strokeLinecap:'round',strokeDasharray:c,strokeDashoffset:off,transform:`rotate(-90 ${size/2} ${size/2})`}),
+    e('text',{x:'50%',y:'52%',textAnchor:'middle',dominantBaseline:'middle',fontSize:size*0.24,fontWeight:600,fill:'var(--text0)',fontFamily:"'JetBrains Mono',monospace"},Math.round(pct)+'%')
+  );
+}
+
+// ═══════════════════════════════════════════
+// SPARKLINE — tiny data-driven line chart
+// ═══════════════════════════════════════════
+function Sparkline({points,width=90,height:h=26,color='var(--accent2)'}){
+  if(!points||points.length<2)return e('svg',{width,height:h});
+  const max=Math.max(1,...points);
+  const step=width/(points.length-1);
+  const d=points.map((v,i)=>`${i===0?'M':'L'}${(i*step).toFixed(1)},${(h-2-(v/max)*(h-4)).toFixed(1)}`).join(' ');
+  return e('svg',{width,height:h,viewBox:`0 0 ${width} ${h}`,style:{display:'block'}},
+    e('path',{d,fill:'none',stroke:color,strokeWidth:1.6,strokeLinecap:'round',strokeLinejoin:'round'})
+  );
+}
+
+// ═══════════════════════════════════════════
+// HORIZONTAL TIMELINE — "Bloques de tiempo" bar, Dashboard style
+// ═══════════════════════════════════════════
+function minToHM(m){m=((m%1440)+1440)%1440;return `${String(Math.floor(m/60)).padStart(2,'0')}:${String(Math.round(m%60)).padStart(2,'0')}`;}
+function HorizontalTimeline({realBlocks,liveBlock,projects,tasks,selectedDay,setSelectedDay}){
+  const wrapRef=useRef(null);
+  const[containerW,setContainerW]=useState(800);
+
+  useEffect(()=>{
+    if(!wrapRef.current)return;
+    const el=wrapRef.current;
+    const ro=new ResizeObserver(entries=>{
+      for(const en of entries){const w=en.contentRect.width;if(w>0)setContainerW(w);}
+    });
+    ro.observe(el);
+    setContainerW(el.clientWidth||800);
+    return()=>ro.disconnect();
+  },[]);
+
+  function shiftDay(delta){
+    const d=new Date(selectedDay+'T12:00:00Z');
+    d.setUTCDate(d.getUTCDate()+delta);
+    setSelectedDay(d.toISOString().slice(0,10));
+  }
+  function dayLabel(){
+    const today=dayKey();
+    if(selectedDay===today)return'Hoy, '+new Date(selectedDay+'T12:00:00Z').toLocaleDateString('es-CL',{weekday:'short',day:'numeric',month:'short'});
+    return new Date(selectedDay+'T12:00:00Z').toLocaleDateString('es-CL',{weekday:'short',day:'numeric',month:'short'});
+  }
+  function tsToMin(ts){const d=new Date(ts*1000);const scl=new Date(d.toLocaleString('en-US',{timeZone:'America/Santiago'}));return scl.getHours()*60+scl.getMinutes();}
+
+  const isToday=selectedDay===dayKey();
+  const nowM=sclToMin();
+  const allReal=[...(realBlocks||[]),...(liveBlock?[liveBlock]:[])].filter(s=>s.day===selectedDay||!s.day);
+
+  let minM=6*60,maxM=22*60;
+  allReal.forEach(sess=>{
+    const sMin=tsToMin(sess.startAt);
+    const eMin=sess.live?nowM:tsToMin(sess.endAt);
+    if(eMin<=sMin)return;
+    minM=Math.min(minM,Math.floor(sMin/60)*60);
+    maxM=Math.max(maxM,Math.ceil(eMin/60)*60);
+  });
+  if(isToday){minM=Math.min(minM,Math.floor(nowM/60)*60);maxM=Math.max(maxM,Math.ceil(nowM/60)*60+120);}
+  maxM=Math.min(maxM,1440);
+  const totalM=Math.max(60,maxM-minM);
+
+  // Responsive scale: stretch to fill the available width; below a minimum
+  // px-per-minute, switch to a wider scrollable track instead of squishing text.
+  const MIN_PXPM=2.4;
+  const fitPxPm=(containerW-4)/totalM;
+  const pxpm=Math.max(MIN_PXPM,fitPxPm);
+  const trackW=Math.max(containerW-4,totalM*pxpm);
+  const needsScroll=pxpm>fitPxPm+0.001;
+
+  const tickStep=pxpm<3.4?120:60;
+  const ticks=[];for(let m=minM;m<=maxM;m+=tickStep)ticks.push(m);
+
+  function leftPx(m){return Math.min(trackW,Math.max(0,(m-minM)*pxpm));}
+  function widthPx(s,f){return Math.max(46,(f-s)*pxpm);}
+
+  const blocksData=allReal.map(sess=>{
+    const proj=projects.find(p=>p.id===sess.projectId);
+    const task=tasks.find(t=>t.id===sess.taskId);
+    const sMin=tsToMin(sess.startAt);
+    const eMin=sess.live?nowM:tsToMin(sess.endAt);
+    return{id:sess.id||sess.startAt,color:proj?.color||'var(--accent)',name:task?task.name:(proj?proj.name:'Sesión'),sMin,eMin};
+  }).filter(b=>b.eMin>b.sMin).sort((a,b)=>a.sMin-b.sMin);
+
+  return e('div',{className:'htl',ref:wrapRef},
+    e('div',{className:'htl-header'},
+      e('span',{className:'dash-panel-title'},'Bloques de tiempo'),
+      e('div',{className:'htl-day-select'},
+        e('button',{className:'dash-date-btn',onClick:()=>shiftDay(-1),title:'Día anterior'},e(DashIcon,{name:'chevL',size:11})),
+        e('span',{style:{cursor:'pointer'},onClick:()=>setSelectedDay(dayKey())},dayLabel()),
+        e('button',{className:'dash-date-btn',onClick:()=>shiftDay(1),title:'Día siguiente'},e(DashIcon,{name:'chevR',size:11}))
+      )
+    ),
+    e('div',{className:'htl-scroll'+(needsScroll?' scrollable':'')},
+      e('div',{className:'htl-track-wrap',style:{width:trackW+'px'}},
+        e('div',{className:'htl-ruler'},ticks.map(m=>e('div',{key:m,className:'htl-tick',style:{left:leftPx(m)+'px'}},e('span',{className:'htl-tick-lbl'},minToHM(m))))),
+        isToday&&nowM>=minM&&nowM<=maxM&&e('div',{className:'htl-now-pin',style:{left:leftPx(nowM)+'px'}},minToHM(nowM)),
+        isToday&&nowM>=minM&&nowM<=maxM&&e('div',{className:'htl-now-line',style:{left:leftPx(nowM)+'px'}}),
+        e('div',{className:'htl-lane'},
+          blocksData.length===0&&e('div',{className:'empty',style:{padding:'20px 0'}},'Sin sesiones registradas este día.'),
+          blocksData.map(b=>e('div',{key:b.id,className:'htl-block',style:{left:leftPx(b.sMin)+'px',width:widthPx(b.sMin,b.eMin)+'px',background:b.color+'26',borderColor:b.color}},
+            e('div',{className:'htl-block-name'},b.name),
+            e('div',{className:'htl-block-time'},minToHM(b.sMin)+' - '+minToHM(b.eMin)),
+            e('div',{className:'htl-block-dur'},fmtS((b.eMin-b.sMin)*60))
+          ))
+        )
+      )
+    )
+  );
+}
+
+function SystemCard({system,onEdit,onUpdateSystem,fmtWhen}){
+  const isDue=!!(system.nextRun&&system.nextRun<=Date.now());
+  const color=system.color||'#4a9de0';
+  const iconKey=system.icon||'target';
+  function markMonitored(ev){
+    ev.stopPropagation();
+    const nextRun=system.recurrence?new Date(computeNextOccurrence(dayKey(),system.recurrence)+'T12:00:00').getTime():null;
+    onUpdateSystem({...system,lastRun:Date.now(),nextRun});
+  }
+  return e('div',{className:'system-card',style:{cursor:'pointer'},onDoubleClick:onEdit,title:'Doble click para editar'},
     e('div',{className:'system-card-top'},
-      e('div',{className:'system-status-dot '+(system.status||'active')}),
-      e('span',{className:'system-card-name'},system.name),
-      e('button',{className:'ghost-btn',onClick:onEdit,title:'Editar'},'···'),
-      e('button',{className:'system-open-btn'+(expanded?' on':''),onClick:onToggle},expanded?'Cerrar':'Abrir ▾')
-    ),
-    e('div',{className:'system-track'},e('div',{className:'system-fill',style:{width:pct+'%'}})),
-    e('div',{className:'system-meta-row'},
-      e('span',{className:'system-meta'},e('b',null,pct+'%'),' progreso'),
-      e('span',{className:'system-meta'},'Últ: ',e('b',null,fmtWhen(system.lastRun))),
-      e('span',{className:'system-meta'},'Próx: ',e('b',null,fmtWhen(system.nextRun))),
-      e('span',{className:'system-meta'},e('b',null,taskCount),' tareas')
-    ),
-    expanded&&e(SystemStages,{system,onUpdateSystem})
+      e('div',{className:'system-icon-badge',style:{color,background:color+'1f'}},e(ProjIconSVG,{iconKey,size:14,color:'currentColor'})),
+      e('div',{style:{flex:1,minWidth:0}},
+        e('div',{className:'system-card-name'},system.name),
+        e('div',{className:'system-meta',style:{marginTop:1}},'Próximo monitoreo: ',e('b',null,fmtWhen(system.nextRun)))
+      ),
+      isDue&&e('button',{className:'ghost-btn',onClick:markMonitored,title:'Marcar como monitoreado — toca para actualizar la próxima fecha'},e(BellIcon,{active:true,size:14}))
+    )
   );
 }
 
@@ -3772,24 +4419,38 @@ function SystemCard({system,expanded,onToggle,onEdit,onUpdateSystem,systemProgre
 function ProjectDashboard(props){
   const{
     project,projects,tasks,sessions,ctxs,habits,systems,
+    panelLabels,onRenameLabel,panelVisibility,onTogglePanelVisibility,
     blocks,setBlocks,realBlocks,liveBlock,tick,blockOpacity,blockStyle,realStyle,tlZoom,setTlZoom,selectedDay,setSelectedDay,onDblClickTime,onEditBlock,onNewBlock,
     tState,activeSess,
-    onAddTask,onCycleTaskStatus,onDeleteTask,onPlayTask,onFinishTask,
+    onAddTask,onCycleTaskStatus,onDeleteTask,onUpdateTask,onUpdateTaskSteps,onPlayTask,onFinishTask,
     onAddHabit,onUpdateHabit,onDeleteHabit,onToggleHabitLog,
-    onAddSystem,onUpdateSystem,onDeleteSystem,
+    onAddSystem,onUpdateSystem,onDeleteSystem,onPatchProject,
     onStartTimer,onEditProject,onBack,
-    systemProgress,fmtWhen,pStats
+    fmtWhen,pStats
   }=props;
 
   const[tab,setTab]=useState('resumen');
-  const[expandedSystem,setExpandedSystem]=useState(null);
   const[systemForm,setSystemForm]=useState(null); // null | 'new' | system object
   const[habitForm,setHabitForm]=useState(null);
-  const[newTask,setNewTask]=useState('');
+  const[showTaskModal,setShowTaskModal]=useState(false);
+  const[stepsForTask,setStepsForTask]=useState(null);
+
+  const DEFAULT_LABELS={tareas:'Tareas prioritarias',sistemas:'Sistemas',habitos:'Hábitos'};
+  const labels={...DEFAULT_LABELS,...(panelLabels||{})};
+  const visible={tareas:true,sistemas:true,habitos:true,...(panelVisibility||{})};
+  function renameLabel(key,val){onRenameLabel(key,val);}
+  function openAddTask(){setShowTaskModal(true);}
+  function singularizeLabel(label){
+    const first=(label||'').trim().split(/\s+/)[0]||'tarea';
+    return (first.length>3&&/s$/i.test(first))?first.slice(0,-1).toLowerCase():first.toLowerCase();
+  }
+  const taskNoun=singularizeLabel(labels.tareas); // e.g. "tarea", or "proyecto" if the panel was renamed
+  const statCfg=project.statConfig||{};
+  function setStatCustom(key,icon,color){onPatchProject({statConfig:{...(project.statConfig||{}),[key]:{icon,color}}});}
+  function resetStatCustom(key){const next={...(project.statConfig||{})};delete next[key];onPatchProject({statConfig:next});}
 
   const pTasks=tasks.filter(t=>t.projectId===project.id);
   const pendingTasks=pTasks.filter(t=>t.status!=='done');
-  const doneTasks=pTasks.filter(t=>t.status==='done');
   const pSystems=systems.filter(s=>s.projectId===project.id);
   const pHabits=habits.filter(h=>h.projectId===project.id);
   const pSessions=sessions.filter(s=>s.projectId===project.id&&s.endAt).sort((a,b)=>b.endAt-a.endAt);
@@ -3802,7 +4463,49 @@ function ProjectDashboard(props){
   const today=dayKey();
   const todayPomos=pSessions.filter(s=>s.day===today).reduce((a,s)=>a+(s.pomos||0),0);
 
-  function addTaskNow(){if(!newTask.trim())return;onAddTask(newTask.trim());setNewTask('');}
+  const todaySessions=pSessions.filter(s=>s.day===today);
+  const sparkBuckets=new Array(8).fill(0);
+  todaySessions.forEach(s=>{const hr=new Date(s.endAt*1000).getHours();sparkBuckets[Math.min(7,Math.floor(hr/3))]+=s.duration;});
+  const weekSecs=pSessions.filter(s=>(Date.now()-s.endAt*1000)<7*86400000).reduce((a,s)=>a+s.duration,0);
+  const dailyGoal=(project.dailyLimit||8*3600);
+  const focusPct=Math.min(100,Math.round(stats.todaySecs/dailyGoal*100));
+
+  function shiftDay(delta){
+    const d=dateFromDayKey(selectedDay);
+    d.setUTCDate(d.getUTCDate()+delta);
+    setSelectedDay(`${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`);
+  }
+  function exportCSV(){
+    const rows=[['Fecha','Duración (s)','Duración','Tarea']];
+    pSessions.forEach(s=>{
+      const t=tasks.find(x=>x.id===s.taskId);
+      rows.push([new Date(s.endAt*1000).toLocaleDateString('es-CL'),s.duration,fmtS(s.duration),t?t.name:'']);
+    });
+    const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+    const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;a.download=`${project.name.replace(/\s+/g,'_')}_sesiones.csv`;a.click();
+    URL.revokeObjectURL(url);
+  }
+  const dayLabelStr=dateFromDayKey(selectedDay).toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'long'});
+  function habitStreak(h){
+    let count=0,d=dateFromDayKey(today);
+    for(let i=0;i<365;i++){
+      const k=`${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`;
+      if((h.log||[]).includes(k)){count++;d=new Date(d.getTime()-86400000);}else break;
+    }
+    return count;
+  }
+  function lastNDays(n){
+    const out=[];
+    for(let i=n-1;i>=0;i--){
+      const d=new Date(dateFromDayKey(today).getTime()-i*86400000);
+      out.push(`${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`);
+    }
+    return out;
+  }
+  const last5=lastNDays(5);
 
   const TABS=[
     {k:'resumen',label:'Resumen'},
@@ -3831,112 +4534,136 @@ function ProjectDashboard(props){
           )
         ),
         e('div',{className:'dash-head-actions'},
-          e('button',{className:'btn',onClick:()=>setTab('tareas')},'+ Nueva tarea'),
+          e('div',{className:'dash-date-nav'},
+            e('button',{className:'dash-date-btn',onClick:()=>shiftDay(-1),title:'Día anterior'},e(DashIcon,{name:'chevL',size:12})),
+            e('span',{className:'dash-date-lbl',onClick:()=>setSelectedDay(dayKey()),title:'Ir a hoy'},dayLabelStr),
+            e('button',{className:'dash-date-btn',onClick:()=>shiftDay(1),title:'Día siguiente'},e(DashIcon,{name:'chevR',size:12}))
+          ),
+          e('button',{className:'btn',style:{display:'inline-flex',alignItems:'center',gap:5},onClick:exportCSV},e(DashIcon,{name:'download',size:12}),'Exportar'),
+          e('button',{className:'btn',onClick:openAddTask},'+ Añadir '+taskNoun),
           e('button',{className:'btn btn-primary',onClick:onStartTimer},isRunningHere?'■ En curso':'▶ Iniciar timer')
         )
       ),
       e('div',{className:'dash-tabs'},TABS.map(t=>e('button',{key:t.k,className:'dash-tab'+(tab===t.k?' on':''),onClick:()=>setTab(t.k)},t.label)))
     ),
 
-    tab==='resumen'&&e('div',{className:'dash-body'},
+    tab==='resumen'&&e(React.Fragment,null,
+    e('div',{className:'foco-widget'},
+      e(DonutRing,{pct:focusPct,size:56,stroke:6,color:project.color}),
+      e('div',null,
+        e('div',{className:'foco-widget-title'},'Foco total'),
+        e('div',{className:'foco-widget-sub'},todaySessions.length,' sesiones hoy'),
+        e('div',{className:'foco-widget-sub'},fmtS(stats.todaySecs),' enfocado')
+      )
+    ),
+    e('div',{className:'dash-body'},
       e('div',{className:'dash-stats-row'},
-        e(StatCard,{label:'Tiempo hoy',value:fmtS(stats.todaySecs)}),
-        e(StatCard,{label:'Tiempo semanal',value:fmtS(pSessions.filter(s=>{const d=Date.now()-s.endAt*1000;return d<7*86400000;}).reduce((a,s)=>a+s.duration,0))}),
-        e(StatCard,{label:'Tareas pendientes',value:pendingTasks.length}),
-        e(StatCard,{label:'Hábitos activos',value:pHabits.length}),
-        e(StatCard,{label:'Sistemas activos',value:pSystems.filter(s=>s.status!=='paused').length}),
-        e(StatCard,{label:'Pomodoros hoy',value:todayPomos})
+        e(StatCard,{icon:'clock',color:'#e0954a',label:'Tiempo hoy',value:fmtS(stats.todaySecs),sub:'de '+fmtS(dailyGoal)+' objetivo',sparkline:sparkBuckets,custom:statCfg.tiempo,onChangeCustom:(icon,color)=>setStatCustom('tiempo',icon,color),onResetCustom:statCfg.tiempo?()=>resetStatCustom('tiempo'):null}),
+        e(StatCard,{icon:isRunningHere?'pause':'play',color:'#4a9de0',label:'Sesión actual',value:isRunningHere?fmt(stats.todaySecs%86400):'—',sub:isRunningHere?(activeSess&&(tasks.find(t=>t.id===activeSess.taskId)||{}).name||'Sin tarea'):'Sin sesión activa',custom:statCfg.sesion,onChangeCustom:(icon,color)=>setStatCustom('sesion',icon,color),onResetCustom:statCfg.sesion?()=>resetStatCustom('sesion'):null}),
+        e(StatCard,{icon:'check',color:'#2fb87a',label:'Tareas',value:pendingTasks.length,sub:pendingTasks.length?'pendientes':'Sin pendientes',custom:statCfg.tareas,onChangeCustom:(icon,color)=>setStatCustom('tareas',icon,color),onResetCustom:statCfg.tareas?()=>resetStatCustom('tareas'):null}),
+        e(StatCard,{icon:'habit',color:'#2fb87a',label:'Hábitos',value:`${pHabits.filter(h=>(h.log||[]).includes(today)).length} / ${pHabits.length||0}`,sub:pHabits.length?Math.round(pHabits.filter(h=>(h.log||[]).includes(today)).length/pHabits.length*100)+'% completados':'Sin hábitos',progress:{value:pHabits.filter(h=>(h.log||[]).includes(today)).length,max:pHabits.length||1},custom:statCfg.habitos,onChangeCustom:(icon,color)=>setStatCustom('habitos',icon,color),onResetCustom:statCfg.habitos?()=>resetStatCustom('habitos'):null}),
+        e(StatCard,{icon:'target',color:'#b06ef5',label:'Sistemas',value:pSystems.filter(s=>s.status!=='paused').length,sub:pSystems.length+' en total',custom:statCfg.sistemas,onChangeCustom:(icon,color)=>setStatCustom('sistemas',icon,color),onResetCustom:statCfg.sistemas?()=>resetStatCustom('sistemas'):null})
       ),
       e('div',{className:'dash-cols'},
         e('div',{className:'dash-panel'},
-          e('div',{className:'dash-panel-hdr'},e('span',{className:'dash-panel-title'},'Tareas prioritarias'),e('button',{className:'dash-panel-link',onClick:()=>setTab('tareas')},'Ver todas')),
+          e('div',{className:'dash-panel-hdr'},
+            e(EditableLabel,{value:labels.tareas,onSave:v=>renameLabel('tareas',v)}),
+            e('button',{className:'ghost-btn',onClick:openAddTask,title:'Añadir '+taskNoun},'＋'),
+            e('button',{className:'dash-panel-link',onClick:()=>setTab('tareas')},'Ver todas')
+          ),
           e('div',{className:'dash-panel-body'},
             pendingTasks.length===0&&e('div',{className:'empty'},'Sin tareas pendientes.'),
-            pendingTasks.slice(0,6).map(t=>e(TaskRow,{key:t.id,t,onCycleTaskStatus,onDeleteTask,isActive:isRunningHere&&activeSess.taskId===t.id,onPlay:onPlayTask,onFinish:onFinishTask}))
+            pendingTasks.slice(0,6).map(t=>e(TaskRow,{key:t.id,t,onCycleTaskStatus,onDeleteTask,isActive:isRunningHere&&activeSess.taskId===t.id,onPlay:onPlayTask,onFinish:onFinishTask,onOpenSteps:setStepsForTask}))
           )
         ),
-        e('div',{className:'dash-panel'},
-          e('div',{className:'dash-panel-hdr'},e('span',{className:'dash-panel-title'},'Sistemas'),e('button',{className:'dash-panel-link',onClick:()=>setTab('sistemas')},'Ver todos')),
+        visible.sistemas&&e('div',{className:'dash-panel'},
+          e('div',{className:'dash-panel-hdr'},
+            e(EditableLabel,{value:labels.sistemas,onSave:v=>renameLabel('sistemas',v)}),
+            e('button',{className:'ghost-btn',onClick:()=>setSystemForm('new'),title:'Nuevo sistema'},'＋'),
+            e('button',{className:'ghost-btn',onClick:()=>onTogglePanelVisibility('sistemas'),title:'Ocultar este panel (puedes reactivarlo en Ajustes)'},e(DashIcon,{name:'eyeOff',size:12})),
+            e('button',{className:'dash-panel-link',onClick:()=>setTab('sistemas')},'Ver todos')
+          ),
           e('div',{className:'dash-panel-body'},
-            pSystems.length===0&&e('div',{className:'empty'},'Sin sistemas aún.\\nCréalos en la pestaña Sistemas.'),
-            e('div',{className:'systems-grid'},pSystems.slice(0,3).map(s=>e(SystemCard,{key:s.id,system:s,expanded:expandedSystem===s.id,onToggle:()=>setExpandedSystem(v=>v===s.id?null:s.id),onEdit:()=>setSystemForm(s),onUpdateSystem,systemProgress,fmtWhen})))
+            pSystems.length===0&&e('div',{className:'empty'},'Sin sistemas aún.\\nCréalos con el botón ＋.'),
+            e('div',{className:'systems-grid'},pSystems.slice(0,3).map(s=>e(SystemCard,{key:s.id,system:s,onEdit:()=>setSystemForm(s),onUpdateSystem,fmtWhen})))
           )
         ),
         e('div',{className:'dash-panel'},
-          e('div',{className:'dash-panel-hdr'},e('span',{className:'dash-panel-title'},'Hábitos'),e('button',{className:'dash-panel-link',onClick:()=>setTab('habitos')},'Ver todos')),
+          e('div',{className:'dash-panel-hdr'},
+            e(EditableLabel,{value:labels.habitos,onSave:v=>renameLabel('habitos',v)}),
+            e('button',{className:'ghost-btn',onClick:()=>setHabitForm('new'),title:'Nuevo hábito'},'＋'),
+            e('button',{className:'dash-panel-link',onClick:()=>setTab('habitos')},'Ver todos')
+          ),
           e('div',{className:'dash-panel-body'},
             pHabits.length===0&&e('div',{className:'empty'},'Sin hábitos aún.'),
             pHabits.map(h=>{
               const log=h.log||[];
-              const dueToday=habitOccursOn(h,dateFromDayKey(today))&&!log.includes(today);
-              return e('div',{key:h.id,className:'proj-item',style:{cursor:'default'}},
-                e('span',{className:'proj-label'},(dueToday?'🔔 ':'')+h.name),
-                e('button',{className:'habit-mark-btn'+(log.includes(today)?' on':''),style:{width:'auto',padding:'3px 8px'},onClick:()=>onToggleHabitLog(h.id,today)},log.includes(today)?'✓':'Marcar')
+              const streak=habitStreak(h);
+              const doneToday=log.includes(today);
+              const dueToday=habitOccursOn(h,dateFromDayKey(today))&&!doneToday;
+              return e('div',{key:h.id,className:'habit-preview-row'},
+                e('div',{className:'habit-preview-icon',style:{background:(h.color||'#2fb87a')+'22'}},e(ProjIconSVG,{iconKey:h.icon||'target',size:12,color:h.color||'var(--accent2)'})),
+                e('div',{style:{flex:1,minWidth:0,cursor:'pointer'},title:'Doble click para editar',onDoubleClick:()=>setHabitForm(h)},
+                  e('div',{style:{display:'flex',alignItems:'center',gap:6}},
+                    dueToday&&e(BellIcon,{active:true,size:10,color:'var(--accent2)'}),
+                    e('div',{className:'habit-preview-name'},h.name)
+                  ),
+                  streak>0&&e('div',{className:'habit-preview-streak'},e(DashIcon,{name:'flame',size:9,color:'#e0954a',fill:'#e0954a'}),streak+' días')
+                ),
+                e('div',{className:'habit-preview-dots'},last5.map(dk=>e('span',{key:dk,className:'habit-dot'+(log.includes(dk)?' on':'')}))),
+                e(HabitCheck,{done:doneToday,due:dueToday,onClick:()=>onToggleHabitLog(h.id,today)})
               );
             })
           )
         )
       ),
-      e('div',{style:{display:'grid',gridTemplateColumns:'1fr 260px',gap:14}},
-        e('div',{className:'dash-timeline-wrap'},
-          e(Timeline,{blocks,setBlocks,realBlocks,liveBlock,projects,tasks,activeSess,tState,tick,onEditBlock,onNewBlock,onDblClickTime,blockOpacity,blockStyle,realStyle,tlZoom,setTlZoom,selectedDay,setSelectedDay})
+      e('div',{className:'dash-timeline-wrap'},
+        e(HorizontalTimeline,{realBlocks,liveBlock,projects,tasks,selectedDay,setSelectedDay})
+      )
+    )),
+
+    tab==='tareas'&&e('div',{className:'dash-body'},
+      e('div',{className:'dash-panel',style:{maxWidth:640}},
+        e('div',{className:'dash-panel-hdr'},
+          e(EditableLabel,{value:labels.tareas,onSave:v=>renameLabel('tareas',v)}),
+          e('span',{style:{fontSize:10,color:'var(--text4)'}},'('+pendingTasks.length+')'),
+          e('button',{className:'ghost-btn',style:{marginLeft:'auto'},onClick:openAddTask,title:'Añadir '+taskNoun},'＋')
         ),
-        e('div',{className:'dash-panel'},
-          e('div',{className:'dash-panel-hdr'},e('span',{className:'dash-panel-title'},'Progreso de sistemas')),
-          e('div',{className:'dash-panel-body'},
-            pSystems.length===0&&e('div',{className:'empty'},'Sin sistemas.'),
-            pSystems.map(s=>{const pct=systemProgress(s);return e('div',{key:s.id,className:'progress-row'},
-              e('div',{className:'progress-row-top'},e('span',{className:'progress-row-name'},s.name),e('span',{className:'progress-row-pct'},pct+'%')),
-              e('div',{className:'progress-track'},e('div',{className:'progress-fill',style:{width:pct+'%',background:project.color}}))
-            );})
-          )
+        e('div',{className:'dash-panel-body',style:{maxHeight:'none'}},
+          pendingTasks.length===0&&e('div',{className:'empty'},'Sin tareas pendientes. Usa el botón ＋ para agregar una.'),
+          pendingTasks.map(t=>e(TaskRow,{key:t.id,t,onCycleTaskStatus,onDeleteTask,isActive:isRunningHere&&activeSess.taskId===t.id,onPlay:onPlayTask,onFinish:onFinishTask,onOpenSteps:setStepsForTask}))
         )
       )
     ),
 
-    tab==='tareas'&&e('div',{className:'dash-body'},
-      e('div',{className:'dash-panel',style:{maxWidth:640}},
-        e('div',{className:'dash-panel-hdr'},e('span',{className:'dash-panel-title'},'Tareas · pendientes ('+pendingTasks.length+')')),
-        e('div',{className:'dash-panel-body',style:{maxHeight:'none'}},
-          pendingTasks.length===0&&e('div',{className:'empty'},'Sin tareas pendientes. Agrega la primera abajo.'),
-          pendingTasks.map(t=>e(TaskRow,{key:t.id,t,onCycleTaskStatus,onDeleteTask,isActive:isRunningHere&&activeSess.taskId===t.id,onPlay:onPlayTask,onFinish:onFinishTask})),
-          e('div',{className:'task-add-row'},
-            e('input',{className:'finput',placeholder:'+ Nueva tarea...',value:newTask,onChange:ev=>setNewTask(ev.target.value),onKeyDown:ev=>{if(ev.key==='Enter')addTaskNow();}}),
-            e('button',{className:'task-add-submit',onClick:addTaskNow},'+')
-          )
-        ),
-        doneTasks.length>0&&e('div',{className:'panel-divider'}),
-        doneTasks.length>0&&e('div',{className:'panel-sec-lbl'},'Completadas ',e('span',{className:'panel-sec-count'},'('+doneTasks.length+')')),
-        doneTasks.length>0&&e('div',{className:'dash-panel-body',style:{maxHeight:'none'}},doneTasks.map(t=>e('div',{key:t.id,className:'done-task-row'},
-          e('span',{className:'done-task-name'},t.name),
-          e('button',{className:'done-task-reopen',onClick:()=>onCycleTaskStatus(t.id)},'Reabrir'),
-          e('button',{className:'rem-del',onClick:()=>onDeleteTask(t.id)},'✕')
-        )))
-      )
-    ),
-
     tab==='sistemas'&&e('div',{className:'dash-body'},
-      e('div',{style:{display:'flex',alignItems:'center',gap:10,marginBottom:2}},
-        e('span',{className:'panel-sec-lbl'},'Sistemas · procesos operativos del negocio'),
-        e('button',{className:'btn btn-primary',style:{marginLeft:'auto',fontSize:11},onClick:()=>setSystemForm('new')},'+ Nuevo sistema')
+      e('div',{style:{display:'flex',alignItems:'center',gap:8,marginBottom:2}},
+        e(EditableLabel,{value:labels.sistemas,onSave:v=>renameLabel('sistemas',v)}),
+        e('span',{style:{fontSize:10,color:'var(--text4)'}},'· doble click para editar'),
+        !visible.sistemas&&e('button',{className:'ghost-btn',onClick:()=>onTogglePanelVisibility('sistemas'),title:'Mostrar de nuevo este panel en Resumen'},'Mostrar en Resumen'),
+        e('button',{className:'ghost-btn',style:{marginLeft:'auto'},onClick:()=>setSystemForm('new'),title:'Nuevo sistema'},'＋')
       ),
-      pSystems.length===0&&e('div',{className:'empty'},'Sin sistemas aún. Un Sistema representa un proceso operativo (ej. Contenido Orgánico, Meta Ads, Prospección).'),
-      e('div',{className:'systems-grid',style:{maxWidth:760}},pSystems.map(s=>e(SystemCard,{key:s.id,system:s,expanded:expandedSystem===s.id,onToggle:()=>setExpandedSystem(v=>v===s.id?null:s.id),onEdit:()=>setSystemForm(s),onUpdateSystem,systemProgress,fmtWhen})))
+      pSystems.length===0&&e('div',{className:'empty'},'Sin sistemas aún. Un Sistema representa un proceso o rutina que quieres monitorear (ej. riego de plantas, chequeo mensual). Usa el botón ＋.'),
+      e('div',{className:'systems-grid',style:{maxWidth:760}},pSystems.map(s=>e(SystemCard,{key:s.id,system:s,onEdit:()=>setSystemForm(s),onUpdateSystem,fmtWhen})))
     ),
 
     tab==='habitos'&&e('div',{className:'dash-body'},
-      e('div',{style:{display:'flex',alignItems:'center',gap:10,marginBottom:2}},
-        e('span',{className:'panel-sec-lbl'},'Hábitos · esta semana'),
+      e('div',{style:{display:'flex',alignItems:'center',gap:8,marginBottom:2}},
+        e(EditableLabel,{value:labels.habitos,onSave:v=>renameLabel('habitos',v)}),
+        e('span',{style:{fontSize:10,color:'var(--text4)'}},'· esta semana'),
+        e('button',{className:'ghost-btn',style:{marginLeft:'auto'},onClick:()=>setHabitForm('new'),title:'Nuevo hábito'},'＋')
       ),
       pHabits.length>0&&e('div',{className:'habit-grid-hdr',style:{maxWidth:520}},e('div',null),week.map(w=>e('div',{key:w.key,className:'habit-grid-daylbl'+(w.isToday?' today':'')},w.label)),e('div',null)),
       e('div',{style:{maxWidth:520}},
-        pHabits.length===0&&e('div',{className:'empty'},'Sin hábitos aún. Créalos para recibir recordatorios recurrentes en este proyecto.'),
+        pHabits.length===0&&e('div',{className:'empty'},'Sin hábitos aún. Usa el botón ＋ para crear uno en este proyecto.'),
         pHabits.map(h=>{
           const log=h.log||[];
-          const dueToday=habitOccursOn(h,dateFromDayKey(today))&&!log.includes(today);
+          const doneToday=log.includes(today);
+          const dueToday=habitOccursOn(h,dateFromDayKey(today))&&!doneToday;
           return e('div',{key:h.id,className:'habit-grid-row'},
-            e('span',{className:'habit-grid-name',style:{display:'flex',alignItems:'center',gap:6},onClick:()=>setHabitForm(h)},
-              dueToday&&e('span',{className:'proj-habit-bell',style:{cursor:'default'},title:'Toca cumplir hoy'},e(BellIcon,{active:true,size:10,color:'currentColor'})),
+            e('span',{className:'habit-grid-name',style:{display:'flex',alignItems:'center',gap:6,cursor:'pointer'},title:'Doble click para editar',onDoubleClick:()=>setHabitForm(h)},
+              e(ProjIconSVG,{iconKey:h.icon||'target',size:11,color:h.color||'var(--accent2)'}),
+              dueToday&&e(BellIcon,{active:true,size:10,color:'var(--accent2)'}),
               h.name
             ),
             week.map(w=>{
@@ -3944,10 +4671,9 @@ function ProjectDashboard(props){
               const done=log.includes(w.key);
               return e('div',{key:w.key,className:'habit-grid-cell'+(done?' done':'')+(w.isToday?' today':''),style:done?{background:project.color+'55'}:scheduled?{borderColor:project.color+'50'}:{},onClick:()=>onToggleHabitLog(h.id,w.key),title:w.key});
             }),
-            e('button',{className:'habit-mark-btn'+(log.includes(today)?' on':''),style:log.includes(today)?{background:project.color+'22',borderColor:project.color+'60',color:project.color}:{},onClick:()=>onToggleHabitLog(h.id,today)},log.includes(today)?'✓ Hoy':'Marcar')
+            e(HabitCheck,{done:doneToday,due:dueToday,onClick:()=>onToggleHabitLog(h.id,today),title:doneToday?'Hecho hoy':'Marcar como hecho hoy'})
           );
-        }),
-        e('button',{className:'habit-add-btn',onClick:()=>setHabitForm('new')},'+ Agregar hábito a este proyecto')
+        })
       )
     ),
 
@@ -3977,6 +4703,21 @@ function ProjectDashboard(props){
           e('div',{style:{fontSize:11.5,color:'var(--text2)',lineHeight:1.6}},'Edita nombre, cliente, descripción, color, ícono y límite diario de "'+project.name+'".'),
           e('button',{className:'btn btn-primary',onClick:onEditProject},'Editar proyecto')
         )
+      ),
+      e('div',{className:'dash-panel',style:{maxWidth:420,marginTop:12}},
+        e('div',{className:'dash-panel-hdr'},e('span',{className:'dash-panel-title'},'Paneles visibles en Resumen')),
+        e('div',{style:{padding:14,display:'flex',flexDirection:'column',gap:10}},
+          e('div',{style:{fontSize:11.5,color:'var(--text2)',lineHeight:1.6}},'Ocultar un panel no borra su información — solo lo quita de la vista de Resumen.'),
+          [{k:'tareas',lbl:labels.tareas},{k:'sistemas',lbl:labels.sistemas},{k:'habitos',lbl:labels.habitos}].map(p=>
+            e('div',{key:p.k,style:{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'6px 0',borderTop:'1px solid var(--border)'}},
+              e('span',{style:{fontSize:11.5,color:'var(--text0)'}},p.lbl),
+              e('label',{className:'toggle-switch'},
+                e('input',{type:'checkbox',checked:visible[p.k]!==false,onChange:()=>onTogglePanelVisibility(p.k)}),
+                e('span',{className:'toggle-slider'})
+              )
+            )
+          )
+        )
       )
     ),
 
@@ -3984,7 +4725,8 @@ function ProjectDashboard(props){
       system:systemForm==='new'?null:systemForm,
       onClose:()=>setSystemForm(null),
       onSave:sys=>{if(systemForm==='new')onAddSystem(sys);else onUpdateSystem({...systemForm,...sys});setSystemForm(null);},
-      onDelete:id=>{onDeleteSystem(id);setSystemForm(null);setExpandedSystem(null);}
+      onDelete:id=>{onDeleteSystem(id);setSystemForm(null);},
+      onUpdateSystem:sys=>{onUpdateSystem(sys);setSystemForm(sys);}
     }),
     habitForm&&e(HabitFormModal,{
       habit:habitForm==='new'?null:habitForm,
@@ -3992,15 +4734,508 @@ function ProjectDashboard(props){
       onSave:h=>{if(habitForm==='new')onAddHabit(h);else onUpdateHabit(h);setHabitForm(null);},
       onDelete:id=>{onDeleteHabit(id);setHabitForm(null);},
       onClose:()=>setHabitForm(null)
+    }),
+    showTaskModal&&e(NewTaskModal,{
+      noun:taskNoun,
+      onClose:()=>setShowTaskModal(false),
+      onSave:(name,recurrence)=>{onAddTask(name,recurrence);setShowTaskModal(false);}
+    }),
+    stepsForTask&&e(TaskStepsModal,{
+      task:tasks.find(x=>x.id===stepsForTask.id)||stepsForTask,
+      noun:taskNoun,
+      onClose:()=>setStepsForTask(null),
+      onSave:steps=>onUpdateTaskSteps(stepsForTask.id,steps),
+      onUpdateTask:patch=>onUpdateTask(stepsForTask.id,patch)
     })
   );
 }
 
-function StatCard({label,value,sub}){
-  return e('div',{className:'dash-stat-card'},
-    e('div',{className:'dash-stat-lbl'},label),
-    e('div',{className:'dash-stat-val'},value),
-    sub&&e('div',{className:'dash-stat-sub'},sub)
+function NewTaskModal({onClose,onSave,noun}){
+  const[name,setName]=useState('');
+  const[recurrence,setRecurrence]=useState(null);
+  const[showRec,setShowRec]=useState(false);
+  function save(){if(name.trim())onSave(name.trim(),recurrence);}
+  return e('div',{className:'overlay',onClick:ev=>{if(ev.target===ev.currentTarget)onClose();}},
+    e('div',{className:'modal',style:{width:380}},
+      e('div',{className:'modal-head'},e('div',{className:'modal-title'},'Añadir '+(noun||'tarea')),e('button',{className:'modal-x',onClick:onClose},'✕')),
+      e('div',{className:'modal-body'},
+        e('div',{className:'fg'},e('label',{className:'flabel'},'Nombre de '+(noun||'la tarea')),
+          e('input',{className:'finput',value:name,autoFocus:true,placeholder:'ej. Definición base app clickup',onChange:ev=>setName(ev.target.value),onKeyDown:ev=>{if(ev.key==='Enter')save();}})
+        ),
+        e('div',{className:'fg'},e('label',{className:'flabel'},'Repetición'),
+          e('button',{className:'rec-trigger',onClick:()=>setShowRec(true)},
+            e(RepeatIcon,{size:13,color:recurrence?'var(--accent2)':'var(--text3)'}),
+            e('span',null,recurrenceLabel(recurrence)),
+            recurrence&&e('span',{className:'rec-clear',onClick:ev=>{ev.stopPropagation();setRecurrence(null);}},'✕')
+          )
+        )
+      ),
+      e('div',{className:'modal-foot'},
+        e('button',{className:'btn',onClick:onClose},'Cancelar'),
+        e('button',{className:'btn btn-primary',onClick:save},'Crear')
+      )
+    ),
+    showRec&&e(RecurrenceModal,{
+      value:recurrence,
+      anchorDate:dayKey(),
+      onClose:()=>setShowRec(false),
+      onSave:next=>{setRecurrence(next);setShowRec(false);}
+    })
+  );
+}
+
+// ═══════════════════════════════════════════
+// RECURRENCE MODAL — simple, Notion/ClickUp-inspired recurring task scheduler.
+// Only shows the sub-options relevant to the selected type, and only offers
+// the three recurrence shapes that cover the common cases: every X days,
+// weekly (every N weeks on chosen weekdays), and monthly (same day / first / last).
+// ═══════════════════════════════════════════
+const REC_TYPES=[
+  {k:'none',l:'No se repite'},
+  {k:'daily',l:'Cada X días'},
+  {k:'weekly',l:'Semanal'},
+  {k:'monthly',l:'Mensual'}
+];
+function RecurrenceModal({value,anchorDate,onClose,onSave,mode}){
+  const isHabit=mode==='habit'||mode==='system';
+  const titleTxt=mode==='habit'?'Repetir hábito':mode==='system'?'Repetir monitoreo':'Repetir tarea';
+  const anchorDay=new Date(anchorDate+'T00:00:00').getDate();
+  const anchorWeekday=weekdayKeyOf(anchorDate);
+  const[draft,setDraft]=useState(()=>({
+    type:isHabit?'weekly':'none',interval:1,days:[anchorWeekday],monthMode:'same',monthDay:anchorDay,trigger:'onComplete',
+    ...(value||{}),
+    // guard against legacy/partial recurrence objects (e.g. old habit shapes)
+    // missing fields that the weekly/monthly sections need to render safely
+    days:(value&&value.days&&value.days.length)?value.days:[anchorWeekday],
+    interval:(value&&value.interval)||1,
+    monthMode:(value&&value.monthMode)||'same',
+    monthDay:(value&&value.monthDay)||anchorDay
+  }));
+  function patch(p){ setDraft(d=>({...d,...p})); }
+  function toggleDay(k){
+    setDraft(d=>{
+      const has=(d.days||[]).includes(k);
+      const next=has?d.days.filter(x=>x!==k):[...d.days,k];
+      return{...d,days:next.length?next:d.days}; // never allow zero days selected
+    });
+  }
+  function setPreset(list){ patch({days:list}); }
+
+  const preview=draft.type!=='none'?computeNextOccurrence(anchorDate,draft):null;
+  const types=isHabit?REC_TYPES.filter(t=>t.k!=='none'):REC_TYPES;
+
+  function handleSave(){
+    onSave(draft.type==='none'?null:draft);
+  }
+
+  return e('div',{className:'overlay',onClick:ev=>{if(ev.target===ev.currentTarget)onClose();}},
+    e('div',{className:'modal',style:{width:400}},
+      e('div',{className:'modal-head'},
+        e('div',{className:'modal-title'},e(RepeatIcon,{size:14,color:'currentColor'}),e('span',{style:{marginLeft:8}},titleTxt)),
+        e('button',{className:'modal-x',onClick:onClose},'✕')
+      ),
+      e('div',{className:'modal-body rec-body'},
+        e('div',{className:'rec-type-grid'},
+          types.map(t=>e('button',{
+            key:t.k,
+            className:'rec-type-btn'+(draft.type===t.k?' active':''),
+            onClick:()=>patch({type:t.k})
+          },t.l))
+        ),
+
+        draft.type==='daily'&&e('div',{className:'rec-section'},
+          e('div',{className:'rec-row'},
+            e('span',null,'Repetir cada'),
+            e('input',{type:'number',min:1,max:365,className:'rec-num',value:draft.interval,onChange:ev=>patch({interval:Math.max(1,parseInt(ev.target.value)||1)})}),
+            e('span',null,draft.interval===1?'día':'días')
+          )
+        ),
+
+        draft.type==='weekly'&&e('div',{className:'rec-section'},
+          e('div',{className:'rec-row'},
+            e('span',null,'Repetir cada'),
+            e('input',{type:'number',min:1,max:52,className:'rec-num',value:draft.interval,onChange:ev=>patch({interval:Math.max(1,parseInt(ev.target.value)||1)})}),
+            e('span',null,draft.interval===1?'semana':'semanas')
+          ),
+          e('div',{className:'rec-daychips'},
+            WEEK_DAYS.map(w=>e('button',{
+              key:w.k,
+              className:'rec-daychip'+((draft.days||[]).includes(w.k)?' active':''),
+              onClick:()=>toggleDay(w.k),
+              title:w.full
+            },w.l))
+          ),
+          e('div',{className:'rec-presets'},
+            e('button',{className:'rec-preset-btn',onClick:()=>setPreset(['mon','tue','wed','thu','fri'])},'Días laborales'),
+            e('button',{className:'rec-preset-btn',onClick:()=>setPreset(['sat','sun'])},'Fin de semana'),
+            e('button',{className:'rec-preset-btn',onClick:()=>setPreset(['mon','tue','wed','thu','fri','sat','sun'])},'Todos los días')
+          )
+        ),
+
+        draft.type==='monthly'&&e('div',{className:'rec-section'},
+          e('div',{className:'rec-choice'+(draft.monthMode==='same'?' active':''),onClick:()=>patch({monthMode:'same'})},
+            e('span',{className:'rec-radio'}),
+            e('span',null,'El día'),
+            e('input',{type:'number',min:1,max:31,className:'rec-num',onClick:ev=>ev.stopPropagation(),value:draft.monthDay,onChange:ev=>patch({monthMode:'same',monthDay:Math.min(31,Math.max(1,parseInt(ev.target.value)||1))})}),
+            e('span',null,'de cada mes')
+          ),
+          e('div',{className:'rec-choice'+(draft.monthMode==='first'?' active':''),onClick:()=>patch({monthMode:'first'})},
+            e('span',{className:'rec-radio'}),e('span',null,'El primer día del mes')
+          ),
+          e('div',{className:'rec-choice'+(draft.monthMode==='last'?' active':''),onClick:()=>patch({monthMode:'last'})},
+            e('span',{className:'rec-radio'}),e('span',null,'El último día del mes')
+          )
+        ),
+
+        !isHabit&&draft.type!=='none'&&e('div',{className:'rec-divider'}),
+        !isHabit&&draft.type!=='none'&&e('div',{className:'rec-section'},
+          e('div',{className:'rec-label-sm'},'Crear la siguiente tarea'),
+          e('div',{className:'rec-choice'+(draft.trigger==='onComplete'?' active':''),onClick:()=>patch({trigger:'onComplete'})},
+            e('span',{className:'rec-radio'}),e('span',null,'Al marcarla como completada')
+          ),
+          e('div',{className:'rec-choice'+(draft.trigger==='onSchedule'?' active':''),onClick:()=>patch({trigger:'onSchedule'})},
+            e('span',{className:'rec-radio'}),e('span',null,'En la fecha programada')
+          )
+        ),
+
+        draft.type!=='none'&&e('div',{className:'rec-summary'},
+          e(RepeatIcon,{size:11,color:'var(--accent2)'}),
+          e('span',null,recurrenceLabel(draft)+(preview?' · próxima: '+(()=>{const[y,m,d]=preview.split('-');return d+'-'+m+'-'+y;})():''))
+        )
+      ),
+      e('div',{className:'modal-foot'},
+        e('button',{className:'btn',onClick:onClose},'Cancelar'),
+        e('button',{className:'btn btn-primary',onClick:handleSave},'Guardar')
+      )
+    )
+  );
+}
+
+function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask}){
+  const[steps,setSteps]=useState(task.steps||[]);
+  const[newName,setNewName]=useState('');
+  const[newDate,setNewDate]=useState('');
+  const[showRec,setShowRec]=useState(false);
+  const stepsRef=useRef(steps);
+  useEffect(()=>{stepsRef.current=steps;},[steps]);
+  const rowRefs=useRef({});
+  const[dragFill,setDragFill]=useState(null); // {startIndex,startDate,endIndex,tipDate,tipX,tipY}
+  const[view,setView]=useState('list'); // 'list' | 'timeline' — both read/write the same `steps` state, so they're always in sync
+  const[tlDrag,setTlDrag]=useState(null); // {ids,clickedId,startX,orig:{id:date},cur:{id:date},moved,tipX,tipY}
+  const[selectedIds,setSelectedIds]=useState(()=>new Set());
+  const DAY_W=64;
+
+  function commit(next){ setSteps(next); onSave(next); }
+  function addStep(){
+    if(!newName.trim())return;
+    commit([...steps,{id:uid(),name:newName.trim(),dueDate:newDate||null,done:false}]);
+    setNewName('');setNewDate('');
+  }
+  function updateStep(id,patch){ commit(steps.map(s=>s.id===id?{...s,...patch}:s)); }
+  function deleteStep(id){ commit(steps.filter(s=>s.id!==id)); }
+
+  function addDays(dateStr,n){
+    const d=new Date(dateStr+'T00:00:00');
+    d.setDate(d.getDate()+n);
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+  function fmtPretty(dateStr){
+    if(!dateStr)return'';
+    const[y,m,d]=dateStr.split('-');
+    return `${d}-${m}-${y}`;
+  }
+
+  // Excel-style fill handle: press the corner square of a date cell and drag
+  // up/down over other rows — each row crossed gets startDate + rowOffset days.
+  // Tracked via a real mousemove listener + row bounding boxes (robust to fast drags),
+  // rather than relying on onMouseEnter which can miss rows when the pointer moves quickly.
+  function beginFillDrag(index,ev){
+    ev.preventDefault();ev.stopPropagation();
+    const startDate=steps[index].dueDate;
+    if(!startDate)return;
+    setDragFill({startIndex:index,startDate,endIndex:index,tipDate:startDate,tipX:ev.clientX,tipY:ev.clientY});
+  }
+  useEffect(()=>{
+    if(!dragFill)return;
+    const{startIndex,startDate}=dragFill;
+    function rowAt(y){
+      let found=startIndex;
+      for(const key of Object.keys(rowRefs.current)){
+        const el=rowRefs.current[key];
+        if(!el)continue;
+        const r=el.getBoundingClientRect();
+        if(y>=r.top&&y<=r.bottom){found=Number(key);break;}
+      }
+      return found;
+    }
+    function onMove(ev){
+      const idx=rowAt(ev.clientY);
+      const lo=Math.min(startIndex,idx),hi=Math.max(startIndex,idx);
+      setSteps(prev=>prev.map((s,i)=>(i<lo||i>hi)?s:{...s,dueDate:addDays(startDate,i-startIndex)}));
+      setDragFill(df=>df?{...df,endIndex:idx,tipDate:addDays(startDate,idx-startIndex),tipX:ev.clientX,tipY:ev.clientY}:df);
+    }
+    function onUp(){ setDragFill(null); onSave(stepsRef.current); }
+    window.addEventListener('mousemove',onMove);
+    window.addEventListener('mouseup',onUp);
+    return()=>{window.removeEventListener('mousemove',onMove);window.removeEventListener('mouseup',onUp);};
+  },[dragFill&&dragFill.startIndex,dragFill&&dragFill.startDate]);
+
+  // Timeline: click a pill to select it (highlighted); click again to deselect;
+  // "Seleccionar todas" selects every dated step. Dragging any pill that's part
+  // of a multi-selection moves the whole group together, preserving the gaps
+  // between their dates. Dragging a lone / unselected pill just moves that one.
+  // A single final commit happens on mouseup (no per-pixel Supabase pushes).
+  function toggleSelect(id){
+    setSelectedIds(prev=>{
+      const next=new Set(prev);
+      if(next.has(id))next.delete(id);else next.add(id);
+      return next;
+    });
+  }
+  function selectAllDated(){
+    setSelectedIds(new Set(steps.filter(s=>s.dueDate).map(s=>s.id)));
+  }
+  function clearSelection(){ setSelectedIds(new Set()); }
+
+  function beginTimelineDrag(id,ev){
+    ev.preventDefault();ev.stopPropagation();
+    const s=steps.find(x=>x.id===id);
+    if(!s||!s.dueDate)return;
+    const group=(selectedIds.has(id)&&selectedIds.size>1)
+      ?steps.filter(x=>selectedIds.has(x.id)&&x.dueDate).map(x=>x.id)
+      :[id];
+    const orig={};group.forEach(gid=>{orig[gid]=steps.find(x=>x.id===gid).dueDate;});
+    setTlDrag({ids:group,clickedId:id,startX:ev.clientX,orig,cur:{...orig},moved:false,tipX:ev.clientX,tipY:ev.clientY});
+  }
+  useEffect(()=>{
+    if(!tlDrag)return;
+    const{ids,orig,startX}=tlDrag;
+    function onMove(ev){
+      const deltaDays=Math.round((ev.clientX-startX)/DAY_W);
+      const moved=Math.abs(ev.clientX-startX)>=4;
+      const cur={};ids.forEach(gid=>{cur[gid]=addDays(orig[gid],deltaDays);});
+      setTlDrag(d=>d?{...d,cur,moved:d.moved||moved,tipX:ev.clientX,tipY:ev.clientY}:d);
+    }
+    function onUp(){
+      setTlDrag(d=>{
+        if(d){
+          if(!d.moved){
+            toggleSelect(d.clickedId);
+          }else{
+            const next=steps.map(s=>d.cur[s.id]!==undefined?{...s,dueDate:d.cur[s.id]}:s);
+            commit(next);
+          }
+        }
+        return null;
+      });
+    }
+    window.addEventListener('mousemove',onMove);
+    window.addEventListener('mouseup',onUp);
+    return()=>{window.removeEventListener('mousemove',onMove);window.removeEventListener('mouseup',onUp);};
+  },[tlDrag&&tlDrag.ids&&tlDrag.ids.join(','),tlDrag&&tlDrag.startX]);
+
+  const total=steps.length;
+  const doneCount=steps.filter(s=>s.done).length;
+  const pct=total>0?Math.round(doneCount/total*100):0;
+  const fillLo=dragFill?Math.min(dragFill.startIndex,dragFill.endIndex):null;
+  const fillHi=dragFill?Math.max(dragFill.startIndex,dragFill.endIndex):null;
+
+  // Timeline geometry, only computed when needed
+  let tl=null;
+  if(view==='timeline'){
+    const toTs=d=>new Date(d+'T00:00:00').getTime();
+    const today=dayKey();
+    const dated=steps.filter(s=>s.dueDate);
+    const allTs=dated.map(s=>toTs(s.dueDate)).concat([toTs(today)]);
+    const minTs=Math.min(...allTs)-2*86400000;
+    const maxTs=Math.max(...allTs)+5*86400000;
+    const numDays=Math.round((maxTs-minTs)/86400000)+1;
+    const dayIdx=dateStr=>Math.round((toTs(dateStr)-minTs)/86400000);
+    const days=Array.from({length:numDays},(_,i)=>new Date(minTs+i*86400000));
+    const rows=dated.slice().sort((a,b)=>a.dueDate<b.dueDate?-1:a.dueDate>b.dueDate?1:0);
+    tl={today,dated,minTs,numDays,dayIdx,days,rows};
+  }
+
+  return e('div',{className:'overlay',onClick:ev=>{if(ev.target===ev.currentTarget)onClose();}},
+    e('div',{className:'modal',style:{width:680,maxWidth:'94vw'}},
+      e('div',{className:'modal-head'},
+        e('div',null,
+          e('div',{className:'modal-title'},task.name),
+          e('div',{className:'modal-sub'},'Pasos de '+(noun||'esta tarea')+' · '+doneCount+'/'+total+' completados')
+        ),
+        e('button',{className:'modal-x',onClick:onClose},'✕')
+      ),
+      e('div',{className:'view-tabs'},
+        e('button',{className:'vtab'+(view==='list'?' active':''),onClick:()=>setView('list')},'Lista'),
+        e('button',{className:'vtab'+(view==='timeline'?' active':''),onClick:()=>setView('timeline')},'Línea de tiempo'),
+        e('button',{className:'rec-trigger-btn'+(task.recurrence?' set':''),style:{marginLeft:'auto'},onClick:()=>setShowRec(true)},
+          e(RepeatIcon,{size:11,color:'currentColor'}),
+          recurrenceLabel(task.recurrence)
+        )
+      ),
+      total>0&&e('div',{style:{padding:'0 20px',marginTop:-4}},
+        e('div',{className:'task-progress-track',style:{maxWidth:'none'}},e('div',{className:'task-progress-fill',style:{width:pct+'%'}}))
+      ),
+      e('div',{className:'modal-body'},
+        view==='list'&&e('div',{className:'sheet',style:dragFill?{userSelect:'none'}:undefined},
+          e('div',{className:'sheet-row sheet-hdr'},
+            e('div',{className:'sheet-cell'},'Nombre'),
+            e('div',{className:'sheet-cell sheet-cell-date'},'Fecha límite'),
+            e('div',{className:'sheet-cell sheet-cell-status'},'Estado')
+          ),
+          steps.length===0&&e('div',{className:'empty',style:{padding:'16px 2px'}},'Sin pasos aún. Agrega el primero abajo.'),
+          steps.map((s,idx)=>{
+            const inFillRange=dragFill&&idx>=fillLo&&idx<=fillHi;
+            return e('div',{
+              key:s.id,
+              ref:el=>{rowRefs.current[idx]=el;},
+              className:'sheet-row'+(s.done?' done':'')+(inFillRange?' fill-range':'')
+            },
+              e('div',{className:'sheet-cell'},
+                e('input',{className:'sheet-input sheet-input-name',value:s.name,onChange:ev=>updateStep(s.id,{name:ev.target.value})})
+              ),
+              e('div',{className:'sheet-cell sheet-cell-date'},
+                e('div',{className:'sheet-date-cell'},
+                  e('input',{className:'sheet-input sheet-input-date',type:'date',value:s.dueDate||'',onChange:ev=>updateStep(s.id,{dueDate:ev.target.value||null})}),
+                  s.dueDate&&e('div',{className:'sheet-fill-handle',title:'Arrastra para rellenar días consecutivos',onMouseDown:ev=>beginFillDrag(idx,ev)})
+                )
+              ),
+              e('div',{className:'sheet-cell sheet-cell-status'},
+                e('button',{className:'steps-done-btn'+(s.done?' on':''),onClick:()=>updateStep(s.id,{done:!s.done})},s.done?'✓ Listo':'Marcar'),
+                e('button',{className:'rem-del',onClick:()=>deleteStep(s.id),title:'Eliminar paso'},'✕')
+              )
+            );
+          }),
+          e('div',{className:'sheet-row sheet-add-row'},
+            e('div',{className:'sheet-cell'},
+              e('input',{className:'sheet-input sheet-input-name',placeholder:'+ Agregar paso...',value:newName,onChange:ev=>setNewName(ev.target.value),onKeyDown:ev=>{if(ev.key==='Enter')addStep();}})
+            ),
+            e('div',{className:'sheet-cell sheet-cell-date'},
+              e('input',{className:'sheet-input sheet-input-date',type:'date',value:newDate,onChange:ev=>setNewDate(ev.target.value)})
+            ),
+            e('div',{className:'sheet-cell sheet-cell-status'},
+              e('button',{className:'btn btn-primary',style:{fontSize:11,padding:'5px 14px',width:'100%'},onClick:addStep},'Agregar')
+            )
+          )
+        ),
+        view==='timeline'&&e('div',{className:'tl-wrap'},
+          e('div',{className:'tl-toolbar'},
+            e('button',{className:'btn',style:{fontSize:10.5,padding:'4px 10px'},onClick:selectAllDated,disabled:tl.dated.length===0},'Seleccionar todas'),
+            selectedIds.size>0&&e('button',{className:'btn',style:{fontSize:10.5,padding:'4px 10px'},onClick:clearSelection},'Deseleccionar ('+selectedIds.size+')'),
+            selectedIds.size>1&&e('span',{className:'tl-hint'},'Arrastra cualquiera de las '+selectedIds.size+' seleccionadas para moverlas juntas')
+          ),
+          tl.dated.length<total&&e('div',{className:'tl-note'},(total-tl.dated.length)+' paso(s) sin fecha — asígnales una en la vista Lista para verlos aquí'),
+          tl.rows.length===0&&e('div',{className:'empty',style:{padding:'20px 2px'}},'Sin pasos con fecha aún.'),
+          tl.rows.length>0&&e('div',{className:'tl-scroll'},
+            e('div',{className:'tl-canvas',style:{width:tl.numDays*DAY_W,height:38+tl.rows.length*40+14}},
+              e('div',{className:'tl-days'},tl.days.map((d,i)=>{
+                const key=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+                const isToday=key===tl.today;
+                const wd=WEEK_DAYS.find(w=>w.k===DOW_KEYS[d.getDay()]);
+                return e('div',{key:i,className:'tl-day'+(isToday?' today':''),style:{left:i*DAY_W,width:DAY_W}},
+                  e('span',{className:'tl-day-dow'},wd?wd.l:''),
+                  e('span',{className:'tl-day-num'},d.getDate())
+                );
+              })),
+              e('div',{className:'tl-today-line',style:{left:tl.dayIdx(tl.today)*DAY_W}}),
+              tl.rows.map((s,ri)=>{
+                const isDragging=tlDrag&&tlDrag.ids.includes(s.id);
+                const shownDate=isDragging?tlDrag.cur[s.id]:s.dueDate;
+                const isSelected=selectedIds.has(s.id);
+                return e('div',{
+                  key:s.id,
+                  className:'tl-pill'+(s.done?' done':'')+(isDragging?' dragging':'')+(isSelected?' selected':''),
+                  style:{left:tl.dayIdx(shownDate)*DAY_W+6,top:38+ri*40+6},
+                  onMouseDown:ev=>beginTimelineDrag(s.id,ev),
+                  title:'Click para seleccionar · arrastra para reprogramar'
+                },
+                  e('button',{className:'tl-pill-check',onMouseDown:ev=>ev.stopPropagation(),onClick:ev=>{ev.stopPropagation();updateStep(s.id,{done:!s.done});}},s.done?'✓':''),
+                  e('span',{className:'tl-pill-label'},s.name)
+                );
+              })
+            )
+          )
+        )
+      ),
+      e('div',{className:'modal-foot'},
+        e('button',{className:'btn',onClick:onClose},'Cerrar')
+      )
+    ),
+    dragFill&&e('div',{className:'sheet-fill-tooltip',style:{left:dragFill.tipX+14,top:dragFill.tipY-12}},fmtPretty(dragFill.tipDate)),
+    tlDrag&&tlDrag.moved&&e('div',{className:'sheet-fill-tooltip',style:{left:tlDrag.tipX+14,top:tlDrag.tipY-12}},
+      tlDrag.ids.length>1?(tlDrag.ids.length+' pasos · '+fmtPretty(tlDrag.cur[tlDrag.clickedId])):fmtPretty(tlDrag.cur[tlDrag.clickedId])
+    ),
+    showRec&&e(RecurrenceModal,{
+      value:task.recurrence,
+      anchorDate:task.dueDate||dayKey(),
+      onClose:()=>setShowRec(false),
+      onSave:next=>{
+        onUpdateTask({recurrence:next,dueDate:next?(task.dueDate||dayKey()):task.dueDate});
+        setShowRec(false);
+      }
+    })
+  );
+}
+function EditableLabel({value,onSave}){
+  const[editing,setEditing]=useState(false);
+  const[val,setVal]=useState(value);
+  useEffect(()=>{setVal(value);},[value]);
+  function commit(){
+    setEditing(false);
+    const t=val.trim();
+    if(t&&t!==value)onSave(t);else setVal(value);
+  }
+  if(editing){
+    return e('input',{className:'label-edit-input',value:val,autoFocus:true,onFocus:ev=>ev.target.select(),onChange:ev=>setVal(ev.target.value),onBlur:commit,onKeyDown:ev=>{if(ev.key==='Enter')commit();if(ev.key==='Escape'){setVal(value);setEditing(false);}}});
+  }
+  return e('span',{className:'dash-panel-title editable-label',onClick:()=>setEditing(true),title:'Click para renombrar'},
+    value,e('span',{className:'editable-label-pencil'},'✎')
+  );
+}
+
+function StatCard({icon,color,label,value,sub,progress,sparkline,custom,onChangeCustom,onResetCustom}){
+  const[open,setOpen]=useState(false);
+  const ref=useRef(null);
+  const editable=!!onChangeCustom;
+  useEffect(()=>{
+    if(!open)return;
+    function h(ev){if(ref.current&&!ref.current.contains(ev.target))setOpen(false);}
+    document.addEventListener('mousedown',h);
+    return()=>document.removeEventListener('mousedown',h);
+  },[open]);
+  const activeColor=custom?.color||color;
+  const activeIconKey=custom?.icon||null;
+  return e('div',{className:'dash-stat-card',ref},
+    e('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between'}},
+      e('div',{className:'dash-stat-lbl'},label),
+      icon&&e('div',{
+        className:'dash-stat-icon'+(editable?' editable':''),
+        style:{color:activeColor,background:activeColor+'1c'},
+        onClick:editable?()=>setOpen(v=>!v):undefined,
+        title:editable?'Cambiar ícono y color':undefined
+      },
+        activeIconKey?e(ProjIconSVG,{iconKey:activeIconKey,size:12,color:'currentColor'}):e(DashIcon,{name:icon,size:12,color:'currentColor'})
+      )
+    ),
+    e('div',{style:{display:'flex',alignItems:'flex-end',justifyContent:'space-between',gap:8}},
+      e('div',{className:'dash-stat-val'},value),
+      sparkline&&e(Sparkline,{points:sparkline,color:activeColor})
+    ),
+    sub&&e('div',{className:'dash-stat-sub'},sub),
+    progress&&e('div',{className:'progress-track',style:{marginTop:2}},e('div',{className:'progress-fill',style:{width:Math.min(100,Math.round(progress.value/Math.max(1,progress.max)*100))+'%',background:activeColor||'var(--accent)'}})),
+    open&&e('div',{className:'stat-icon-pop',onClick:ev=>ev.stopPropagation()},
+      e('div',{className:'swatch-row'},COLORS.map(c=>e('div',{key:c,className:`swatch${activeColor===c?' on':''}`,style:{background:c},onClick:()=>onChangeCustom(activeIconKey||'target',c)}))),
+      e('div',{className:'stat-icon-pop-grid'},['target','activity','clipboard','settings','star','heart','sun','rocket','calendar','lightning','chart','folder'].map(k=>
+        e('div',{
+          key:k,
+          className:'stat-icon-pop-item',
+          title:k,
+          style:{border:activeIconKey===k?'2px solid '+activeColor:'1px solid var(--border2)',background:activeIconKey===k?activeColor+'22':'var(--bg4)'},
+          onClick:()=>onChangeCustom(k,activeColor)
+        },e(ProjIconSVG,{iconKey:k,size:13,color:activeIconKey===k?activeColor:'var(--text3)'}))
+      )),
+      onResetCustom&&e('button',{className:'stat-icon-pop-reset',onClick:()=>{onResetCustom();setOpen(false);}},'Restablecer ícono original')
+    )
   );
 }
 
