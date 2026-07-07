@@ -1198,6 +1198,22 @@ const SB = {
   disconnect(){
     [this.K_URL, this.K_ANON, this.K_UID].forEach(k=>this._save(k,''));
   },
+
+  // ── DIRTY/SYNCED TRACKING ──
+  // Guarda cuándo hubo un cambio local pendiente de subir (markDirty) y cuándo
+  // se confirmó que ese cambio llegó a Supabase (markSynced). Esto evita que,
+  // al recargar la página antes de que termine el push de 3s (o el de
+  // beforeunload), el pull inicial reemplace el estado local recién guardado
+  // en localStorage con datos remotos más viejos — la causa de que hábitos
+  // (u otros datos) marcados justo antes de recargar "desaparezcan".
+  K_DIRTY: 'chr4_dirty_at', K_SYNCED: 'chr4_synced_at',
+  markDirty(){ this._save(this.K_DIRTY, String(Date.now())); },
+  markSynced(){ this._save(this.K_SYNCED, String(Date.now())); },
+  isDirty(){
+    const d=Number(this._load(this.K_DIRTY)||0);
+    const s=Number(this._load(this.K_SYNCED)||0);
+    return d>s;
+  },
 };
 
 // ── SEED DATA ──
@@ -1459,6 +1475,67 @@ function habitOccursOn(habit,date){
   return false;
 }
 
+// ═══════════════════════════════════════════
+// PANEL ORDERING — "lo más próximo a terminar hoy primero, si no hay
+// nada pendiente sigue en orden cronológico"
+// Cada tipo de ítem expone una marca de tiempo "efectiva" (próxima fecha en
+// que vence/toca hacerse). sortByProximity ordena ascendente por esa marca;
+// los ítems sin ninguna fecha quedan al final, ordenados por fecha de creación.
+// ═══════════════════════════════════════════
+function sortByProximity(list,getDueTs,getCreatedTs){
+  return[...list].sort((a,b)=>{
+    const da=getDueTs(a),db=getDueTs(b);
+    const aHas=da!=null,bHas=db!=null;
+    if(aHas&&bHas)return da-db;
+    if(aHas&&!bHas)return -1;
+    if(!aHas&&bHas)return 1;
+    return(getCreatedTs(a)||0)-(getCreatedTs(b)||0);
+  });
+}
+// Aplica uno de los modos de orden disponibles para un panel (proximidad,
+// alfabético, más recientes, completadas primero, pendientes primero).
+const PANEL_SORT_OPTIONS=[
+  {k:'todayFirst',label:'Pendiente hoy primero'},
+  {k:'proximity',label:'Más próximas a vencer'},
+  {k:'alpha',label:'Orden alfabético'},
+  {k:'recent',label:'Más recientes primero'},
+  {k:'done',label:'Completadas primero'},
+  {k:'pending',label:'Pendientes primero'},
+];
+function applySortMode(list,mode,cfg){
+  const{getDueTs,getCreatedTs,getName,getDone}=cfg;
+  const arr=[...list];
+  if(mode==='alpha')return arr.sort((a,b)=>(getName(a)||'').localeCompare(getName(b)||'','es',{sensitivity:'base'}));
+  if(mode==='recent')return arr.sort((a,b)=>(getCreatedTs(b)||0)-(getCreatedTs(a)||0));
+  if(mode==='done')return arr.sort((a,b)=>((getDone(b)?1:0)-(getDone(a)?1:0))||((getCreatedTs(a)||0)-(getCreatedTs(b)||0)));
+  if(mode==='pending')return arr.sort((a,b)=>((getDone(a)?1:0)-(getDone(b)?1:0))||((getCreatedTs(a)||0)-(getCreatedTs(b)||0)));
+  return sortByProximity(arr,getDueTs,getCreatedTs);
+}
+function taskDueTs(t){
+  if(!t.dueDate)return null;
+  return new Date(t.dueDate+'T12:00:00').getTime();
+}
+function systemDueTs(s){
+  if(s.status==='paused')return null;
+  return s.nextRun||null;
+}
+// Próxima ocurrencia pendiente de un hábito (hoy o en el futuro más cercano),
+// combinada con su hora programada — así "las 9am" ordena antes que "las 6pm".
+function nextHabitDueTs(h){
+  const log=h.log||[];
+  const base=new Date();base.setHours(0,0,0,0);
+  for(let i=0;i<366;i++){
+    const d=new Date(base.getTime()+i*86400000);
+    const key=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    if(habitOccursOn(h,d)&&!log.includes(key)){
+      const[hh,mm]=(h.time||'09:00').split(':').map(Number);
+      const dt=new Date(d);dt.setHours(hh||0,mm||0,0,0);
+      return dt.getTime();
+    }
+  }
+  return null;
+}
+
 function habitDaysLabel(h){
   const r=h.recurrence||{};
   if(r.type==='monthly_date') return r.day==='last'?'Último día':'Día '+r.day;
@@ -1580,6 +1657,7 @@ function App(){
   const[systems,setSystems]=useState(()=>load('chr4_systems',INIT_SYSTEMS));
   const[panelLabels,setPanelLabels]=useState(()=>load('chr4_panelLabels',{tareas:'Tareas prioritarias',sistemas:'Sistemas',habitos:'Hábitos'}));
   const[panelVisibility,setPanelVisibility]=useState(()=>load('chr4_panelVisibility',{tareas:true,sistemas:true,habitos:true}));
+  const[panelSortModes,setPanelSortModes]=useState(()=>load('chr4_panelSort',{tareas:'proximity',sistemas:'proximity',habitos:'proximity'}));
   const[showSystemModal,setShowSystemModal]=useState(false);
   const[editSystem,setEditSystem]=useState(null);
   const[tick,setTick]=useState(0);
@@ -1601,6 +1679,7 @@ function App(){
   useEffect(()=>save('chr4_systems',systems),[systems]);
   useEffect(()=>save('chr4_panelLabels',panelLabels),[panelLabels]);
   useEffect(()=>save('chr4_panelVisibility',panelVisibility),[panelVisibility]);
+  useEffect(()=>save('chr4_panelSort',panelSortModes),[panelSortModes]);
 
   // HABITS → REMINDERS engine: once a day, per habit, if it occurs today and the
   // scheduled time has arrived, push a reminder into the same `reminders` array
@@ -1661,6 +1740,16 @@ function App(){
     if(sbStatus!=='connected') return;
     (async()=>{
       try{
+        // Si quedaron cambios locales sin confirmar (ej: marcaste un hábito y
+        // recargaste antes de que el push de 3s o el de beforeunload
+        // terminaran), NO hacemos pull todavía — eso reemplazaría el estado
+        // local recién cargado desde localStorage con datos remotos más
+        // viejos. Primero subimos lo local para no perder el cambio.
+        if(SB.isDirty()){
+          await SB.push({projects,sessions,intenciones,tasks,blocks,habits,reminders,ctxs,systems,panelLabels,panelVisibility,panelSortModes});
+          SB.markSynced();
+          return;
+        }
         const remote = await SB.pull();
         if(remote){
           if(remote.projects?.length)  setProjects(remote.projects);
@@ -1672,9 +1761,11 @@ function App(){
           if(remote.systems?.length)   setSystems(remote.systems);
           if(remote.panelLabels)       setPanelLabels(remote.panelLabels);
           if(remote.panelVisibility)   setPanelVisibility(remote.panelVisibility);
+          if(remote.panelSortModes)    setPanelSortModes(remote.panelSortModes);
           if(remote.reminders?.length) setReminders(remote.reminders);
           if(remote.ctxs?.length)      setCtxs(remote.ctxs);
         }
+        SB.markSynced();
       }catch(e){ console.warn('[SB] pull error',e); }
     })();
   },[sbStatus]);
@@ -1682,15 +1773,19 @@ function App(){
   // SB: debounced auto-push — 3s after any data change
   useEffect(()=>{
     if(sbStatus!=='connected') return;
+    // Se marca "sucio" apenas cambia cualquier dato sincronizable, antes de
+    // esperar los 3s de debounce — así, si la página se recarga en ese
+    // intervalo, sabemos que hubo un cambio que quizás no llegó a subirse.
+    SB.markDirty();
     clearTimeout(sbSyncRef.current);
     sbSyncRef.current=setTimeout(async()=>{
       setSbSyncing(true);
-      try{ await SB.push({projects,sessions,intenciones,tasks,blocks,habits,reminders,ctxs,systems,panelLabels,panelVisibility}); }
+      try{ await SB.push({projects,sessions,intenciones,tasks,blocks,habits,reminders,ctxs,systems,panelLabels,panelVisibility,panelSortModes}); SB.markSynced(); }
       catch(e){ console.warn('[SB] push error',e); }
       setSbSyncing(false);
     },3000);
     return()=>clearTimeout(sbSyncRef.current);
-  },[projects,sessions,intenciones,tasks,blocks,habits,reminders,ctxs,systems,panelLabels,panelVisibility,sbStatus]);
+  },[projects,sessions,intenciones,tasks,blocks,habits,reminders,ctxs,systems,panelLabels,panelVisibility,panelSortModes,sbStatus]);
 
   // SB: force-immediate push (bypasses the 3s debounce) — used for edits the
   // user explicitly expects to be persisted right away (systems, panel labels)
@@ -1700,7 +1795,7 @@ function App(){
     if(forceSyncTick===0||sbStatus!=='connected')return;
     (async()=>{
       setSbSyncing(true);
-      try{ await SB.push({projects,sessions,intenciones,tasks,blocks,habits,reminders,ctxs,systems,panelLabels,panelVisibility}); }
+      try{ await SB.push({projects,sessions,intenciones,tasks,blocks,habits,reminders,ctxs,systems,panelLabels,panelVisibility,panelSortModes}); SB.markSynced(); }
       catch(e){ console.warn('[SB] push error',e); }
       setSbSyncing(false);
     })();
@@ -1741,7 +1836,7 @@ function App(){
   // always sends fresh data, not a stale closure from when the listener was added
   const sbLatestRef=useRef(null);
   useEffect(()=>{
-    sbLatestRef.current={projects,sessions,intenciones,tasks,blocks,habits,reminders,ctxs,systems,panelLabels,panelVisibility};
+    sbLatestRef.current={projects,sessions,intenciones,tasks,blocks,habits,reminders,ctxs,systems,panelLabels,panelVisibility,panelSortModes};
   });
 
   // SB: flush any pending change right before the tab closes/refreshes, using
@@ -2006,6 +2101,21 @@ function App(){
   const selectedProjObj=projects.find(p=>p.id===selProj)||projects[0];
   const showIdleReminder=tState==='idle'&&soundCfg.idleEnabled&&!idleSilenced;
 
+  // Alerta global de la campanita: debe encenderse si CUALQUIER proyecto tiene
+  // un hábito por cumplir hoy, un sistema por revisar (nextRun vencido)
+  // o una tarea con un paso vencido — usando la MISMA lógica que ya pinta
+  // la campanita de cada ítem individual en los paneles (antes la campanita
+  // global usaba criterios distintos —reminders.overdue y t.dueDate— que casi
+  // nunca coinciden con lo que en verdad se muestra como "pendiente" en cada panel).
+  const todayKey_=dayKey();
+  const hasHabitAlert=habits.some(h=>habitOccursOn(h,dateFromDayKey(todayKey_))&&!(h.log||[]).includes(todayKey_));
+  const hasSystemAlert=systems.some(s=>s.status!=='paused'&&s.nextRun&&s.nextRun<=Date.now());
+  const hasTaskAlert=tasks.some(t=>t.status!=='done'&&(
+    (t.dueDate&&t.dueDate<=todayKey_)||
+    (t.steps||[]).some(s=>!s.done&&s.dueDate&&s.dueDate<=todayKey_)
+  ));
+  const hasAnyAlert=hasHabitAlert||hasSystemAlert||hasTaskAlert;
+
   function onProjClick(pid){
     if(selProj===pid)setExpandCtx(v=>v===pid?null:pid);
     else{setSelProj(pid);setExpandCtx(pid);}
@@ -2059,7 +2169,7 @@ function App(){
                 )
           ),
           e('button',{
-            className:'tb-icon-btn'+(reminders.some(r=>r.overdue&&!r.done)?' tb-icon-alert':''),
+            className:'tb-icon-btn'+(hasAnyAlert?' tb-icon-alert':''),
             onClick:()=>setShowRemPanel(v=>!v),
             title:'Recordatorios',
             style:{position:'relative'}
@@ -2068,7 +2178,7 @@ function App(){
               e('path',{d:'M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9'}),
               e('path',{d:'M13.73 21a2 2 0 01-3.46 0'})
             ),
-            reminders.some(r=>r.overdue&&!r.done)&&e('span',{style:{position:'absolute',top:4,right:4,width:6,height:6,borderRadius:'50%',background:'var(--red,#e05555)',border:'1.5px solid var(--bg1)',pointerEvents:'none'}})
+            hasAnyAlert&&e('span',{style:{position:'absolute',top:4,right:4,width:6,height:6,borderRadius:'50%',background:'var(--red,#e05555)',border:'1.5px solid var(--bg1)',pointerEvents:'none'}})
           ),
           e('button',{className:'tb-icon-btn',onClick:()=>setShowThemeCfg(true),title:'Apariencia'},
             e('svg',{width:15,height:15,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round',style:{display:'block'}},
@@ -2090,6 +2200,15 @@ function App(){
             projects,tasks,sessions,ctxs,habits,systems,
             panelLabels,onRenameLabel:(key,val)=>{setPanelLabels(p=>({...p,[key]:val}));forceSync();},
             panelVisibility,onTogglePanelVisibility:(key)=>{setPanelVisibility(p=>({...p,[key]:!(p[key]!==false)}));forceSync();},
+            panelSortModes,onChangeSortMode:(key,mode)=>{
+              // "Pendiente hoy primero" es un orden pensado para verse igual
+              // en los tres paneles a la vez: al elegirlo en cualquiera, se
+              // aplica automáticamente a Tareas, Sistemas y Hábitos juntos.
+              setPanelSortModes(p=>mode==='todayFirst'
+                ?{...p,tareas:'todayFirst',sistemas:'todayFirst',habitos:'todayFirst'}
+                :{...p,[key]:mode});
+              forceSync();
+            },
             blocks,setBlocks,realBlocks,liveBlock,tick,
             blockOpacity:themeCfg.blockOpacity,blockStyle:themeCfg.blockStyle||'stripe',realStyle:themeCfg.realStyle||'solid',
             tlZoom,setTlZoom,selectedDay,setSelectedDay,
@@ -2173,7 +2292,14 @@ function App(){
                     const barColor=pct>=100?'var(--red)':pct>70?'var(--amber)':'var(--green)';
                     const isLive=activeSess?.projectId===proj.id&&tState!=='idle';
                     const isSel=selProj===proj.id;
-                    const habitRem=reminders.find(r=>r.habitId&&!r.done&&r.projId===proj.id);
+                    const habitDue=habits.some(h=>h.projectId===proj.id&&habitOccursOn(h,dateFromDayKey(todayKey_))&&!(h.log||[]).includes(todayKey_));
+                    const systemDue=systems.some(s=>s.projectId===proj.id&&s.status!=='paused'&&s.nextRun&&s.nextRun<=Date.now());
+                    const taskDue=tasks.some(t=>t.projectId===proj.id&&t.status!=='done'&&(
+                      (t.dueDate&&t.dueDate<=todayKey_)||
+                      (t.steps||[]).some(s=>!s.done&&s.dueDate&&s.dueDate<=todayKey_)
+                    ));
+                    const hasAlert=habitDue||systemDue||taskDue;
+                    const alertTitle=habitDue?'Hábito por cumplir hoy':systemDue?'Sistema por revisar':'Tarea pendiente por cumplir';
                     const showCtxStrip=expandCtx===proj.id&&st.lastCtx;
                     return e(React.Fragment,{key:proj.id},
                       e('div',{className:`proj-item${isSel?' sel':''}${isLive?' live':''}`,onMouseEnter:()=>playUI('hover'),onClick:()=>{playUI('click');onProjClick(proj.id);},onDoubleClick:ev=>onProjDbl(ev,proj.id)},
@@ -2186,7 +2312,7 @@ function App(){
                           todaySecs>0&&e('span',{className:'proj-time-chip'},fmtS(todaySecs)),
                           isLive&&e('span',{className:'proj-live-dot'})
                         ),
-                        habitRem&&e('div',{className:'proj-habit-bell',title:'Hábito: '+habitRem.title,onClick:ev=>{ev.stopPropagation();playUI('click');setShowRemPanel(true);}},
+                        hasAlert&&e('div',{className:'proj-habit-bell',title:alertTitle,onClick:ev=>{ev.stopPropagation();playUI('click');if(habitDue)setShowRemPanel(true);else onProjClick(proj.id);}},
                           e(BellIcon,{active:true,size:11,color:'currentColor'})
                         ),
                         e('div',{className:'proj-actions'},
@@ -2332,6 +2458,7 @@ function App(){
           if(remote.systems?.length)  setSystems(remote.systems);
             if(remote.panelLabels)     setPanelLabels(remote.panelLabels);
             if(remote.panelVisibility) setPanelVisibility(remote.panelVisibility);
+            if(remote.panelSortModes)  setPanelSortModes(remote.panelSortModes);
             if(remote.reminders?.length)setReminders(remote.reminders);
             if(remote.ctxs?.length)     setCtxs(remote.ctxs);
             showNotif('☁ Datos restaurados desde Supabase ✓');
@@ -2343,7 +2470,7 @@ function App(){
       onDisconnect:()=>{ SB.disconnect(); setSbStatus('disconnected'); },
       onManualSync:async()=>{
         setSbSyncing(true);
-        try{ await SB.push({projects,sessions,intenciones,tasks,blocks,habits,reminders,ctxs,systems,panelLabels,panelVisibility}); showNotif('☁ Sincronizado ✓'); }
+        try{ await SB.push({projects,sessions,intenciones,tasks,blocks,habits,reminders,ctxs,systems,panelLabels,panelVisibility,panelSortModes}); SB.markSynced(); showNotif('☁ Sincronizado ✓'); }
         catch(e){ console.warn(e); }
         setSbSyncing(false);
       },
@@ -2850,6 +2977,29 @@ function RemSelDropdown({anchorEl,children,alignRight}){
     setStyle(alignRight?{...base,right:window.innerWidth-r.right}:{...base,left:r.left});
   },[anchorEl,alignRight]);
   return ReactDOM.createPortal(e('div',{className:'rem-dd',style},children),document.body);
+}
+
+// Botón de "ordenar" (flechas cruzándose) para los paneles de Tareas,
+// Sistemas y Hábitos — abre un menú con los modos de orden disponibles.
+function SortMenuButton({value,onChange,title}){
+  const[open,setOpen]=useState(false);
+  const btnRef=useRef(null);
+  useEffect(()=>{
+    if(!open)return;
+    function h(ev){
+      const inBtn=btnRef.current&&btnRef.current.contains(ev.target);
+      const inDd=ev.target.closest('.rem-dd');
+      if(!inBtn&&!inDd)setOpen(false);
+    }
+    document.addEventListener('mousedown',h,true);
+    return()=>document.removeEventListener('mousedown',h,true);
+  },[open]);
+  return e('div',{style:{position:'relative',display:'inline-flex'}},
+    e('button',{ref:btnRef,className:'ghost-btn',onClick:()=>setOpen(v=>!v),title:title||'Ordenar'},e(DashIcon,{name:'sort',size:12})),
+    open&&e(RemSelDropdown,{anchorEl:btnRef.current,alignRight:true},
+      PANEL_SORT_OPTIONS.map(o=>e('button',{key:o.k,className:'rem-dd-item'+(value===o.k?' active':''),onClick:()=>{onChange(o.k);setOpen(false);}},o.label))
+    )
+  );
 }
 
 // ── Mini Drum Column (Opción C) ──────────────────────────────────
@@ -4265,6 +4415,7 @@ const DASH_ICON_PATHS={
   target:e=>[e('circle',{cx:12,cy:12,r:8}),e('circle',{cx:12,cy:12,r:4}),e('circle',{cx:12,cy:12,r:0.6,fill:'currentColor'})],
   habit:e=>[e('path',{d:'M12 2v4'}),e('path',{d:'M12 18v4'}),e('circle',{cx:12,cy:12,r:6})],
   eyeOff:e=>[e('path',{d:'M3 3l18 18'}),e('path',{d:'M10.6 5.2A10.7 10.7 0 0 1 12 5c6 0 9.5 5 9.5 7a12.6 12.6 0 0 1-3 3.6'}),e('path',{d:'M6.5 6.9C4 8.6 2.5 11.2 2.5 12c0 2 3.5 7 9.5 7 1.4 0 2.7-.3 3.9-.8'}),e('path',{d:'M9.9 10a3 3 0 0 0 4.2 4.2'})],
+  sort:e=>[e('polyline',{points:'16 3 21 3 21 8'}),e('line',{x1:4,y1:20,x2:21,y2:3}),e('polyline',{points:'21 16 21 21 16 21'}),e('line',{x1:15,y1:15,x2:21,y2:21}),e('line',{x1:4,y1:4,x2:9,y2:9})],
 };
 function DashIcon({name,size=13,color='currentColor',fill='none'}){
   const draw=DASH_ICON_PATHS[name]||DASH_ICON_PATHS.target;
@@ -4420,6 +4571,7 @@ function ProjectDashboard(props){
   const{
     project,projects,tasks,sessions,ctxs,habits,systems,
     panelLabels,onRenameLabel,panelVisibility,onTogglePanelVisibility,
+    panelSortModes,onChangeSortMode,
     blocks,setBlocks,realBlocks,liveBlock,tick,blockOpacity,blockStyle,realStyle,tlZoom,setTlZoom,selectedDay,setSelectedDay,onDblClickTime,onEditBlock,onNewBlock,
     tState,activeSess,
     onAddTask,onCycleTaskStatus,onDeleteTask,onUpdateTask,onUpdateTaskSteps,onPlayTask,onFinishTask,
@@ -4438,7 +4590,9 @@ function ProjectDashboard(props){
   const DEFAULT_LABELS={tareas:'Tareas prioritarias',sistemas:'Sistemas',habitos:'Hábitos'};
   const labels={...DEFAULT_LABELS,...(panelLabels||{})};
   const visible={tareas:true,sistemas:true,habitos:true,...(panelVisibility||{})};
+  const sortModes={tareas:'proximity',sistemas:'proximity',habitos:'proximity',...(panelSortModes||{})};
   function renameLabel(key,val){onRenameLabel(key,val);}
+  function setSortMode(key,mode){onChangeSortMode(key,mode);}
   function openAddTask(){setShowTaskModal(true);}
   function singularizeLabel(label){
     const first=(label||'').trim().split(/\s+/)[0]||'tarea';
@@ -4450,9 +4604,15 @@ function ProjectDashboard(props){
   function resetStatCustom(key){const next={...(project.statConfig||{})};delete next[key];onPatchProject({statConfig:next});}
 
   const pTasks=tasks.filter(t=>t.projectId===project.id);
-  const pendingTasks=pTasks.filter(t=>t.status!=='done');
-  const pSystems=systems.filter(s=>s.projectId===project.id);
-  const pHabits=habits.filter(h=>h.projectId===project.id);
+  const pendingTasks=applySortMode(pTasks.filter(t=>t.status!=='done'),sortModes.tareas,{
+    getDueTs:taskDueTs,getCreatedTs:t=>t.createdAt,getName:t=>t.name,getDone:t=>t.status==='done'
+  });
+  const pSystems=applySortMode(systems.filter(s=>s.projectId===project.id),sortModes.sistemas,{
+    getDueTs:systemDueTs,getCreatedTs:s=>s.createdAt,getName:s=>s.name,getDone:s=>!(s.nextRun&&s.nextRun<=Date.now())
+  });
+  const pHabits=applySortMode(habits.filter(h=>h.projectId===project.id),sortModes.habitos,{
+    getDueTs:nextHabitDueTs,getCreatedTs:h=>h.createdAt,getName:h=>h.name,getDone:h=>(h.log||[]).includes(selectedDay)
+  });
   const pSessions=sessions.filter(s=>s.projectId===project.id&&s.endAt).sort((a,b)=>b.endAt-a.endAt);
   const pCtxs=ctxs.filter(c=>c.projectId===project.id).sort((a,b)=>b.createdAt-a.createdAt);
   const stats=pStats(project);
@@ -4561,7 +4721,7 @@ function ProjectDashboard(props){
         e(StatCard,{icon:'clock',color:'#e0954a',label:'Tiempo hoy',value:fmtS(stats.todaySecs),sub:'de '+fmtS(dailyGoal)+' objetivo',sparkline:sparkBuckets,custom:statCfg.tiempo,onChangeCustom:(icon,color)=>setStatCustom('tiempo',icon,color),onResetCustom:statCfg.tiempo?()=>resetStatCustom('tiempo'):null}),
         e(StatCard,{icon:isRunningHere?'pause':'play',color:'#4a9de0',label:'Sesión actual',value:isRunningHere?fmt(stats.todaySecs%86400):'—',sub:isRunningHere?(activeSess&&(tasks.find(t=>t.id===activeSess.taskId)||{}).name||'Sin tarea'):'Sin sesión activa',custom:statCfg.sesion,onChangeCustom:(icon,color)=>setStatCustom('sesion',icon,color),onResetCustom:statCfg.sesion?()=>resetStatCustom('sesion'):null}),
         e(StatCard,{icon:'check',color:'#2fb87a',label:'Tareas',value:pendingTasks.length,sub:pendingTasks.length?'pendientes':'Sin pendientes',custom:statCfg.tareas,onChangeCustom:(icon,color)=>setStatCustom('tareas',icon,color),onResetCustom:statCfg.tareas?()=>resetStatCustom('tareas'):null}),
-        e(StatCard,{icon:'habit',color:'#2fb87a',label:'Hábitos',value:`${pHabits.filter(h=>(h.log||[]).includes(today)).length} / ${pHabits.length||0}`,sub:pHabits.length?Math.round(pHabits.filter(h=>(h.log||[]).includes(today)).length/pHabits.length*100)+'% completados':'Sin hábitos',progress:{value:pHabits.filter(h=>(h.log||[]).includes(today)).length,max:pHabits.length||1},custom:statCfg.habitos,onChangeCustom:(icon,color)=>setStatCustom('habitos',icon,color),onResetCustom:statCfg.habitos?()=>resetStatCustom('habitos'):null}),
+        e(StatCard,{icon:'habit',color:'#2fb87a',label:'Hábitos',value:`${pHabits.filter(h=>(h.log||[]).includes(selectedDay)).length} / ${pHabits.length||0}`,sub:pHabits.length?Math.round(pHabits.filter(h=>(h.log||[]).includes(selectedDay)).length/pHabits.length*100)+'% completados':'Sin hábitos',progress:{value:pHabits.filter(h=>(h.log||[]).includes(selectedDay)).length,max:pHabits.length||1},custom:statCfg.habitos,onChangeCustom:(icon,color)=>setStatCustom('habitos',icon,color),onResetCustom:statCfg.habitos?()=>resetStatCustom('habitos'):null}),
         e(StatCard,{icon:'target',color:'#b06ef5',label:'Sistemas',value:pSystems.filter(s=>s.status!=='paused').length,sub:pSystems.length+' en total',custom:statCfg.sistemas,onChangeCustom:(icon,color)=>setStatCustom('sistemas',icon,color),onResetCustom:statCfg.sistemas?()=>resetStatCustom('sistemas'):null})
       ),
       e('div',{className:'dash-cols'},
@@ -4569,6 +4729,7 @@ function ProjectDashboard(props){
           e('div',{className:'dash-panel-hdr'},
             e(EditableLabel,{value:labels.tareas,onSave:v=>renameLabel('tareas',v)}),
             e('button',{className:'ghost-btn',onClick:openAddTask,title:'Añadir '+taskNoun},'＋'),
+            e(SortMenuButton,{value:sortModes.tareas,onChange:m=>setSortMode('tareas',m),title:'Ordenar tareas'}),
             e('button',{className:'dash-panel-link',onClick:()=>setTab('tareas')},'Ver todas')
           ),
           e('div',{className:'dash-panel-body'},
@@ -4580,6 +4741,7 @@ function ProjectDashboard(props){
           e('div',{className:'dash-panel-hdr'},
             e(EditableLabel,{value:labels.sistemas,onSave:v=>renameLabel('sistemas',v)}),
             e('button',{className:'ghost-btn',onClick:()=>setSystemForm('new'),title:'Nuevo sistema'},'＋'),
+            e(SortMenuButton,{value:sortModes.sistemas,onChange:m=>setSortMode('sistemas',m),title:'Ordenar sistemas'}),
             e('button',{className:'ghost-btn',onClick:()=>onTogglePanelVisibility('sistemas'),title:'Ocultar este panel (puedes reactivarlo en Ajustes)'},e(DashIcon,{name:'eyeOff',size:12})),
             e('button',{className:'dash-panel-link',onClick:()=>setTab('sistemas')},'Ver todos')
           ),
@@ -4592,6 +4754,7 @@ function ProjectDashboard(props){
           e('div',{className:'dash-panel-hdr'},
             e(EditableLabel,{value:labels.habitos,onSave:v=>renameLabel('habitos',v)}),
             e('button',{className:'ghost-btn',onClick:()=>setHabitForm('new'),title:'Nuevo hábito'},'＋'),
+            e(SortMenuButton,{value:sortModes.habitos,onChange:m=>setSortMode('habitos',m),title:'Ordenar hábitos'}),
             e('button',{className:'dash-panel-link',onClick:()=>setTab('habitos')},'Ver todos')
           ),
           e('div',{className:'dash-panel-body'},
@@ -4599,19 +4762,19 @@ function ProjectDashboard(props){
             pHabits.map(h=>{
               const log=h.log||[];
               const streak=habitStreak(h);
-              const doneToday=log.includes(today);
-              const dueToday=habitOccursOn(h,dateFromDayKey(today))&&!doneToday;
+              const doneSel=log.includes(selectedDay);
+              const dueSel=habitOccursOn(h,dateFromDayKey(selectedDay))&&!doneSel;
               return e('div',{key:h.id,className:'habit-preview-row'},
                 e('div',{className:'habit-preview-icon',style:{background:(h.color||'#2fb87a')+'22'}},e(ProjIconSVG,{iconKey:h.icon||'target',size:12,color:h.color||'var(--accent2)'})),
                 e('div',{style:{flex:1,minWidth:0,cursor:'pointer'},title:'Doble click para editar',onDoubleClick:()=>setHabitForm(h)},
                   e('div',{style:{display:'flex',alignItems:'center',gap:6}},
-                    dueToday&&e(BellIcon,{active:true,size:10,color:'var(--accent2)'}),
+                    dueSel&&e(BellIcon,{active:true,size:10,color:'var(--accent2)'}),
                     e('div',{className:'habit-preview-name'},h.name)
                   ),
                   streak>0&&e('div',{className:'habit-preview-streak'},e(DashIcon,{name:'flame',size:9,color:'#e0954a',fill:'#e0954a'}),streak+' días')
                 ),
                 e('div',{className:'habit-preview-dots'},last5.map(dk=>e('span',{key:dk,className:'habit-dot'+(log.includes(dk)?' on':'')}))),
-                e(HabitCheck,{done:doneToday,due:dueToday,onClick:()=>onToggleHabitLog(h.id,today)})
+                e(HabitCheck,{done:doneSel,due:dueSel,onClick:()=>onToggleHabitLog(h.id,selectedDay),title:doneSel?'Hecho el '+selectedDay:'Marcar como hecho este día'})
               );
             })
           )
@@ -4627,7 +4790,10 @@ function ProjectDashboard(props){
         e('div',{className:'dash-panel-hdr'},
           e(EditableLabel,{value:labels.tareas,onSave:v=>renameLabel('tareas',v)}),
           e('span',{style:{fontSize:10,color:'var(--text4)'}},'('+pendingTasks.length+')'),
-          e('button',{className:'ghost-btn',style:{marginLeft:'auto'},onClick:openAddTask,title:'Añadir '+taskNoun},'＋')
+          e('div',{style:{marginLeft:'auto',display:'flex',alignItems:'center',gap:6}},
+            e(SortMenuButton,{value:sortModes.tareas,onChange:m=>setSortMode('tareas',m),title:'Ordenar tareas'}),
+            e('button',{className:'ghost-btn',onClick:openAddTask,title:'Añadir '+taskNoun},'＋')
+          )
         ),
         e('div',{className:'dash-panel-body',style:{maxHeight:'none'}},
           pendingTasks.length===0&&e('div',{className:'empty'},'Sin tareas pendientes. Usa el botón ＋ para agregar una.'),
@@ -4641,7 +4807,10 @@ function ProjectDashboard(props){
         e(EditableLabel,{value:labels.sistemas,onSave:v=>renameLabel('sistemas',v)}),
         e('span',{style:{fontSize:10,color:'var(--text4)'}},'· doble click para editar'),
         !visible.sistemas&&e('button',{className:'ghost-btn',onClick:()=>onTogglePanelVisibility('sistemas'),title:'Mostrar de nuevo este panel en Resumen'},'Mostrar en Resumen'),
-        e('button',{className:'ghost-btn',style:{marginLeft:'auto'},onClick:()=>setSystemForm('new'),title:'Nuevo sistema'},'＋')
+        e('div',{style:{marginLeft:'auto',display:'flex',alignItems:'center',gap:6}},
+          e(SortMenuButton,{value:sortModes.sistemas,onChange:m=>setSortMode('sistemas',m),title:'Ordenar sistemas'}),
+          e('button',{className:'ghost-btn',onClick:()=>setSystemForm('new'),title:'Nuevo sistema'},'＋')
+        )
       ),
       pSystems.length===0&&e('div',{className:'empty'},'Sin sistemas aún. Un Sistema representa un proceso o rutina que quieres monitorear (ej. riego de plantas, chequeo mensual). Usa el botón ＋.'),
       e('div',{className:'systems-grid',style:{maxWidth:760}},pSystems.map(s=>e(SystemCard,{key:s.id,system:s,onEdit:()=>setSystemForm(s),onUpdateSystem,fmtWhen})))
@@ -4651,19 +4820,22 @@ function ProjectDashboard(props){
       e('div',{style:{display:'flex',alignItems:'center',gap:8,marginBottom:2}},
         e(EditableLabel,{value:labels.habitos,onSave:v=>renameLabel('habitos',v)}),
         e('span',{style:{fontSize:10,color:'var(--text4)'}},'· esta semana'),
-        e('button',{className:'ghost-btn',style:{marginLeft:'auto'},onClick:()=>setHabitForm('new'),title:'Nuevo hábito'},'＋')
+        e('div',{style:{marginLeft:'auto',display:'flex',alignItems:'center',gap:6}},
+          e(SortMenuButton,{value:sortModes.habitos,onChange:m=>setSortMode('habitos',m),title:'Ordenar hábitos'}),
+          e('button',{className:'ghost-btn',onClick:()=>setHabitForm('new'),title:'Nuevo hábito'},'＋')
+        )
       ),
       pHabits.length>0&&e('div',{className:'habit-grid-hdr',style:{maxWidth:520}},e('div',null),week.map(w=>e('div',{key:w.key,className:'habit-grid-daylbl'+(w.isToday?' today':'')},w.label)),e('div',null)),
       e('div',{style:{maxWidth:520}},
         pHabits.length===0&&e('div',{className:'empty'},'Sin hábitos aún. Usa el botón ＋ para crear uno en este proyecto.'),
         pHabits.map(h=>{
           const log=h.log||[];
-          const doneToday=log.includes(today);
-          const dueToday=habitOccursOn(h,dateFromDayKey(today))&&!doneToday;
+          const doneSel=log.includes(selectedDay);
+          const dueSel=habitOccursOn(h,dateFromDayKey(selectedDay))&&!doneSel;
           return e('div',{key:h.id,className:'habit-grid-row'},
             e('span',{className:'habit-grid-name',style:{display:'flex',alignItems:'center',gap:6,cursor:'pointer'},title:'Doble click para editar',onDoubleClick:()=>setHabitForm(h)},
               e(ProjIconSVG,{iconKey:h.icon||'target',size:11,color:h.color||'var(--accent2)'}),
-              dueToday&&e(BellIcon,{active:true,size:10,color:'var(--accent2)'}),
+              dueSel&&e(BellIcon,{active:true,size:10,color:'var(--accent2)'}),
               h.name
             ),
             week.map(w=>{
@@ -4671,7 +4843,7 @@ function ProjectDashboard(props){
               const done=log.includes(w.key);
               return e('div',{key:w.key,className:'habit-grid-cell'+(done?' done':'')+(w.isToday?' today':''),style:done?{background:project.color+'55'}:scheduled?{borderColor:project.color+'50'}:{},onClick:()=>onToggleHabitLog(h.id,w.key),title:w.key});
             }),
-            e(HabitCheck,{done:doneToday,due:dueToday,onClick:()=>onToggleHabitLog(h.id,today),title:doneToday?'Hecho hoy':'Marcar como hecho hoy'})
+            e(HabitCheck,{done:doneSel,due:dueSel,onClick:()=>onToggleHabitLog(h.id,selectedDay),title:doneSel?'Hecho el '+selectedDay:'Marcar como hecho este día'})
           );
         })
       )
