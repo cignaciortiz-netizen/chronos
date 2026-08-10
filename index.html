@@ -1378,6 +1378,22 @@ function addDaysToKey(dateStr,n){
 }
 function daysInMonthOf(y,m){ return new Date(y,m+1,0).getDate(); } // m is 0-indexed
 function dateKeyOf(y,m,day){ return `${y}-${String(m+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`; }
+// Returns the date-key (YYYY-MM-DD) of the Nth business day (mon-fri) of month m (0-indexed) / year y.
+// Weekends only are excluded (no holiday calendar). If n exceeds the number of business days
+// in the month, falls back to the last business day found.
+function nthBusinessDayOfMonthKey(y,m,n){
+  const totalDays=daysInMonthOf(y,m);
+  let count=0,lastBiz=null;
+  for(let day=1;day<=totalDays;day++){
+    const dow=new Date(y,m,day).getDay();
+    if(dow!==0&&dow!==6){
+      count++;
+      lastBiz=day;
+      if(count===Math.max(1,n||1))return dateKeyOf(y,m,day);
+    }
+  }
+  return dateKeyOf(y,m,lastBiz||totalDays);
+}
 function weekdayKeyOf(dateStr){ const d=new Date(dateStr+'T00:00:00'); return DOW_KEYS[d.getDay()]; }
 function mondayOfWeekKey(dateStr){
   const d=new Date(dateStr+'T00:00:00');
@@ -1413,6 +1429,7 @@ function computeNextOccurrence(fromDateStr,rec){
     if(m>11){m=0;y++;}
     if(rec.monthMode==='first')return dateKeyOf(y,m,1);
     if(rec.monthMode==='last')return dateKeyOf(y,m,daysInMonthOf(y,m));
+    if(rec.monthMode==='bizday')return nthBusinessDayOfMonthKey(y,m,rec.bizDayN||1);
     const day=Math.min(rec.monthDay||d.getDate(),daysInMonthOf(y,m));
     return dateKeyOf(y,m,day);
   }
@@ -1445,6 +1462,7 @@ function recurrenceLabel(rec){
   if(rec.type==='monthly'){
     if(rec.monthMode==='first')return'El primer día de cada mes';
     if(rec.monthMode==='last')return'El último día de cada mes';
+    if(rec.monthMode==='bizday')return'El '+(rec.bizDayN||1)+'° día hábil de cada mes';
     return'El día '+(rec.monthDay||1)+' de cada mes';
   }
   return'';
@@ -1527,6 +1545,7 @@ function habitOccursOn(habit,date){
     const lastDate=new Date(date.getFullYear(),date.getMonth()+1,0).getDate();
     if(r.monthMode==='first')return date.getDate()===1;
     if(r.monthMode==='last')return date.getDate()===lastDate;
+    if(r.monthMode==='bizday')return dateKey===nthBusinessDayOfMonthKey(date.getFullYear(),date.getMonth(),r.bizDayN||1);
     const day=Math.min(r.monthDay||1,lastDate);
     return date.getDate()===day;
   }
@@ -1612,6 +1631,7 @@ function habitDaysLabel(h){
   if(r.type==='monthly'){
     if(r.monthMode==='first')return'1er día';
     if(r.monthMode==='last')return'Último día';
+    if(r.monthMode==='bizday')return(r.bizDayN||1)+'° hábil';
     return'Día '+(r.monthDay||1);
   }
   return '—';
@@ -1712,6 +1732,7 @@ function App(){
   const[remToast,setRemToast]=useState(null);
   const firedRemsRef=useRef(new Set());
   const[habits,setHabits]=useState(()=>load('chr4_habits',[]));
+  const[notes,setNotes]=useState(()=>load('chr4_notes',{})); // {projectId:[{id,text,createdAt}]}
   const[systems,setSystems]=useState(()=>load('chr4_systems',INIT_SYSTEMS));
   const[panelLabels,setPanelLabels]=useState(()=>load('chr4_panelLabels',{tareas:'Tareas prioritarias',sistemas:'Sistemas',habitos:'Hábitos'}));
   const[panelVisibility,setPanelVisibility]=useState(()=>load('chr4_panelVisibility',{tareas:true,sistemas:true,habitos:true}));
@@ -1722,6 +1743,7 @@ function App(){
   // idle reminder
   const[idleSilenced,setIdleSilenced]=useState(false);
   const idleRef=useRef(null);
+  const phaseWaitRef=useRef(null); // repeating bell while a break finished but the next activity hasn't started
   const firedBlocksRef=useRef(new Set()); // block ids already notified today
 
   // Supabase sync
@@ -1734,6 +1756,7 @@ function App(){
 
   useEffect(()=>save('chr4_reminders',reminders),[reminders]);
   useEffect(()=>save('chr4_habits',habits),[habits]);
+  useEffect(()=>save('chr4_notes',notes),[notes]);
   useEffect(()=>save('chr4_systems',systems),[systems]);
   useEffect(()=>save('chr4_panelLabels',panelLabels),[panelLabels]);
   useEffect(()=>save('chr4_panelVisibility',panelVisibility),[panelVisibility]);
@@ -1983,7 +2006,13 @@ function App(){
           const proj=projects.find(p=>p.id===activeSess.projectId);
           if(proj){
             const todayPrev=sessions.filter(s=>s.projectId===proj.id&&s.day===dayKey()&&s.endAt).reduce((a,s)=>a+s.duration,0);
-            if(todayPrev+realWorkElapsed>=proj.dailyLimit*60){doStop(true,realWorkElapsed);setLimitToast(proj.name);return;}
+            if(todayPrev+realWorkElapsed>=proj.dailyLimit*60){
+              playSound(soundCfg.blockSound,soundCfg.blockVol);
+              doStop(true,realWorkElapsed);
+              setLimitToast(proj.name);
+              setIdleSilenced(false); // asegura que vuelva a sonar el recordatorio de "sin tarea activa" mientras esté idle
+              return;
+            }
           }
         }
 
@@ -2046,11 +2075,26 @@ function App(){
       idleRef.current=setInterval(()=>{
         if(tState==='idle'&&!idleSilenced){
           playSound(soundCfg.idleSound,soundCfg.idleVol);
+          showNotif('Sin tarea activa. Inicia una sesión cuando quieras retomar.',4000);
         }
       },intervalMs);
     }
     return()=>clearInterval(idleRef.current);
   },[tState,soundCfg.idleEnabled,soundCfg.idleInterval,soundCfg.idleSound,soundCfg.idleVol,idleSilenced]);
+
+  // ── DESCANSO TERMINADO — campana repetitiva ──
+  // Si el período de descanso (pomodoro) ya concluyó pero el usuario aún no
+  // retoma la actividad (pomoPhaseDone && fase='brk'), suena la campana de
+  // recordatorio periódicamente hasta que se inicie la siguiente fase o se detenga la sesión.
+  useEffect(()=>{
+    clearInterval(phaseWaitRef.current);
+    if(pomoPhaseDone&&pomoPhase==='brk'){
+      phaseWaitRef.current=setInterval(()=>{
+        playSound(soundCfg.blockSound,soundCfg.blockVol);
+      },45000); // repite cada 45s hasta que se retome la actividad
+    }
+    return()=>clearInterval(phaseWaitRef.current);
+  },[pomoPhaseDone,pomoPhase,soundCfg.blockSound,soundCfg.blockVol]);
 
   // reset idle silence when session starts
   useEffect(()=>{if(tState==='running')setIdleSilenced(false);},[tState]);
@@ -2269,6 +2313,8 @@ function App(){
             onNewBlock:()=>{setNewBlockPreset(null);setShowNewBlock(true);},
             onNewProject:()=>setShowNewProj(true),
             onSetPriority:(pid,priority)=>{setProjects(ps=>ps.map(p=>p.id===pid?{...p,priority}:p));forceSync();},
+            onArchiveProject:pid=>{setProjects(ps=>ps.map(p=>p.id===pid?{...p,status:'archived'}:p));forceSync();},
+            onUnarchiveProject:pid=>{setProjects(ps=>ps.map(p=>p.id===pid?{...p,status:'active'}:p));forceSync();},
             onOpenProject:pid=>{setSelProj(pid);setView('dashboard');},
             onStartProj:pid=>setStartFlow({projId:pid,mode:'ask'}),
             onEditSystem:()=>setView('dashboard'),
@@ -2298,6 +2344,17 @@ function App(){
         ?e(ProjectDashboard,{
             project:selectedProjObj,
             projects,tasks,sessions,ctxs,habits,systems,
+            notes:notes[selectedProjObj.id]||[],
+            onAddNote:text=>{
+              const t=(text||'').trim();
+              if(!t)return;
+              setNotes(n=>({...n,[selectedProjObj.id]:[{id:uid(),text:t,createdAt:Date.now()},...(n[selectedProjObj.id]||[])]}));
+              forceSync();
+            },
+            onDeleteNote:id=>{
+              setNotes(n=>({...n,[selectedProjObj.id]:(n[selectedProjObj.id]||[]).filter(x=>x.id!==id)}));
+              forceSync();
+            },
             panelLabels,onRenameLabel:(key,val)=>{setPanelLabels(p=>({...p,[key]:val}));forceSync();},
             panelVisibility,onTogglePanelVisibility:(key)=>{setPanelVisibility(p=>({...p,[key]:!(p[key]!==false)}));forceSync();},
             panelSortModes,onChangeSortMode:(key,mode)=>{
@@ -4834,12 +4891,22 @@ function HomeResumen(props){
     tState,activeSess,activeProj,activeTask,workElapsed,todayTotal,
     onOpenProject,onStartProj,onUpdateSystem,onToggleHabitLog,
     blocks,onEditBlock,onNewBlock,onNewProject,onSetPriority,
+    onArchiveProject,onUnarchiveProject,
     fmtWhen,fmtS,pStats
   }=props;
 
   const[blockView,setBlockView]=useState(()=>load('chr4_blockview','vertical'));
   function changeBlockView(v){setBlockView(v);save('chr4_blockview',v);}
   const[openFlagMenu,setOpenFlagMenu]=useState(null);
+  const[projCtxMenu,setProjCtxMenu]=useState(null); // {x,y,proj} — right-click menu on a recent project
+  const[showArchived,setShowArchived]=useState(false);
+  useEffect(()=>{
+    if(!projCtxMenu)return;
+    const close=()=>setProjCtxMenu(null);
+    window.addEventListener('click',close);
+    window.addEventListener('scroll',close,true);
+    return()=>{window.removeEventListener('click',close);window.removeEventListener('scroll',close,true);};
+  },[projCtxMenu]);
   useEffect(()=>{
     if(!openFlagMenu)return;
     const close=()=>setOpenFlagMenu(null);
@@ -4849,6 +4916,7 @@ function HomeResumen(props){
 
   const today=dayKey();
   const activeProjects=projects.filter(p=>p.status!=='archived');
+  const archivedProjects=projects.filter(p=>p.status==='archived');
   const dayLabelStr=dateFromDayKey(selectedDay).toLocaleDateString('es-CL',{weekday:'short',day:'numeric',month:'short'});
   function shiftDay(delta){
     const d=dateFromDayKey(selectedDay);
@@ -5017,7 +5085,16 @@ function HomeResumen(props){
         e('div',{className:'dash-panel',style:{overflow:openFlagMenu?'visible':'hidden'}},
           e('div',{className:'dash-panel-hdr',style:{display:'flex',justifyContent:'space-between',alignItems:'center'}},
             e('span',{className:'dash-panel-title'},'Proyectos recientes'),
-            e('button',{className:'ghost-btn',style:{width:'auto',padding:'2px 8px'},onClick:()=>{playUI('click');onNewProject&&onNewProject();},title:'Nuevo proyecto'},'＋')
+            e('div',{style:{display:'flex',alignItems:'center',gap:4}},
+              e('button',{className:'ghost-btn',style:{width:'auto',padding:'2px 8px'},onClick:()=>{playUI('click');setShowArchived(true);},title:'Ver proyectos archivados'},
+                e('svg',{width:11,height:11,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},
+                  e('rect',{x:2,y:4,width:20,height:5,rx:1}),
+                  e('path',{d:'M4 9v9a2 2 0 002 2h12a2 2 0 002-2V9'}),
+                  e('line',{x1:10,y1:13,x2:14,y2:13})
+                )
+              ),
+              e('button',{className:'ghost-btn',style:{width:'auto',padding:'2px 8px'},onClick:()=>{playUI('click');onNewProject&&onNewProject();},title:'Nuevo proyecto'},'＋')
+            )
           ),
           e('div',{className:'dash-panel-body',style:{display:'flex',flexDirection:'column',gap:4,maxHeight:'none',overflow:'visible'}},
             recentProjects.length===0&&e('div',{className:'empty'},'Sin proyectos aún.'),
@@ -5025,7 +5102,7 @@ function HomeResumen(props){
               const PRI={urgent:'#e05555',important:'#e0b73a',low:'#2fb87a'};
               const PRI_ORDER=[null,'urgent','important','low'];
               const priColor=proj.priority?PRI[proj.priority]:null;
-              return e('div',{key:proj.id,className:'proj-item',style:{margin:0,position:'relative'},onClick:()=>{playUI('click');onOpenProject(proj.id);}},
+              return e('div',{key:proj.id,className:'proj-item',style:{margin:0,position:'relative'},onClick:()=>{playUI('click');onOpenProject(proj.id);},onContextMenu:ev=>{ev.preventDefault();ev.stopPropagation();playUI('click');setProjCtxMenu({x:ev.clientX,y:ev.clientY,proj});}},
                 e('div',{className:'proj-stripe',style:{background:proj.color}}),
                 e('div',{className:'proj-icon-badge',style:{'--proj-color':proj.color}},e(ProjIconSVG,{iconKey:proj.icon||DEFAULT_ICON,size:11,color:proj.color})),
                 e('span',{className:'proj-label'},proj.name),
@@ -5215,6 +5292,48 @@ function HomeResumen(props){
             )
           )
         )
+      ),
+
+      projCtxMenu&&e('div',{
+        onClick:ev=>ev.stopPropagation(),
+        style:{position:'fixed',top:projCtxMenu.y,left:projCtxMenu.x,background:'var(--bg2)',border:'1px solid var(--border2)',borderRadius:'var(--r-md)',padding:4,zIndex:200,boxShadow:'0 8px 24px #0007',minWidth:150}
+      },
+        e('div',{
+          onClick:()=>{playUI('click');onArchiveProject&&onArchiveProject(projCtxMenu.proj.id);setProjCtxMenu(null);},
+          style:{display:'flex',alignItems:'center',gap:7,fontSize:11,padding:'6px 9px',borderRadius:6,cursor:'pointer',color:'var(--text2)'}
+        },
+          e('svg',{width:11,height:11,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},
+            e('rect',{x:2,y:4,width:20,height:5,rx:1}),
+            e('path',{d:'M4 9v9a2 2 0 002 2h12a2 2 0 002-2V9'}),
+            e('line',{x1:10,y1:13,x2:14,y2:13})
+          ),
+          'Archivar proyecto'
+        )
+      ),
+
+      showArchived&&e('div',{className:'overlay',onClick:ev=>{if(ev.target===ev.currentTarget)setShowArchived(false);}},
+        e('div',{className:'modal',style:{width:400}},
+          e('div',{className:'modal-head'},
+            e('div',{className:'modal-title'},'Proyectos archivados'),
+            e('button',{className:'modal-x',onClick:()=>setShowArchived(false)},'✕')
+          ),
+          e('div',{className:'modal-body'},
+            archivedProjects.length===0&&e('div',{className:'empty'},'No tienes proyectos archivados.'),
+            e('div',{style:{display:'flex',flexDirection:'column',gap:6}},
+              archivedProjects.map(p=>e('div',{
+                key:p.id,
+                style:{display:'flex',alignItems:'center',gap:8,padding:'8px 10px',borderRadius:8,border:'1px solid var(--border2)'}
+              },
+                e('div',{className:'proj-icon-badge',style:{'--proj-color':p.color}},e(ProjIconSVG,{iconKey:p.icon||DEFAULT_ICON,size:11,color:p.color})),
+                e('span',{style:{flex:1,fontSize:12,color:'var(--text1)'}},p.name),
+                e('button',{className:'btn',style:{fontSize:10,padding:'4px 9px'},onClick:()=>{playUI('click');onUnarchiveProject&&onUnarchiveProject(p.id);}},'Desarchivar')
+              ))
+            )
+          ),
+          e('div',{className:'modal-foot'},
+            e('button',{className:'btn',onClick:()=>setShowArchived(false)},'Cerrar')
+          )
+        )
       )
     )
   );
@@ -5223,6 +5342,7 @@ function HomeResumen(props){
 function ProjectDashboard(props){
   const{
     project,projects,tasks,sessions,ctxs,habits,systems,
+    notes,onAddNote,onDeleteNote,
     panelLabels,onRenameLabel,panelVisibility,onTogglePanelVisibility,
     panelSortModes,onChangeSortMode,
     blocks,setBlocks,realBlocks,liveBlock,tick,blockOpacity,blockStyle,realStyle,tlZoom,setTlZoom,selectedDay,setSelectedDay,onDblClickTime,onEditBlock,onNewBlock,
@@ -5241,6 +5361,7 @@ function ProjectDashboard(props){
   const[stepsForTask,setStepsForTask]=useState(null);
   const[showDoneTasks,setShowDoneTasks]=useState(false);
   const[habitCtxMenu,setHabitCtxMenu]=useState(null); // {x,y,habit}
+  const[newNoteText,setNewNoteText]=useState('');
 
   useEffect(()=>{
     if(!habitCtxMenu)return;
@@ -5336,6 +5457,7 @@ function ProjectDashboard(props){
     {k:'tareas',label:'Tareas'},
     {k:'sistemas',label:'Sistemas'},
     {k:'habitos',label:'Hábitos'},
+    {k:'notas',label:'Notas'},
     {k:'tiempo',label:'Tiempo'},
     {k:'ajustes',label:'Ajustes'},
   ];
@@ -5538,6 +5660,51 @@ function ProjectDashboard(props){
       )
     ),
 
+    tab==='notas'&&e('div',{className:'dash-body'},
+      e('div',{style:{display:'flex',alignItems:'center',gap:8,marginBottom:2}},
+        e('span',{style:{fontWeight:600,fontSize:13}},'Notas'),
+        e('span',{style:{fontSize:10,color:'var(--text4)'}},'· registro interno del proyecto')
+      ),
+      e('div',{className:'dash-panel',style:{maxWidth:640}},
+        e('div',{className:'dash-panel-body',style:{display:'flex',flexDirection:'column',gap:8}},
+          e('textarea',{
+            className:'finput ftextarea',
+            placeholder:'Escribe una nota y presiona Guardar (o Ctrl+Enter)…',
+            value:newNoteText,
+            rows:3,
+            onChange:ev=>setNewNoteText(ev.target.value),
+            onKeyDown:ev=>{
+              if(ev.key==='Enter'&&(ev.ctrlKey||ev.metaKey)){
+                ev.preventDefault();
+                if(newNoteText.trim()){onAddNote(newNoteText);setNewNoteText('');}
+              }
+            }
+          }),
+          e('div',{style:{display:'flex',justifyContent:'flex-end'}},
+            e('button',{
+              className:'btn btn-primary',
+              onClick:()=>{if(newNoteText.trim()){onAddNote(newNoteText);setNewNoteText('');}}
+            },'Guardar nota')
+          )
+        )
+      ),
+      e('div',{className:'dash-panel',style:{maxWidth:640,marginTop:14}},
+        e('div',{className:'dash-panel-body',style:{display:'flex',flexDirection:'column',gap:10}},
+          (notes||[]).length===0&&e('div',{className:'empty'},'Sin notas aún. Usa el cuadro de arriba para registrar avances, decisiones o pendientes de este proyecto.'),
+          (notes||[]).map(n=>e('div',{
+            key:n.id,
+            style:{border:'1px solid var(--border,#ffffff14)',borderRadius:8,padding:'10px 12px',display:'flex',flexDirection:'column',gap:6}
+          },
+            e('div',{style:{whiteSpace:'pre-wrap',fontSize:12.5,lineHeight:1.5}},n.text),
+            e('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between'}},
+              e('span',{style:{fontSize:10,color:'var(--text4)'}},fmtWhen?fmtWhen(n.createdAt):new Date(n.createdAt).toLocaleString('es-CL')),
+              e('button',{className:'ghost-btn',title:'Eliminar nota',onClick:()=>onDeleteNote(n.id)},'✕')
+            )
+          ))
+        )
+      )
+    ),
+
     tab==='tiempo'&&e('div',{className:'dash-body'},
       e('div',{className:'dash-panel',style:{maxWidth:640}},
         e('div',{className:'dash-panel-hdr'},e('span',{className:'dash-panel-title'},'Historial de sesiones')),
@@ -5692,7 +5859,8 @@ function RecurrenceModal({value,anchorDate,onClose,onSave,mode}){
     days:(value&&value.days&&value.days.length)?value.days:[anchorWeekday],
     interval:(value&&value.interval)||1,
     monthMode:(value&&value.monthMode)||'same',
-    monthDay:(value&&value.monthDay)||anchorDay
+    monthDay:(value&&value.monthDay)||anchorDay,
+    bizDayN:(value&&value.bizDayN)||1
   }));
   function patch(p){ setDraft(d=>({...d,...p})); }
   function toggleDay(k){
@@ -5767,6 +5935,12 @@ function RecurrenceModal({value,anchorDate,onClose,onSave,mode}){
           ),
           e('div',{className:'rec-choice'+(draft.monthMode==='last'?' active':''),onClick:()=>patch({monthMode:'last'})},
             e('span',{className:'rec-radio'}),e('span',null,'El último día del mes')
+          ),
+          e('div',{className:'rec-choice'+(draft.monthMode==='bizday'?' active':''),onClick:()=>patch({monthMode:'bizday'})},
+            e('span',{className:'rec-radio'}),
+            e('span',null,'El'),
+            e('input',{type:'number',min:1,max:23,className:'rec-num',onClick:ev=>ev.stopPropagation(),value:draft.bizDayN,onChange:ev=>patch({monthMode:'bizday',bizDayN:Math.min(23,Math.max(1,parseInt(ev.target.value)||1))})}),
+            e('span',null,'° día hábil del mes')
           )
         ),
 
