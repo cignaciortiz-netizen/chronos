@@ -559,6 +559,18 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .tl-pill-check{width:16px;height:16px;border-radius:50%;border:1.5px solid var(--border3);background:transparent;color:#fff;font-size:9px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;padding:0}
 .tl-pill.done .tl-pill-check{background:var(--green,#3ab87a);border-color:var(--green,#3ab87a)}
 .tl-pill-label{font-size:11.5px;color:var(--text0);overflow:hidden;text-overflow:ellipsis}
+/* Barras de fase (línea de tiempo): cuerpo arrastrable para mover, manijas en cada borde para extender/achicar */
+.tl-bar{position:absolute;height:28px;display:flex;align-items:center;gap:6px;background:var(--bg4);border:1px solid var(--border2);border-radius:7px;padding:0 8px;cursor:grab;white-space:nowrap;z-index:2;overflow:hidden;transition:border-color .1s,box-shadow .1s}
+.tl-bar:hover{border-color:var(--border4)}
+.tl-bar.selected{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent-border)}
+.tl-bar.dragging{cursor:grabbing;box-shadow:0 6px 16px rgba(0,0,0,.45);z-index:5;border-color:var(--accent)}
+.tl-bar.done{opacity:.5}
+.tl-bar.done .tl-pill-label{text-decoration:line-through}
+.tl-bar-handle{position:absolute;top:0;bottom:0;width:9px;cursor:ew-resize;z-index:6}
+.tl-bar-handle.left{left:0}
+.tl-bar-handle.right{right:0}
+.tl-bar-handle::after{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:3px;height:14px;border-radius:2px;background:var(--border4);opacity:0;transition:opacity .1s}
+.tl-bar:hover .tl-bar-handle::after,.tl-bar-handle:hover::after{opacity:1;background:var(--accent2)}
 .mm-wrap{padding:0}
 .mm-canvas-scroll{overflow:auto;max-height:62vh;border-radius:12px;background:var(--bg1,#111);background-image:radial-gradient(var(--border3) 1px,transparent 1px);background-size:22px 22px;position:relative}
 .mm-canvas{position:relative}
@@ -746,6 +758,25 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .dash-panel-body{padding:6px 8px;display:flex;flex-direction:column;gap:2px;max-height:340px;overflow-y:auto}
 .dash-panel-body::-webkit-scrollbar{width:3px}
 .dash-panel-body::-webkit-scrollbar-thumb{background:var(--bg5);border-radius:2px}
+.dash-timeline-row{display:flex;gap:14px;align-items:stretch}
+.dash-timeline-row .dash-timeline-wrap{flex:1;min-width:0}
+.qn-panel{width:280px;flex-shrink:0;background:var(--bg1);border:1px solid var(--border2);border-radius:var(--r-lg);display:flex;flex-direction:column;overflow:hidden}
+.qn-hdr{display:flex;align-items:center;padding:11px 14px;border-bottom:1px solid var(--border);gap:8px}
+.qn-body{padding:8px;display:flex;flex-direction:column;gap:6px;flex:1;min-height:0}
+.qn-input{display:flex;gap:6px}
+.qn-input input{flex:1;font-size:11.5px}
+.qn-list{display:flex;flex-direction:column;overflow-y:auto;max-height:180px}
+.qn-list::-webkit-scrollbar{width:3px}
+.qn-list::-webkit-scrollbar-thumb{background:var(--bg5);border-radius:2px}
+.qn-item{display:flex;align-items:flex-start;gap:7px;font-size:11.5px;line-height:1.4;padding:6px 2px;border-bottom:1px solid var(--border)}
+.qn-item:last-child{border-bottom:none}
+.qn-item-check{flex-shrink:0;width:14px;height:14px;margin-top:1px;border-radius:4px;border:1px solid var(--border3);background:transparent;color:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:9px;line-height:1;transition:all .12s;padding:0}
+.qn-item-check:hover{border-color:var(--green-border);color:var(--green)}
+.qn-item-text{flex:1;white-space:pre-wrap;word-break:break-word;color:var(--text1)}
+.qn-item-del{flex-shrink:0;background:transparent;border:none;color:var(--text4);cursor:pointer;font-size:10.5px;padding:0 2px;opacity:0;transition:opacity .12s}
+.qn-item:hover .qn-item-del{opacity:1}
+.qn-item-del:hover{color:var(--red,#e05555)}
+@media (max-width:900px){.dash-timeline-row{flex-direction:column}.qn-panel{width:auto}}
 .dash-timeline-wrap{background:var(--bg1);border:1px solid var(--border2);border-radius:var(--r-lg);overflow:hidden;display:flex;flex-direction:column;padding:14px 16px 16px}
 .dash-add-btn{background:transparent;border:none;color:var(--text3);cursor:pointer;font-size:15px;padding:0 2px;line-height:1;border-radius:4px}
 .dash-add-btn:hover{color:var(--accent2)}
@@ -764,8 +795,9 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .htl-now-pin{position:absolute;top:-24px;transform:translateX(-50%);background:var(--red);color:#fff;font-size:9.5px;font-weight:600;padding:2px 7px;border-radius:20px;font-family:'JetBrains Mono',monospace;white-space:nowrap;z-index:2}
 .htl-now-line{position:absolute;top:0;bottom:0;width:1px;background:var(--red);z-index:1}
 .htl-lane{position:relative;height:64px}
-.htl-block{position:absolute;top:0;bottom:0;border:1px solid;border-radius:var(--r-md);padding:7px 9px;overflow:hidden;display:flex;flex-direction:column;gap:2px;min-width:0}
-.htl-block-name{font-size:10.5px;font-weight:500;color:var(--text0);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.htl-block{position:absolute;top:0;bottom:0;border:1px solid;border-radius:var(--r-md);padding:7px 9px;overflow:visible;display:flex;flex-direction:column;gap:2px;min-width:0}
+.htl-block-name{font-size:10.5px;font-weight:500;color:var(--text0);white-space:nowrap;overflow:visible;text-overflow:clip;position:relative;z-index:2}
+.htl-scroll{scroll-behavior:auto}
 .htl-block-time{font-size:9px;color:var(--text2);font-family:'JetBrains Mono',monospace;white-space:nowrap}
 .htl-block-dur{font-size:9px;color:var(--text3);font-family:'JetBrains Mono',monospace;white-space:nowrap;margin-top:auto}
 /* SYSTEM CARDS */
@@ -819,6 +851,13 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .stages-editor{display:flex;flex-direction:column;gap:5px}
 .stages-editor-row{display:flex;align-items:center;gap:6px}
 .stages-editor-row input{flex:1}
+.act-btn{width:22px;height:22px;border-radius:6px;border:1px solid var(--border3);background:var(--bg2);color:var(--text3);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:11px;transition:all .12s;flex-shrink:0}
+.act-btn:hover{border-color:var(--border4)}
+.act-btn.yes.on{background:var(--green-bg,#3ab87a14);border-color:var(--green,#3ab87a);color:var(--green,#3ab87a)}
+.act-btn.no.on{background:var(--red-bg,#e6675f14);border-color:var(--red,#e6675f);color:var(--red,#e6675f)}
+.step-done-toggle{width:16px;height:16px;border-radius:5px;border:1px solid var(--border3);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .12s}
+.step-done-toggle:hover{border-color:var(--border4)}
+.step-done-toggle.on{background:var(--green-bg,#3ab87a14);border-color:var(--green,#3ab87a);color:var(--green,#3ab87a)}
 .template-btn{font-size:10px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);color:var(--text2);padding:5px 9px;cursor:pointer;font-family:'Inter',sans-serif;transition:all .1s}
 .template-btn:hover{border-color:var(--border4);color:var(--text0)}
 .habit-preview-row{display:flex;align-items:center;gap:9px;padding:7px 6px;border-radius:var(--r-sm)}
@@ -869,7 +908,7 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 <body>
 <div id="root"></div>
 <script>
-const{useState,useEffect,useRef,useCallback}=React;
+const{useState,useEffect,useRef,useCallback,useMemo}=React;
 const{createRoot}=ReactDOM;
 // Pre-configured Supabase credentials
 (function(){
@@ -1483,6 +1522,32 @@ function computeNextOccurrence(fromDateStr,rec){
   }
   return null;
 }
+// ── FASES — registro de actividad diaria + tareas internas pendientes ──
+// La campanita ya no depende solo de la fecha término. Se activa desde que la
+// fase arranca (fecha inicio) mientras tenga tareas internas sin completar,
+// y se apaga para el día de hoy en cuanto registras ✓ o ✕ de actividad.
+function stepActedToday(s,dateKey){ return !!(s.actLog&&s.actLog[dateKey]); }
+function stepHasPendingWork(s){
+  const subs=s.subtasks||[];
+  if(subs.length>0) return subs.some(t=>!t.done); // hay tareas internas sin marcar
+  return !s.done; // sin desglose interno: se guía por el estado de la fase misma
+}
+function stepNeedsAction(s,dateKey){
+  if(s.done||!s.dueDate)return false;
+  const start=s.startDate||s.dueDate;
+  if(dateKey<start)return false; // la fase todavía no empieza
+  if(stepActedToday(s,dateKey))return false; // ya registraste avance/no-avance hoy
+  return stepHasPendingWork(s);
+}
+// Sugiere una fecha de término automática para una fase nueva: continúa donde
+// terminó la fase anterior (+3 días de duración por defecto). Siempre editable a mano.
+function suggestPhaseDate(existingSteps){
+  const dated=(existingSteps||[]).filter(s=>s.dueDate).sort((a,b)=>a.dueDate<b.dueDate?1:-1);
+  const base=dated[0]?new Date(dated[0].dueDate+'T00:00:00'):new Date();
+  base.setDate(base.getDate()+3);
+  return `${base.getFullYear()}-${String(base.getMonth()+1).padStart(2,'0')}-${String(base.getDate()).padStart(2,'0')}`;
+}
+
 // Short, human-readable Spanish summary of a recurrence rule, e.g. "Cada 2 semanas · lunes y jueves"
 function recurrenceLabel(rec){
   if(!rec||rec.type==='none')return'No se repite';
@@ -1540,6 +1605,7 @@ const WEEK_DAYS=[
   {k:'thu',l:'J',full:'jueves'},{k:'fri',l:'V',full:'viernes'},{k:'sat',l:'S',full:'sábado'},{k:'sun',l:'D',full:'domingo'}
 ];
 const DOW_KEYS=['sun','mon','tue','wed','thu','fri','sat']; // matches Date.getDay()
+const MONTHS_SHORT=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 const ORDINAL_LABELS={1:'primer',2:'segundo',3:'tercer',4:'cuarto',last:'último'};
 const ORDINAL_SHORT={1:'1er',2:'2do',3:'3er',4:'4to',last:'Últ.'};
 
@@ -1785,6 +1851,7 @@ function App(){
   const[panelLabels,setPanelLabels]=useState(()=>load('chr4_panelLabels',{tareas:'Tareas prioritarias',sistemas:'Sistemas',habitos:'Hábitos'}));
   const[panelVisibility,setPanelVisibility]=useState(()=>load('chr4_panelVisibility',{tareas:true,sistemas:true,habitos:true}));
   const[panelSortModes,setPanelSortModes]=useState(()=>load('chr4_panelSort',{tareas:'proximity',sistemas:'proximity',habitos:'proximity'}));
+  const[templates,setTemplates]=useState(()=>load('chr4_templates',[]));
   const[showSystemModal,setShowSystemModal]=useState(false);
   const[editSystem,setEditSystem]=useState(null);
   const[tick,setTick]=useState(0);
@@ -1809,6 +1876,7 @@ function App(){
   useEffect(()=>save('chr4_panelLabels',panelLabels),[panelLabels]);
   useEffect(()=>save('chr4_panelVisibility',panelVisibility),[panelVisibility]);
   useEffect(()=>save('chr4_panelSort',panelSortModes),[panelSortModes]);
+  useEffect(()=>save('chr4_templates',templates),[templates]);
 
   // HABITS → REMINDERS engine: once a day, per habit, if it occurs today and the
   // scheduled time has arrived, push a reminder into the same `reminders` array
@@ -1883,7 +1951,7 @@ function App(){
         // local recién cargado desde localStorage con datos remotos más
         // viejos. Primero subimos lo local para no perder el cambio.
         if(SB.isDirty()){
-          await SB.push({projects,sessions,intenciones,tasks,blocks,habits,reminders,ctxs,systems,panelLabels,panelVisibility,panelSortModes});
+          await SB.push({projects,sessions,intenciones,tasks,blocks,habits,reminders,ctxs,systems,panelLabels,panelVisibility,panelSortModes,templates});
           SB.markSynced();
           return;
         }
@@ -1901,6 +1969,25 @@ function App(){
           if(remote.panelSortModes)    setPanelSortModes(remote.panelSortModes);
           if(remote.reminders?.length) setReminders(remote.reminders);
           if(remote.ctxs?.length)      setCtxs(remote.ctxs);
+          if(remote.templates?.length) setTemplates(remote.templates);
+          // Recuperación de sesión: si quedó un checkpoint (guardado cada 3 min
+          // mientras corría una sesión) y esa sesión nunca se cerró con doStop
+          // — porque se cerró la página o se apagó el PC — la convertimos en
+          // una sesión terminada normal, usando el último tiempo registrado.
+          if(remote.liveCheckpoint&&remote.liveCheckpoint.duration>0){
+            const chk=remote.liveCheckpoint;
+            const baseSessions=remote.sessions?.length?remote.sessions:sessions;
+            const alreadySaved=baseSessions.some(s=>s.id===chk.id);
+            if(!alreadySaved){
+              const recovered={id:chk.id,projectId:chk.projectId,taskId:chk.taskId,startAt:chk.startAt,endAt:chk.endAt,duration:chk.duration,mode:chk.mode,pomos:chk.pomos||0,day:chk.day};
+              const merged=[...baseSessions,recovered];
+              setSessions(merged);
+              showNotif('⏱ Sesión recuperada: '+fmtS(chk.duration)+' (se cerró sin guardar)',4000);
+              await SB.push({...(sbLatestRef.current||{}),projects:remote.projects?.length?remote.projects:projects,sessions:merged,liveCheckpoint:null});
+            }else{
+              await SB.push({...(sbLatestRef.current||{}),liveCheckpoint:null});
+            }
+          }
         }
         SB.markSynced();
       }catch(e){ console.warn('[SB] pull error',e); }
@@ -1917,12 +2004,12 @@ function App(){
     clearTimeout(sbSyncRef.current);
     sbSyncRef.current=setTimeout(async()=>{
       setSbSyncing(true);
-      try{ await SB.push({projects,sessions,intenciones,tasks,blocks,habits,reminders,ctxs,systems,panelLabels,panelVisibility,panelSortModes}); SB.markSynced(); }
+      try{ await SB.push({projects,sessions,intenciones,tasks,blocks,habits,reminders,ctxs,systems,panelLabels,panelVisibility,panelSortModes,templates}); SB.markSynced(); }
       catch(e){ console.warn('[SB] push error',e); }
       setSbSyncing(false);
     },3000);
     return()=>clearTimeout(sbSyncRef.current);
-  },[projects,sessions,intenciones,tasks,blocks,habits,reminders,ctxs,systems,panelLabels,panelVisibility,panelSortModes,sbStatus]);
+  },[projects,sessions,intenciones,tasks,blocks,habits,reminders,ctxs,systems,panelLabels,panelVisibility,panelSortModes,templates,sbStatus]);
 
   // SB: force-immediate push (bypasses the 3s debounce) — used for edits the
   // user explicitly expects to be persisted right away (systems, panel labels)
@@ -1932,7 +2019,7 @@ function App(){
     if(forceSyncTick===0||sbStatus!=='connected')return;
     (async()=>{
       setSbSyncing(true);
-      try{ await SB.push({projects,sessions,intenciones,tasks,blocks,habits,reminders,ctxs,systems,panelLabels,panelVisibility,panelSortModes}); SB.markSynced(); }
+      try{ await SB.push({projects,sessions,intenciones,tasks,blocks,habits,reminders,ctxs,systems,panelLabels,panelVisibility,panelSortModes,templates}); SB.markSynced(); }
       catch(e){ console.warn('[SB] push error',e); }
       setSbSyncing(false);
     })();
@@ -1973,18 +2060,38 @@ function App(){
   // always sends fresh data, not a stale closure from when the listener was added
   const sbLatestRef=useRef(null);
   useEffect(()=>{
-    sbLatestRef.current={projects,sessions,intenciones,tasks,blocks,habits,reminders,ctxs,systems,panelLabels,panelVisibility,panelSortModes};
+    sbLatestRef.current={projects,sessions,intenciones,tasks,blocks,habits,reminders,ctxs,systems,panelLabels,panelVisibility,panelSortModes,templates};
   });
+  // Mirrors of activeSess/tState kept fresh every render (no dep array) so the
+  // beforeunload flush and the periodic checkpoint below always see the real
+  // current session, not a stale value captured when their effect last ran.
+  const activeSessRef=useRef(null);
+  const tStateRef=useRef('idle');
+  useEffect(()=>{ activeSessRef.current=activeSess; tStateRef.current=tState; });
+
+  function buildLiveCheckpoint(){
+    if(!sessCheckpointId.current||!activeSessRef.current||tStateRef.current==='idle')return null;
+    const as=activeSessRef.current;
+    const nowMs=Date.now();
+    const totalElapsed=Math.floor((nowMs-sessStartTs.current-pausedAccum.current)/1000);
+    const currentBreakSecs=breakStartTs.current?Math.floor((nowMs-breakStartTs.current)/1000):0;
+    const realDur=Math.max(0,totalElapsed-breakAccum.current-currentBreakSecs);
+    return{id:sessCheckpointId.current,projectId:as.projectId,taskId:as.taskId,startAt:as.startAt,endAt:nowTs(),duration:Math.max(0,realDur),mode:as.mode,pomos:pomoCount,day:dayKey()};
+  }
 
   // SB: flush any pending change right before the tab closes/refreshes, using
   // keepalive so the request survives page unload — this is the safety net for
   // "marqué el hábito/tarea y recargué antes de que pasara el debounce de 3s"
+  // También adjunta el checkpoint de la sesión en curso (si hay una corriendo),
+  // para que cerrar la pestaña o apagar el equipo no borre el tiempo trabajado.
   useEffect(()=>{
     function flush(){
       if(sbStatus!=='connected'||!SB.configured()||!sbLatestRef.current) return;
       try{
         const url=`${SB.url}/rest/v1/chronos`;
-        const body=JSON.stringify({ user_id: SB.uid, data: sbLatestRef.current, updated_at: new Date().toISOString() });
+        const liveCheckpoint=buildLiveCheckpoint();
+        const data=liveCheckpoint?{...sbLatestRef.current,liveCheckpoint}:sbLatestRef.current;
+        const body=JSON.stringify({ user_id: SB.uid, data, updated_at: new Date().toISOString() });
         fetch(url,{method:'POST',keepalive:true,headers:{'apikey':SB.anon,'Authorization':'Bearer '+SB.anon,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates'},body});
       }catch(e){ /* best effort */ }
     }
@@ -1993,6 +2100,21 @@ function App(){
     document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden') flush(); });
     return()=>{ window.removeEventListener('beforeunload',flush); window.removeEventListener('pagehide',flush); };
   },[sbStatus]);
+
+  // SB: checkpoint de la sesión activa cada 3 minutos — así, si se cierra la
+  // página o se apaga el equipo mientras corre un temporizador sin pasar por
+  // el evento beforeunload (ej: corte de luz, PC congelado), el tiempo
+  // trabajado hasta el último checkpoint queda respaldado en Supabase en vez
+  // de perderse por completo (ver recuperación al reconectar, más abajo).
+  useEffect(()=>{
+    if(sbStatus!=='connected'||tState==='idle'||!activeSess)return;
+    const id=setInterval(()=>{
+      const checkpoint=buildLiveCheckpoint();
+      if(!checkpoint)return;
+      SB.push({...(sbLatestRef.current||{}),liveCheckpoint:checkpoint}).catch(e=>console.warn('[SB] checkpoint error',e));
+    },180000); // 3 minutos
+    return()=>clearInterval(id);
+  },[sbStatus,tState,activeSess]);
 
 
   // Keep refs in sync so the timer interval always reads the latest value without stale closures
@@ -2035,6 +2157,7 @@ function App(){
   const pomoPhaseStartTs=useRef(null); // Date.now() when current pomo phase started
   const breakAccum=useRef(0);          // accumulated break seconds (not counted as work)
   const breakStartTs=useRef(null);     // Date.now() when current break phase started
+  const sessCheckpointId=useRef(null); // stable id used to checkpoint the running session to Supabase
 
   useEffect(()=>{
     if(tState==='running'){
@@ -2163,6 +2286,12 @@ function App(){
     const cap=ns;
     setTState('idle');setElapsed(0);setWorkElapsed(0);setPomoElapsed(0);setPomoCount(0);setPomoPhaseDone(false);pomoPhaseDoneRef.current=false;setActiveSess(null);
     sessStartTs.current=null;pausedAt.current=null;pausedAccum.current=0;pomoPhaseStartTs.current=null;breakAccum.current=0;breakStartTs.current=null;
+    // La sesión terminó limpiamente — el checkpoint de respaldo en Supabase ya no
+    // sirve (quedaría duplicando esta sesión si el navegador se cerrara después).
+    if(sessCheckpointId.current&&sbStatus==='connected'){
+      SB.push({...(sbLatestRef.current||{}),sessions:[...sessions,ns],liveCheckpoint:null}).catch(()=>{});
+    }
+    sessCheckpointId.current=null;
     if(!silent&&!auto)setShowCtxModal(cap);
     if(auto)showNotif('Límite alcanzado. Sesión guardada.');
   }
@@ -2176,6 +2305,7 @@ function App(){
     breakAccum.current=0;
     breakStartTs.current=null;
     pomoPhaseStartTs.current=now;
+    sessCheckpointId.current=uid();
     setActiveSess({projectId:projId,taskId:taskId||null,startAt:nowTs(),mode});
     setElapsed(0);setWorkElapsed(0);setPomoElapsed(0);setPomoPhase('work');setPomoCount(0);setPomoPhaseDone(false);pomoPhaseDoneRef.current=false;setTState('running');
     if(taskId)setTasks(ts=>ts.map(t=>t.id===taskId?{...t,status:'inprog'}:t));
@@ -2270,7 +2400,7 @@ function App(){
   const hasSystemAlert=systems.some(s=>s.status!=='paused'&&s.nextRun&&s.nextRun<=Date.now());
   const hasTaskAlert=tasks.some(t=>t.status!=='done'&&(
     (t.dueDate&&t.dueDate<=todayKey_)||
-    (t.steps||[]).some(s=>!s.done&&s.dueDate&&s.dueDate<=todayKey_)
+    (t.steps||[]).some(s=>stepNeedsAction(s,todayKey_))
   ));
   const hasAnyAlert=hasHabitAlert||hasSystemAlert||hasTaskAlert;
 
@@ -2403,6 +2533,10 @@ function App(){
               setNotes(n=>({...n,[selectedProjObj.id]:(n[selectedProjObj.id]||[]).filter(x=>x.id!==id)}));
               forceSync();
             },
+            onToggleNoteDone:id=>{
+              setNotes(n=>({...n,[selectedProjObj.id]:(n[selectedProjObj.id]||[]).map(x=>x.id===id?{...x,done:!x.done}:x)}));
+              forceSync();
+            },
             panelLabels,onRenameLabel:(key,val)=>{setPanelLabels(p=>({...p,[key]:val}));forceSync();},
             panelVisibility,onTogglePanelVisibility:(key)=>{setPanelVisibility(p=>({...p,[key]:!(p[key]!==false)}));forceSync();},
             panelSortModes,onChangeSortMode:(key,mode)=>{
@@ -2421,7 +2555,11 @@ function App(){
             onEditBlock:b=>setEditBlock(b),
             onNewBlock:()=>{setNewBlockPreset(null);setShowNewBlock(true);},
             tState,activeSess,
-            onAddTask:(name,recurrence)=>{setTasks(ts=>[...ts,{id:uid(),projectId:selectedProjObj.id,name,status:'pending',priority:'mid',createdAt:Date.now(),steps:[],recurrence:recurrence||null,dueDate:recurrence?dayKey():null}]);forceSync();},
+            templates,
+            onAddTemplate:tpl=>{setTemplates(ts=>[...ts,tpl]);forceSync();},
+            onUpdateTemplate:(id,patch)=>{setTemplates(ts=>ts.map(t=>t.id===id?{...t,...patch}:t));forceSync();},
+            onDeleteTemplate:id=>{setTemplates(ts=>ts.filter(t=>t.id!==id));forceSync();},
+            onAddTask:(name,recurrence,steps)=>{setTasks(ts=>[...ts,{id:uid(),projectId:selectedProjObj.id,name,status:'pending',priority:'mid',createdAt:Date.now(),steps:steps||[],recurrence:recurrence||null,dueDate:recurrence?dayKey():null}]);forceSync();},
             onCycleTaskStatus:id=>{
               setTasks(ts=>{
                 const t=ts.find(x=>x.id===id);
@@ -2487,7 +2625,7 @@ function App(){
         e('div',{className:'proj-section',style:{flex:'0 0 32%'}},
           e('div',{className:'sec-hdr'},
             e('div',{className:'sec-hdr-accent'}),
-            e('span',{className:'sec-hdr-title'},'Proyectos'),
+            e('span',{className:'sec-hdr-title'},'Cuentas'),
             e('button',{className:'ghost-btn',onClick:()=>setShowNewProj(true)},'＋')
           ),
           e('div',{className:'proj-list'},
@@ -2521,7 +2659,7 @@ function App(){
                     const systemDue=systems.some(s=>s.projectId===proj.id&&s.status!=='paused'&&s.nextRun&&s.nextRun<=Date.now());
                     const taskDue=tasks.some(t=>t.projectId===proj.id&&t.status!=='done'&&(
                       (t.dueDate&&t.dueDate<=todayKey_)||
-                      (t.steps||[]).some(s=>!s.done&&s.dueDate&&s.dueDate<=todayKey_)
+                      (t.steps||[]).some(s=>stepNeedsAction(s,todayKey_))
                     ));
                     const hasAlert=habitDue||systemDue||taskDue;
                     const alertTitle=habitDue?'Hábito por cumplir hoy':systemDue?'Sistema por revisar':'Tarea pendiente por cumplir';
@@ -2661,6 +2799,7 @@ function App(){
             if(remote.panelSortModes)  setPanelSortModes(remote.panelSortModes);
             if(remote.reminders?.length)setReminders(remote.reminders);
             if(remote.ctxs?.length)     setCtxs(remote.ctxs);
+            if(remote.templates?.length)setTemplates(remote.templates);
             showNotif('☁ Datos restaurados desde Supabase ✓');
           } else {
             showNotif('☁ Conectado. Tus datos se guardarán aquí.');
@@ -2670,7 +2809,7 @@ function App(){
       onDisconnect:()=>{ SB.disconnect(); setSbStatus('disconnected'); },
       onManualSync:async()=>{
         setSbSyncing(true);
-        try{ await SB.push({projects,sessions,intenciones,tasks,blocks,habits,reminders,ctxs,systems,panelLabels,panelVisibility,panelSortModes}); SB.markSynced(); showNotif('☁ Sincronizado ✓'); }
+        try{ await SB.push({projects,sessions,intenciones,tasks,blocks,habits,reminders,ctxs,systems,panelLabels,panelVisibility,panelSortModes,templates}); SB.markSynced(); showNotif('☁ Sincronizado ✓'); }
         catch(e){ console.warn(e); }
         setSbSyncing(false);
       },
@@ -3355,7 +3494,7 @@ function RemindersFloatPanel({reminders,setReminders,habits,setHabits,projects,s
   // lo mismo que promete el punto rojo.
   const dayTasks=(tasks||[]).filter(t=>t.status!=='done'&&(
     (t.dueDate&&t.dueDate<=selectedDay)||
-    (t.steps||[]).some(s=>!s.done&&s.dueDate&&s.dueDate<=selectedDay)
+    (t.steps||[]).some(s=>stepNeedsAction(s,selectedDay))
   ));
 
   const isToday=selectedDay===dayKey();
@@ -3661,7 +3800,7 @@ function ProjModal({project,onClose,onSave,onDelete}){
   const[confirmDel,setConfirmDel]=useState(false);
   return e('div',{className:'overlay',onClick:ev=>{if(ev.target===ev.currentTarget)onClose();}},
     e('div',{className:'modal',style:{width:420,maxHeight:'88vh'}},
-      e('div',{className:'modal-head'},e('div',{className:'modal-title'},project?'Editar proyecto':'Nuevo proyecto'),e('button',{className:'modal-x',onClick:onClose},'✕')),
+      e('div',{className:'modal-head'},e('div',{className:'modal-title'},project?'Editar cuenta':'Nueva cuenta'),e('button',{className:'modal-x',onClick:onClose},'✕')),
       e('div',{className:'modal-body'},
         e('div',{className:'fg'},e('label',{className:'flabel'},'Nombre'),e('input',{className:'finput',value:name,onChange:ev=>setName(ev.target.value),placeholder:'ej. Cliente X',autoFocus:true})),
         e('div',{className:'fg'},e('label',{className:'flabel'},'Cliente / Marca (opcional)'),e('input',{className:'finput',value:client,onChange:ev=>setClient(ev.target.value),placeholder:'ej. Orizon Media'})),
@@ -3907,7 +4046,7 @@ function RepeatIcon({size=13,color}){
 function TaskRow({t,onCycleTaskStatus,onDeleteTask,isActive,onPlay,onFinish,onOpenSteps,icon,color,onSetPriority}){
   const steps=t.steps||[];
   const today=dayKey();
-  const hasDue=steps.some(s=>!s.done&&s.dueDate&&s.dueDate<=today);
+  const hasDue=steps.some(s=>stepNeedsAction(s,today));
   const[flagOpen,setFlagOpen]=useState(false);
   useEffect(()=>{
     if(!flagOpen)return;
@@ -4832,6 +4971,14 @@ function HorizontalTimeline({realBlocks,liveBlock,projects,tasks,selectedDay,set
 
   function leftPx(m){return Math.min(trackW,Math.max(0,(m-minM)*pxpm));}
   function widthPx(s,f){return Math.max(46,(f-s)*pxpm);}
+  function onWheelH(ev){
+    const el=ev.currentTarget;
+    if(el.scrollWidth<=el.clientWidth)return;
+    if(Math.abs(ev.deltaY)>=Math.abs(ev.deltaX)){
+      el.scrollLeft+=ev.deltaY;
+      ev.preventDefault();
+    }
+  }
 
   const blocksData=allReal.map(sess=>{
     const proj=projects.find(p=>p.id===sess.projectId);
@@ -4850,7 +4997,11 @@ function HorizontalTimeline({realBlocks,liveBlock,projects,tasks,selectedDay,set
         e('button',{className:'dash-date-btn',onClick:()=>shiftDay(1),title:'Día siguiente'},e(DashIcon,{name:'chevR',size:11}))
       )
     ),
-    e('div',{className:'htl-scroll'+(needsScroll?' scrollable':'')},
+    e('div',{
+      className:'htl-scroll'+(needsScroll?' scrollable':''),
+      onWheel:onWheelH,
+      style:!needsScroll?{display:'flex',justifyContent:'center'}:undefined
+    },
       e('div',{className:'htl-track-wrap',style:{width:trackW+'px'}},
         e('div',{className:'htl-ruler'},ticks.map(m=>e('div',{key:m,className:'htl-tick',style:{left:leftPx(m)+'px'}},e('span',{className:'htl-tick-lbl'},minToHM(m))))),
         isToday&&nowM>=minM&&nowM<=maxM&&e('div',{className:'htl-now-pin',style:{left:leftPx(nowM)+'px'}},minToHM(nowM)),
@@ -4866,6 +5017,241 @@ function HorizontalTimeline({realBlocks,liveBlock,projects,tasks,selectedDay,set
       )
     )
   );
+}
+
+// ═══════════════════════════════════════════
+// PANORAMA DE CUENTA — línea de tiempo de inicio/término de cada proyecto activo
+// Reemplaza el antiguo "Bloques de tiempo" (sesiones del día) en el Resumen de cuenta.
+// El rango de cada proyecto se calcula a partir de sus fases: inicio = fecha de
+// inicio más temprana entre sus fases, término = fecha de término más tardía.
+// Si el proyecto no tiene ninguna fase con fecha, simplemente no aparece.
+// ═══════════════════════════════════════════
+// ═══════════════════════════════════════════
+// NOTAS RÁPIDAS DE CUENTA — recordatorios puntuales que no dependen de un
+// proyecto específico, pero sí de la cuenta activa. Reutiliza el mismo
+// almacén de notas (notes[accountId]) que la pestaña "Notas" completa;
+// este panel solo muestra una vista compacta al lado de la línea de tiempo,
+// pensada para anotar rápido sin salir del Resumen.
+// ═══════════════════════════════════════════
+function QuickNotesPanel({notes,onAddNote,onDeleteNote,onToggleNoteDone,onOpenAll}){
+  const[val,setVal]=useState('');
+  function add(){
+    const t=val.trim();
+    if(!t)return;
+    onAddNote(t);
+    setVal('');
+  }
+  // Las notas marcadas con check se consideran archivadas: quedan guardadas
+  // (por si se quieren revisar desde "Ver todas") pero desaparecen de esta
+  // vista compacta, que solo muestra pendientes.
+  const list=(notes||[]).filter(n=>!n.done);
+  return e('div',{className:'qn-panel'},
+    e('div',{className:'qn-hdr'},
+      e('span',{className:'dash-panel-title'},'Notas rápidas'),
+      list.length>0&&e('span',{style:{fontSize:10,color:'var(--text4)'}},list.length),
+      e('button',{className:'dash-panel-link',onClick:onOpenAll},'Ver todas')
+    ),
+    e('div',{className:'qn-body'},
+      e('div',{className:'qn-input'},
+        e('input',{
+          className:'finput',placeholder:'Anota un pendiente…',value:val,
+          onChange:ev=>setVal(ev.target.value),
+          onKeyDown:ev=>{if(ev.key==='Enter')add();}
+        }),
+        e('button',{className:'ghost-btn',title:'Guardar nota',onClick:add},'＋')
+      ),
+      e('div',{className:'qn-list'},
+        list.length===0&&e('div',{className:'empty',style:{padding:'10px 2px'}},'Sin notas aún'),
+        list.slice(0,8).map(n=>e('div',{key:n.id,className:'qn-item'},
+          e('button',{
+            className:'qn-item-check',title:'Marcar como hecha (se archiva)',
+            onClick:()=>onToggleNoteDone(n.id)
+          },'✓'),
+          e('span',{className:'qn-item-text'},n.text),
+          e('button',{className:'qn-item-del',title:'Eliminar',onClick:()=>onDeleteNote(n.id)},'✕')
+        ))
+      )
+    )
+  );
+}
+function projectDateRange(task){
+  const steps=(task.steps||[]).filter(s=>s.dueDate);
+  if(steps.length===0)return null;
+  const starts=steps.map(s=>s.startDate||s.dueDate);
+  const ends=steps.map(s=>s.dueDate);
+  return{start:starts.reduce((a,b)=>a<b?a:b),end:ends.reduce((a,b)=>a>b?a:b)};
+}
+// Encuentra la fase "activa" de un proyecto: la primera fase sin completar,
+// en el orden en que están listadas — el mismo criterio con el que se ve
+// "activa"/pendiente en la lista de fases de cada proyecto. Si todas están
+// completadas, el proyecto se considera finalizado. Si el proyecto todavía
+// no arranca (hoy es anterior a su fecha de inicio), no hay fase activa aún.
+function activePhaseInfo(task,today,rangeStart){
+  if(rangeStart&&today<rangeStart)return null; // el proyecto todavía no empieza
+  const steps=task.steps||[];
+  if(steps.length===0)return null;
+  const current=steps.find(s=>!s.done);
+  if(current)return{label:current.name,kind:'activa',automation:!!current.automation};
+  return{label:'Finalizado',kind:'fin'};
+}
+const TL_SCALES={
+  day:{dayW:54,label:'Día'},
+  month:{dayW:16,label:'Mes'},
+  year:{dayW:4.5,label:'Año'}
+};
+function AccountProjectsTimeline({pTasks,color,onOpenProject}){
+  const[scale,setScale]=useState('day');
+  const DAY_W=TL_SCALES[scale].dayW;
+  const LABEL_W=scale==='day'?260:210;
+  const toTs=d=>new Date(d+'T00:00:00').getTime();
+  const today=dayKey();
+  const rows=pTasks.map(t=>{
+    const range=projectDateRange(t);
+    return range?{task:t,...range,phase:activePhaseInfo(t,today,range.start)}:null;
+  }).filter(Boolean).sort((a,b)=>a.start<b.start?-1:1);
+
+  const wrapRef=useRef(null);
+  const[containerW,setContainerW]=useState(800);
+  useEffect(()=>{
+    if(!wrapRef.current)return;
+    const el=wrapRef.current;
+    const ro=new ResizeObserver(entries=>{
+      for(const en of entries){const w=en.contentRect.width;if(w>0)setContainerW(w);}
+    });
+    ro.observe(el);
+    setContainerW(el.clientWidth||800);
+    return()=>ro.disconnect();
+  },[]);
+  function onWheelH(ev){
+    const el=ev.currentTarget;
+    if(el.scrollWidth<=el.clientWidth)return; // nothing to scroll — let page scroll normally
+    if(Math.abs(ev.deltaY)>=Math.abs(ev.deltaX)){
+      el.scrollLeft+=ev.deltaY;
+      ev.preventDefault();
+    }
+  }
+
+  const scaleSwitch=e('div',{style:{display:'flex',gap:2,background:'var(--bg2)',border:'1px solid var(--border2)',borderRadius:'var(--r-md)',padding:2}},
+    Object.keys(TL_SCALES).map(k=>e('button',{
+      key:k,
+      onClick:()=>setScale(k),
+      style:{
+        fontSize:10,padding:'3px 9px',borderRadius:6,border:'none',cursor:'pointer',
+        background:scale===k?'var(--bg4)':'transparent',
+        color:scale===k?'var(--text0)':'var(--text3)',fontWeight:scale===k?600:400
+      }
+    },TL_SCALES[k].label))
+  );
+
+  if(rows.length===0){
+    return e('div',{className:'htl'},
+      e('div',{className:'htl-header'},e('span',{className:'dash-panel-title'},'Panorama de proyectos'),scaleSwitch),
+      e('div',{className:'empty',style:{padding:'20px 4px'}},'Ningún proyecto de esta cuenta tiene fechas de fase todavía — asígnalas en la vista Línea de tiempo de cada proyecto para verlas aquí.')
+    );
+  }
+
+  const allTs=rows.flatMap(r=>[toTs(r.start),toTs(r.end)]).concat([toTs(today)]);
+  const minTs=Math.min(...allTs)-2*86400000;
+  const maxTs=Math.max(...allTs)+3*86400000;
+  const numDays=Math.round((maxTs-minTs)/86400000)+1;
+  const dayIdx=dateStr=>Math.round((toTs(dateStr)-minTs)/86400000);
+  const days=Array.from({length:numDays},(_,i)=>new Date(minTs+i*86400000));
+  const trackW=Math.max(numDays*DAY_W+LABEL_W,200);
+  const needsScroll=trackW>containerW;
+  const ROW_H=scale==='day'?54:46;
+
+  // Qué días muestran etiqueta en la regla, según la escala: cada día en
+  // 'día', el 1° de cada mes (y lunes) en 'mes', solo el 1° de mes en 'año'.
+  function tickInfo(d,i){
+    const isMonthStart=d.getDate()===1;
+    if(scale==='day'){
+      const wd=WEEK_DAYS.find(w=>w.k===DOW_KEYS[d.getDay()]);
+      return{show:true,txt:(wd?wd.l+' ':'')+d.getDate(),strong:isMonthStart};
+    }
+    if(scale==='month'){
+      const isMonday=DOW_KEYS[d.getDay()]==='mon';
+      if(isMonthStart)return{show:true,txt:MONTHS_SHORT[d.getMonth()]+' '+d.getDate(),strong:true};
+      if(isMonday)return{show:true,txt:String(d.getDate()),strong:false};
+      return{show:false};
+    }
+    // year
+    if(isMonthStart)return{show:true,txt:MONTHS_SHORT[d.getMonth()],strong:true};
+    return{show:false};
+  }
+
+  return e('div',{className:'htl',ref:wrapRef},
+    e('div',{className:'htl-header'},
+      e('span',{className:'dash-panel-title'},'Panorama de proyectos'),
+      e('div',{style:{display:'flex',alignItems:'center',gap:10}},
+        e('span',{style:{fontSize:10,color:'var(--text3)'}},rows.length+' con fecha'),
+        scaleSwitch
+      )
+    ),
+    e('div',{
+      className:'htl-scroll'+(needsScroll?' scrollable':''),
+      onWheel:onWheelH,
+      style:!needsScroll?{display:'flex',justifyContent:'center'}:undefined
+    },
+      e('div',{className:'htl-track-wrap',style:{width:trackW+'px'}},
+        e('div',{className:'htl-ruler'},days.map((d,i)=>{
+          const key=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+          const info=tickInfo(d,i);
+          if(!info.show)return null;
+          return e('div',{key:i,className:'htl-tick'+(key===today?' today':''),style:{left:i*DAY_W+'px'}},
+            e('span',{className:'htl-tick-lbl',style:info.strong?{color:'var(--text2)',fontWeight:600}:undefined},info.txt)
+          );
+        })),
+        dayIdx(today)>=0&&dayIdx(today)<numDays&&e('div',{className:'htl-now-line',style:{left:dayIdx(today)*DAY_W+'px'}}),
+        e('div',{className:'htl-lane',style:{height:rows.length*ROW_H+14}},
+          rows.map((r,ri)=>{
+            const left=dayIdx(r.start)*DAY_W;
+            const width=Math.max((dayIdx(r.end)-dayIdx(r.start)+1)*DAY_W-3,4);
+            const barH=scale==='day'?22:14;
+            const barTop=ri*ROW_H+(ROW_H-barH)/2;
+            const phase=r.phase;
+            return e('div',{key:r.task.id,style:{position:'absolute',top:0,left:0,right:0}},
+              // Barra: solo color, sin texto adentro — así nunca se ve "feo" apretada.
+              e('div',{
+                className:'htl-block',
+                style:{left:left+'px',width:width+'px',top:barTop+'px',bottom:'auto',height:barH,background:(color||'var(--accent)')+'26',borderColor:color||'var(--accent)',cursor:onOpenProject?'pointer':'default',padding:0},
+                onClick:()=>onOpenProject&&onOpenProject(r.task),
+                title:r.task.name+' · '+fmtDMY(r.start)+' → '+fmtDMY(r.end)+(phase?' · '+phase.label:'')
+              }),
+              // Etiqueta: SIEMPRE a la derecha de la barra, nunca debajo —
+              // nombre del proyecto arriba, fecha + fase activa abajo.
+              e('div',{
+                onClick:()=>onOpenProject&&onOpenProject(r.task),
+                style:{
+                  position:'absolute',top:ri*ROW_H+'px',height:ROW_H,left:(left+width+10)+'px',
+                  display:'flex',flexDirection:'column',justifyContent:'center',gap:2,
+                  cursor:onOpenProject?'pointer':'default',maxWidth:LABEL_W-10,overflow:'hidden'
+                }
+              },
+                e('div',{className:'htl-block-name',style:{whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}},r.task.name),
+                phase&&e('div',{style:{display:'flex',alignItems:'center'}},
+                  e('span',{
+                    style:{
+                      fontSize:9,padding:'1px 6px',borderRadius:20,
+                      color:phase.kind==='activa'?(phase.automation?'var(--accent2)':color||'var(--accent)'):'var(--text3)',
+                      background:phase.kind==='activa'?(phase.automation?'var(--accent2)':(color||'var(--accent)'))+'1c':'var(--bg3)',
+                      border:'1px solid '+(phase.kind==='activa'?(phase.automation?'var(--accent2)':(color||'var(--accent)'))+'3a':'var(--border2)'),
+                      overflow:'hidden',textOverflow:'ellipsis',maxWidth:LABEL_W-20,whiteSpace:'nowrap'
+                    }
+                  },(phase.automation?'⚙ ':'')+phase.label)
+                ),
+                e('div',{className:'htl-block-time'},fmtDMY(r.start)+' → '+fmtDMY(r.end))
+              )
+            );
+          })
+        )
+      )
+    )
+  );
+}
+function fmtDMY(dateStr){
+  if(!dateStr)return'';
+  const[y,m,d]=dateStr.split('-');
+  return `${d}-${m}-${y}`;
 }
 
 function SystemCard({system,onEdit,onUpdateSystem,fmtWhen}){
@@ -5023,7 +5409,7 @@ function HomeResumen(props){
     const systemDue=systems.some(s=>s.projectId===p.id&&s.status!=='paused'&&s.nextRun&&s.nextRun<=Date.now());
     const taskDue=tasks.some(t=>t.projectId===p.id&&t.status!=='done'&&(
       (t.dueDate&&t.dueDate<=today)||
-      (t.steps||[]).some(s=>!s.done&&s.dueDate&&s.dueDate<=today)
+      (t.steps||[]).some(s=>stepNeedsAction(s,today))
     ));
     const hasAlert=habitDue||systemDue||taskDue;
     const alertTitle=habitDue?'Hábito por cumplir hoy':systemDue?'Sistema por revisar':'Tarea pendiente por cumplir';
@@ -5132,7 +5518,7 @@ function HomeResumen(props){
       e('div',{style:{display:'grid',gridTemplateColumns:'1fr 1.3fr 1fr',gap:14}},
         e('div',{className:'dash-panel',style:{overflow:openFlagMenu?'visible':'hidden'}},
           e('div',{className:'dash-panel-hdr',style:{display:'flex',justifyContent:'space-between',alignItems:'center'}},
-            e('span',{className:'dash-panel-title'},'Proyectos recientes'),
+            e('span',{className:'dash-panel-title'},'Cuentas recientes'),
             e('div',{style:{display:'flex',alignItems:'center',gap:4}},
               e('button',{className:'ghost-btn',style:{width:'auto',padding:'2px 8px'},onClick:()=>{playUI('click');setShowArchived(true);},title:'Ver proyectos archivados'},
                 e('svg',{width:11,height:11,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},
@@ -5141,7 +5527,7 @@ function HomeResumen(props){
                   e('line',{x1:10,y1:13,x2:14,y2:13})
                 )
               ),
-              e('button',{className:'ghost-btn',style:{width:'auto',padding:'2px 8px'},onClick:()=>{playUI('click');onNewProject&&onNewProject();},title:'Nuevo proyecto'},'＋')
+              e('button',{className:'ghost-btn',style:{width:'auto',padding:'2px 8px'},onClick:()=>{playUI('click');onNewProject&&onNewProject();},title:'Nueva cuenta'},'＋')
             )
           ),
           e('div',{className:'dash-panel-body',style:{display:'flex',flexDirection:'column',gap:4,maxHeight:'none',overflow:'visible'}},
@@ -5390,12 +5776,13 @@ function HomeResumen(props){
 function ProjectDashboard(props){
   const{
     project,projects,tasks,sessions,ctxs,habits,systems,
-    notes,onAddNote,onDeleteNote,
+    notes,onAddNote,onDeleteNote,onToggleNoteDone,
     panelLabels,onRenameLabel,panelVisibility,onTogglePanelVisibility,
     panelSortModes,onChangeSortMode,
     blocks,setBlocks,realBlocks,liveBlock,tick,blockOpacity,blockStyle,realStyle,tlZoom,setTlZoom,selectedDay,setSelectedDay,onDblClickTime,onEditBlock,onNewBlock,
     tState,activeSess,
     onAddTask,onCycleTaskStatus,onDeleteTask,onUpdateTask,onUpdateTaskSteps,onPlayTask,onFinishTask,
+    templates,onAddTemplate,onUpdateTemplate,onDeleteTemplate,
     onAddHabit,onUpdateHabit,onDeleteHabit,onToggleHabitLog,onToggleHabitSkip,
     onAddSystem,onUpdateSystem,onDeleteSystem,onPatchProject,
     onStartTimer,onEditProject,onBack,
@@ -5512,7 +5899,7 @@ function ProjectDashboard(props){
 
   return e('div',{className:'dashboard-view'},
     e('div',{className:'dash-header'},
-      e('button',{className:'dash-back',onClick:onBack},'← Volver a Workspace'),
+      e('button',{className:'dash-back',onClick:onBack},'← Volver a Cuentas'),
       e('div',{className:'dash-head-row'},
         e('div',{className:'dash-avatar',style:{'--proj-color':project.color}},e(ProjIconSVG,{iconKey:project.icon||DEFAULT_ICON,size:18,color:project.color})),
         e('div',{className:'dash-title-block'},
@@ -5619,8 +6006,11 @@ function ProjectDashboard(props){
           )
         )
       ),
-      e('div',{className:'dash-timeline-wrap'},
-        e(HorizontalTimeline,{realBlocks,liveBlock,projects,tasks,selectedDay,setSelectedDay})
+      e('div',{className:'dash-timeline-row'},
+        e('div',{className:'dash-timeline-wrap'},
+          e(AccountProjectsTimeline,{pTasks,color:project.color,onOpenProject:setStepsForTask})
+        ),
+        e(QuickNotesPanel,{notes,onAddNote,onDeleteNote,onToggleNoteDone,onOpenAll:()=>setTab('notas')})
       )
     )),
 
@@ -5741,12 +6131,17 @@ function ProjectDashboard(props){
           (notes||[]).length===0&&e('div',{className:'empty'},'Sin notas aún. Usa el cuadro de arriba para registrar avances, decisiones o pendientes de este proyecto.'),
           (notes||[]).map(n=>e('div',{
             key:n.id,
-            style:{border:'1px solid var(--border,#ffffff14)',borderRadius:8,padding:'10px 12px',display:'flex',flexDirection:'column',gap:6}
+            style:{border:'1px solid var(--border,#ffffff14)',borderRadius:8,padding:'10px 12px',display:'flex',flexDirection:'column',gap:6,opacity:n.done?.55:1}
           },
-            e('div',{style:{whiteSpace:'pre-wrap',fontSize:12.5,lineHeight:1.5}},n.text),
+            e('div',{style:{whiteSpace:'pre-wrap',fontSize:12.5,lineHeight:1.5,textDecoration:n.done?'line-through':'none'}},n.text),
             e('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between'}},
-              e('span',{style:{fontSize:10,color:'var(--text4)'}},fmtWhen?fmtWhen(n.createdAt):new Date(n.createdAt).toLocaleString('es-CL')),
-              e('button',{className:'ghost-btn',title:'Eliminar nota',onClick:()=>onDeleteNote(n.id)},'✕')
+              e('span',{style:{fontSize:10,color:'var(--text4)'}},
+                (n.done?'Archivada · ':'')+(fmtWhen?fmtWhen(n.createdAt):new Date(n.createdAt).toLocaleString('es-CL'))
+              ),
+              e('div',{style:{display:'flex',gap:4}},
+                e('button',{className:'qn-item-check',title:n.done?'Desmarcar':'Marcar como hecha (se archiva)',style:n.done?{borderColor:'var(--green-border)',color:'var(--green)'}:null,onClick:()=>onToggleNoteDone(n.id)},'✓'),
+                e('button',{className:'ghost-btn',title:'Eliminar nota',onClick:()=>onDeleteNote(n.id)},'✕')
+              )
             )
           ))
         )
@@ -5835,12 +6230,15 @@ function ProjectDashboard(props){
     })(),
     showTaskModal&&e(NewTaskModal,{
       noun:taskNoun,
+      templates,onAddTemplate,onUpdateTemplate,onDeleteTemplate,
+      allTasks:tasks,
       onClose:()=>setShowTaskModal(false),
-      onSave:(name,recurrence)=>{onAddTask(name,recurrence);setShowTaskModal(false);}
+      onSave:(name,recurrence,steps)=>{onAddTask(name,recurrence,steps);setShowTaskModal(false);}
     }),
     stepsForTask&&e(TaskStepsModal,{
       task:tasks.find(x=>x.id===stepsForTask.id)||stepsForTask,
       noun:taskNoun,
+      templates,onAddTemplate,onUpdateTemplate,onDeleteTemplate,
       onClose:()=>setStepsForTask(null),
       onSave:steps=>onUpdateTaskSteps(stepsForTask.id,steps),
       onUpdateTask:patch=>onUpdateTask(stepsForTask.id,patch)
@@ -5848,11 +6246,280 @@ function ProjectDashboard(props){
   );
 }
 
-function NewTaskModal({onClose,onSave,noun}){
+// Suma días a un date-key 'YYYY-MM-DD' sin líos de timezone.
+function addDaysToDateKey(dateKey,days){
+  const d=new Date(dateKey+'T00:00:00');
+  d.setDate(d.getDate()+days);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function todayDateKey(){
+  const d=new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function templateToSteps(tpl,startFrom){
+  // Convierte la plantilla (nombres + duración estimada por fase) en fases/
+  // tareas reales y nuevas — ids frescos, encadenando startDate/dueDate a
+  // partir de `startFrom` (o hoy) según la duración (en días) de cada fase.
+  // Sin duración definida, la fase queda sin fechas (se ajusta a mano).
+  let cursor=startFrom||todayDateKey();
+  return (tpl.steps||[]).map(s=>{
+    const dur=Number.isFinite(s.durationDays)&&s.durationDays>0?s.durationDays:null;
+    let startDate=null,dueDate=null;
+    if(dur){
+      startDate=cursor;
+      dueDate=addDaysToDateKey(cursor,dur);
+      cursor=addDaysToDateKey(dueDate,1); // la siguiente fase empieza al día siguiente, nunca el mismo día
+    }
+    return{
+      id:uid(),name:s.name,startDate,dueDate,done:false,actLog:{},automation:!!s.automation,
+      subtasks:(s.subtasks||[]).map(sub=>({id:uid(),name:sub.name,done:false}))
+    };
+  });
+}
+function stepsToTemplateSteps(steps){
+  // Extrae la estructura (nombres + duración estimada) de fases/tareas —
+  // sin fechas concretas ni estado — para guardarla como plantilla reutilizable.
+  // Si la fase de origen tenía startDate y dueDate, precalcula la duración real
+  // como referencia (editable luego en la plantilla).
+  return (steps||[]).map(s=>{
+    let durationDays=null;
+    if(s.startDate&&s.dueDate){
+      const a=new Date(s.startDate+'T00:00:00'),b=new Date(s.dueDate+'T00:00:00');
+      const diff=Math.round((b-a)/86400000);
+      if(diff>0)durationDays=diff;
+    }
+    return{name:s.name,durationDays,automation:!!s.automation,subtasks:(s.subtasks||[]).map(sub=>({name:sub.name}))};
+  });
+}
+// EVENTO DE AUTOMATIZACIÓN — una fase marcada con automation:true significa
+// que, desde su fecha de inicio en adelante, el trabajo de ese proyecto queda
+// desatendido/automatizado. Al crear un proyecto nuevo, buscamos entre TODAS
+// las tareas (de cualquier cuenta) la fase de automatización con el startDate
+// más tardío, y sugerimos iniciar el proyecto nuevo un día después (break).
+function findAutomationBreakDate(allTasks){
+  let latest=null;
+  (allTasks||[]).forEach(t=>{
+    (t.steps||[]).forEach(s=>{
+      if(s.automation&&s.startDate){
+        if(!latest||s.startDate>latest)latest=s.startDate;
+      }
+    });
+  });
+  return latest?addDaysToDateKey(latest,1):null;
+}
+// Parser texto plano → plantilla: una línea que empieza con un número
+// (ej. "1.", "2)", "3 -") es una fase (titular); cualquier otra línea es una
+// tarea normal, asignada a la última fase vista. Pensado para poder pegar o
+// escribir rápido, tipo Notion, sin tener que acordarse de ningún símbolo.
+// La fase puede terminar con una duración estimada entre paréntesis, en días,
+// ej. "1. Concepto del single (5)" → 5 días. Es opcional; sin ella, la fase
+// queda sin fecha automática al aplicar la plantilla.
+function parseTemplateText(text){
+  const lines=(text||'').split('\n').map(l=>l.trim()).filter(Boolean);
+  const steps=[];
+  let cur=null;
+  const numberedRe=/^\d+[.)\-:]?\s+/;
+  const durRe=/\((\d+)\s*d?\)\s*$/i;
+  for(const line of lines){
+    const isHeader=numberedRe.test(line);
+    if(isHeader){
+      let name=line.replace(numberedRe,'').trim();
+      let durationDays=null;
+      const m=name.match(durRe);
+      if(m){durationDays=parseInt(m[1],10);name=name.replace(durRe,'').trim();}
+      cur={name,durationDays,subtasks:[]};
+      if(cur.name)steps.push(cur);
+    }else if(cur){
+      cur.subtasks.push({name:line});
+    }else{
+      // texto suelto antes de la primera fase — se crea una fase implícita
+      cur={name:line,durationDays:null,subtasks:[]};
+      steps.push(cur);
+    }
+  }
+  return steps;
+}
+function templateStepsToText(steps){
+  return (steps||[]).map((s,i)=>(i+1)+'. '+s.name+(Number.isFinite(s.durationDays)&&s.durationDays>0?' ('+s.durationDays+')':'')+'\n'+(s.subtasks||[]).map(sub=>sub.name).join('\n')).join('\n\n');
+}
+
+// ═══════════════════════════════════════════
+// PLANTILLAS DE PROYECTO — guarda la estructura de fases/tareas de un
+// proyecto para reutilizarla en cualquier otro, sin importar la cuenta.
+// ═══════════════════════════════════════════
+function normalizeTplSteps(steps){
+  return (steps||[]).map(s=>({name:s.name||'',durationDays:Number.isFinite(s.durationDays)&&s.durationDays>0?s.durationDays:null,subtasks:(s.subtasks||[]).map(sub=>({name:sub.name||''}))}));
+}
+function TemplateEditModal({template,onClose,onSave,onDelete}){
+  const[name,setName]=useState(template?template.name:'');
+  const[steps,setSteps]=useState(()=>{
+    const init=normalizeTplSteps(template?template.steps:[]);
+    return init.length?init:[{name:'',durationDays:null,subtasks:[]}];
+  });
+  const[showPaste,setShowPaste]=useState(false);
+  const[pasteText,setPasteText]=useState('');
+  const totalDays=steps.reduce((a,s)=>a+(s.durationDays||0),0);
+  function updateStep(i,patch){ setSteps(ss=>ss.map((s,idx)=>idx===i?{...s,...patch}:s)); }
+  function removeStep(i){ setSteps(ss=>ss.filter((_,idx)=>idx!==i)); }
+  function addStep(){ setSteps(ss=>[...ss,{name:'',durationDays:null,subtasks:[]}]); }
+  function addSub(i){ setSteps(ss=>ss.map((s,idx)=>idx===i?{...s,subtasks:[...s.subtasks,{name:''}]}:s)); }
+  function updateSub(i,j,val){ setSteps(ss=>ss.map((s,idx)=>idx===i?{...s,subtasks:s.subtasks.map((sub,jdx)=>jdx===j?{name:val}:sub)}:s)); }
+  function removeSub(i,j){ setSteps(ss=>ss.map((s,idx)=>idx===i?{...s,subtasks:s.subtasks.filter((_,jdx)=>jdx!==j)}:s)); }
+  function applyPaste(mode){
+    // mode: 'replace' reemplaza toda la lista, 'append' agrega al final —
+    // reutiliza el mismo parser de "1. Fase (días)" que ya existía, así el
+    // pegado rápido tipo Notion sigue funcionando igual que antes.
+    const parsed=normalizeTplSteps(parseTemplateText(pasteText));
+    if(!parsed.length)return;
+    setSteps(ss=>{
+      const base=ss.filter(s=>s.name.trim()||s.subtasks.length); // descarta filas vacías al mezclar
+      return mode==='replace'?parsed:[...base,...parsed];
+    });
+    setPasteText('');
+    setShowPaste(false);
+  }
+  function save(){
+    const nm=name.trim();
+    if(!nm)return;
+    const clean=steps.map(s=>({name:s.name.trim(),durationDays:s.durationDays,automation:!!s.automation,subtasks:s.subtasks.map(sub=>({name:sub.name.trim()})).filter(sub=>sub.name)})).filter(s=>s.name);
+    if(!clean.length)return;
+    onSave({id:template?template.id:uid(),name:nm,steps:clean,createdAt:template?template.createdAt:Date.now()});
+  }
+  return e('div',{className:'overlay',onClick:ev=>{if(ev.target===ev.currentTarget)onClose();}},
+    e('div',{className:'modal',style:{width:520,maxHeight:'86vh',display:'flex',flexDirection:'column'}},
+      e('div',{className:'modal-head'},e('div',{className:'modal-title'},template?'Editar plantilla':'Nueva plantilla'),e('button',{className:'modal-x',onClick:onClose},'✕')),
+      e('div',{className:'modal-body',style:{overflowY:'auto',flex:1}},
+        e('div',{className:'fg'},e('label',{className:'flabel'},'Nombre de la plantilla'),
+          e('input',{className:'finput',value:name,autoFocus:true,placeholder:'ej. Lanzamiento de campaña',onChange:ev=>setName(ev.target.value)})
+        ),
+        e('div',{className:'fg'},
+          e('div',{style:{display:'flex',alignItems:'baseline',justifyContent:'space-between',marginBottom:6}},
+            e('label',{className:'flabel',style:{marginBottom:0}},'Fases y tareas'),
+            e('div',{style:{display:'flex',alignItems:'center',gap:8}},
+              totalDays>0&&e('div',{style:{fontSize:10,color:'var(--text3)',fontFamily:"'JetBrains Mono',monospace"}},totalDays+' días en total'),
+              e('button',{className:'template-btn',onClick:()=>setShowPaste(v=>!v)},showPaste?'Cancelar pegado':'📋 Pegar texto')
+            )
+          ),
+          showPaste&&e('div',{style:{marginBottom:10,display:'flex',flexDirection:'column',gap:6}},
+            e('div',{style:{fontSize:10.5,color:'var(--text3)',lineHeight:1.5}},
+              'Pega o escribe rápido, tipo Notion: cada línea con ',e('b',{style:{color:'var(--text1)'}},'número'),' (ej. "1. Concepto") es una fase, las líneas sin número debajo son sus tareas. Puedes incluir los días entre paréntesis, ej. "1. Concepto (5)" — si no, los ajustas después en la lista.'
+            ),
+            e('textarea',{
+              className:'finput',autoFocus:true,
+              style:{minHeight:140,resize:'vertical',fontFamily:"'JetBrains Mono',monospace",fontSize:11.5,lineHeight:1.6},
+              value:pasteText,
+              placeholder:'1. Concepto del single (5)\nDefinir referencias\nElegir título\n\n2. Producción (10)\nGrabar\nMezclar',
+              onChange:ev=>setPasteText(ev.target.value)
+            }),
+            e('div',{style:{display:'flex',gap:6}},
+              e('button',{className:'btn',style:{fontSize:11},onClick:()=>applyPaste('append'),disabled:!pasteText.trim()},'＋ Agregar a la lista'),
+              e('button',{className:'btn btn-primary',style:{fontSize:11},onClick:()=>applyPaste('replace'),disabled:!pasteText.trim()},'Reemplazar lista completa')
+            )
+          ),
+          e('div',{style:{fontSize:10.5,color:'var(--text3)',lineHeight:1.5,marginBottom:10}},
+            'Asígnale días estimados a cada fase (opcional). Al usar la plantilla, las fechas se encadenan solas a partir de esos días — fase 1 empieza donde tú elijas, fase 2 arranca donde termina la 1, y así. Siempre editable después a mano.'
+          ),
+          e('div',{style:{display:'flex',flexDirection:'column',gap:10}},
+            steps.map((s,i)=>e('div',{key:i,style:{border:'1px solid '+(s.automation?'var(--accent2)':'var(--border2)'),borderRadius:8,padding:'10px 10px',background:s.automation?'color-mix(in srgb, var(--accent2) 8%, transparent)':'transparent'}},
+              e('div',{style:{display:'flex',alignItems:'center',gap:6}},
+                e('div',{style:{fontSize:10,color:'var(--text3)',width:16,flexShrink:0,textAlign:'center'}},i+1),
+                e('input',{
+                  className:'finput',style:{flex:1,padding:'6px 8px',fontSize:12},
+                  value:s.name,placeholder:'Nombre de la fase',
+                  onChange:ev=>updateStep(i,{name:ev.target.value})
+                }),
+                e('input',{
+                  className:'finput',type:'number',min:0,
+                  style:{width:64,padding:'6px 8px',fontSize:12,textAlign:'center'},
+                  value:s.durationDays||'',placeholder:'días',title:'Días estimados',
+                  onChange:ev=>{const v=parseInt(ev.target.value,10);updateStep(i,{durationDays:Number.isFinite(v)&&v>0?v:null});}
+                }),
+                e('button',{
+                  className:'ghost-btn',title:s.automation?'Fase de automatización — clic para quitar':'Marcar como evento de automatización (desde aquí, el trabajo queda desatendido)',
+                  style:{color:s.automation?'var(--accent2)':'var(--text3)'},
+                  onClick:()=>updateStep(i,{automation:!s.automation})
+                },'⚙'),
+                e('button',{className:'ghost-btn',title:'Eliminar fase',onClick:()=>removeStep(i)},'✕')
+              ),
+              s.automation&&e('div',{style:{fontSize:9.5,color:'var(--accent2)',marginTop:4,marginLeft:22}},'⚙ Evento de automatización — desde el inicio de esta fase, el trabajo queda desatendido'),
+              e('div',{style:{display:'flex',flexDirection:'column',gap:4,marginTop:8,marginLeft:22}},
+                s.subtasks.map((sub,j)=>e('div',{key:j,style:{display:'flex',alignItems:'center',gap:6}},
+                  e('div',{style:{width:4,height:4,borderRadius:'50%',background:'var(--text4)',flexShrink:0}}),
+                  e('input',{
+                    className:'finput',style:{flex:1,padding:'5px 8px',fontSize:11.5},
+                    value:sub.name,placeholder:'Tarea',
+                    onChange:ev=>updateSub(i,j,ev.target.value)
+                  }),
+                  e('button',{className:'ghost-btn',title:'Eliminar tarea',onClick:()=>removeSub(i,j)},'✕')
+                )),
+                e('button',{className:'template-btn',style:{alignSelf:'flex-start',marginTop:2},onClick:()=>addSub(i)},'＋ Tarea')
+              )
+            )),
+            e('button',{className:'btn',style:{alignSelf:'flex-start'},onClick:addStep},'＋ Nueva fase')
+          )
+        )
+      ),
+      e('div',{className:'modal-foot'},
+        template&&onDelete&&e('button',{className:'btn',style:{color:'var(--red)',marginRight:'auto'},onClick:()=>{if(confirm('¿Eliminar esta plantilla?'))onDelete(template.id);}},'Eliminar'),
+        e('button',{className:'btn',onClick:onClose},'Cancelar'),
+        e('button',{className:'btn btn-primary',onClick:save},template?'Guardar cambios':'Crear plantilla')
+      )
+    )
+  );
+}
+function TemplateManagerModal({templates,onClose,onAddTemplate,onUpdateTemplate,onDeleteTemplate,onApply}){
+  const[editing,setEditing]=useState(null); // null | 'new' | template obj
+  return e('div',{className:'overlay',onClick:ev=>{if(ev.target===ev.currentTarget)onClose();}},
+    e('div',{className:'modal',style:{width:420}},
+      e('div',{className:'modal-head'},e('div',{className:'modal-title'},'Plantillas de proyecto'),e('button',{className:'modal-x',onClick:onClose},'✕')),
+      e('div',{className:'modal-body'},
+        (templates||[]).length===0&&e('div',{className:'empty',style:{padding:'16px 2px'}},'Aún no tienes plantillas. Créala desde cero, o abre un proyecto y usa "Guardar como plantilla".'),
+        e('div',{style:{display:'flex',flexDirection:'column',gap:6}},
+          (templates||[]).map(t=>e('div',{
+            key:t.id,
+            style:{display:'flex',alignItems:'center',gap:8,padding:'8px 10px',borderRadius:8,border:'1px solid var(--border2)'}
+          },
+            e('div',{style:{flex:1,minWidth:0}},
+              e('div',{style:{fontSize:12,color:'var(--text0)',fontWeight:500,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}},t.name),
+              e('div',{style:{fontSize:10,color:'var(--text3)'}},(t.steps||[]).length+' fases · '+(t.steps||[]).reduce((a,s)=>a+(s.subtasks||[]).length,0)+' tareas')
+            ),
+            onApply&&e('button',{className:'btn',style:{fontSize:10.5,padding:'4px 10px'},onClick:()=>onApply(t)},'Usar'),
+            e('button',{className:'ghost-btn',title:'Editar',onClick:()=>setEditing(t)},'✏'),
+            e('button',{className:'ghost-btn',title:'Eliminar',onClick:()=>{if(confirm('¿Eliminar esta plantilla?'))onDeleteTemplate(t.id);}},'✕')
+          ))
+        )
+      ),
+      e('div',{className:'modal-foot'},
+        e('button',{className:'btn',onClick:onClose},'Cerrar'),
+        e('button',{className:'btn btn-primary',onClick:()=>setEditing('new')},'＋ Nueva plantilla')
+      )
+    ),
+    editing&&e(TemplateEditModal,{
+      template:editing==='new'?null:editing,
+      onClose:()=>setEditing(null),
+      onSave:tpl=>{if(editing==='new')onAddTemplate(tpl);else onUpdateTemplate(tpl.id,tpl);setEditing(null);},
+      onDelete:id=>{onDeleteTemplate(id);setEditing(null);}
+    })
+  );
+}
+
+function NewTaskModal({onClose,onSave,noun,templates,onAddTemplate,onUpdateTemplate,onDeleteTemplate,allTasks}){
   const[name,setName]=useState('');
   const[recurrence,setRecurrence]=useState(null);
   const[showRec,setShowRec]=useState(false);
-  function save(){if(name.trim())onSave(name.trim(),recurrence);}
+  const[templateId,setTemplateId]=useState('');
+  const[showTplMgr,setShowTplMgr]=useState(false);
+  // Si hay evento(s) de automatización activo(s) en cualquier proyecto, la fecha
+  // de inicio sugerida arranca un día después del más tardío de ellos (break).
+  const autoBreakDate=useMemo(()=>findAutomationBreakDate(allTasks),[allTasks]);
+  const[tplStartDate,setTplStartDate]=useState(()=>autoBreakDate||todayDateKey());
+  const selectedTpl=(templates||[]).find(t=>t.id===templateId);
+  const selectedTplHasDurations=!!selectedTpl&&(selectedTpl.steps||[]).some(s=>Number.isFinite(s.durationDays)&&s.durationDays>0);
+  function save(){
+    if(!name.trim())return;
+    const tpl=(templates||[]).find(t=>t.id===templateId);
+    onSave(name.trim(),recurrence,tpl?templateToSteps(tpl,selectedTplHasDurations?tplStartDate:null):[]);
+  }
   return e('div',{className:'overlay',onClick:ev=>{if(ev.target===ev.currentTarget)onClose();}},
     e('div',{className:'modal',style:{width:380}},
       e('div',{className:'modal-head'},e('div',{className:'modal-title'},'Añadir '+(noun||'tarea')),e('button',{className:'modal-x',onClick:onClose},'✕')),
@@ -5866,6 +6533,30 @@ function NewTaskModal({onClose,onSave,noun}){
             e('span',null,recurrenceLabel(recurrence)),
             recurrence&&e('span',{className:'rec-clear',onClick:ev=>{ev.stopPropagation();setRecurrence(null);}},'✕')
           )
+        ),
+        e('div',{className:'fg'},
+          e('label',{className:'flabel'},'Estructura inicial'),
+          e('div',{style:{display:'flex',gap:6,flexWrap:'wrap'}},
+            e('button',{
+              className:'btn'+(templateId===''?' btn-primary':''),
+              style:{fontSize:11,padding:'5px 10px'},
+              onClick:()=>setTemplateId('')
+            },'Desde cero'),
+            (templates||[]).map(t=>e('button',{
+              key:t.id,
+              className:'btn'+(templateId===t.id?' btn-primary':''),
+              style:{fontSize:11,padding:'5px 10px'},
+              onClick:()=>setTemplateId(t.id),
+              title:(t.steps||[]).length+' fases · '+(t.steps||[]).reduce((a,s)=>a+(s.subtasks||[]).length,0)+' tareas'
+            },t.name)),
+            e('button',{className:'btn',style:{fontSize:11,padding:'5px 10px',color:'var(--text3)'},onClick:()=>setShowTplMgr(true)},'⚙ Gestionar')
+          ),
+          templateId&&e('div',{style:{fontSize:10,color:'var(--text3)',marginTop:6}},'Se copiarán las fases y tareas de esta plantilla — luego puedes editarlas libremente.'),
+          selectedTplHasDurations&&e('div',{className:'fg',style:{marginTop:10}},
+            e('label',{className:'flabel'},'Fecha de inicio (para calcular las fechas de cada fase)'),
+            e('input',{className:'finput',type:'date',value:tplStartDate,onChange:ev=>setTplStartDate(ev.target.value)}),
+            autoBreakDate&&e('div',{style:{fontSize:10,color:'var(--accent2)',marginTop:6}},'⚙ Se detectó automatización activa — fecha sugerida con 1 día de break después de esa fase. Puedes editarla.')
+          )
         )
       ),
       e('div',{className:'modal-foot'},
@@ -5878,6 +6569,13 @@ function NewTaskModal({onClose,onSave,noun}){
       anchorDate:dayKey(),
       onClose:()=>setShowRec(false),
       onSave:next=>{setRecurrence(next);setShowRec(false);}
+    }),
+    showTplMgr&&e(TemplateManagerModal,{
+      templates,
+      onClose:()=>setShowTplMgr(false),
+      onAddTemplate:tpl=>onAddTemplate&&onAddTemplate(tpl),
+      onUpdateTemplate:(id,patch)=>onUpdateTemplate&&onUpdateTemplate(id,patch),
+      onDeleteTemplate:id=>{if(id===templateId)setTemplateId('');onDeleteTemplate&&onDeleteTemplate(id);}
     })
   );
 }
@@ -6035,10 +6733,20 @@ function AutoTextarea({className,value,onChange,onClick,onMouseDown}){
   });
 }
 
-function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask}){
+function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask,templates,onAddTemplate,onUpdateTemplate,onDeleteTemplate}){
   const[steps,setSteps]=useState(task.steps||[]);
+  const[editingTaskName,setEditingTaskName]=useState(false);
+  const[taskNameVal,setTaskNameVal]=useState(task.name);
+  useEffect(()=>{setTaskNameVal(task.name);},[task.name]);
+  function commitTaskName(){
+    setEditingTaskName(false);
+    const nm=taskNameVal.trim();
+    if(nm&&nm!==task.name&&onUpdateTask)onUpdateTask({name:nm});
+    else setTaskNameVal(task.name);
+  }
   const[newName,setNewName]=useState('');
   const[newDate,setNewDate]=useState('');
+  const[newStartDate,setNewStartDate]=useState('');
   const[showRec,setShowRec]=useState(false);
   const stepsRef=useRef(steps);
   useEffect(()=>{stepsRef.current=steps;},[steps]);
@@ -6048,6 +6756,48 @@ function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask}){
   const[tlDrag,setTlDrag]=useState(null); // {ids,clickedId,startX,orig:{id:date},cur:{id:date},moved,tipX,tipY}
   const[selectedIds,setSelectedIds]=useState(()=>new Set());
   const[showDoneSteps,setShowDoneSteps]=useState(false);
+  const[showTplMgr,setShowTplMgr]=useState(false);
+  const[showSaveTpl,setShowSaveTpl]=useState(false);
+  const[pendingTpl,setPendingTpl]=useState(null); // plantilla esperando fecha de inicio
+  const[showRecalc,setShowRecalc]=useState(false); // recalcular fechas de todo el proyecto desde un nuevo inicio
+  function applyTemplate(tpl){
+    if(!tpl)return;
+    const hasDurations=(tpl.steps||[]).some(s=>Number.isFinite(s.durationDays)&&s.durationDays>0);
+    if(hasDurations){
+      setPendingTpl(tpl); // pide fecha de inicio antes de encadenar las fechas
+    }else{
+      doApplyTemplate(tpl,null);
+    }
+  }
+  function doApplyTemplate(tpl,startFrom){
+    const built=templateToSteps(tpl,startFrom);
+    if(steps.length===0){
+      commit(built);
+    }else if(confirm('Ya hay fases en este proyecto. ¿Agregar las fases de "'+tpl.name+'" al final, en vez de reemplazar las existentes?')){
+      commit([...steps,...built]);
+    }
+    setPendingTpl(null);
+  }
+  // Recalcula las fechas de TODAS las fases a partir de una nueva fecha de
+  // inicio, conservando la duración que ya tenía cada una (dueDate-startDate)
+  // y el orden en que están — sin tocar nombres, tareas, estado "hecho" ni
+  // actLog. Las fases sin fecha quedan igual (no participan del encadenado).
+  // Sirve para cuando el proyecto arrancó más tarde (o más temprano) de lo
+  // planeado y hay que correr todo el calendario sin perder el trabajo ya hecho.
+  function recalcFromStart(newStart){
+    let cursor=newStart;
+    const next=steps.map(s=>{
+      if(!s.startDate||!s.dueDate)return s; // sin fecha original: se deja tal cual
+      const a=new Date(s.startDate+'T00:00:00'),b=new Date(s.dueDate+'T00:00:00');
+      const dur=Math.max(0,Math.round((b-a)/86400000));
+      const startDate=cursor;
+      const dueDate=addDaysToDateKey(cursor,dur);
+      cursor=addDaysToDateKey(dueDate,1); // nunca se pisa con la fase siguiente
+      return{...s,startDate,dueDate};
+    });
+    commit(next);
+    setShowRecalc(false);
+  }
   const[mmOpenId,setMmOpenId]=useState(null);
   const[mmAddingId,setMmAddingId]=useState(null);
   const[mmNewSub,setMmNewSub]=useState('');
@@ -6105,11 +6855,24 @@ function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask}){
   function commit(next){ setSteps(next); onSave(next); }
   function addStep(){
     if(!newName.trim())return;
-    commit([...steps,{id:uid(),name:newName.trim(),dueDate:newDate||null,done:false,subtasks:[]}]);
-    setNewName('');setNewDate('');
+    // Fecha automática pero editable: si no se especificó, se sugiere en base a la fase anterior.
+    const finalEnd=newDate||suggestPhaseDate(steps);
+    const finalStart=newStartDate||finalEnd;
+    commit([...steps,{id:uid(),name:newName.trim(),startDate:finalStart,dueDate:finalEnd,done:false,automation:false,subtasks:[],actLog:{}}]);
+    setNewName('');setNewDate('');setNewStartDate('');
   }
   function updateStep(id,patch){ commit(steps.map(s=>s.id===id?{...s,...patch}:s)); }
   function deleteStep(id){ commit(steps.filter(s=>s.id!==id)); }
+  // Registrar avance/no-avance de HOY en una fase. Click de nuevo sobre el mismo botón = deshacer.
+  function setStepActivity(id,val){
+    const today=dayKey();
+    commit(steps.map(s=>{
+      if(s.id!==id)return s;
+      const log={...(s.actLog||{})};
+      if(log[today]===val) delete log[today]; else log[today]=val;
+      return{...s,actLog:log};
+    }));
+  }
 
   // Mapa mental: subtareas por paso
   function addSubtask(stepId,name){
@@ -6195,32 +6958,51 @@ function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask}){
   }
   function clearSelection(){ setSelectedIds(new Set()); }
 
-  function beginTimelineDrag(id,ev){
+  // mode: 'move' (arrastra toda la barra), 'start' (extiende/achica desde la izquierda),
+  // 'end' (extiende/achica desde la derecha). Solo 'move' soporta selección múltiple.
+  function beginTimelineDrag(id,mode,ev){
     ev.preventDefault();ev.stopPropagation();
     const s=steps.find(x=>x.id===id);
     if(!s||!s.dueDate)return;
-    const group=(selectedIds.has(id)&&selectedIds.size>1)
+    const group=(mode==='move'&&selectedIds.has(id)&&selectedIds.size>1)
       ?steps.filter(x=>selectedIds.has(x.id)&&x.dueDate).map(x=>x.id)
       :[id];
-    const orig={};group.forEach(gid=>{orig[gid]=steps.find(x=>x.id===gid).dueDate;});
-    setTlDrag({ids:group,clickedId:id,startX:ev.clientX,orig,cur:{...orig},moved:false,tipX:ev.clientX,tipY:ev.clientY});
+    const orig={};group.forEach(gid=>{
+      const g=steps.find(x=>x.id===gid);
+      orig[gid]={start:g.startDate||g.dueDate,end:g.dueDate};
+    });
+    setTlDrag({ids:group,clickedId:id,mode,startX:ev.clientX,orig,cur:{...orig},moved:false,tipX:ev.clientX,tipY:ev.clientY});
   }
   useEffect(()=>{
     if(!tlDrag)return;
-    const{ids,orig,startX}=tlDrag;
+    const{ids,orig,startX,mode}=tlDrag;
     function onMove(ev){
       const deltaDays=Math.round((ev.clientX-startX)/DAY_W);
       const moved=Math.abs(ev.clientX-startX)>=4;
-      const cur={};ids.forEach(gid=>{cur[gid]=addDays(orig[gid],deltaDays);});
+      const cur={};
+      ids.forEach(gid=>{
+        const o=orig[gid];
+        if(mode==='move'){
+          cur[gid]={start:addDays(o.start,deltaDays),end:addDays(o.end,deltaDays)};
+        }else if(mode==='start'){
+          let ns=addDays(o.start,deltaDays);
+          if(ns>o.end)ns=o.end; // no puede cruzar el término
+          cur[gid]={start:ns,end:o.end};
+        }else{ // 'end'
+          let ne=addDays(o.end,deltaDays);
+          if(ne<o.start)ne=o.start; // no puede cruzar el inicio
+          cur[gid]={start:o.start,end:ne};
+        }
+      });
       setTlDrag(d=>d?{...d,cur,moved:d.moved||moved,tipX:ev.clientX,tipY:ev.clientY}:d);
     }
     function onUp(){
       setTlDrag(d=>{
         if(d){
-          if(!d.moved){
+          if(!d.moved&&d.mode==='move'){
             toggleSelect(d.clickedId);
-          }else{
-            const next=steps.map(s=>d.cur[s.id]!==undefined?{...s,dueDate:d.cur[s.id]}:s);
+          }else if(d.moved){
+            const next=steps.map(s=>d.cur[s.id]!==undefined?{...s,startDate:d.cur[s.id].start,dueDate:d.cur[s.id].end}:s);
             commit(next);
           }
         }
@@ -6230,7 +7012,7 @@ function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask}){
     window.addEventListener('mousemove',onMove);
     window.addEventListener('mouseup',onUp);
     return()=>{window.removeEventListener('mousemove',onMove);window.removeEventListener('mouseup',onUp);};
-  },[tlDrag&&tlDrag.ids&&tlDrag.ids.join(','),tlDrag&&tlDrag.startX]);
+  },[tlDrag&&tlDrag.ids&&tlDrag.ids.join(','),tlDrag&&tlDrag.startX,tlDrag&&tlDrag.mode]);
 
   const total=steps.length;
   const doneCount=steps.filter(s=>s.done).length;
@@ -6244,22 +7026,36 @@ function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask}){
     const toTs=d=>new Date(d+'T00:00:00').getTime();
     const today=dayKey();
     const dated=steps.filter(s=>s.dueDate);
-    const allTs=dated.map(s=>toTs(s.dueDate)).concat([toTs(today)]);
+    const allTs=dated.flatMap(s=>[toTs(s.startDate||s.dueDate),toTs(s.dueDate)]).concat([toTs(today)]);
     const minTs=Math.min(...allTs)-2*86400000;
     const maxTs=Math.max(...allTs)+5*86400000;
     const numDays=Math.round((maxTs-minTs)/86400000)+1;
     const dayIdx=dateStr=>Math.round((toTs(dateStr)-minTs)/86400000);
     const days=Array.from({length:numDays},(_,i)=>new Date(minTs+i*86400000));
-    const rows=dated.slice().sort((a,b)=>a.dueDate<b.dueDate?-1:a.dueDate>b.dueDate?1:0);
+    const rows=dated.slice().sort((a,b)=>(a.startDate||a.dueDate)<(b.startDate||b.dueDate)?-1:1);
     tl={today,dated,minTs,numDays,dayIdx,days,rows};
   }
 
   return e('div',{className:'overlay',onClick:ev=>{if(ev.target===ev.currentTarget)onClose();}},
-    e('div',{className:'modal',style:view==='mindmap'?{width:'min(1400px,96vw)',maxWidth:'96vw'}:{width:680,maxWidth:'94vw'}},
+    e('div',{className:'modal',style:{width:'min(1440px,96vw)',maxWidth:'96vw',height:'92vh',maxHeight:'92vh'}},
       e('div',{className:'modal-head'},
         e('div',null,
-          e('div',{className:'modal-title'},task.name),
-          e('div',{className:'modal-sub'},'Pasos de '+(noun||'esta tarea')+' · '+doneCount+'/'+total+' completados')
+          editingTaskName
+            ?e('input',{
+                className:'finput',style:{fontSize:15,fontWeight:600,padding:'4px 8px',width:280},
+                value:taskNameVal,autoFocus:true,
+                onFocus:ev=>ev.target.select(),
+                onChange:ev=>setTaskNameVal(ev.target.value),
+                onBlur:commitTaskName,
+                onKeyDown:ev=>{if(ev.key==='Enter')commitTaskName();if(ev.key==='Escape'){setTaskNameVal(task.name);setEditingTaskName(false);}}
+              })
+            :e('div',{
+                className:'modal-title',
+                style:onUpdateTask?{cursor:'pointer'}:undefined,
+                title:onUpdateTask?'Click para renombrar':undefined,
+                onClick:()=>onUpdateTask&&setEditingTaskName(true)
+              },task.name,onUpdateTask&&e('span',{style:{fontSize:11,color:'var(--text4)',marginLeft:6}},'✎')),
+          e('div',{className:'modal-sub'},'Fases de '+(noun||'este proyecto')+' · '+doneCount+'/'+total+' completadas')
         ),
         e('button',{className:'modal-x',onClick:onClose},'✕')
       ),
@@ -6267,6 +7063,9 @@ function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask}){
         e('button',{className:'vtab'+(view==='list'?' active':''),onClick:()=>setView('list')},'Lista'),
         e('button',{className:'vtab'+(view==='timeline'?' active':''),onClick:()=>setView('timeline')},'Línea de tiempo'),
         e('button',{className:'vtab'+(view==='mindmap'?' active':''),onClick:()=>setView('mindmap')},'Mapa mental'),
+        e('button',{className:'rec-trigger-btn',title:'Aplicar una plantilla guardada a este proyecto',onClick:()=>setShowTplMgr(true)},'▤ Plantillas'),
+        steps.length>0&&e('button',{className:'rec-trigger-btn',title:'Guardar las fases y tareas actuales como plantilla reutilizable',onClick:()=>setShowSaveTpl(true)},'⤓ Guardar como plantilla'),
+        steps.some(s=>s.startDate&&s.dueDate)&&e('button',{className:'rec-trigger-btn',title:'Cambiar la fecha de inicio y recalcular todas las fases, sin perder nada',onClick:()=>setShowRecalc(true)},'↻ Recalcular fechas'),
         doneCount>0&&e('button',{className:'rec-trigger-btn',style:{marginLeft:'auto'},onClick:()=>{playUI('click');setShowDoneSteps(v=>!v);}},
           showDoneSteps?'Ocultar completados':'Ver completados ('+doneCount+')'
         ),
@@ -6275,44 +7074,92 @@ function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask}){
         )
       ),
 
-      e('div',{className:'modal-body'},
+      e('div',{className:'modal-body',style:{flex:1,minHeight:0}},
         view==='list'&&e('div',{className:'sheet',style:dragFill?{userSelect:'none'}:undefined},
           e('div',{className:'sheet-row sheet-hdr'},
-            e('div',{className:'sheet-cell'},'Nombre'),
-            e('div',{className:'sheet-cell sheet-cell-date'},'Fecha límite'),
-            e('div',{className:'sheet-cell sheet-cell-status'},'Estado')
+            e('div',{className:'sheet-cell'},'Fase'),
+            e('div',{className:'sheet-cell sheet-cell-date',style:{display:'flex',gap:6}},
+              e('span',{style:{flex:1}},'Inicio'),
+              e('span',{style:{flex:1}},'Término')
+            ),
+            e('div',{className:'sheet-cell sheet-cell-status'},'¿Avancé hoy?')
           ),
-          steps.length===0&&e('div',{className:'empty',style:{padding:'16px 2px'}},'Sin pasos aún. Agrega el primero abajo.'),
-          steps.length>0&&!showDoneSteps&&steps.every(s=>s.done)&&e('div',{className:'empty',style:{padding:'16px 2px'}},'Todos los pasos están completados. Usa "Ver completados" para revisarlos.'),
+          steps.length===0&&e('div',{className:'empty',style:{padding:'16px 2px'}},'Sin fases aún. Agrega la primera abajo.'),
+          steps.length>0&&!showDoneSteps&&steps.every(s=>s.done)&&e('div',{className:'empty',style:{padding:'16px 2px'}},'Todas las fases están completadas. Usa "Ver completados" para revisarlas.'),
           steps.filter(s=>showDoneSteps||!s.done).map(s=>{
             const idx=steps.indexOf(s);
             const inFillRange=dragFill&&idx>=fillLo&&idx<=fillHi;
+            const today=dayKey();
+            const actToday=(s.actLog||{})[today]; // 'yes' | 'no' | undefined
             return e('div',{
               key:s.id,
               ref:el=>{rowRefs.current[idx]=el;},
-              className:'sheet-row'+(s.done?' done':'')+(inFillRange?' fill-range':'')
+              className:'sheet-row'+(s.done?' done':'')+(inFillRange?' fill-range':'')+(s.automation?' automation-row':''),
+              style:s.automation?{background:'color-mix(in srgb, var(--accent2) 7%, transparent)'}:undefined
             },
-              e('div',{className:'sheet-cell'},
-                e('input',{className:'sheet-input sheet-input-name',value:s.name,onChange:ev=>updateStep(s.id,{name:ev.target.value})})
+              e('div',{className:'sheet-cell',style:{display:'flex',alignItems:'center',gap:7}},
+                e('button',{
+                  className:'step-done-toggle'+(s.done?' on':''),
+                  title:s.done?'Fase completada · clic para reabrir':'Marcar fase completa',
+                  onClick:()=>updateStep(s.id,{done:!s.done})
+                },s.done?'✓':''),
+                e('input',{className:'sheet-input sheet-input-name',value:s.name,onChange:ev=>updateStep(s.id,{name:ev.target.value})}),
+                e('button',{
+                  className:'ghost-btn',
+                  title:s.automation?'Evento de automatización activo — clic para quitar':'Marcar como evento de automatización (desde aquí, el trabajo queda desatendido)',
+                  style:{fontSize:11,color:s.automation?'var(--accent2)':'var(--text4)',flexShrink:0},
+                  onClick:()=>updateStep(s.id,{automation:!s.automation})
+                },'⚙'),
+                (s.subtasks||[]).length>0&&e('span',{style:{fontSize:9.5,color:'var(--text4)',flexShrink:0},title:'Tareas dentro de esta fase — visibles en Mapa mental'},(s.subtasks||[]).length+' tareas')
               ),
-              e('div',{className:'sheet-cell sheet-cell-date'},
-                e('div',{className:'sheet-date-cell'},
-                  e('input',{className:'sheet-input sheet-input-date',type:'date',value:s.dueDate||'',onChange:ev=>updateStep(s.id,{dueDate:ev.target.value||null})}),
+              e('div',{className:'sheet-cell sheet-cell-date',style:{display:'flex',gap:6}},
+                e('input',{
+                  className:'sheet-input sheet-input-date',type:'date',style:{flex:1},
+                  value:s.startDate||'',
+                  title:'Fecha de inicio de la fase',
+                  onChange:ev=>{
+                    const v=ev.target.value||null;
+                    // el inicio nunca queda después del término
+                    if(v&&s.dueDate&&v>s.dueDate) updateStep(s.id,{startDate:v,dueDate:v});
+                    else updateStep(s.id,{startDate:v});
+                  }
+                }),
+                e('div',{className:'sheet-date-cell',style:{flex:1}},
+                  e('input',{
+                    className:'sheet-input sheet-input-date',type:'date',
+                    value:s.dueDate||'',
+                    title:'Fecha de término de la fase',
+                    onChange:ev=>{
+                      const v=ev.target.value||null;
+                      if(v&&s.startDate&&v<s.startDate) updateStep(s.id,{dueDate:v,startDate:v});
+                      else updateStep(s.id,{dueDate:v});
+                    }
+                  }),
                   s.dueDate&&e('div',{className:'sheet-fill-handle',title:'Arrastra para rellenar días consecutivos',onMouseDown:ev=>beginFillDrag(idx,ev)})
                 )
               ),
-              e('div',{className:'sheet-cell sheet-cell-status'},
-                e('button',{className:'steps-done-btn'+(s.done?' on':''),onClick:()=>updateStep(s.id,{done:!s.done})},s.done?'✓ Listo':'Marcar'),
-                e('button',{className:'rem-del',onClick:()=>deleteStep(s.id),title:'Eliminar paso'},'✕')
+              e('div',{className:'sheet-cell sheet-cell-status',style:{display:'flex',alignItems:'center',gap:6}},
+                e('button',{
+                  className:'act-btn yes'+(actToday==='yes'?' on':''),
+                  title:'Avancé hoy en esta fase',
+                  onClick:()=>setStepActivity(s.id,'yes')
+                },'✓'),
+                e('button',{
+                  className:'act-btn no'+(actToday==='no'?' on':''),
+                  title:'No avancé hoy — pero quedó registrado',
+                  onClick:()=>setStepActivity(s.id,'no')
+                },'✕'),
+                e('button',{className:'rem-del',onClick:()=>deleteStep(s.id),title:'Eliminar fase'},'✕')
               )
             );
           }),
           e('div',{className:'sheet-row sheet-add-row'},
             e('div',{className:'sheet-cell'},
-              e('input',{className:'sheet-input sheet-input-name',placeholder:'+ Agregar paso...',value:newName,onChange:ev=>setNewName(ev.target.value),onKeyDown:ev=>{if(ev.key==='Enter')addStep();}})
+              e('input',{className:'sheet-input sheet-input-name',placeholder:'+ Agregar fase...',value:newName,onChange:ev=>setNewName(ev.target.value),onKeyDown:ev=>{if(ev.key==='Enter')addStep();}})
             ),
-            e('div',{className:'sheet-cell sheet-cell-date'},
-              e('input',{className:'sheet-input sheet-input-date',type:'date',value:newDate,onChange:ev=>setNewDate(ev.target.value)})
+            e('div',{className:'sheet-cell sheet-cell-date',style:{display:'flex',gap:6}},
+              e('input',{className:'sheet-input sheet-input-date',type:'date',style:{flex:1},value:newStartDate,onChange:ev=>setNewStartDate(ev.target.value),title:'Inicio (opcional)'}),
+              e('input',{className:'sheet-input sheet-input-date',type:'date',style:{flex:1},value:newDate,onChange:ev=>setNewDate(ev.target.value),title:'Término (opcional, se autosugiere)'})
             ),
             e('div',{className:'sheet-cell sheet-cell-status'},
               e('button',{className:'btn btn-primary',style:{fontSize:11,padding:'5px 14px',width:'100%'},onClick:addStep},'Agregar')
@@ -6325,8 +7172,8 @@ function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask}){
             selectedIds.size>0&&e('button',{className:'btn',style:{fontSize:10.5,padding:'4px 10px'},onClick:clearSelection},'Deseleccionar ('+selectedIds.size+')'),
             selectedIds.size>1&&e('span',{className:'tl-hint'},'Arrastra cualquiera de las '+selectedIds.size+' seleccionadas para moverlas juntas')
           ),
-          tl.dated.length<total&&e('div',{className:'tl-note'},(total-tl.dated.length)+' paso(s) sin fecha — asígnales una en la vista Lista para verlos aquí'),
-          tl.rows.length===0&&e('div',{className:'empty',style:{padding:'20px 2px'}},'Sin pasos con fecha aún.'),
+          tl.dated.length<total&&e('div',{className:'tl-note'},(total-tl.dated.length)+' fase(s) sin fecha — asígnales una en la vista Lista para verlas aquí'),
+          tl.rows.length===0&&e('div',{className:'empty',style:{padding:'20px 2px'}},'Sin fases con fecha aún.'),
           tl.rows.length>0&&e('div',{className:'tl-scroll'},
             e('div',{className:'tl-canvas',style:{width:tl.numDays*DAY_W,height:38+tl.rows.length*40+14}},
               e('div',{className:'tl-days'},tl.days.map((d,i)=>{
@@ -6341,24 +7188,29 @@ function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask}){
               e('div',{className:'tl-today-line',style:{left:tl.dayIdx(tl.today)*DAY_W}}),
               tl.rows.map((s,ri)=>{
                 const isDragging=tlDrag&&tlDrag.ids.includes(s.id);
-                const shownDate=isDragging?tlDrag.cur[s.id]:s.dueDate;
+                const shownStart=isDragging?tlDrag.cur[s.id].start:(s.startDate||s.dueDate);
+                const shownEnd=isDragging?tlDrag.cur[s.id].end:s.dueDate;
                 const isSelected=selectedIds.has(s.id);
+                const left=tl.dayIdx(shownStart)*DAY_W+4;
+                const width=Math.max((tl.dayIdx(shownEnd)-tl.dayIdx(shownStart)+1)*DAY_W-8,DAY_W-8);
                 return e('div',{
                   key:s.id,
-                  className:'tl-pill'+(s.done?' done':'')+(isDragging?' dragging':'')+(isSelected?' selected':''),
-                  style:{left:tl.dayIdx(shownDate)*DAY_W+6,top:38+ri*40+6},
-                  onMouseDown:ev=>beginTimelineDrag(s.id,ev),
-                  title:'Click para seleccionar · arrastra para reprogramar'
+                  className:'tl-bar'+(s.done?' done':'')+(isDragging?' dragging':'')+(isSelected?' selected':''),
+                  style:{left,width,top:38+ri*40+6},
+                  onMouseDown:ev=>beginTimelineDrag(s.id,'move',ev),
+                  title:'Click para seleccionar · arrastra el centro para mover, los bordes para extender/achicar'
                 },
+                  e('div',{className:'tl-bar-handle left',onMouseDown:ev=>beginTimelineDrag(s.id,'start',ev)}),
                   e('button',{className:'tl-pill-check',onMouseDown:ev=>ev.stopPropagation(),onClick:ev=>{ev.stopPropagation();updateStep(s.id,{done:!s.done});}},s.done?'✓':''),
-                  e('span',{className:'tl-pill-label'},s.name)
+                  e('span',{className:'tl-pill-label'},s.name),
+                  e('div',{className:'tl-bar-handle right',onMouseDown:ev=>beginTimelineDrag(s.id,'end',ev)})
                 );
               })
             )
           )
         ),
         view==='mindmap'&&e('div',{className:'mm-wrap'},
-          steps.length===0&&e('div',{className:'empty',style:{padding:'20px 2px'}},'Sin pasos aún. Agrégalos en la vista Lista.'),
+          steps.length===0&&e('div',{className:'empty',style:{padding:'20px 2px'}},'Sin fases aún. Agrégalas en la vista Lista.'),
           steps.length>0&&(()=>{
             const positions=steps.map((s,idx)=>mmGetPos(s.id,idx));
             const maxX=Math.max(...positions.map(p=>p.x))+MM_CARD_W+40;
@@ -6463,7 +7315,11 @@ function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask}){
     ),
     dragFill&&e('div',{className:'sheet-fill-tooltip',style:{left:dragFill.tipX+14,top:dragFill.tipY-12}},fmtPretty(dragFill.tipDate)),
     tlDrag&&tlDrag.moved&&e('div',{className:'sheet-fill-tooltip',style:{left:tlDrag.tipX+14,top:tlDrag.tipY-12}},
-      tlDrag.ids.length>1?(tlDrag.ids.length+' pasos · '+fmtPretty(tlDrag.cur[tlDrag.clickedId])):fmtPretty(tlDrag.cur[tlDrag.clickedId])
+      (()=>{
+        const c=tlDrag.cur[tlDrag.clickedId];
+        const range=fmtPretty(c.start)+(c.start!==c.end?' → '+fmtPretty(c.end):'');
+        return tlDrag.ids.length>1?(tlDrag.ids.length+' fases · '+range):range;
+      })()
     ),
     showRec&&e(RecurrenceModal,{
       value:task.recurrence,
@@ -6473,7 +7329,95 @@ function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask}){
         onUpdateTask({recurrence:next,dueDate:next?(task.dueDate||dayKey()):task.dueDate});
         setShowRec(false);
       }
-    })
+    }),
+    showTplMgr&&e(TemplateManagerModal,{
+      templates,
+      onClose:()=>setShowTplMgr(false),
+      onApply:tpl=>{applyTemplate(tpl);setShowTplMgr(false);},
+      onAddTemplate:tpl=>onAddTemplate&&onAddTemplate(tpl),
+      onUpdateTemplate:(id,patch)=>onUpdateTemplate&&onUpdateTemplate(id,patch),
+      onDeleteTemplate:id=>onDeleteTemplate&&onDeleteTemplate(id)
+    }),
+    pendingTpl&&(()=>{
+      // Pide la fecha de inicio para encadenar las duraciones estimadas de
+      // cada fase de la plantilla (fase 1 arranca acá, la 2 donde termina la 1, etc.)
+      const totalDays=(pendingTpl.steps||[]).reduce((a,s)=>a+(Number.isFinite(s.durationDays)&&s.durationDays>0?s.durationDays:0),0);
+      return e('div',{className:'overlay',onClick:ev=>{if(ev.target===ev.currentTarget)setPendingTpl(null);}},
+        e('div',{className:'modal',style:{width:360}},
+          e('div',{className:'modal-head'},e('div',{className:'modal-title'},'Aplicar "'+pendingTpl.name+'"'),e('button',{className:'modal-x',onClick:()=>setPendingTpl(null)},'✕')),
+          e('div',{className:'modal-body'},
+            e('div',{style:{fontSize:11.5,color:'var(--text2)',lineHeight:1.6,marginBottom:10}},
+              'Esta plantilla tiene duraciones estimadas por fase ('+totalDays+' días en total). Elige desde cuándo empezar y las fechas se encadenan automáticamente — igual las puedes ajustar a mano después.'
+            ),
+            e('div',{className:'fg'},e('label',{className:'flabel'},'Fecha de inicio'),
+              e('input',{className:'finput',type:'date',id:'tpl-start-date',defaultValue:todayDateKey()})
+            )
+          ),
+          e('div',{className:'modal-foot'},
+            e('button',{className:'btn',onClick:()=>setPendingTpl(null)},'Cancelar'),
+            e('button',{className:'btn btn-primary',onClick:()=>{
+              const input=document.getElementById('tpl-start-date');
+              const startFrom=(input&&input.value)||todayDateKey();
+              doApplyTemplate(pendingTpl,startFrom);
+            }},'Aplicar y calcular fechas')
+          )
+        )
+      );
+    })(),
+    showRecalc&&(()=>{
+      // Cambia la fecha de inicio del proyecto y recalcula toda la cadena de
+      // fases (manteniendo la duración que ya tenía cada una), sin borrar ni
+      // recrear nada — nombres, tareas, avance y actLog quedan intactos.
+      const datedSteps=steps.filter(s=>s.startDate&&s.dueDate);
+      const currentFirst=datedSteps.reduce((min,s)=>!min||s.startDate<min?s.startDate:min,null);
+      return e('div',{className:'overlay',onClick:ev=>{if(ev.target===ev.currentTarget)setShowRecalc(false);}},
+        e('div',{className:'modal',style:{width:380}},
+          e('div',{className:'modal-head'},e('div',{className:'modal-title'},'Recalcular fechas del proyecto'),e('button',{className:'modal-x',onClick:()=>setShowRecalc(false)},'✕')),
+          e('div',{className:'modal-body'},
+            e('div',{style:{fontSize:11.5,color:'var(--text2)',lineHeight:1.6,marginBottom:10}},
+              'Elige la nueva fecha de inicio y las '+datedSteps.length+' fase(s) con fecha se recorren en cadena a partir de ahí, respetando la duración que ya tenía cada una. No se pierde ningún nombre, tarea, avance ni fase sin fecha.'
+            ),
+            e('div',{className:'fg'},e('label',{className:'flabel'},'Nueva fecha de inicio'),
+              e('input',{className:'finput',type:'date',id:'recalc-start-date',defaultValue:currentFirst||todayDateKey()})
+            )
+          ),
+          e('div',{className:'modal-foot'},
+            e('button',{className:'btn',onClick:()=>setShowRecalc(false)},'Cancelar'),
+            e('button',{className:'btn btn-primary',onClick:()=>{
+              const input=document.getElementById('recalc-start-date');
+              const startFrom=(input&&input.value)||todayDateKey();
+              recalcFromStart(startFrom);
+            }},'Recalcular fechas')
+          )
+        )
+      );
+    })(),
+    showSaveTpl&&(()=>{
+      // Modal simple: nombre + vista previa, guarda la estructura actual
+      // (sin fechas ni estados) como plantilla nueva.
+      return e('div',{className:'overlay',onClick:ev=>{if(ev.target===ev.currentTarget)setShowSaveTpl(false);}},
+        e('div',{className:'modal',style:{width:380}},
+          e('div',{className:'modal-head'},e('div',{className:'modal-title'},'Guardar como plantilla'),e('button',{className:'modal-x',onClick:()=>setShowSaveTpl(false)},'✕')),
+          e('div',{className:'modal-body'},
+            e('div',{style:{fontSize:11.5,color:'var(--text2)',lineHeight:1.6,marginBottom:10}},
+              'Se guardarán las '+steps.length+' fase(s) y sus tareas de "'+task.name+'" como plantilla — sin fechas concretas ni estado de avance, pero conservando la duración estimada de cada fase (si la tenía) como referencia para la próxima vez — para poder aplicarla luego en cualquier proyecto o cuenta.'
+            ),
+            e('div',{className:'fg'},e('label',{className:'flabel'},'Nombre de la plantilla'),
+              e('input',{className:'finput',id:'tpl-save-name',autoFocus:true,placeholder:task.name,defaultValue:task.name})
+            )
+          ),
+          e('div',{className:'modal-foot'},
+            e('button',{className:'btn',onClick:()=>setShowSaveTpl(false)},'Cancelar'),
+            e('button',{className:'btn btn-primary',onClick:()=>{
+              const input=document.getElementById('tpl-save-name');
+              const nm=(input&&input.value.trim())||task.name;
+              onAddTemplate&&onAddTemplate({id:uid(),name:nm,steps:stepsToTemplateSteps(steps),createdAt:Date.now()});
+              setShowSaveTpl(false);
+            }},'Guardar plantilla')
+          )
+        )
+      );
+    })()
   );
 }
 function EditableLabel({value,onSave}){
