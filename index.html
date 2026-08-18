@@ -768,12 +768,21 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .qn-list{display:flex;flex-direction:column;overflow-y:auto;max-height:180px}
 .qn-list::-webkit-scrollbar{width:3px}
 .qn-list::-webkit-scrollbar-thumb{background:var(--bg5);border-radius:2px}
-.qn-item{display:flex;align-items:flex-start;gap:7px;font-size:11.5px;line-height:1.4;padding:6px 2px;border-bottom:1px solid var(--border)}
+.qn-item{display:flex;flex-direction:column;gap:6px;font-size:11.5px;line-height:1.4;padding:6px 2px;border-bottom:1px solid var(--border)}
 .qn-item:last-child{border-bottom:none}
+.qn-item-row{display:flex;align-items:flex-start;gap:7px}
 .qn-item-check{flex-shrink:0;width:14px;height:14px;margin-top:1px;border-radius:4px;border:1px solid var(--border3);background:transparent;color:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:9px;line-height:1;transition:all .12s;padding:0}
 .qn-item-check:hover{border-color:var(--green-border);color:var(--green)}
-.qn-item-text{flex:1;white-space:pre-wrap;word-break:break-word;color:var(--text1)}
-.qn-item-del{flex-shrink:0;background:transparent;border:none;color:var(--text4);cursor:pointer;font-size:10.5px;padding:0 2px;opacity:0;transition:opacity .12s}
+.qn-item-text-wrap{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.qn-item-text{white-space:pre-wrap;word-break:break-word;color:var(--text1)}
+.qn-item-remind{font-size:9.5px;color:var(--amber);font-family:'JetBrains Mono',monospace;display:flex;align-items:center;gap:3px}
+.qn-item-clock{flex-shrink:0;width:14px;height:14px;margin-top:1px;border:none;background:transparent;color:var(--text4);cursor:pointer;opacity:0;transition:opacity .12s,color .12s;padding:0;display:flex;align-items:center;justify-content:center}
+.qn-item:hover .qn-item-clock{opacity:1}
+.qn-item-clock:hover{color:var(--amber)}
+.qn-item-clock.on{opacity:1;color:var(--amber)}
+.qn-remind-row{display:flex;align-items:center;gap:6px;padding-left:21px}
+.qn-remind-input{flex:1;min-width:0;font-size:10.5px;padding:5px 6px;color-scheme:dark}
+.qn-item-del{flex-shrink:0;background:transparent;border:none;color:var(--text4);cursor:pointer;font-size:10.5px;padding:0 2px;opacity:0;transition:opacity .12s;margin-top:1px}
 .qn-item:hover .qn-item-del{opacity:1}
 .qn-item-del:hover{color:var(--red,#e05555)}
 @media (max-width:900px){.dash-timeline-row{flex-direction:column}.qn-panel{width:auto}}
@@ -2535,6 +2544,18 @@ function App(){
             },
             onToggleNoteDone:id=>{
               setNotes(n=>({...n,[selectedProjObj.id]:(n[selectedProjObj.id]||[]).map(x=>x.id===id?{...x,done:!x.done}:x)}));
+              forceSync();
+            },
+            onSetNoteReminder:(id,dueAt)=>{
+              const pid=selectedProjObj.id;
+              setNotes(n=>({...n,[pid]:(n[pid]||[]).map(x=>x.id===id?{...x,remindAt:dueAt||null,remindDone:false}:x)}));
+              setReminders(rs=>{
+                const withoutOld=rs.filter(r=>r.noteId!==id);
+                if(!dueAt)return withoutOld;
+                const note=(notes[pid]||[]).find(x=>x.id===id);
+                const r={id:uid(),title:note?note.text:'Nota',projId:pid,dueAt,done:false,overdue:false,createdAt:Date.now(),noteId:id};
+                return[r,...withoutOld];
+              });
               forceSync();
             },
             panelLabels,onRenameLabel:(key,val)=>{setPanelLabels(p=>({...p,[key]:val}));forceSync();},
@@ -5033,7 +5054,69 @@ function HorizontalTimeline({realBlocks,liveBlock,projects,tasks,selectedDay,set
 // este panel solo muestra una vista compacta al lado de la línea de tiempo,
 // pensada para anotar rápido sin salir del Resumen.
 // ═══════════════════════════════════════════
-function QuickNotesPanel({notes,onAddNote,onDeleteNote,onToggleNoteDone,onOpenAll}){
+function ClockIcon({size=12,color='currentColor'}){
+  return e('svg',{width:size,height:size,viewBox:'0 0 24 24',fill:'none',stroke:color,strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round',style:{display:'block',flexShrink:0}},
+    e('circle',{cx:12,cy:12,r:9}),
+    e('path',{d:'M12 7v5l3.5 2'})
+  );
+}
+function fmtNoteReminder(ts){
+  if(!ts)return'';
+  const d=new Date(ts);
+  const today=dayKey();
+  const dK=d.toISOString().slice(0,10);
+  if(dK===today)return'Hoy';
+  const tomorrow=new Date();tomorrow.setDate(tomorrow.getDate()+1);
+  if(dK===tomorrow.toISOString().slice(0,10))return'Mañana';
+  return d.toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit',year:dK.slice(0,4)!==today.slice(0,4)?'numeric':undefined});
+}
+function QuickNoteItem({note,onDeleteNote,onToggleNoteDone,onSetNoteReminder}){
+  const[editingRemind,setEditingRemind]=useState(false);
+  const[val,setVal]=useState('');
+  function openEditor(){
+    if(note.remindAt){
+      setVal(new Date(note.remindAt).toISOString().slice(0,10));
+    }else{
+      const d=new Date();d.setDate(d.getDate()+1);
+      setVal(d.toISOString().slice(0,10));
+    }
+    setEditingRemind(true);
+  }
+  const active=!!note.remindAt;
+  return e('div',{className:'qn-item'},
+    e('div',{className:'qn-item-row'},
+      e('button',{
+        className:'qn-item-check',title:'Marcar como hecha (se archiva)',
+        onClick:()=>onToggleNoteDone(note.id)
+      },'✓'),
+      e('div',{className:'qn-item-text-wrap'},
+        e('span',{className:'qn-item-text'},note.text),
+        active&&!editingRemind&&e('span',{className:'qn-item-remind'},e(ClockIcon,{size:9,color:'var(--amber)'}),fmtNoteReminder(note.remindAt))
+      ),
+      e('button',{
+        className:'qn-item-clock'+(active?' on':''),
+        title:active?('Recordatorio: '+fmtNoteReminder(note.remindAt)):'Poner recordatorio',
+        onClick:()=>editingRemind?setEditingRemind(false):openEditor()
+      },e(ClockIcon,{size:11})),
+      e('button',{className:'qn-item-del',title:'Eliminar',onClick:()=>onDeleteNote(note.id)},'✕')
+    ),
+    editingRemind&&e('div',{className:'qn-remind-row'},
+      e('input',{
+        type:'date',className:'finput qn-remind-input',value:val,
+        onChange:ev=>setVal(ev.target.value)
+      }),
+      active&&e('button',{className:'ghost-btn',style:{fontSize:10},onClick:()=>{onSetNoteReminder(null);setEditingRemind(false);}},'Quitar'),
+      e('button',{className:'btn btn-primary',style:{fontSize:10,padding:'3px 10px'},onClick:()=>{
+        if(!val)return;
+        // Se guarda a las 09:00 del día elegido — el sistema de recordatorios
+        // necesita una hora, pero al usuario solo le importa la fecha.
+        onSetNoteReminder(new Date(val+'T09:00:00').getTime());
+        setEditingRemind(false);
+      }},'Guardar')
+    )
+  );
+}
+function QuickNotesPanel({notes,onAddNote,onDeleteNote,onToggleNoteDone,onSetNoteReminder,onOpenAll}){
   const[val,setVal]=useState('');
   function add(){
     const t=val.trim();
@@ -5062,14 +5145,10 @@ function QuickNotesPanel({notes,onAddNote,onDeleteNote,onToggleNoteDone,onOpenAl
       ),
       e('div',{className:'qn-list'},
         list.length===0&&e('div',{className:'empty',style:{padding:'10px 2px'}},'Sin notas aún'),
-        list.slice(0,8).map(n=>e('div',{key:n.id,className:'qn-item'},
-          e('button',{
-            className:'qn-item-check',title:'Marcar como hecha (se archiva)',
-            onClick:()=>onToggleNoteDone(n.id)
-          },'✓'),
-          e('span',{className:'qn-item-text'},n.text),
-          e('button',{className:'qn-item-del',title:'Eliminar',onClick:()=>onDeleteNote(n.id)},'✕')
-        ))
+        list.slice(0,8).map(n=>e(QuickNoteItem,{
+          key:n.id,note:n,onDeleteNote,onToggleNoteDone,
+          onSetNoteReminder:dueAt=>onSetNoteReminder(n.id,dueAt)
+        }))
       )
     )
   );
@@ -5776,7 +5855,7 @@ function HomeResumen(props){
 function ProjectDashboard(props){
   const{
     project,projects,tasks,sessions,ctxs,habits,systems,
-    notes,onAddNote,onDeleteNote,onToggleNoteDone,
+    notes,onAddNote,onDeleteNote,onToggleNoteDone,onSetNoteReminder,
     panelLabels,onRenameLabel,panelVisibility,onTogglePanelVisibility,
     panelSortModes,onChangeSortMode,
     blocks,setBlocks,realBlocks,liveBlock,tick,blockOpacity,blockStyle,realStyle,tlZoom,setTlZoom,selectedDay,setSelectedDay,onDblClickTime,onEditBlock,onNewBlock,
@@ -6010,7 +6089,7 @@ function ProjectDashboard(props){
         e('div',{className:'dash-timeline-wrap'},
           e(AccountProjectsTimeline,{pTasks,color:project.color,onOpenProject:setStepsForTask})
         ),
-        e(QuickNotesPanel,{notes,onAddNote,onDeleteNote,onToggleNoteDone,onOpenAll:()=>setTab('notas')})
+        e(QuickNotesPanel,{notes,onAddNote,onDeleteNote,onToggleNoteDone,onSetNoteReminder,onOpenAll:()=>setTab('notas')})
       )
     )),
 
