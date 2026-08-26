@@ -538,8 +538,10 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 }
 .view-tabs{display:flex;gap:2px;background:var(--bg3);border-radius:var(--r-sm);padding:2px;width:max-content;margin:0 20px 12px}
 .vtab{padding:5px 13px;border-radius:5px;background:transparent;border:none;font-size:11px;color:var(--text3);cursor:pointer;font-family:'Inter',sans-serif;transition:all .1s}
-.vtab-icon{padding:6px 10px;display:flex;align-items:center;justify-content:center}
+.vtab-icon{padding:6px 10px;display:flex;align-items:center;justify-content:center;cursor:grab}
 .vtab.active{background:var(--bg4);color:var(--text0)}
+.vtab-icon.dragging{opacity:.35}
+.vtab-icon.drag-over{box-shadow:inset 2px 0 0 var(--accent2)}
 .tl-note{font-size:10.5px;color:var(--text4);padding:0 2px 10px}
 .tl-toolbar{display:flex;align-items:center;gap:8px;padding:0 2px 10px;flex-wrap:wrap}
 .tl-hint{font-size:10.5px;color:var(--text3)}
@@ -582,6 +584,8 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .mm-card:hover{border-color:var(--border3)}
 .mm-card.open{border-color:var(--accent);box-shadow:0 4px 16px rgba(0,0,0,.4)}
 .mm-card.done{opacity:.6}
+.mm-card.active-phase{background:color-mix(in srgb, var(--accent2) 6%, var(--bg2,#141414));box-shadow:inset 2px 0 0 var(--accent2),0 1px 3px rgba(0,0,0,.3)}
+.mm-card.active-phase.open{box-shadow:inset 2px 0 0 var(--accent2),0 4px 16px rgba(0,0,0,.4)}
 .mm-card.dragging{border-color:var(--accent);box-shadow:0 10px 28px rgba(0,0,0,.5);cursor:grabbing}
 .mm-card-head{display:flex;align-items:flex-start;gap:6px;cursor:grab}
 .mm-card-head:active{cursor:grabbing}
@@ -629,7 +633,7 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .sysmap-svg{position:absolute;top:0;left:0;pointer-events:none}
 .sysmap-svg line[style]{pointer-events:stroke}
 .sysmap-node{position:absolute}
-.sysmap-card{background:var(--bg2,#141414);border:1.5px solid var(--border2);border-radius:var(--r-lg);padding:10px 12px;box-shadow:0 1px 3px rgba(0,0,0,.3);cursor:grab;transition:border-color .12s}
+.sysmap-card{position:relative;background:var(--bg2,#141414);border:1.5px solid var(--border2);border-radius:var(--r-lg);padding:10px 12px;box-shadow:0 1px 3px rgba(0,0,0,.3);cursor:grab;transition:border-color .12s}
 .sysmap-card:active{cursor:grabbing}
 .sysmap-card-top{display:flex;align-items:center;gap:8px}
 .sysmap-card-name{flex:1;min-width:0;font-size:12.5px;color:var(--text0);font-weight:500;white-space:normal;word-break:break-word;line-height:1.3;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
@@ -638,6 +642,45 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .sysmap-node.linking .sysmap-card{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-border)}
 .sysmap-node.selected .sysmap-card{border-color:#4a9de0;box-shadow:0 0 0 2px rgba(74,157,224,.35);background:rgba(74,157,224,.08)}
 .sysmap-marquee{position:absolute;border:1px solid var(--accent);background:var(--accent-bg);pointer-events:none;z-index:5}
+.sysmap-card.automation{border-color:var(--accent2);background:color-mix(in srgb, var(--accent2) 7%, var(--bg2,#141414))}
+.sysmap-order-badge{flex-shrink:0;width:18px;height:18px;border-radius:6px;font-size:9.5px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.sysmap-kind-picker{display:flex;align-items:center;gap:3px;flex-shrink:0}
+.sysmap-kind-dot{width:7px;height:7px;border-radius:50%;cursor:pointer;opacity:.4;box-shadow:none;transition:opacity .12s,box-shadow .12s,transform .12s}
+.sysmap-kind-dot:hover{opacity:.75}
+.sysmap-kind-dot.on{opacity:1;box-shadow:0 0 5px currentColor;transform:scale(1.15)}
+.sysmap-auto-btn{flex-shrink:0;background:transparent;border:none;color:var(--text4);cursor:pointer;font-size:12px;padding:2px;border-radius:5px;line-height:1}
+.sysmap-auto-btn:hover{background:var(--bg4)}
+.sysmap-auto-btn.on{color:var(--accent2)}
+.sysmap-panel-btn{flex-shrink:0;background:transparent;border:none;color:var(--text3);cursor:pointer;padding:3px;border-radius:5px;display:flex}
+.sysmap-panel-btn:hover{background:var(--bg4);color:var(--text0)}
+.sysmap-panel-btn.on{color:var(--accent2);background:var(--bg4)}
+.sysmap-del-btn{flex-shrink:0;background:transparent;border:none;color:var(--text4);cursor:pointer;font-size:11px;padding:2px 3px;border-radius:5px}
+.sysmap-del-btn:hover{color:#e6675f;background:var(--bg4)}
+.sysmap-card-sub{display:flex;align-items:center;gap:8px;font-size:10px;color:var(--text3);padding:0 2px;margin-top:4px;flex-wrap:wrap}
+.sysmap-exp-tag{cursor:pointer;color:#c77dff;border:1px solid #c77dff40;border-radius:20px;padding:1px 7px}
+.sysmap-exp-tag:hover{background:#c77dff1a}
+.sysmap-auto-note{font-size:9.5px;color:var(--accent2);margin-top:5px;line-height:1.4}
+.sysmap-connect-dot{position:absolute;left:50%;bottom:-6px;transform:translateX(-50%);width:12px;height:12px;border-radius:50%;background:var(--bg1,#111);border:1.6px solid var(--border4);cursor:crosshair}
+.sysmap-connect-dot:hover{border-color:var(--accent)}
+.sysmap-panel{position:absolute;width:270px;background:var(--bg2);border:1px solid var(--border3);border-radius:var(--r-lg);box-shadow:0 14px 40px #000a;z-index:25;overflow:hidden}
+.sysmap-panel-hdr{display:flex;align-items:center;gap:8px;padding:9px 10px;border-bottom:1px solid var(--border2)}
+.sysmap-panel-title{flex:1;min-width:0;font-size:12px;font-weight:600;color:var(--text0);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sysmap-panel-expand{flex-shrink:0;background:transparent;border:none;color:var(--accent2);font-size:10px;cursor:pointer;padding:3px 4px;border-radius:5px}
+.sysmap-panel-expand:hover{background:var(--bg3)}
+.sysmap-panel-x{flex-shrink:0;background:transparent;border:none;color:var(--text3);cursor:pointer;font-size:10.5px;padding:2px 4px;border-radius:4px}
+.sysmap-panel-x:hover{background:var(--bg4);color:var(--text0)}
+.sysmap-panel-body{max-height:360px;overflow-y:auto;padding:8px}
+.sysmap-panel-phase{margin-bottom:8px;border:1px solid var(--border2);border-radius:8px;padding:8px}
+.sysmap-panel-phase-hdr{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+.sysmap-panel-phase-name{flex:1;min-width:0;background:transparent;border:none;color:var(--text1);font-size:12px;font-weight:600;padding:2px 0}
+.sysmap-panel-task{display:flex;align-items:center;gap:7px;padding:3px 2px;border-radius:5px;font-size:12px}
+.sysmap-panel-task:hover{background:var(--bg3)}
+.sysmap-panel-task-text{flex:1;color:var(--text1)}
+.sysmap-panel-task-text.done{color:var(--text4);text-decoration:line-through}
+.sysmap-panel-addtask{display:flex;padding:3px 2px}
+.sysmap-panel-addtask input{flex:1;background:transparent;border:none;color:var(--text1);font-size:12px;padding:2px 0}
+.sysmap-panel-addphase{width:100%;padding:7px;border-radius:7px;border:1px dashed var(--border4);background:transparent;color:var(--text3);font-size:11.5px;cursor:pointer}
+.sysmap-panel-addphase:hover{background:var(--bg3);color:var(--text0)}
 /* Pizarra tipo Miro por proyecto/tarea: lienzo pan/zoom despejado, imágenes pegadas y notas como
    casillas de texto libres directamente sobre el lienzo (sin panel lateral separado) */
 .board-wrap{height:100%;border:1px solid var(--border2);border-radius:var(--r-lg);overflow:hidden;display:flex}
@@ -660,6 +703,57 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .board-note-del:hover{opacity:1!important;color:var(--text0)}
 .board-note-text{flex:1;width:100%;background:transparent;border:none;resize:none;color:#f0e6b8;font-size:12px;font-family:'Inter',sans-serif;line-height:1.5;padding:2px 10px 10px 10px;box-sizing:border-box;outline:none}
 .board-note-resize{position:absolute;right:2px;bottom:2px;width:12px;height:12px;cursor:nwse-resize;opacity:.4}
+.board-add-nb-wrap{position:relative}
+.board-add-nb-menu{position:absolute;top:calc(100% + 6px);left:0;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-md);box-shadow:0 10px 24px #0008;min-width:210px;max-height:260px;overflow-y:auto;z-index:20;padding:4px}
+.board-add-nb-item{padding:7px 9px;border-radius:6px;cursor:pointer;font-size:11.5px;color:var(--text1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.board-add-nb-item:hover{background:var(--bg4)}
+.board-add-nb-item.untitled{color:var(--text3);font-style:italic}
+.board-add-nb-empty{padding:10px 9px;font-size:11px;color:var(--text4);white-space:normal}
+.board-nbcard{position:absolute;background:var(--bg2);border:1px solid var(--accent-border);border-radius:8px;box-shadow:0 8px 20px #0007;cursor:grab;overflow:hidden;display:flex;flex-direction:column}
+.board-nbcard.dragging{cursor:grabbing;opacity:.9;z-index:6}
+.board-nbcard-hdr{display:flex;align-items:center;gap:7px;padding:8px 10px;flex-shrink:0}
+.board-nbcard-icon{color:var(--accent2);flex-shrink:0}
+.board-nbcard-title{font-size:12px;font-weight:600;color:var(--text0);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
+.board-nbcard-title.untitled{color:var(--text3);font-style:italic;font-weight:400}
+.board-nbcard-del{width:17px;height:17px;border-radius:50%;background:transparent;border:none;color:var(--text3);font-size:9.5px;cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .1s;flex-shrink:0}
+.board-nbcard:hover .board-nbcard-del{opacity:.8}
+.board-nbcard-del:hover{opacity:1!important;color:var(--text0)}
+.board-nbcard-body{padding:0 12px 12px;overflow-y:auto;border-top:1px solid var(--border)}
+.board-nbcard-subtitle{font-size:11px;color:var(--text2);margin:10px 0 8px}
+.board-nbcard-text{font-size:12px;color:var(--text1);line-height:1.6;background:transparent;border:none;outline:none;width:100%;resize:none;font-family:'Inter',sans-serif;padding:0}
+.board-nbcard-hint{font-size:9px;color:var(--text4);text-align:center;padding:4px 0 0}
+
+/* LIBRETA — bitácora tipo Notion, notas de texto libre por proyecto */
+.notebook-wrap{display:flex;height:100%;border:1px solid var(--border2);border-radius:var(--r-lg);overflow:hidden;background:var(--bg0)}
+.notebook-sidebar{width:220px;flex-shrink:0;border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;background:var(--bg1)}
+.notebook-sidebar-hdr{padding:10px;flex-shrink:0}
+.notebook-new-btn{width:100%;display:flex;align-items:center;justify-content:center;gap:6px;padding:7px 9px;border-radius:var(--r-md);border:1px dashed var(--border3);background:transparent;color:var(--text2);font-size:11.5px;font-family:'Inter',sans-serif;cursor:pointer;transition:all .12s}
+.notebook-new-btn:hover{background:var(--bg3);color:var(--text0);border-style:solid;border-color:var(--border4)}
+.notebook-list{flex:1;overflow-y:auto;padding:0 6px 8px}
+.notebook-list-item{padding:8px 9px;border-radius:var(--r-md);cursor:pointer;margin-bottom:2px;transition:background .1s;border:1px solid transparent}
+.notebook-list-item:hover{background:var(--bg3)}
+.notebook-list-item.active{background:var(--bg4);border-color:var(--border3)}
+.notebook-list-item-title{font-size:12px;font-weight:500;color:var(--text0);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:4px}
+.notebook-list-item-title.untitled{color:var(--text3);font-weight:400;font-style:italic}
+.notebook-list-item-sub{font-size:10.5px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+.notebook-list-item-meta{font-size:9.5px;color:var(--text4);margin-top:3px;font-family:'JetBrains Mono',monospace}
+.notebook-empty-list{padding:18px 10px;font-size:11px;color:var(--text4);text-align:center;line-height:1.6}
+.notebook-page{flex:1;display:flex;flex-direction:column;overflow-y:auto;padding:26px 36px 40px}
+.notebook-page-empty{flex:1;display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:12px;flex-direction:column;gap:10px}
+.notebook-page-top{display:flex;align-items:center;gap:6px;margin-bottom:18px;flex-shrink:0}
+.notebook-page-meta{font-size:10.5px;color:var(--text4);font-family:'JetBrains Mono',monospace}
+.notebook-page-actions{margin-left:auto;display:flex;gap:4px}
+.nb-act-btn{width:24px;height:24px;border-radius:6px;border:none;background:transparent;color:var(--text4);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .1s}
+.nb-act-btn:hover{background:var(--bg3);color:var(--text1)}
+.nb-act-btn.on{color:var(--amber)}
+.nb-act-btn.danger:hover{color:var(--red)}
+.notebook-title-input{width:100%;background:transparent;border:none;outline:none;color:var(--text0);font-size:22px;font-weight:600;font-family:'Inter',sans-serif;padding:0;margin-bottom:5px}
+.notebook-title-input::placeholder{color:var(--text4);font-weight:500}
+.notebook-subtitle-input{width:100%;background:transparent;border:none;outline:none;color:var(--text2);font-size:13px;font-family:'Inter',sans-serif;padding:0;margin-bottom:18px}
+.notebook-subtitle-input::placeholder{color:var(--text4)}
+.notebook-body-text{width:100%;flex:1;background:transparent;border:none;outline:none;color:var(--text1);font-size:13px;line-height:1.8;font-family:'Inter',sans-serif;resize:none;padding:0;min-height:240px}
+.notebook-body-text::placeholder{color:var(--text4)}
+.notebook-empty{color:var(--text3);font-size:12px;padding:20px 2px;text-align:center}
 /* Bitácora de experimentos por lanzamiento — reutiliza el look de las notas de pizarra */
 .exp-panel{height:100%;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:14px;max-width:440px}
 .exp-panel-form{display:flex;flex-direction:column}
@@ -919,7 +1013,7 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .editable-label-pencil{font-size:9px;opacity:0;color:var(--text4);transition:opacity .1s}
 .editable-label:hover .editable-label-pencil{opacity:1}
 .label-edit-input{background:var(--bg2);border:1px solid var(--accent-border);border-radius:4px;color:var(--text0);font-size:11px;font-weight:600;padding:1px 6px;font-family:'Inter',sans-serif;outline:none;max-width:180px}
-.dash-cols{display:grid;grid-template-columns:1fr 1.3fr 1fr;gap:14px;align-items:start}
+.dash-cols{display:grid;grid-template-columns:1fr;gap:14px;align-items:start}
 .dash-panel{background:var(--bg1);border:1px solid var(--border2);border-radius:var(--r-lg);display:flex;flex-direction:column;overflow:hidden}
 .dash-panel-hdr{display:flex;align-items:center;padding:11px 14px;border-bottom:1px solid var(--border);gap:8px}
 .dash-panel-title{font-size:11px;font-weight:600;color:var(--text0);flex:1}
@@ -983,6 +1077,8 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .htl-block-dur{font-size:9px;color:var(--text3);font-family:'JetBrains Mono',monospace;white-space:nowrap;margin-top:auto}
 /* SYSTEM CARDS */
 .systems-grid{display:flex;flex-direction:column;gap:8px}
+.habitos-mini-panel{width:280px;flex-shrink:0}
+@media (max-width:900px){.habitos-mini-panel{width:auto}}
 .system-card{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r-md);padding:11px 13px;transition:border-color .12s}
 .system-card:hover{border-color:var(--border3)}
 .system-card-top{display:flex;align-items:center;gap:9px}
@@ -1033,6 +1129,7 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .stages-editor{display:flex;flex-direction:column;gap:5px}
 .stages-editor-row{display:flex;align-items:center;gap:6px}
 .stages-editor-row input{flex:1}
+.proj-act-row{display:flex;gap:6px;flex-shrink:0}
 .act-btn{width:22px;height:22px;border-radius:6px;border:1px solid var(--border3);background:var(--bg2);color:var(--text3);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:11px;transition:all .12s;flex-shrink:0}
 .act-btn:hover{border-color:var(--border4)}
 .act-btn.yes.on{background:var(--green-bg,#3ab87a14);border-color:var(--green,#3ab87a);color:var(--green,#3ab87a)}
@@ -1714,11 +1811,12 @@ function stepHasPendingWork(s){
   if(subs.length>0) return subs.some(t=>!t.done); // hay tareas internas sin marcar
   return !s.done; // sin desglose interno: se guía por el estado de la fase misma
 }
-function stepNeedsAction(s,dateKey){
+function stepNeedsAction(s,dateKey,taskActedToday){
   if(s.done||!s.dueDate)return false;
   const start=s.startDate||s.dueDate;
   if(dateKey<start)return false; // la fase todavía no empieza
-  if(stepActedToday(s,dateKey))return false; // ya registraste avance/no-avance hoy
+  if(taskActedToday)return false; // ya registraste avance/no-avance hoy a nivel de proyecto
+  if(stepActedToday(s,dateKey))return false; // compat con registros antiguos por fase
   return stepHasPendingWork(s);
 }
 // Sugiere una fecha de término automática para una fase nueva: continúa donde
@@ -2065,6 +2163,31 @@ function App(){
 
   useEffect(()=>{const id=setInterval(()=>setTick(t=>t+1),20000);return()=>clearInterval(id);},[]);
 
+  // Recuperación LOCAL al abrir la app: si quedó un checkpoint de una sesión
+  // que nunca se cerró con doStop (se cerró la pestaña, se cayó el internet,
+  // se congeló el navegador, se apagó el equipo), lo convertimos aquí mismo
+  // en una sesión terminada normal — sin depender de que Supabase haya estado
+  // conectado. Corre una sola vez, al montar la app.
+  useEffect(()=>{
+    try{
+      const raw=localStorage.getItem('chr4_livecheckpoint');
+      if(raw){
+        const chk=JSON.parse(raw);
+        if(chk&&chk.duration>0){
+          setSessions(prev=>{
+            if(prev.some(s=>s.id===chk.id))return prev; // ya estaba guardada (ej: Supabase la recuperó antes)
+            const recovered={id:chk.id,projectId:chk.projectId,taskId:chk.taskId,startAt:chk.startAt,endAt:chk.endAt,duration:chk.duration,mode:chk.mode,pomos:chk.pomos||0,day:chk.day};
+            showNotif('⏱ Sesión recuperada: '+fmtS(chk.duration)+' (se cerró sin guardar)',4500);
+            return [...prev,recovered];
+          });
+        }
+      }
+    }catch(e){ /* best effort */ }
+    finally{
+      localStorage.removeItem('chr4_livecheckpoint');
+    }
+  },[]);
+
   // ═══════════════════════════════════════════
   // UNDO / REDO (Ctrl+Z / Ctrl+Shift+Z) — protege contra borrados accidentales
   // de sistemas, tareas, proyectos, hábitos, notas, plantillas, etc.
@@ -2360,8 +2483,21 @@ function App(){
   // "marqué el hábito/tarea y recargué antes de que pasara el debounce de 3s"
   // También adjunta el checkpoint de la sesión en curso (si hay una corriendo),
   // para que cerrar la pestaña o apagar el equipo no borre el tiempo trabajado.
+  // Respaldo LOCAL del checkpoint — independiente de Supabase. Se guarda en
+  // localStorage para que, si se cierra la pestaña, se cae el internet, se
+  // congela el navegador o se apaga el equipo, el tiempo trabajado hasta ese
+  // punto no se pierda aunque Supabase nunca haya llegado a conectarse.
+  function saveLocalCheckpoint(){
+    try{
+      const chk=buildLiveCheckpoint();
+      if(chk) localStorage.setItem('chr4_livecheckpoint',JSON.stringify(chk));
+      else localStorage.removeItem('chr4_livecheckpoint');
+    }catch(e){ /* best effort */ }
+  }
+
   useEffect(()=>{
     function flush(){
+      saveLocalCheckpoint();
       if(sbStatus!=='connected'||!SB.configured()||!sbLatestRef.current) return;
       try{
         const url=`${SB.url}/rest/v1/chronos`;
@@ -2391,6 +2527,16 @@ function App(){
     },180000); // 3 minutos
     return()=>clearInterval(id);
   },[sbStatus,tState,activeSess]);
+
+  // Checkpoint LOCAL cada 1 minuto (independiente de Supabase) — así el
+  // tiempo trabajado nunca queda más de 60s sin respaldo local, aunque no
+  // haya conexión a internet ni Supabase configurado.
+  useEffect(()=>{
+    if(tState==='idle'||!activeSess)return;
+    saveLocalCheckpoint(); // respaldo inmediato al iniciar/retomar, no solo al primer minuto
+    const id=setInterval(saveLocalCheckpoint,60000); // 1 minuto
+    return()=>clearInterval(id);
+  },[tState,activeSess]);
 
 
   // Keep refs in sync so the timer interval always reads the latest value without stale closures
@@ -2531,11 +2677,15 @@ function App(){
 
   // ── DESCANSO TERMINADO — campana repetitiva ──
   // Si el período de descanso (pomodoro) ya concluyó pero el usuario aún no
-  // retoma la actividad (pomoPhaseDone && fase='brk'), suena la campana de
+  // retoma la actividad (pomoPhaseDone && fase='break'), suena la campana de
   // recordatorio periódicamente hasta que se inicie la siguiente fase o se detenga la sesión.
+  // NOTA: pomoPhase usa los valores 'work'/'break' (ver handleStartNextPhase);
+  // antes se comparaba contra 'brk' (que es solo la clave de duración en
+  // pomoCfg, no el nombre de fase), por lo que esta condición nunca se
+  // cumplía y la campana repetitiva jamás sonaba tras terminar el descanso.
   useEffect(()=>{
     clearInterval(phaseWaitRef.current);
-    if(pomoPhaseDone&&pomoPhase==='brk'){
+    if(pomoPhaseDone&&pomoPhase==='break'){
       phaseWaitRef.current=setInterval(()=>{
         playSound(soundCfg.blockSound,soundCfg.blockVol);
       },45000); // repite cada 45s hasta que se retome la actividad
@@ -2568,6 +2718,7 @@ function App(){
       SB.push({...(sbLatestRef.current||{}),sessions:[...sessions,ns],liveCheckpoint:null}).catch(()=>{});
     }
     sessCheckpointId.current=null;
+    try{ localStorage.removeItem('chr4_livecheckpoint'); }catch(e){}
     if(!silent&&!auto)setShowCtxModal(cap);
     if(auto)showNotif('Límite alcanzado. Sesión guardada.');
   }
@@ -2661,7 +2812,16 @@ function App(){
   const todayCount=daySess.length+(isToday&&tState!=='idle'?1:0);
   const todayPomos=daySess.reduce((a,s)=>a+s.pomos,0)+(isToday?pomoCount:0);
   const realBlocks=sessions.filter(s=>s.day===selectedDay&&s.endAt&&s.duration>30);
-  const liveBlock=isToday&&activeSess&&tState!=='idle'?{id:'live',projectId:activeSess.projectId,taskId:activeSess.taskId,startAt:activeSess.startAt,live:true}:null;
+  // El bloque "en vivo" solo debe seguir creciendo mientras tState==='running'
+  // (trabajando de verdad). En 'paused' — ya sea porque el usuario apretó
+  // pausa o porque terminó la fase de trabajo y está esperando que se
+  // presione "Iniciar descanso" — el bloque se congela en el momento exacto
+  // en que se pausó, en vez de seguir extendiéndose hasta "ahora".
+  const liveBlock=isToday&&activeSess&&tState==='running'
+    ? {id:'live',projectId:activeSess.projectId,taskId:activeSess.taskId,startAt:activeSess.startAt,live:true}
+    : (isToday&&activeSess&&tState==='paused'
+        ? {id:'live',projectId:activeSess.projectId,taskId:activeSess.taskId,startAt:activeSess.startAt,endAt:pausedAt.current?Math.floor(pausedAt.current/1000):nowTs(),live:false}
+        : null);
   const selectedProjObj=projects.find(p=>p.id===selProj)||projects[0];
   const showIdleReminder=tState==='idle'&&soundCfg.idleEnabled&&!idleSilenced;
 
@@ -2676,7 +2836,7 @@ function App(){
   const hasSystemAlert=systems.some(s=>s.status!=='paused'&&s.nextRun&&s.nextRun<=Date.now());
   const hasTaskAlert=tasks.some(t=>t.status!=='done'&&(
     (t.dueDate&&t.dueDate<=todayKey_)||
-    (t.steps||[]).some(s=>stepNeedsAction(s,todayKey_))
+    (t.steps||[]).some(s=>stepNeedsAction(s,todayKey_,!!(t.actLog&&t.actLog[todayKey_])))
   ));
   const hasAnyAlert=hasHabitAlert||hasSystemAlert||hasTaskAlert;
 
@@ -2947,7 +3107,7 @@ function App(){
                 idMap[s.id]=tempId;
                 return{tempId,name:s.name,icon:s.icon,color:s.color,order:i+1,durationDays:null,phases:migrateSysPhases(s),mmPos:s.mmPos||null};
               });
-              const clonedLinks=(selectedProjObj.sysLinks||[]).filter(l=>idMap[l[0]]&&idMap[l[1]]).map(l=>[idMap[l[0]],idMap[l[1]]]);
+              const clonedLinks=(selectedProjObj.sysLinks||[]).filter(l=>idMap[l[0]]&&idMap[l[1]]).map(l=>[idMap[l[0]],idMap[l[1]],l[2]||'']);
               setSysTemplates(prev=>[...prev,{id:uid(),name:name||('Plantilla — '+selectedProjObj.name),createdAt:Date.now(),systems:clonedSystems,links:clonedLinks}]);
               forceSync();
             },
@@ -2970,7 +3130,7 @@ function App(){
                 idMap[s.tempId]=newId;
                 return{id:newId,projectId:selectedProjObj.id,name:s.name,icon:s.icon,color:s.color,order:s.order,phases:(s.phases||[]).map(p=>({id:uid(),name:p.name,tasks:(p.tasks||[]).map(t=>({id:uid(),text:t.text,done:false}))})),mmPos:s.mmPos||null,status:'active',lastRun:null,nextRun:null,createdAt:Date.now()};
               });
-              const newLinks=(tpl.links||[]).filter(l=>idMap[l[0]]&&idMap[l[1]]).map(l=>[idMap[l[0]],idMap[l[1]]]);
+              const newLinks=(tpl.links||[]).filter(l=>idMap[l[0]]&&idMap[l[1]]).map(l=>[idMap[l[0]],idMap[l[1]],l[2]||'']);
               setSystems(ss=>[...ss,...newSystems]);
               setProjects(ps=>ps.map(p=>p.id===selectedProjObj.id?{...p,sysLinks:[...(p.sysLinks||[]),...newLinks]}:p));
               forceSync();
@@ -3022,7 +3182,7 @@ function App(){
                     const systemDue=systems.some(s=>s.projectId===proj.id&&s.status!=='paused'&&s.nextRun&&s.nextRun<=Date.now());
                     const taskDue=tasks.some(t=>t.projectId===proj.id&&t.status!=='done'&&(
                       (t.dueDate&&t.dueDate<=todayKey_)||
-                      (t.steps||[]).some(s=>stepNeedsAction(s,todayKey_))
+                      (t.steps||[]).some(s=>stepNeedsAction(s,todayKey_,!!(t.actLog&&t.actLog[todayKey_])))
                     ));
                     const hasAlert=habitDue||systemDue||taskDue;
                     const alertTitle=habitDue?'Hábito por cumplir hoy':systemDue?'Sistema por revisar':'Tarea pendiente por cumplir';
@@ -3035,7 +3195,6 @@ function App(){
                         ),
                         e('span',{className:'proj-label'},proj.name),
                         e('div',{className:'proj-inline-meta'},
-                          todaySecs>0&&e('span',{className:'proj-time-chip'},fmtS(todaySecs)),
                           isLive&&e('span',{className:'proj-live-dot'})
                         ),
                         hasAlert&&e('div',{className:'proj-habit-bell',title:alertTitle,onClick:ev=>{ev.stopPropagation();playUI('click');if(habitDue)setShowRemPanel(true);else onProjClick(proj.id);}},
@@ -3137,7 +3296,7 @@ function App(){
             idMap[s.tempId]=sysId;
             return{id:sysId,projectId:newId,name:s.name,icon:s.icon,color:s.color,order:s.order,phases:(s.phases||[]).map(ph=>({id:uid(),name:ph.name,tasks:(ph.tasks||[]).map(t=>({id:uid(),text:t.text,done:false}))})),mmPos:s.mmPos||null,status:'active',lastRun:null,nextRun:null,createdAt:Date.now()};
           });
-          const newLinks=(tpl.links||[]).filter(l=>idMap[l[0]]&&idMap[l[1]]).map(l=>[idMap[l[0]],idMap[l[1]]]);
+          const newLinks=(tpl.links||[]).filter(l=>idMap[l[0]]&&idMap[l[1]]).map(l=>[idMap[l[0]],idMap[l[1]],l[2]||'']);
           setSystems(ss=>[...ss,...newSystems]);
           if(newLinks.length)setProjects(ps=>ps.map(pp=>pp.id===newId?{...pp,sysLinks:newLinks}:pp));
         }
@@ -3881,7 +4040,7 @@ function RemindersFloatPanel({reminders,setReminders,habits,setHabits,projects,s
   // lo mismo que promete el punto rojo.
   const dayTasks=(tasks||[]).filter(t=>t.status!=='done'&&(
     (t.dueDate&&t.dueDate<=selectedDay)||
-    (t.steps||[]).some(s=>stepNeedsAction(s,selectedDay))
+    (t.steps||[]).some(s=>stepNeedsAction(s,selectedDay,!!(t.actLog&&t.actLog[selectedDay])))
   ));
 
   const isToday=selectedDay===dayKey();
@@ -4454,7 +4613,7 @@ function RepeatIcon({size=13,color}){
 function TaskRow({t,onCycleTaskStatus,onDeleteTask,isActive,onPlay,onFinish,onOpenSteps,icon,color,onSetPriority}){
   const steps=t.steps||[];
   const today=dayKey();
-  const hasDue=steps.some(s=>stepNeedsAction(s,today));
+  const hasDue=steps.some(s=>stepNeedsAction(s,today,!!(t.actLog&&t.actLog[today])));
   const[flagOpen,setFlagOpen]=useState(false);
   useEffect(()=>{
     if(!flagOpen)return;
@@ -5318,6 +5477,7 @@ const DASH_ICON_PATHS={
   trash:e=>[e('polyline',{points:'3 6 5 6 21 6'}),e('path',{d:'M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z'}),e('line',{x1:10,y1:11,x2:10,y2:17}),e('line',{x1:14,y1:11,x2:14,y2:17})],
   x:e=>[e('line',{x1:5,y1:5,x2:19,y2:19}),e('line',{x1:19,y1:5,x2:5,y2:19})],
   undo:e=>[e('path',{d:'M3 10h11a5 5 0 015 5v0a5 5 0 01-5 5H9'}),e('polyline',{points:'8 5 3 10 8 15'})],
+  pin:e=>[e('path',{d:'M12 2l1.5 5.5L19 9l-4 4 1 6-4-3-4 3 1-6-4-4 5.5-1.5z'})],
 };
 function DashIcon({name,size=13,color='currentColor',fill='none'}){
   const draw=DASH_ICON_PATHS[name]||DASH_ICON_PATHS.target;
@@ -5651,7 +5811,7 @@ function AccountProjectsTimeline({pTasks,color,onOpenProject}){
   if(rows.length===0){
     return e('div',{className:'htl'},
       e('div',{className:'htl-header'},e(PanelIcon,{name:'layers',label:'Panorama de proyectos'}),scaleSwitch),
-      e('div',{className:'empty',style:{padding:'20px 4px'}},'Ningún proyecto de esta cuenta tiene fechas de fase todavía — asígnalas en la vista Línea de tiempo de cada proyecto para verlas aquí.')
+      e('div',{className:'empty',style:{padding:'20px 4px'}},'Ningún proyecto activo de esta cuenta tiene fechas de fase todavía — asígnalas en la vista Línea de tiempo de cada proyecto para verlas aquí.')
     );
   }
 
@@ -5789,7 +5949,7 @@ function SystemCard({system,onEdit,onOpenDetail,onUpdateSystem,fmtWhen}){
   }
   // Doble click abre el mapa mental de los módulos de este sistema (ya
   // configurados); el lápiz abre el formulario simple de edición.
-  return e('div',{className:'system-card',style:{cursor:'pointer'},onDoubleClick:()=>onOpenDetail(system.id),title:'Doble click para ver el mapa mental de módulos'},
+  return e('div',{className:'system-card',style:{cursor:'pointer'},onDoubleClick:()=>onOpenDetail(system.id),title:'Doble click para ver el detalle del sistema'},
     e('div',{className:'system-card-top'},
       system.order!=null&&e('div',{className:'system-order-badge',title:'Paso '+system.order+' de la plantilla'},system.order),
       e('div',{className:'system-icon-badge',style:{color,background:color+'1f'}},e(ProjIconSVG,{iconKey,size:14,color:'currentColor'})),
@@ -5866,14 +6026,64 @@ function SystemsMindMap({systems,onUpdateSystem,onDeleteSystem,onPatchProject,pr
   const[selected,setSelected]=useState(()=>new Set());
   const[marquee,setMarquee]=useState(null); // {x0,y0,x1,y1} coords de canvas
   const[zoom,setZoom]=useState(1); // alt + rueda para acercar/alejar todo el mapa
-  const[openPopovers,setOpenPopovers]=useState(()=>new Set()); // ids con panel flotante de fases abierto
-  const[expandedPhase,setExpandedPhase]=useState(null); // {sysId,phaseId} — panel lateral de pasos de una fase
-  const[expPanelIds,setExpPanelIds]=useState(()=>new Set()); // ids con panel flotante de experimentos abierto (debajo)
+  const[expandedId,setExpandedId]=useState(null); // id de nodo con el panel lateral de fases/tareas abierto
+  const[expPanelId,setExpPanelId]=useState(null); // id de nodo con el panel de experimentos abierto
   const[showSaveTpl,setShowSaveTpl]=useState(false);
   const[tplName,setTplName]=useState('');
   const[showBulkPaste,setShowBulkPaste]=useState(false);
   const[bulkText,setBulkText]=useState('');
-  const CARD_W=224,CARD_H=76,GAP_X=48,GAP_Y=44;
+  const[newTaskDraft,setNewTaskDraft]=useState({}); // {phaseId: text} — panel de fases del nodo expandido
+  const CARD_W=236,CARD_H=76,GAP_X=64,GAP_Y=44,PANEL_W=270,PANEL_GAP=40;
+  const NODE_COLORS=['#f25623','#34c386','#dba14a','#56a8e6','#e6675f','#4a9de0'];
+  const NODE_KINDS=[{key:'inicio',label:'Inicio',color:'#34c386'},{key:'accion',label:'Acción',color:'#56a8e6'},{key:'decision',label:'Decisión',color:'#dba14a'},{key:'fin',label:'Fin',color:'#e6675f'}];
+  function nodeKindOf(s){ return s.nodeKind||'accion'; }
+  function setNodeKind(s,key){ onUpdateSystem({...s,nodeKind:key}); }
+
+  function cycleNodeColor(s){
+    const cur=s.color||NODE_COLORS[0];
+    const idx=NODE_COLORS.indexOf(cur);
+    onUpdateSystem({...s,color:NODE_COLORS[(idx+1)%NODE_COLORS.length]});
+  }
+  function toggleAutomation(s){
+    onUpdateSystem({...s,automation:!s.automation});
+  }
+  // ---- fases y tareas del panel lateral (mismo modelo que ModuleListEditor / migrateSysPhases) ----
+  function getSys(id){ return systems.find(x=>x.id===id); }
+  function patchPhases(sysId,phases){
+    const s=getSys(sysId); if(!s)return;
+    onUpdateSystem({...s,phases});
+  }
+  function addPhaseTo(sysId){
+    const s=getSys(sysId); if(!s)return;
+    patchPhases(sysId,[...migrateSysPhases(s),{id:uid(),name:'Nueva fase',tasks:[]}]);
+  }
+  function renamePhaseOf(sysId,phaseId,name){
+    const s=getSys(sysId); if(!s)return;
+    patchPhases(sysId,migrateSysPhases(s).map(p=>p.id===phaseId?{...p,name}:p));
+  }
+  function deletePhaseOf(sysId,phaseId){
+    const s=getSys(sysId); if(!s)return;
+    patchPhases(sysId,migrateSysPhases(s).filter(p=>p.id!==phaseId));
+  }
+  function addTaskTo(sysId,phaseId){
+    const s=getSys(sysId); if(!s)return;
+    const text=(newTaskDraft[phaseId]||'').trim();
+    if(!text)return;
+    patchPhases(sysId,migrateSysPhases(s).map(p=>p.id!==phaseId?p:{...p,tasks:[...(p.tasks||[]),{id:uid(),text,done:false}]}));
+    setNewTaskDraft(d=>({...d,[phaseId]:''}));
+  }
+  function toggleTaskOf(sysId,phaseId,taskId){
+    const s=getSys(sysId); if(!s)return;
+    patchPhases(sysId,migrateSysPhases(s).map(p=>p.id!==phaseId?p:{...p,tasks:p.tasks.map(t=>t.id===taskId?{...t,done:!t.done}:t)}));
+  }
+  function setTaskTextOf(sysId,phaseId,taskId,text){
+    const s=getSys(sysId); if(!s)return;
+    patchPhases(sysId,migrateSysPhases(s).map(p=>p.id!==phaseId?p:{...p,tasks:p.tasks.map(t=>t.id===taskId?{...t,text}:t)}));
+  }
+  function deleteTaskOf(sysId,phaseId,taskId){
+    const s=getSys(sysId); if(!s)return;
+    patchPhases(sysId,migrateSysPhases(s).map(p=>p.id!==phaseId?p:{...p,tasks:p.tasks.filter(t=>t.id!==taskId)}));
+  }
 
   function applyBulkPaste(){
     const parsed=parseTemplateText(bulkText);
@@ -5895,25 +6105,12 @@ function SystemsMindMap({systems,onUpdateSystem,onDeleteSystem,onPatchProject,pr
     ev.preventDefault();
     setZoom(z=>clampZoom(z+(ev.deltaY<0?0.1:-0.1)));
   }
-  function togglePopover(id){
-    setOpenPopovers(prev=>{
-      const next=new Set(prev);
-      if(next.has(id)){next.delete(id);}else{next.add(id);}
-      return next;
-    });
-    setExpandedPhase(cur=>cur&&cur.sysId===id?null:cur);
-    setExpPanelIds(prev=>{if(!prev.has(id))return prev;const next=new Set(prev);next.delete(id);return next;});
-  }
-  function closePopover(id){
-    setOpenPopovers(prev=>{const next=new Set(prev);next.delete(id);return next;});
-    setExpandedPhase(cur=>cur&&cur.sysId===id?null:cur);
-    setExpPanelIds(prev=>{if(!prev.has(id))return prev;const next=new Set(prev);next.delete(id);return next;});
-  }
-  function togglePhaseExpand(sysId,phaseId){
-    setExpandedPhase(cur=>(cur&&cur.sysId===sysId&&cur.phaseId===phaseId)?null:{sysId,phaseId});
+  function togglePanel(id){
+    setExpandedId(cur=>cur===id?null:id);
+    setExpPanelId(null);
   }
   function toggleExpPanel(id){
-    setExpPanelIds(prev=>{const next=new Set(prev);next.has(id)?next.delete(id):next.add(id);return next;});
+    setExpPanelId(cur=>cur===id?null:id);
   }
   function toggleActive(s){
     onUpdateSystem({...s,active:s.active===false?true:false});
@@ -5933,7 +6130,7 @@ function SystemsMindMap({systems,onUpdateSystem,onDeleteSystem,onPatchProject,pr
       if(ev.key==='Escape'){
         if(linkFrom)setLinkFrom(null);
         else if(selected.size>0)setSelected(new Set());
-        else if(openPopovers.size>0)setOpenPopovers(new Set());
+        else if(expandedId)setExpandedId(null);
         else onClose();
       }else if((ev.key==='Delete'||ev.key==='Backspace')&&selected.size>0){
         ev.preventDefault();
@@ -5942,7 +6139,7 @@ function SystemsMindMap({systems,onUpdateSystem,onDeleteSystem,onPatchProject,pr
     }
     window.addEventListener('keydown',onKey);
     return()=>window.removeEventListener('keydown',onKey);
-  },[linkFrom,selected,openPopovers,onClose]);
+  },[linkFrom,selected,expandedId,onClose]);
 
   function deleteSelected(){
     const ids=[...selected];
@@ -6007,16 +6204,30 @@ function SystemsMindMap({systems,onUpdateSystem,onDeleteSystem,onPatchProject,pr
     if(linkFrom===s.id){setLinkFrom(null);return;}
     const a=linkFrom,b=s.id;
     const exists=links.some(l=>(l[0]===a&&l[1]===b)||(l[0]===b&&l[1]===a));
-    onPatchProject({sysLinks:exists?links:[...links,[a,b]]});
+    onPatchProject({sysLinks:exists?links:[...links,[a,b,'']]});
     setLinkFrom(null);
   }
   function removeLink(idx){
     onPatchProject({sysLinks:links.filter((_,i)=>i!==idx)});
   }
+  function cycleLinkLabel(idx){
+    const order=['','Sí','No'];
+    onPatchProject({sysLinks:links.map((l,i)=>{
+      if(i!==idx)return l;
+      const cur=l[2]||'';
+      return[l[0],l[1],order[(order.indexOf(cur)+1)%order.length]];
+    })});
+  }
   const positions={};
   systems.forEach((s,i)=>{positions[s.id]=getPos(s,i);});
-  const maxX=Math.max(canvasW,...systems.map(s=>(positions[s.id]?.x||0)+CARD_W+60),200);
-  const maxY=Math.max(420,...systems.map(s=>(positions[s.id]?.y||0)+CARD_H+60));
+  const maxX=Math.max(canvasW,...systems.map(s=>(positions[s.id]?.x||0)+CARD_W+60+(expandedId===s.id?PANEL_GAP+PANEL_W:0)),200);
+  const maxY=Math.max(420,...systems.map(s=>(positions[s.id]?.y||0)+CARD_H+60+(expandedId===s.id?260:0)));
+
+  function addNodeAtClick(ev){
+    if(ev.target.closest('.sysmap-card')||ev.target.closest('.sysmap-panel')||ev.target.closest('.sysmap-exppanel')||!onBulkAdd)return;
+    const pt=toCanvasCoords(ev);
+    onBulkAdd([{id:uid(),name:'Nuevo módulo',phases:[],mmPos:{x:Math.max(0,pt.x-CARD_W/2),y:Math.max(0,pt.y-20)}}]);
+  }
 
   function beginMarquee(ev){
     if(ev.button!==0||ev.target.closest('.sysmap-card')||linkFrom)return;
@@ -6061,7 +6272,9 @@ function SystemsMindMap({systems,onUpdateSystem,onDeleteSystem,onPatchProject,pr
     e('div',{className:'sysmap-hdr'},
       e(DashIcon,{name:'map',size:14,color:'var(--accent2)'}),
       e('div',{className:'sysmap-title'},title||('Mapa de sistemas — '+(project&&project.name||''))),
-      linkFrom&&e('div',{className:'sysmap-hint'},'Click en 🔗 de otra tarjeta para conectar · Esc cancela'),
+      linkFrom&&e('div',{className:'sysmap-hint'},'Click en el punto de otra tarjeta para conectar · Esc cancela'),
+      !linkFrom&&links.length>0&&e('div',{className:'sysmap-hint'},'Click en una conexión = alterna Sí/No · doble click la desconecta'),
+      !linkFrom&&selected.size===0&&e('div',{className:'sysmap-hint'},'Doble clic en el mapa para agregar un módulo'),
       selected.size>0&&e('div',{className:'sysmap-hint'},selected.size+' seleccionado'+(selected.size>1?'s':'')+' · Supr para eliminar'),
       e('div',{className:'sysmap-zoom-ctrl',style:{marginLeft:'auto'}},
         e('button',{className:'tl-zoom-btn',onClick:()=>setZoom(z=>clampZoom(z-0.1)),title:'Menos zoom'},'−'),
@@ -6107,7 +6320,7 @@ function SystemsMindMap({systems,onUpdateSystem,onDeleteSystem,onPatchProject,pr
         )
       )
     ),
-    e('div',{className:'sysmap-canvas-scroll',ref:canvasRef,onMouseDown:beginMarquee,onWheel:onCanvasWheel},
+    e('div',{className:'sysmap-canvas-scroll',ref:canvasRef,onMouseDown:beginMarquee,onDoubleClick:addNodeAtClick,onWheel:onCanvasWheel,title:'Doble clic en un espacio vacío para agregar un módulo'},
       systems.length===0
         ?e('div',{className:'sysmap-empty-wrap'},
             e('div',{className:'empty',style:{padding:'40px 20px 8px'}},'Sin sistemas aún.'),
@@ -6131,85 +6344,88 @@ function SystemsMindMap({systems,onUpdateSystem,onDeleteSystem,onPatchProject,pr
                 const a=positions[l[0]],b=positions[l[1]];
                 if(!a||!b)return null;
                 const x1=a.x+CARD_W/2,y1=a.y+CARD_H/2,x2=b.x+CARD_W/2,y2=b.y+CARD_H/2;
+                const midX=(x1+x2)/2,midY=(y1+y2)/2;
+                const label=l[2]||'';
+                const color=label==='No'?'#e6675f':label==='Sí'?'#34c386':'var(--border4)';
                 return e('g',{key:idx},
-                  e('line',{x1,y1,x2,y2,stroke:'var(--border4)',strokeWidth:2}),
-                  e('line',{x1,y1,x2,y2,stroke:'transparent',strokeWidth:14,style:{cursor:'pointer'},onClick:()=>removeLink(idx),title:'Click para desconectar'})
+                  e('line',{x1,y1,x2,y2,stroke:color,strokeWidth:2}),
+                  e('line',{x1,y1,x2,y2,stroke:'transparent',strokeWidth:14,style:{cursor:'pointer'},onDoubleClick:()=>removeLink(idx),title:'Doble click para desconectar'}),
+                  e('g',{style:{cursor:'pointer'},onClick:ev=>{ev.stopPropagation();cycleLinkLabel(idx);},onContextMenu:ev=>{ev.preventDefault();removeLink(idx);},title:'Click para alternar Sí/No · click derecho para desconectar'},
+                    e('rect',{x:midX-18,y:midY-9,width:36,height:18,rx:5,fill:'var(--bg1,#111)',stroke:color,strokeWidth:1}),
+                    e('text',{x:midX,y:midY+4,textAnchor:'middle',fontSize:10.5,fill:color,fontWeight:600},label||'＋')
+                  )
                 );
               })
             ),
             marquee&&e('div',{className:'sysmap-marquee',style:{left:mx0,top:my0,width:mw,height:mh}}),
             systems.map((s,idx)=>{
               const pos=positions[s.id];
-              const color=s.color||'#4a9de0';
+              const color=s.color||NODE_COLORS[idx%NODE_COLORS.length];
               const isActive=s.active!==false;
               const hasExperiments=(s.experiments||[]).length>0;
               const phases=migrateSysPhases(s);
-              return e('div',{key:s.id,className:'sysmap-node'+(linkFrom===s.id?' linking':'')+(selected.has(s.id)?' selected':''),style:{left:pos.x,top:pos.y,width:CARD_W}},
-                e('div',{className:'sysmap-card',onMouseDown:ev=>beginDrag(s,idx,ev),onDoubleClick:ev=>{ev.stopPropagation();togglePopover(s.id);},title:s.name},
+              const phaseCount=phases.length;
+              const taskCount=phases.reduce((a,p)=>a+(p.tasks||[]).length,0);
+              const doneCount=phases.reduce((a,p)=>a+(p.tasks||[]).filter(t=>t.done).length,0);
+              const isExpanded=expandedId===s.id;
+              return e('div',{key:s.id,'data-node-id':s.id,className:'sysmap-node'+(linkFrom===s.id?' linking':'')+(selected.has(s.id)?' selected':''),style:{left:pos.x,top:pos.y,width:CARD_W}},
+                e('div',{className:'sysmap-card'+(s.automation?' automation':''),onMouseDown:ev=>beginDrag(s,idx,ev),title:s.name},
                   e('div',{className:'sysmap-card-top'},
-                    e('div',{className:'system-icon-badge',style:{color,background:color+'1f'}},e(ProjIconSVG,{iconKey:s.icon||'target',size:13,color:'currentColor'})),
+                    e('span',{className:'sysmap-order-badge no-drag',title:'Cambiar color',style:{background:color+'22',color},onMouseDown:ev=>ev.stopPropagation(),onClick:ev=>{ev.stopPropagation();cycleNodeColor(s);}},idx+1),
                     e(SysMapEditableTitle,{className:'sysmap-card-name',value:s.name,onSave:v=>onUpdateSystem({...s,name:v})}),
-                    e('div',{className:'sysmap-card-badges'},
-                      hasExperiments&&e('span',{className:'sysmap-flask',title:'Tiene experimentos activos'},e(SysMiniIcon,{name:'flask',size:12})),
-                      e('span',{className:'sysmap-status-dot'+(isActive?'':' off'),title:isActive?'Sistema operativo':'Sistema en pausa',onMouseDown:ev=>ev.stopPropagation(),onClick:ev=>{ev.stopPropagation();toggleActive(s);}})
+                    e('div',{className:'sysmap-kind-picker no-drag',onMouseDown:ev=>ev.stopPropagation()},
+                      NODE_KINDS.map(k=>e('span',{
+                        key:k.key,
+                        className:'sysmap-kind-dot'+(nodeKindOf(s)===k.key?' on':''),
+                        style:{background:k.color,color:k.color},
+                        title:k.label,
+                        onClick:ev=>{ev.stopPropagation();setNodeKind(s,k.key);}
+                      }))
                     ),
-                    e('button',{className:'sysmap-link-btn',title:'Conectar con otro sistema',onMouseDown:ev=>ev.stopPropagation(),onClick:ev=>{ev.stopPropagation();toggleLink(s);}},'🔗')
-                  )
-                ),
-                openPopovers.has(s.id)&&e('div',{className:'sysmap-popover',style:{left:0,top:CARD_H+8},onMouseDown:ev=>ev.stopPropagation(),onDoubleClick:ev=>ev.stopPropagation()},
-                  e('div',{className:'sysmap-popover-hdr'},
-                    e('span',{className:'sysmap-status-dot'+(isActive?'':' off')}),
-                    e(SysMapEditableTitle,{className:'sysmap-popover-title',value:s.name,onSave:v=>onUpdateSystem({...s,name:v})}),
-                    hasExperiments&&e('button',{className:'sysmap-popover-icon-btn'+(expPanelIds.has(s.id)?' on':''),title:'Ver experimentos',onClick:()=>toggleExpPanel(s.id)},e(SysMiniIcon,{name:'flask',size:13})),
-                    e('button',{className:'sysmap-popover-x',onClick:()=>closePopover(s.id),title:'Cerrar'},'✕')
-                  ),
-                  e('div',{className:'sysmap-popover-body'},
-                    phases.length===0
-                      ?e('div',{className:'sysmap-popover-empty'},'Sin fases todavía.')
-                      :phases.map(p=>{
-                        const total=(p.tasks||[]).length;
-                        const isOpenPhase=expandedPhase&&expandedPhase.sysId===s.id&&expandedPhase.phaseId===p.id;
-                        return e('div',{key:p.id,className:'sysmap-popover-phase'+(isOpenPhase?' active':''),onClick:()=>togglePhaseExpand(s.id,p.id)},
-                          e(SysMiniIcon,{name:'chevronRight',size:11,color:'var(--text4)'}),
-                          e('span',{className:'sysmap-popover-phase-name'},p.name),
-                          e('span',{className:'sysmap-popover-phase-count'},total)
-                        );
-                      })
-                  ),
-                  e('div',{className:'sysmap-popover-ftr'},
-                    e('label',{className:'sysmap-popover-toggle'},
-                      e('input',{type:'checkbox',checked:isActive,onChange:()=>toggleActive(s),style:{margin:0}}),
-                      'Operativo'
-                    ),
-                    e('button',{className:'sysmap-popover-expand',onClick:()=>onOpenDetail(s.id),title:'Ver todo'},e(SysMiniIcon,{name:'expand',size:11}))
-                  )
-                ),
-                (()=>{
-                  if(!expandedPhase||expandedPhase.sysId!==s.id)return null;
-                  const phase=phases.find(p=>p.id===expandedPhase.phaseId);
-                  if(!phase)return null;
-                  const popTop=CARD_H+8,popHdrH=37,rowH=27,connY=popTop+popHdrH+(phases.findIndex(p=>p.id===phase.id)*rowH)+rowH/2;
-                  return e(React.Fragment,{key:'steps-'+phase.id},
-                    e('div',{className:'sysmap-stepspanel-connector',style:{left:216,top:connY-1,width:16,height:2}}),
-                    e('div',{className:'sysmap-stepspanel',style:{left:232,top:Math.max(0,connY-20)},onMouseDown:ev=>ev.stopPropagation(),onDoubleClick:ev=>ev.stopPropagation()},
-                      e('div',{className:'sysmap-stepspanel-hdr'},phase.name),
-                      e('div',{className:'sysmap-stepspanel-body'},
-                        (phase.tasks||[]).length===0
-                          ?e('div',{className:'sysmap-step-empty'},'Sin pasos todavía.')
-                          :(phase.tasks||[]).map(t=>
-                              e('div',{key:t.id,className:'sysmap-step-row'},
-                                e('span',{className:'sysmap-step-dot'}),
-                                e('span',null,t.text)
-                              )
-                            )
+                    e('button',{className:'sysmap-auto-btn'+(s.automation?' on':''),title:s.automation?'Punto de automatización — clic para quitar':'Marcar como punto de automatización',onMouseDown:ev=>ev.stopPropagation(),onClick:ev=>{ev.stopPropagation();toggleAutomation(s);}},'⚙'),
+                    e('button',{className:'sysmap-panel-btn'+(isExpanded?' on':''),title:'Fases y tareas',onMouseDown:ev=>ev.stopPropagation(),onClick:ev=>{ev.stopPropagation();togglePanel(s.id);}},
+                      e('svg',{width:12,height:12,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},
+                        e('polygon',{points:'12 2 2 7 12 12 22 7 12 2'}),e('polyline',{points:'2 17 12 22 22 17'}),e('polyline',{points:'2 12 12 17 22 12'})
                       )
-                    )
-                  );
-                })(),
-                expPanelIds.has(s.id)&&(()=>{
+                    ),
+                    e('button',{className:'sysmap-del-btn',title:'Eliminar sistema',onMouseDown:ev=>ev.stopPropagation(),onClick:ev=>{ev.stopPropagation();if(confirm('¿Eliminar "'+s.name+'"?'))onDeleteSystem(s.id);}},'✕')
+                  ),
+                  (phaseCount>0||hasExperiments)&&e('div',{className:'sysmap-card-sub'},
+                    phaseCount>0&&e('span',null,phaseCount+' fase'+(phaseCount!==1?'s':'')+' · '+doneCount+'/'+taskCount+' tareas'),
+                    hasExperiments&&e('span',{className:'sysmap-exp-tag no-drag',onMouseDown:ev=>ev.stopPropagation(),onClick:ev=>{ev.stopPropagation();toggleExpPanel(s.id);}},'experimentos')
+                  ),
+                  s.automation&&e('div',{className:'sysmap-auto-note'},'Punto de automatización — desde aquí el trabajo queda desatendido'),
+                  e('div',{className:'sysmap-connect-dot no-drag',title:'Clic y luego clic en otra tarjeta para conectar',onMouseDown:ev=>ev.stopPropagation(),onClick:ev=>{ev.stopPropagation();toggleLink(s);}})
+                ),
+                isExpanded&&e('div',{className:'sysmap-panel',style:{left:CARD_W+PANEL_GAP,top:0},onMouseDown:ev=>ev.stopPropagation(),onDoubleClick:ev=>ev.stopPropagation()},
+                  e('div',{className:'sysmap-panel-hdr'},
+                    e('span',{className:'sysmap-status-dot'+(isActive?'':' off'),title:isActive?'Sistema operativo — clic para pausar':'Sistema en pausa — clic para activar',onClick:()=>toggleActive(s)}),
+                    e('span',{className:'sysmap-panel-title'},s.name),
+                    e('button',{className:'sysmap-panel-expand',title:'Ver todo',onClick:()=>onOpenDetail(s.id)},'Ver todo'),
+                    e('button',{className:'sysmap-panel-x',onClick:()=>setExpandedId(null),title:'Cerrar'},'✕')
+                  ),
+                  e('div',{className:'sysmap-panel-body'},
+                    phases.map(p=>e('div',{key:p.id,className:'sysmap-panel-phase'},
+                      e('div',{className:'sysmap-panel-phase-hdr'},
+                        e('input',{className:'sysmap-panel-phase-name',value:p.name,onChange:ev=>renamePhaseOf(s.id,p.id,ev.target.value)}),
+                        e('button',{className:'sysmap-panel-x',onClick:()=>deletePhaseOf(s.id,p.id),title:'Eliminar fase'},'✕')
+                      ),
+                      (p.tasks||[]).map(t=>e('div',{key:t.id,className:'sysmap-panel-task'},
+                        e('input',{type:'checkbox',checked:!!t.done,onChange:()=>toggleTaskOf(s.id,p.id,t.id)}),
+                        e('span',{className:'sysmap-panel-task-text'+(t.done?' done':''),contentEditable:true,suppressContentEditableWarning:true,onBlur:ev=>setTaskTextOf(s.id,p.id,t.id,ev.target.textContent)},t.text),
+                        e('button',{className:'sysmap-panel-x',onClick:()=>deleteTaskOf(s.id,p.id,t.id),title:'Eliminar tarea'},'✕')
+                      )),
+                      e('div',{className:'sysmap-panel-addtask'},
+                        e('input',{value:newTaskDraft[p.id]||'',placeholder:'Agregar tarea...',onChange:ev=>setNewTaskDraft(d=>({...d,[p.id]:ev.target.value})),onKeyDown:ev=>{if(ev.key==='Enter')addTaskTo(s.id,p.id);}})
+                      )
+                    )),
+                    e('button',{className:'sysmap-panel-addphase',onClick:()=>addPhaseTo(s.id)},'+ Fase')
+                  )
+                ),
+                expPanelId===s.id&&(()=>{
                   const exps=(s.experiments||[]).slice().sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
-                  return e('div',{className:'sysmap-exppanel',style:{left:0,top:CARD_H+8+ (openPopovers.has(s.id)?(37+Math.min(phases.length,6)*27+41+10):0)},onMouseDown:ev=>ev.stopPropagation(),onDoubleClick:ev=>ev.stopPropagation()},
-                    e('div',{className:'sysmap-exppanel-hdr'},e(SysMiniIcon,{name:'flask',size:12,color:'#c77dff'}),'Experimentos'),
+                  return e('div',{className:'sysmap-exppanel',style:{left:0,top:CARD_H+8},onMouseDown:ev=>ev.stopPropagation(),onDoubleClick:ev=>ev.stopPropagation()},
+                    e('div',{className:'sysmap-exppanel-hdr'},'Experimentos'),
                     e('div',{className:'sysmap-exppanel-body'},
                       exps.length===0
                         ?e('div',{className:'sysmap-step-empty'},'Sin experimentos aún.')
@@ -6772,8 +6988,28 @@ function ModuleListEditor({modules,onReorderModules,onUpdateModule,onRemoveModul
 // plegables con sus tareas, importación desde texto plano (mismo formato que
 // las plantillas de proyecto: "1. Nombre de fase" + líneas sueltas = tareas),
 // y experimentos A/B.
+function flattenModulesToPhases(system){
+  return (system.modules||[]).map(m=>({
+    id:m.id||uid(),
+    name:m.name,
+    automation:!!m.automation,
+    tasks:(m.phases||[]).flatMap(p=>(p.tasks||[]).map(t=>({id:t.id||uid(),text:t.text,done:!!t.done})))
+  }));
+}
 function SystemDetailDrawer({system,onUpdateSystem,onClose,onExecute}){
-  const[phases,setPhases]=useState(()=>migrateSysPhases(system));
+  const[phases,setPhases]=useState(()=>[...migrateSysPhases(system),...flattenModulesToPhases(system)]);
+  const migratedRef=useRef(false);
+  useEffect(()=>{
+    if(migratedRef.current)return;
+    migratedRef.current=true;
+    if((system.modules||[]).length>0){
+      const merged=[...migrateSysPhases(system),...flattenModulesToPhases(system)];
+      const updated={...system,phases:merged,modules:[],moduleLinks:[]};
+      delete updated.components;
+      onUpdateSystem(updated);
+      setPhases(merged);
+    }
+  },[]);
   const[openIds,setOpenIds]=useState(()=>new Set());
   const[addingTaskFor,setAddingTaskFor]=useState(null);
   const[newTaskText,setNewTaskText]=useState('');
@@ -6891,31 +7127,9 @@ function SystemDetailDrawer({system,onUpdateSystem,onClose,onExecute}){
     onUpdateSystem({...system,phases,experiments:[],cycles:[...cycles,snapshot]});
   }
 
-  function addModule(){
-    const mod={id:uid(),name:'Nuevo módulo',phases:[],mmPos:null};
-    onUpdateSystem({...system,phases,modules:[...(system.modules||[]),mod]});
-  }
-  function updateModule(modId,patch){
-    onUpdateSystem({...system,phases,modules:(system.modules||[]).map(m=>m.id===modId?{...m,...patch}:m)});
-  }
-  function removeModule(modId){
-    if(!confirm('¿Quitar este módulo del sistema?'))return;
-    onUpdateSystem({...system,phases,modules:(system.modules||[]).filter(m=>m.id!==modId)});
-  }
-  function rawRemoveModule(modId){
-    onUpdateSystem({...system,phases,modules:(system.modules||[]).filter(m=>m.id!==modId)});
-  }
-  function addModulesFromText(items){
-    onUpdateSystem({...system,phases,modules:[...(system.modules||[]),...items]});
-  }
-  const[editingModId,setEditingModId]=useState(null);
-  const[showFasesAvanzadas,setShowFasesAvanzadas]=useState(false);
-  const[modView,setModView]=useState('list'); // 'list' (ordenable, como plantillas) | 'map' (mapa mental)
-  const modules=system.modules||[];
-  const fakeProjectForMap={sysLinks:system.moduleLinks||[]};
-  const closeSuggestion=useMemo(()=>systemAutomationCloseSuggestion({...system,phases,modules}),[system,phases,modules]);
-  const canExecute=onExecute&&(modules.length>0?modules.some(m=>(m.phases||[]).some(p=>(p.tasks||[]).length>0)):phases.some(p=>(p.tasks||[]).length>0));
   const[showExecuteModal,setShowExecuteModal]=useState(false);
+  const closeSuggestion=useMemo(()=>systemAutomationCloseSuggestion({...system,phases}),[system,phases]);
+  const canExecute=onExecute&&phases.some(p=>(p.tasks||[]).length>0);
   const[executeStart,setExecuteStart]=useState(()=>todayDateKey());
   function confirmExecute(){
     if(!onExecute)return;
@@ -6926,58 +7140,19 @@ function SystemDetailDrawer({system,onUpdateSystem,onClose,onExecute}){
   }
 
   return e('div',{className:'sysdrawer-overlay',onClick:ev=>{if(ev.target===ev.currentTarget)onClose();}},
-    e('div',{className:'sysdrawer'+(modules.length>0?' sysdrawer-wide':'')},
+    e('div',{className:'sysdrawer'},
       e('div',{className:'sysdrawer-hdr'},
         e('div',{className:'system-icon-badge',style:{color,background:color+'1f'}},e(ProjIconSVG,{iconKey:system.icon||'target',size:15,color:'currentColor'})),
         e('div',{className:'sysdrawer-title'},system.name),
-        onExecute&&e('button',{className:'btn btn-primary',style:{marginLeft:'auto',fontSize:11},disabled:!canExecute,title:canExecute?'Crea un proyecto nuevo usando el orden actual de módulos/fases y tareas':'Agrega al menos una tarea para poder ejecutar',onClick:()=>{setExecuteStart(todayDateKey());setShowExecuteModal(true);}},'▶ Ejecutar'),
+        onExecute&&e('button',{className:'btn btn-primary',style:{marginLeft:'auto',fontSize:11},disabled:!canExecute,title:canExecute?'Crea un proyecto nuevo usando el orden actual de fases y tareas':'Agrega al menos una tarea para poder ejecutar',onClick:()=>{setExecuteStart(todayDateKey());setShowExecuteModal(true);}},'▶ Ejecutar'),
         e('button',{className:'modal-x',onClick:onClose},'✕')
       ),
       e('div',{className:'sysdrawer-body'},
-        modules.length>0&&e('div',{style:{marginBottom:16}},
-          e('div',{className:'sysdrawer-section-lbl'},
-            e('span',null,'Módulos'),
-            e('div',{style:{display:'flex',gap:4,marginLeft:8}},
-              e('button',{className:'ghost-btn'+(modView==='list'?' active':''),onClick:()=>setModView('list'),title:'Vista de lista — ordenable, como las plantillas'},e(DashIcon,{name:'list',size:13})),
-              e('button',{className:'ghost-btn'+(modView==='map'?' active':''),onClick:()=>setModView('map'),title:'Vista de mapa mental'},e(DashIcon,{name:'map',size:13}))
-            ),
-            e('button',{className:'ghost-btn',style:{marginLeft:'auto'},onClick:addModule,title:'Nuevo módulo'},'＋')
-          ),
-          modView==='list'?e(ModuleListEditor,{
-            modules,
-            onReorderModules:next=>onUpdateSystem({...system,phases,modules:next}),
-            onUpdateModule:updateModule,
-            onRemoveModule:rawRemoveModule,
-            onAddModule:addModule
-          }):e(React.Fragment,null,
-            e('div',{style:{border:'1px solid var(--border2)',borderRadius:10,height:'70vh',minHeight:460,position:'relative',overflow:'hidden'}},
-              e(SystemsMindMap,{
-                embedded:true,
-                systems:modules,
-                project:fakeProjectForMap,
-                title:'Módulos de '+system.name,
-                onUpdateSystem:updated=>updateModule(updated.id,updated),
-                onDeleteSystem:rawRemoveModule,
-                onBulkAdd:addModulesFromText,
-                onPatchProject:patch=>onUpdateSystem({...system,phases,moduleLinks:patch.sysLinks}),
-                onClose:()=>{}, // el mapa vive embebido — el botón "Cerrar" del mapa no aplica aquí
-                onOpenDetail:id=>setEditingModId(id)
-              })
-            ),
-            e('div',{style:{fontSize:10,color:'var(--text3)',marginTop:6}},'Arrastra para mover, doble clic para ver fases rápido, 🔗 para conectar, ⤢ dentro del popover para editar el módulo completo.')
-          )
+        e('div',{className:'sysdrawer-section-lbl'},
+          e('span',null,'Fases'),
+          e('button',{className:'ghost-btn',style:{marginLeft:8},onClick:()=>setShowImport(v=>!v),title:'Importar desde texto'},'⤓'),
+          e('button',{className:'ghost-btn',style:{marginLeft:2},onClick:()=>addPhase(),title:'Nueva fase'},'＋')
         ),
-        modules.length===0&&e('div',{className:'sysdrawer-section-lbl'},
-          e('span',null,'Módulos'),
-          e('button',{className:'ghost-btn',style:{marginLeft:8},onClick:addModule,title:'Convertir este sistema en varios módulos'},'＋ Añadir módulo')
-        ),
-        e('div',{className:'sysdrawer-section-lbl',style:{marginTop:modules.length>0?4:0,cursor:modules.length>0?'pointer':'default'},onClick:modules.length>0?()=>setShowFasesAvanzadas(v=>!v):undefined},
-          e('span',null,modules.length>0?'Fases propias del sistema (avanzado)':'Fases'),
-          modules.length>0&&e('span',{style:{marginLeft:6,fontSize:10,color:'var(--text3)'}},showFasesAvanzadas?'▲':'▼'),
-          !((modules.length>0)&&!showFasesAvanzadas)&&e('button',{className:'ghost-btn',style:{marginLeft:8},onClick:ev=>{ev.stopPropagation();setShowImport(v=>!v);},title:'Importar desde texto'},'⤓'),
-          !((modules.length>0)&&!showFasesAvanzadas)&&e('button',{className:'ghost-btn',style:{marginLeft:2},onClick:ev=>{ev.stopPropagation();addPhase();},title:'Nueva fase'},'＋')
-        ),
-        (modules.length===0||showFasesAvanzadas)&&e(React.Fragment,null,
         showImport&&e('div',{className:'sysimport-box'},
           e('div',{style:{fontSize:10.5,color:'var(--text4)'}},'Pega texto: una línea numerada ("1. Nombre") es una fase, las líneas de abajo son sus tareas.'),
           e('textarea',{value:importText,onChange:ev=>setImportText(ev.target.value),placeholder:'1. Grabación\\nAfinar guitarra\\nGrabar voz guía\\n\\n2. Mezcla\\nEcualizar pistas'}),
@@ -7004,6 +7179,7 @@ function SystemDetailDrawer({system,onUpdateSystem,onClose,onExecute}){
               e('span',{className:'mm-chev'+(isOpen?' open':'')},'›'),
               e('input',{className:'sysphase-name',value:p.name,onClick:ev=>ev.stopPropagation(),onChange:ev=>renamePhase(p.id,ev.target.value)}),
               e('span',{className:'sysphase-count'},p.tasks.length),
+              e('button',{className:'ghost-btn',title:p.automation?'Punto de automatización — clic para quitar':'Marcar como punto de automatización',style:{color:p.automation?'var(--accent2)':'var(--text3)'},onClick:ev=>{ev.stopPropagation();commitPhases(phases.map(x=>x.id===p.id?{...x,automation:!x.automation}:x));}},'⚙'),
               e('button',{className:'ghost-btn',onClick:ev=>{ev.stopPropagation();deletePhase(p.id);},title:'Eliminar fase'},'✕')
             ),
             isOpen&&e('div',{
@@ -7033,10 +7209,10 @@ function SystemDetailDrawer({system,onUpdateSystem,onClose,onExecute}){
                   onKeyDown:ev=>{if(ev.key==='Enter'){addTask(p.id,newTaskText);}}
                 })
               )
-            )
+            ),
+            p.automation&&e('div',{style:{fontSize:9.5,color:'var(--accent2)',padding:'0 9px 8px 30px'}},'⚙ Punto de automatización — desde aquí el trabajo queda desatendido')
           );
-        })
-        ),
+        }),
         e('div',{className:'sysdrawer-section-lbl',style:{marginTop:20}},
           e('span',null,'Experimentos'),
           e('button',{className:'ghost-btn',style:{marginLeft:8},onClick:()=>setShowExpForm(v=>!v),title:'Nuevo experimento'},'＋')
@@ -7104,17 +7280,7 @@ function SystemDetailDrawer({system,onUpdateSystem,onClose,onExecute}){
           e('button',{className:'btn btn-primary',disabled:!executeStart,onClick:confirmExecute},'▶ Ejecutar y crear proyecto')
         )
       )
-    ),
-    editingModId&&(()=>{
-      const mod=modules.find(m=>m.id===editingModId);
-      if(!mod)return null;
-      return e(SystemDetailDrawer,{
-        system:mod,
-        onUpdateSystem:updated=>updateModule(mod.id,{name:updated.name,phases:updated.phases,icon:updated.icon,color:updated.color}),
-        onClose:()=>setEditingModId(null)
-        // sin onExecute: un módulo individual no genera proyectos por sí solo
-      });
-    })()
+    )
   );
 }
 
@@ -7257,7 +7423,7 @@ function HomeResumen(props){
     // tienen nada que corresponda al día de hoy.
     const taskDue=tasks.some(t=>t.projectId===p.id&&t.status!=='done'&&(
       t.dueDate===today||
-      (t.steps||[]).some(s=>stepNeedsAction(s,today))
+      (t.steps||[]).some(s=>stepNeedsAction(s,today,!!(t.actLog&&t.actLog[today])))
     ));
     const hasAlert=habitDue||systemDue||taskDue;
     const alertTitle=habitDue?'Hábito por cumplir hoy':systemDue?'Sistema por revisar':'Tarea pendiente por cumplir';
@@ -7388,7 +7554,6 @@ function HomeResumen(props){
                 e('div',{className:'proj-stripe',style:{background:proj.color}}),
                 e('div',{className:'proj-icon-badge',style:{'--proj-color':proj.color}},e(ProjIconSVG,{iconKey:proj.icon||DEFAULT_ICON,size:11,color:proj.color})),
                 e('span',{className:'proj-label'},proj.name),
-                e('div',{className:'proj-inline-meta'},todaySecs>0&&e('span',{className:'proj-time-chip'},fmtS(todaySecs))),
                 hasAlert&&e('div',{className:'proj-habit-bell',title:alertTitle,onClick:ev=>{ev.stopPropagation();playUI('click');}},
                   e(BellIcon,{active:true,size:10,color:'currentColor'})
                 ),
@@ -7811,6 +7976,7 @@ function ProjectDashboard(props){
             e('span',{className:'dash-date-lbl',onClick:()=>setSelectedDay(dayKey()),title:'Ir a hoy'},dayLabelStr),
             e('button',{className:'dash-date-btn',onClick:()=>shiftDay(1),title:'Día siguiente'},e(DashIcon,{name:'chevR',size:12}))
           ),
+          e('button',{className:'btn',title:'Ver mapa de todos los sistemas del proyecto',style:{display:'inline-flex',alignItems:'center',gap:5},onClick:()=>setSystemsMapOpen(true)},e(DashIcon,{name:'map',size:12}),'Sistemas'),
           e('button',{className:'btn',style:{display:'inline-flex',alignItems:'center',gap:5},onClick:exportCSV},e(DashIcon,{name:'download',size:12}),'Exportar'),
           e('button',{className:'btn',onClick:openAddTask},'+ Añadir '+taskNoun),
           e('button',{className:'btn btn-primary',onClick:onStartTimer},isRunningHere?'■ En curso':'▶ Iniciar timer')
@@ -7849,32 +8015,16 @@ function ProjectDashboard(props){
             pendingTasks.slice(0,6).map(t=>e(TaskRow,{key:t.id,t,onCycleTaskStatus,onDeleteTask,isActive:isRunningHere&&activeSess.taskId===t.id,onPlay:onPlayTask,onFinish:onFinishTask,onOpenSteps:setStepsForTask,icon:project.icon,color:project.color,onSetPriority:(id,p)=>onUpdateTask(id,{priority:p})}))
           )
         ),
-        visible.sistemas&&e('div',{className:'dash-panel'},
-          e('div',{className:'dash-panel-hdr'},
-            e(EditableLabel,{value:labels.sistemas,onSave:v=>renameLabel('sistemas',v)}),
-            e('button',{className:'ghost-btn',onClick:()=>setSystemForm('new'),title:'Nuevo sistema'},'＋'),
-            pSystems.length>1&&e('button',{
-              className:'ghost-btn',title:'Combinar todos los sistemas de este proyecto en 1 solo (los demás quedan como módulos adentro)',
-              onClick:()=>{
-                const nm=prompt('Nombre del sistema combinado:',pSystems[0]?.name||'Sistema');
-                if(nm===null)return;
-                onCombineSystems(nm.trim()||undefined);
-              }
-            },e(DashIcon,{name:'layers',size:13})),
-            e(SortMenuButton,{value:sortModes.sistemas,onChange:m=>setSortMode('sistemas',m),title:'Ordenar sistemas',options:SYSTEM_SORT_OPTIONS}),
-            e('button',{className:'ghost-btn',onClick:()=>onTogglePanelVisibility('sistemas'),title:'Ocultar este panel (puedes reactivarlo en Ajustes)'},e(DashIcon,{name:'eyeOff',size:12})),
-            e('button',{className:'ghost-btn',onClick:()=>setSystemsMapOpen(true),title:'Abrir mapa mental de sistemas'},e(DashIcon,{name:'map',size:12})),
-            e('button',{className:'dash-panel-link',title:'Ver todos',onClick:()=>setSystemsMapOpen(true)},e(DashIcon,{name:'chevR',size:13}))
-          ),
-          e('div',{className:'dash-panel-body'},
-            pSystems.length===0&&e('div',{className:'empty'},'Sin sistemas aún.\\nCréalos con el botón ＋.'),
-            e('div',{className:'systems-grid'},pSystems.slice(0,3).map(s=>e(SystemCard,{key:s.id,system:s,onEdit:()=>setSystemForm(s),onOpenDetail:id=>setSysDetailId(id),onUpdateSystem,fmtWhen})))
-          )
+      ),
+      e('div',{className:'dash-timeline-row'},
+        e('div',{className:'dash-timeline-wrap'},
+          e(AccountProjectsTimeline,{pTasks:pendingTasks,color:project.color,onOpenProject:setStepsForTask})
         ),
-        e('div',{className:'dash-panel'},
+        e(QuickNotesPanel,{notes,onAddNote,onDeleteNote,onToggleNoteDone,onSetNoteReminder,onOpenAll:()=>setTab('notas')}),
+        e('div',{className:'dash-panel habitos-mini-panel'},
           e('div',{className:'dash-panel-hdr'},
             e(EditableLabel,{value:labels.habitos,onSave:v=>renameLabel('habitos',v)}),
-            e('button',{className:'ghost-btn',onClick:()=>setHabitForm('new'),title:'Nuevo hábito'},'＋'),
+            e('button',{className:'ghost-btn',onClick:()=>setHabitForm('new'),title:'Nuevo hábito'},'\uFF0B'),
             e(SortMenuButton,{value:sortModes.habitos,onChange:m=>setSortMode('habitos',m),title:'Ordenar hábitos'}),
             e('button',{className:'dash-panel-link',title:'Ver todos',onClick:()=>setTab('habitos')},e(DashIcon,{name:'chevR',size:13}))
           ),
@@ -7905,12 +8055,6 @@ function ProjectDashboard(props){
             })
           )
         )
-      ),
-      e('div',{className:'dash-timeline-row'},
-        e('div',{className:'dash-timeline-wrap'},
-          e(AccountProjectsTimeline,{pTasks,color:project.color,onOpenProject:setStepsForTask})
-        ),
-        e(QuickNotesPanel,{notes,onAddNote,onDeleteNote,onToggleNoteDone,onSetNoteReminder,onOpenAll:()=>setTab('notas')})
       )
     )),
 
@@ -8136,7 +8280,7 @@ function ProjectDashboard(props){
       onPatchProject,
       onClose:()=>setSystemsMapOpen(false),
       onOpenDetail:id=>setSysDetailId(id),
-      onBulkAdd:items=>items.forEach(it=>onAddSystem({name:it.name,phases:it.phases||[],icon:it.icon,color:it.color})),
+      onBulkAdd:items=>items.forEach(it=>onAddSystem({name:it.name,phases:it.phases||[],icon:it.icon,color:it.color,mmPos:it.mmPos||null})),
       sysTemplates,onSaveSysTemplate,onApplySysTemplate,onDeleteSysTemplate,onUpdateSysTemplate,
     }),
     sysDetailId&&(()=>{
@@ -8774,6 +8918,120 @@ function AutoTextarea({className,value,onChange,onClick,onMouseDown}){
 // Pizarra tipo Miro para un "proyecto" (tarea) — pegar imágenes (Ctrl+V), arrastrarlas
 // libremente sobre un lienzo con pan/zoom, y agregar notas como casillas de texto que
 // viven directamente sobre el mismo lienzo (sin panel lateral: la pizarra usa todo el espacio).
+// ═══════════════════════════════════════════
+// LIBRETA — bitácora tipo Notion, por proyecto/cuenta.
+// Panel izquierdo: lista de entradas (como las páginas de Notion).
+// Panel derecho: la entrada abierta, con título grande, subtítulo y
+// cuerpo de texto — igual que abrir una página en Notion.
+// ═══════════════════════════════════════════
+function TaskNotebookPanel({task,onUpdateTask}){
+  const entries=task.notebook||[];
+  const[selectedId,setSelectedId]=useState(null);
+  const titleRefs=useRef({});
+  const bodyRefs=useRef({});
+
+  function autoGrow(el){ if(!el)return; el.style.height='auto'; el.style.height=el.scrollHeight+'px'; }
+
+  function update(next){onUpdateTask({notebook:next});}
+  function addEntry(){
+    const now=Date.now();
+    const n={id:uid(),title:'',subtitle:'',text:'',createdAt:now,updatedAt:now,pinned:false};
+    update([n,...entries]);
+    setSelectedId(n.id);
+  }
+  function patchEntry(id,patch){
+    update(entries.map(n=>n.id===id?{...n,...patch,updatedAt:Date.now()}:n));
+  }
+  function deleteEntry(id){
+    if(!confirm('¿Eliminar esta entrada de la libreta? No se puede deshacer.'))return;
+    update(entries.filter(n=>n.id!==id));
+    if(selectedId===id)setSelectedId(null);
+  }
+  function togglePin(id){
+    update(entries.map(n=>n.id===id?{...n,pinned:!n.pinned}:n));
+  }
+
+  function fmtWhen(ts){
+    const key=dayKeyFromTs(ts);
+    const label=key===dayKey()?'Hoy':key===dayKeyFromTs(Date.now()-86400000)?'Ayer':new Date(ts).toLocaleDateString('es-CL',{day:'numeric',month:'short'});
+    return label+' · '+new Date(ts).toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'});
+  }
+
+  const sorted=[...entries].sort((a,b)=>{
+    if(!!a.pinned!==!!b.pinned)return a.pinned?-1:1;
+    return b.updatedAt-a.updatedAt;
+  });
+  useEffect(()=>{
+    if(entries.length>0&&!entries.find(n=>n.id===selectedId))setSelectedId(sorted[0].id);
+    // eslint-disable-next-line
+  },[entries.length]);
+  useEffect(()=>{
+    const el=titleRefs.current[selectedId];
+    if(el&&!el.value)el.focus();
+  },[selectedId]);
+
+  const active=entries.find(n=>n.id===selectedId)||null;
+
+  return e('div',{className:'notebook-wrap'},
+    e('div',{className:'notebook-sidebar'},
+      e('div',{className:'notebook-sidebar-hdr'},
+        e('button',{className:'notebook-new-btn',onClick:addEntry},e(DashIcon,{name:'plus',size:12}),'Nueva entrada')
+      ),
+      e('div',{className:'notebook-list'},
+        sorted.length===0&&e('div',{className:'notebook-empty-list'},'Sin entradas aún.'),
+        sorted.map(n=>e('div',{
+          key:n.id,
+          className:'notebook-list-item'+(n.id===selectedId?' active':''),
+          onClick:()=>setSelectedId(n.id)
+        },
+          e('div',{className:'notebook-list-item-title'+(n.title?'':' untitled')},
+            n.pinned&&e(DashIcon,{name:'pin',size:10}),
+            n.title||'Sin título'
+          ),
+          n.subtitle&&e('div',{className:'notebook-list-item-sub'},n.subtitle),
+          e('div',{className:'notebook-list-item-meta'},fmtWhen(n.updatedAt))
+        ))
+      )
+    ),
+    !active&&e('div',{className:'notebook-page-empty'},
+      e('div',null,'Selecciona una entrada o crea una nueva.'),
+      e('button',{className:'notebook-new-btn',style:{width:'auto',padding:'7px 16px'},onClick:addEntry},e(DashIcon,{name:'plus',size:12}),'Nueva entrada')
+    ),
+    active&&e('div',{className:'notebook-page',key:active.id},
+      e('div',{className:'notebook-page-top'},
+        e('span',{className:'notebook-page-meta'},fmtWhen(active.updatedAt)),
+        e('div',{className:'notebook-page-actions'},
+          e('button',{
+            className:'nb-act-btn'+(active.pinned?' on':''),
+            title:active.pinned?'Quitar de fijadas':'Fijar arriba',
+            onClick:()=>togglePin(active.id)
+          },e(DashIcon,{name:'pin',size:13})),
+          e('button',{className:'nb-act-btn danger',title:'Eliminar entrada',onClick:()=>deleteEntry(active.id)},e(DashIcon,{name:'trash',size:13}))
+        )
+      ),
+      e('input',{
+        ref:el=>{titleRefs.current[active.id]=el;},
+        className:'notebook-title-input',
+        value:active.title,
+        placeholder:'Sin título',
+        onChange:ev=>patchEntry(active.id,{title:ev.target.value})
+      }),
+      e('input',{
+        className:'notebook-subtitle-input',
+        value:active.subtitle,
+        placeholder:'Agregar un subtítulo...',
+        onChange:ev=>patchEntry(active.id,{subtitle:ev.target.value})
+      }),
+      e('textarea',{
+        ref:el=>{bodyRefs.current[active.id]=el;if(el)autoGrow(el);},
+        className:'notebook-body-text',
+        value:active.text,
+        placeholder:'Escribe aquí...',
+        onChange:ev=>{patchEntry(active.id,{text:ev.target.value});autoGrow(ev.target);}
+      })
+    )
+  );
+}
 function TaskBoardPanel({task,onUpdateTask}){
   const images=(task.board&&task.board.images)||[];
   // Notas legacy (sin x/y, guardadas en panel lateral) se migran a posiciones en cascada
@@ -8784,16 +9042,26 @@ function TaskBoardPanel({task,onUpdateTask}){
     x:n.x!=null?n.x:40+(i%6)*40,
     y:n.y!=null?n.y:40+(i%6)*40
   })),[rawNotes]);
+  const notebook=task.notebook||[];
+  const cards=(task.board&&task.board.cards)||[];
   const canvasRef=useRef(null);
   const[zoom,setZoom]=useState(1);
   const[dragImg,setDragImg]=useState(null); // {id,startX,startY,origX,origY}
   const[dragNote,setDragNote]=useState(null); // {id,startX,startY,origX,origY}
+  const[dragCard,setDragCard]=useState(null); // {id,startX,startY,origX,origY}
+  const[showNbMenu,setShowNbMenu]=useState(false);
+  const nbMenuRef=useRef(null);
   const pasteCounterRef=useRef(0);
   const noteCounterRef=useRef(0);
+  const cardCounterRef=useRef(0);
 
   function clampZoom(z){return Math.max(0.4,Math.min(1.8,Math.round(z*20)/20));}
   function updateImages(next){onUpdateTask({board:{...(task.board||{}),images:next}});}
   function updateNotes(next){onUpdateTask({boardNotes:next});}
+  function updateCards(next){onUpdateTask({board:{...(task.board||{}),cards:next}});}
+  function patchNotebookEntry(entryId,patch){
+    onUpdateTask({notebook:notebook.map(n=>n.id===entryId?{...n,...patch,updatedAt:Date.now()}:n)});
+  }
   function addImage(src){
     const n=pasteCounterRef.current++;
     const off=(n%8)*22;
@@ -8830,6 +9098,24 @@ function TaskBoardPanel({task,onUpdateTask}){
     // eslint-disable-next-line
   },[dragNote,zoom]);
   useEffect(()=>{
+    if(!dragCard)return;
+    function onMove(ev){
+      const dx=(ev.clientX-dragCard.startX)/zoom,dy=(ev.clientY-dragCard.startY)/zoom;
+      updateCards(cards.map(c=>c.id===dragCard.id?{...c,x:dragCard.origX+dx,y:dragCard.origY+dy}:c));
+    }
+    function onUp(){setDragCard(null);}
+    window.addEventListener('mousemove',onMove);
+    window.addEventListener('mouseup',onUp);
+    return()=>{window.removeEventListener('mousemove',onMove);window.removeEventListener('mouseup',onUp);};
+    // eslint-disable-next-line
+  },[dragCard,zoom]);
+  useEffect(()=>{
+    if(!showNbMenu)return;
+    function h(ev){if(nbMenuRef.current&&!nbMenuRef.current.contains(ev.target))setShowNbMenu(false);}
+    document.addEventListener('mousedown',h);
+    return()=>document.removeEventListener('mousedown',h);
+  },[showNbMenu]);
+  useEffect(()=>{
     function onPaste(ev){
       const items=(ev.clipboardData&&ev.clipboardData.items)||[];
       for(const item of items){
@@ -8851,14 +9137,17 @@ function TaskBoardPanel({task,onUpdateTask}){
     ev.preventDefault();
     setZoom(z=>clampZoom(z+(ev.deltaY<0?0.1:-0.1)));
   }
-  function addNote(){
+  function nextSpot(counterRef){
     const scroller=canvasRef.current;
-    const n=noteCounterRef.current++;
+    const n=counterRef.current++;
     const off=(n%6)*26;
-    // La casilla nueva aparece cerca de donde estás mirando dentro del scroll actual.
     const baseX=scroller?(scroller.scrollLeft/zoom)+60:60;
     const baseY=scroller?(scroller.scrollTop/zoom)+60:60;
-    const note={id:uid(),text:'',createdAt:Date.now(),x:baseX+off,y:baseY+off,w:220,h:150};
+    return{x:baseX+off,y:baseY+off};
+  }
+  function addNote(){
+    const pos=nextSpot(noteCounterRef);
+    const note={id:uid(),text:'',createdAt:Date.now(),x:pos.x,y:pos.y,w:220,h:150};
     updateNotes([note,...notes]);
   }
   function updateNoteText(id,text){updateNotes(notes.map(n=>n.id===id?{...n,text}:n));}
@@ -8867,6 +9156,19 @@ function TaskBoardPanel({task,onUpdateTask}){
     if(ev.target.tagName==='TEXTAREA')return;
     ev.preventDefault();
     setDragNote({id:note.id,startX:ev.clientX,startY:ev.clientY,origX:note.x,origY:note.y});
+  }
+  function addCardFromEntry(entryId){
+    const pos=nextSpot(cardCounterRef);
+    const card={id:uid(),entryId,x:pos.x,y:pos.y,w:220,expanded:false};
+    updateCards([card,...cards]);
+    setShowNbMenu(false);
+  }
+  function deleteCard(id){updateCards(cards.filter(c=>c.id!==id));}
+  function toggleCardExpand(id){updateCards(cards.map(c=>c.id===id?{...c,expanded:!c.expanded}:c));}
+  function beginCardDrag(card,ev){
+    if(ev.target.tagName==='TEXTAREA'||ev.target.tagName==='INPUT')return;
+    ev.preventDefault();
+    setDragCard({id:card.id,startX:ev.clientX,startY:ev.clientY,origX:card.x,origY:card.y});
   }
 
   return e('div',{className:'board-wrap'},
@@ -8878,12 +9180,25 @@ function TaskBoardPanel({task,onUpdateTask}){
         e('span',{className:'divider'}),
         e('button',{className:'board-add-note-btn',onClick:addNote,title:'Agregar una nota de texto sobre la pizarra'},
           e(DashIcon,{name:'plus',size:11}),'Nota'
+        ),
+        e('div',{className:'board-add-nb-wrap',ref:nbMenuRef},
+          e('button',{className:'board-add-note-btn',onClick:()=>setShowNbMenu(v=>!v),title:'Traer una entrada de la Libreta a la pizarra'},
+            e(DashIcon,{name:'note',size:11}),'Libreta'
+          ),
+          showNbMenu&&e('div',{className:'board-add-nb-menu'},
+            notebook.length===0&&e('div',{className:'board-add-nb-empty'},'Aún no hay entradas en la Libreta de este proyecto.'),
+            notebook.map(en=>e('div',{
+              key:en.id,
+              className:'board-add-nb-item'+(en.title?'':' untitled'),
+              onClick:()=>addCardFromEntry(en.id)
+            },en.title||'Sin título'))
+          )
         )
       ),
       e('div',{className:'board-canvas',style:{transform:`scale(${zoom})`,transformOrigin:'0 0'}},
-        images.length===0&&notes.length===0&&e('div',{className:'board-hint'},
+        images.length===0&&notes.length===0&&cards.length===0&&e('div',{className:'board-hint'},
           e(DashIcon,{name:'image',size:22,color:'var(--text4)'}),
-          e('div',null,'Pegá una imagen con Ctrl+V, o presioná "Nota" para escribir directamente sobre la pizarra.')
+          e('div',null,'Pegá una imagen con Ctrl+V, presioná "Nota" para escribir directamente sobre la pizarra, o "Libreta" para traer una entrada ya escrita.')
         ),
         images.map(img=>e('div',{
           key:img.id,className:'board-img'+(dragImg&&dragImg.id===img.id?' dragging':''),
@@ -8908,7 +9223,54 @@ function TaskBoardPanel({task,onUpdateTask}){
             onMouseDown:ev=>ev.stopPropagation(),
             onBlur:ev=>updateNoteText(n.id,ev.target.value)
           })
-        ))
+        )),
+        cards.map(c=>{
+          const entry=notebook.find(n=>n.id===c.entryId);
+          if(!entry){
+            return e('div',{
+              key:c.id,className:'board-nbcard'+(dragCard&&dragCard.id===c.id?' dragging':''),
+              style:{left:c.x,top:c.y,width:c.w},
+              onMouseDown:ev=>beginCardDrag(c,ev)
+            },
+              e('div',{className:'board-nbcard-hdr'},
+                e('span',{className:'board-nbcard-title untitled'},'Esta entrada fue eliminada'),
+                e('button',{className:'board-nbcard-del',onMouseDown:ev=>ev.stopPropagation(),onClick:()=>deleteCard(c.id),title:'Quitar tarjeta'},'✕')
+              )
+            );
+          }
+          return e('div',{
+            key:c.id,className:'board-nbcard'+(dragCard&&dragCard.id===c.id?' dragging':''),
+            style:{left:c.x,top:c.y,width:c.expanded?Math.max(c.w,260):c.w},
+            onMouseDown:ev=>beginCardDrag(c,ev)
+          },
+            e('div',{
+              className:'board-nbcard-hdr',
+              onDoubleClick:()=>toggleCardExpand(c.id),
+              title:'Doble clic para '+(c.expanded?'contraer':'expandir')
+            },
+              e('span',{className:'board-nbcard-icon'},e(DashIcon,{name:'note',size:12})),
+              e('span',{className:'board-nbcard-title'+(entry.title?'':' untitled')},entry.title||'Sin título'),
+              e('button',{className:'board-nbcard-del',onMouseDown:ev=>ev.stopPropagation(),onClick:()=>deleteCard(c.id),title:'Quitar tarjeta de la pizarra (no borra la nota)'},'✕')
+            ),
+            !c.expanded&&e('div',{className:'board-nbcard-hint'},'doble clic para abrir'),
+            c.expanded&&e('div',{className:'board-nbcard-body',onMouseDown:ev=>ev.stopPropagation()},
+              e('input',{
+                className:'notebook-subtitle-input',
+                style:{fontSize:11.5,marginBottom:0,marginTop:10},
+                value:entry.subtitle,
+                placeholder:'Agregar un subtítulo...',
+                onChange:ev=>patchNotebookEntry(entry.id,{subtitle:ev.target.value})
+              }),
+              e('textarea',{
+                className:'board-nbcard-text',
+                style:{marginTop:8,minHeight:60},
+                value:entry.text,
+                placeholder:'Escribe aquí...',
+                onChange:ev=>patchNotebookEntry(entry.id,{text:ev.target.value})
+              })
+            )
+          );
+        })
       )
     )
   );
@@ -8960,6 +9322,26 @@ function TaskExperimentsPanel({task,onUpdateTask,pSystems}){
   );
 }
 
+// ── ORDEN GLOBAL DE VISTAS (Lista / Línea de tiempo / Mapa mental / Pizarra / Experimentos) ──
+// Este orden se guarda a nivel de plataforma: aplica por igual a proyectos y cuentas.
+// El primer elemento del orden es siempre la vista por defecto al abrir cualquier proyecto/cuenta.
+const VIEWTAB_ORDER_KEY='chronos_viewtab_order_v1';
+const VIEWTAB_DEFAULT_ORDER=['list','timeline','mindmap','board','notebook','experiments'];
+function getViewTabOrder(){
+  try{
+    const raw=localStorage.getItem(VIEWTAB_ORDER_KEY);
+    if(!raw)return VIEWTAB_DEFAULT_ORDER.slice();
+    const parsed=JSON.parse(raw);
+    if(!Array.isArray(parsed))return VIEWTAB_DEFAULT_ORDER.slice();
+    // aseguremos que cualquier vista nueva que no esté en el orden guardado se añada al final
+    const merged=parsed.filter(k=>VIEWTAB_DEFAULT_ORDER.includes(k));
+    VIEWTAB_DEFAULT_ORDER.forEach(k=>{if(!merged.includes(k))merged.push(k);});
+    return merged;
+  }catch(err){return VIEWTAB_DEFAULT_ORDER.slice();}
+}
+function setViewTabOrder(order){
+  try{localStorage.setItem(VIEWTAB_ORDER_KEY,JSON.stringify(order));}catch(err){}
+}
 function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask,templates,onAddTemplate,onUpdateTemplate,onDeleteTemplate,pSystems}){
   const[steps,setSteps]=useState(task.steps||[]);
   const[editingTaskName,setEditingTaskName]=useState(false);
@@ -8979,7 +9361,23 @@ function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask,templates,onAddTe
   useEffect(()=>{stepsRef.current=steps;},[steps]);
   const rowRefs=useRef({});
   const[dragFill,setDragFill]=useState(null); // {startIndex,startDate,endIndex,tipDate,tipX,tipY}
-  const[view,setView]=useState('list'); // 'list' | 'timeline' | 'mindmap' — all read/write the same `steps` state, so they're always in sync
+  const[tabOrder,setTabOrder]=useState(()=>getViewTabOrder()); // orden de los botones de vista, aplica a nivel de plataforma
+  const[view,setView]=useState(()=>getViewTabOrder()[0]); // 'list' | 'timeline' | 'mindmap' | 'board' | 'experiments' — la vista por defecto es siempre la primera del orden guardado
+  const[dragTab,setDragTab]=useState(null); // key del botón que se está arrastrando
+  const[dragOverTab,setDragOverTab]=useState(null); // key del botón sobre el que se pasa el drag
+  function moveTab(fromKey,toKey){
+    if(fromKey===toKey)return;
+    setTabOrder(cur=>{
+      const arr=cur.slice();
+      const fromIdx=arr.indexOf(fromKey);
+      const toIdx=arr.indexOf(toKey);
+      if(fromIdx===-1||toIdx===-1)return cur;
+      arr.splice(fromIdx,1);
+      arr.splice(toIdx,0,fromKey);
+      setViewTabOrder(arr); // persiste a nivel de plataforma: afecta todos los proyectos y cuentas
+      return arr;
+    });
+  }
   const[tlDrag,setTlDrag]=useState(null); // {ids,clickedId,startX,orig:{id:date},cur:{id:date},moved,tipX,tipY}
   const[selectedIds,setSelectedIds]=useState(()=>new Set());
   const[showDoneSteps,setShowDoneSteps]=useState(false);
@@ -9028,6 +9426,9 @@ function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask,templates,onAddTe
   // Sugerencia de cierre real: entre las fases YA EJECUTADAS de este proyecto,
   // busca la marcada como evento de automatización (⚙) y toma su fecha de
   // TÉRMINO real (no una proyección) — la sugerencia es 1 mes después de eso.
+  // Ya no se muestra el aviso textual de "sugerencia de cierre" (se quitó por
+  // ruido visual) — se deja el resaltado de la fila marcada como automatización
+  // en la lista de fases como único indicador de esa fase.
   const realAutomationStep=steps.find(s=>s.automation&&s.dueDate);
   const realCloseSuggestion=realAutomationStep?addMonthsToDateKey(realAutomationStep.dueDate,1):null;
   const[mmOpenId,setMmOpenId]=useState(null);
@@ -9095,6 +9496,15 @@ function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask,templates,onAddTe
   }
   function updateStep(id,patch){ commit(steps.map(s=>s.id===id?{...s,...patch}:s)); }
   function deleteStep(id){ commit(steps.filter(s=>s.id!==id)); }
+  // Registrar avance/no-avance de HOY a nivel de todo el proyecto (no por fase). Click de nuevo = deshacer.
+  const todayKey=dayKey();
+  const projectActToday=(task.actLog||{})[todayKey];
+  function setProjectActivity(val){
+    if(!onUpdateTask)return;
+    const log={...(task.actLog||{})};
+    if(log[todayKey]===val) delete log[todayKey]; else log[todayKey]=val;
+    onUpdateTask({actLog:log});
+  }
   // Registrar avance/no-avance de HOY en una fase. Click de nuevo sobre el mismo botón = deshacer.
   function setStepActivity(id,val){
     const today=dayKey();
@@ -9285,7 +9695,7 @@ function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask,templates,onAddTe
   return e('div',{className:'overlay',onClick:ev=>{if(ev.target===ev.currentTarget)onClose();}},
     e('div',{className:'modal',style:{width:'min(1440px,96vw)',maxWidth:'96vw',height:'92vh',maxHeight:'92vh'}},
       e('div',{className:'modal-head'},
-        e('div',null,
+        e('div',{style:{flex:1,minWidth:0}},
           editingTaskName
             ?e('input',{
                 className:'finput',style:{fontSize:15,fontWeight:600,padding:'4px 8px',width:280},
@@ -9303,44 +9713,51 @@ function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask,templates,onAddTe
               },task.name,onUpdateTask&&e('span',{style:{fontSize:11,color:'var(--text4)',marginLeft:6}},'✎')),
           e('div',{className:'modal-sub'},'Fases de '+(noun||'este proyecto')+' · '+doneCount+'/'+total+' completadas')
         ),
+        onUpdateTask&&e('div',{className:'proj-act-row',style:{marginLeft:'auto',marginRight:14}},
+          e('button',{
+            className:'act-btn yes'+(projectActToday==='yes'?' on':''),
+            title:'Avancé hoy en este proyecto',
+            onClick:()=>setProjectActivity('yes')
+          },'✓'),
+          e('button',{
+            className:'act-btn no'+(projectActToday==='no'?' on':''),
+            title:'No avancé hoy en este proyecto — pero quedó registrado',
+            onClick:()=>setProjectActivity('no')
+          },'✕')
+        ),
         e('button',{className:'modal-x',onClick:onClose},'✕')
       ),
       e('div',{className:'view-tabs'},
-        e('button',{className:'vtab vtab-icon'+(view==='list'?' active':''),onClick:()=>setView('list'),title:'Lista'},e(DashIcon,{name:'list',size:13})),
-        e('button',{className:'vtab vtab-icon'+(view==='timeline'?' active':''),onClick:()=>setView('timeline'),title:'Línea de tiempo'},e(DashIcon,{name:'clock',size:13})),
-        e('button',{className:'vtab vtab-icon'+(view==='mindmap'?' active':''),onClick:()=>setView('mindmap'),title:'Mapa mental'},e(DashIcon,{name:'network',size:13})),
-        e('button',{className:'vtab vtab-icon'+(view==='board'?' active':''),onClick:()=>setView('board'),title:'Pizarra y notas'},e(DashIcon,{name:'image',size:13})),
-        (pSystems||[]).length>0&&e('button',{className:'vtab vtab-icon'+(view==='experiments'?' active':''),onClick:()=>setView('experiments'),title:'Experimentos de este lanzamiento'},e(SysMiniIcon,{name:'flask',size:13})),
-        e('button',{className:'rec-trigger-btn',title:'Aplicar una plantilla guardada a este proyecto',onClick:()=>setShowTplMgr(true)},e(DashIcon,{name:'layers',size:12})),
-        steps.length>0&&e('button',{className:'rec-trigger-btn',title:'Guardar las fases y tareas actuales como plantilla reutilizable',onClick:()=>setShowSaveTpl(true)},e(DashIcon,{name:'download',size:12})),
-        steps.some(s=>s.startDate&&s.dueDate)&&e('button',{className:'rec-trigger-btn',title:'Cambiar la fecha de inicio y recalcular todas las fases, sin perder nada',onClick:()=>setShowRecalc(true)},e(DashIcon,{name:'refresh',size:12})),
-        doneCount>0&&e('button',{className:'rec-trigger-btn',style:{marginLeft:'auto'},onClick:()=>{playUI('click');setShowDoneSteps(v=>!v);}},
-          showDoneSteps?'Ocultar completados':'Ver completados ('+doneCount+')'
-        ),
-        e('button',{className:'rec-trigger-btn'+(task.recurrence?' set':''),style:doneCount>0?undefined:{marginLeft:'auto'},title:recurrenceLabel(task.recurrence),onClick:()=>setShowRec(true)},
-          e(RepeatIcon,{size:11,color:'currentColor'})
-        )
+        (()=>{
+          const TAB_DEFS={
+            list:{title:'Lista',icon:e(DashIcon,{name:'list',size:13})},
+            timeline:{title:'Línea de tiempo',icon:e(DashIcon,{name:'clock',size:13})},
+            mindmap:{title:'Mapa mental',icon:e(DashIcon,{name:'network',size:13})},
+            board:{title:'Pizarra y notas',icon:e(DashIcon,{name:'image',size:13})},
+            notebook:{title:'Libreta',icon:e(DashIcon,{name:'note',size:13})},
+            experiments:{title:'Experimentos de este lanzamiento',icon:e(SysMiniIcon,{name:'flask',size:13})}
+          };
+          return tabOrder.filter(k=>k!=='experiments'||(pSystems||[]).length>0).map(k=>{
+            const def=TAB_DEFS[k];
+            if(!def)return null;
+            return e('button',{
+              key:k,
+              className:'vtab vtab-icon'+(view===k?' active':'')+(dragTab===k?' dragging':'')+(dragOverTab===k&&dragTab&&dragTab!==k?' drag-over':''),
+              onClick:()=>setView(k),
+              title:def.title+' — arrastra para reordenar (el de más a la izquierda es la vista por defecto)',
+              draggable:true,
+              onDragStart:ev=>{setDragTab(k);ev.dataTransfer.effectAllowed='move';},
+              onDragEnd:()=>{setDragTab(null);setDragOverTab(null);},
+              onDragOver:ev=>{ev.preventDefault();if(dragTab&&dragTab!==k)setDragOverTab(k);},
+              onDragLeave:()=>{setDragOverTab(cur=>cur===k?null:cur);},
+              onDrop:ev=>{ev.preventDefault();if(dragTab)moveTab(dragTab,k);setDragTab(null);setDragOverTab(null);}
+            },def.icon);
+          });
+        })(),
+        steps.some(s=>s.startDate&&s.dueDate)&&e('button',{className:'rec-trigger-btn',title:'Cambiar la fecha de inicio y recalcular todas las fases, sin perder nada',onClick:()=>setShowRecalc(true)},e(DashIcon,{name:'refresh',size:12}))
       ),
 
       e('div',{className:'modal-body',style:{flex:1,minHeight:0}},
-        view==='list'&&realCloseSuggestion&&e('div',{style:{display:'flex',alignItems:'center',gap:6,fontSize:10.5,color:'var(--accent2)',background:'var(--accent-bg)',border:'1px solid var(--accent-border)',borderRadius:'var(--r-sm)',padding:'6px 9px',margin:'0 2px 8px'}},
-          e('span',null,'⚙'),
-          e('span',{style:{flex:1}},'"'+realAutomationStep.name+'" es el evento de automatización (término real: '+realAutomationStep.dueDate+'). Sugerencia de cierre: '+realCloseSuggestion+' — 1 mes después.'),
-          steps.length>0&&steps[steps.length-1].id!==realAutomationStep.id&&steps[steps.length-1].dueDate!==realCloseSuggestion&&e('button',{
-            className:'ghost-btn',style:{fontSize:10,flexShrink:0,color:'var(--accent2)',border:'1px solid var(--accent-border)'},
-            title:'Mover la fecha de "'+steps[steps.length-1].name+'" a la sugerencia',
-            onClick:()=>{
-              const last=steps[steps.length-1];
-              let closeStart=realCloseSuggestion;
-              if(last.startDate&&last.dueDate){
-                const a=new Date(last.startDate+'T00:00:00'),b=new Date(last.dueDate+'T00:00:00');
-                const dur=Math.max(0,Math.round((b-a)/86400000));
-                closeStart=addDaysToDateKey(realCloseSuggestion,-dur);
-              }
-              updateStep(last.id,{startDate:closeStart,dueDate:realCloseSuggestion});
-            }
-          },'Aplicar a "'+steps[steps.length-1].name+'"')
-        ),
         view==='list'&&e('div',{className:'sheet',style:dragFill?{userSelect:'none'}:undefined},
           e('div',{className:'sheet-row sheet-hdr'},
             e('div',{className:'sheet-cell'},'Fase'),
@@ -9348,20 +9765,22 @@ function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask,templates,onAddTe
               e('span',{style:{flex:1}},'Inicio'),
               e('span',{style:{flex:1}},'Término')
             ),
-            e('div',{className:'sheet-cell sheet-cell-status'},'¿Avancé hoy?')
+            e('div',{className:'sheet-cell sheet-cell-status'},'')
           ),
           steps.length===0&&e('div',{className:'empty',style:{padding:'16px 2px'}},'Sin fases aún. Agrega la primera abajo.'),
           steps.length>0&&!showDoneSteps&&steps.every(s=>s.done)&&e('div',{className:'empty',style:{padding:'16px 2px'}},'Todas las fases están completadas. Usa "Ver completados" para revisarlas.'),
-          steps.filter(s=>showDoneSteps||!s.done).map(s=>{
+          (()=>{ // fase activa = la primera fase sin completar, en el orden de la lista
+            const activeStep=steps.find(s=>!s.done);
+            return steps.filter(s=>showDoneSteps||!s.done).map(s=>{
             const idx=steps.indexOf(s);
             const inFillRange=dragFill&&idx>=fillLo&&idx<=fillHi;
             const today=dayKey();
-            const actToday=(s.actLog||{})[today]; // 'yes' | 'no' | undefined
+            const isActivePhase=!!activeStep&&activeStep.id===s.id;
             return e('div',{
               key:s.id,
               ref:el=>{rowRefs.current[idx]=el;},
-              className:'sheet-row'+(s.done?' done':'')+(inFillRange?' fill-range':'')+(s.automation?' automation-row':''),
-              style:s.automation?{background:'color-mix(in srgb, var(--accent2) 7%, transparent)'}:undefined
+              className:'sheet-row'+(s.done?' done':'')+(inFillRange?' fill-range':'')+(isActivePhase?' active-phase-row':''),
+              style:isActivePhase?{background:'color-mix(in srgb, var(--accent2) 7%, transparent)'}:undefined
             },
               e('div',{className:'sheet-cell',style:{display:'flex',alignItems:'center',gap:7}},
                 e('button',{
@@ -9405,20 +9824,10 @@ function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask,templates,onAddTe
                 )
               ),
               e('div',{className:'sheet-cell sheet-cell-status',style:{display:'flex',alignItems:'center',gap:6}},
-                e('button',{
-                  className:'act-btn yes'+(actToday==='yes'?' on':''),
-                  title:'Avancé hoy en esta fase',
-                  onClick:()=>setStepActivity(s.id,'yes')
-                },'✓'),
-                e('button',{
-                  className:'act-btn no'+(actToday==='no'?' on':''),
-                  title:'No avancé hoy — pero quedó registrado',
-                  onClick:()=>setStepActivity(s.id,'no')
-                },'✕'),
                 e('button',{className:'rem-del',onClick:()=>deleteStep(s.id),title:'Eliminar fase'},'✕')
               )
             );
-          }),
+          });})(),
           e('div',{className:'sheet-row sheet-add-row'},
             e('div',{className:'sheet-cell'},
               e('input',{className:'sheet-input sheet-input-name',placeholder:'+ Agregar fase...',value:newName,onChange:ev=>setNewName(ev.target.value),onKeyDown:ev=>{if(ev.key==='Enter')addStep();}})
@@ -9517,12 +9926,13 @@ function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask,templates,onAddTe
                   const isAdding=mmAddingId===s.id;
                   const pos=positions[idx];
                   const isDragging=mmDragPreview&&mmDragPreview.id===s.id;
+                  const isActivePhase=!s.done&&!steps.slice(0,idx).some(x=>!x.done); // primera fase sin completar
                   return e('div',{
                     key:s.id,
                     className:'mm-node',
                     style:{left:pos.x,top:pos.y,zIndex:isOpen||isDragging?3:1}
                   },
-                    e('div',{className:'mm-card'+(isOpen?' open':'')+(s.done?' done':'')+(isDragging?' dragging':'')},
+                    e('div',{className:'mm-card'+(isOpen?' open':'')+(s.done?' done':'')+(isDragging?' dragging':'')+(isActivePhase?' active-phase':'')},
                       e('div',{className:'mm-card-head',onMouseDown:ev=>beginNodeDrag(s.id,idx,ev)},
                         e(AutoTextarea,{
                           className:'mm-name-input',
@@ -9576,6 +9986,7 @@ function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask,templates,onAddTe
           })()
         ),
         view==='board'&&e(TaskBoardPanel,{task,onUpdateTask}),
+        view==='notebook'&&e(TaskNotebookPanel,{task,onUpdateTask}),
         view==='experiments'&&e(TaskExperimentsPanel,{task,onUpdateTask,pSystems})
       ),
       e('div',{className:'modal-foot'},
