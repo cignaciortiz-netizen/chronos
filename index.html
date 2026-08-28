@@ -498,6 +498,11 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .task-play-btn:hover{background:var(--accent);color:#fff}
 .task-play-btn.stop{border-color:var(--red-border,#e6675f3a);background:var(--red-bg,#e6675f14);color:var(--red,#e6675f)}
 .task-play-btn.stop:hover{background:var(--red,#e6675f);color:#fff}
+.habit-play-btn{width:18px;height:18px;border-radius:var(--r-sm);border:1px solid var(--accent-border);background:var(--accent-bg);color:var(--accent2);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .12s;padding:0}
+.habit-play-btn:hover{background:var(--accent);color:#fff}
+.habit-play-btn.stop{border-color:var(--red-border,#e6675f3a);background:var(--red-bg,#e6675f14);color:var(--red,#e6675f)}
+.habit-play-btn.stop:hover{background:var(--red,#e6675f);color:#fff}
+.habit-time-badge{font-size:9px;color:var(--text3);font-family:'JetBrains Mono',monospace;flex-shrink:0}
 .task-row:hover{background:var(--bg3)}
 .task-row:hover .rem-del{opacity:1}
 .task-main{display:flex;flex-direction:column;justify-content:center;gap:3px;min-width:0;cursor:default}
@@ -754,6 +759,16 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .notebook-body-text{width:100%;flex:1;background:transparent;border:none;outline:none;color:var(--text1);font-size:13px;line-height:1.8;font-family:'Inter',sans-serif;resize:none;padding:0;min-height:240px}
 .notebook-body-text::placeholder{color:var(--text4)}
 .notebook-empty{color:var(--text3);font-size:12px;padding:20px 2px;text-align:center}
+/* LIBRETA DE CUENTA — vista agregada de todas las libretas de proyecto + notas propias de la cuenta */
+.nb-filter-row{display:flex;flex-wrap:wrap;gap:4px;padding:0 10px 8px;flex-shrink:0}
+.nb-filter-chip{padding:3px 8px;border-radius:20px;border:1px solid var(--border2);background:transparent;color:var(--text3);font-size:10px;font-family:'Inter',sans-serif;cursor:pointer;transition:all .12s;white-space:nowrap}
+.nb-filter-chip:hover{color:var(--text1);border-color:var(--border3)}
+.nb-filter-chip.on{background:var(--accent-bg);border-color:var(--accent-border);color:var(--accent2)}
+.nb-tag{display:inline-flex;align-items:center;gap:4px;padding:1px 7px;border-radius:20px;font-size:9.5px;font-weight:500;line-height:1.5;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis;margin:3px 0 0}
+.nb-tag-account{background:var(--accent-bg);border:1px solid var(--accent-border);color:var(--accent2)}
+.nb-tag-task{background:var(--bg3);border:1px solid var(--border3);color:var(--text2)}
+.nb-tag-task.done{opacity:.55}
+.notebook-page-top .nb-tag{margin:0}
 /* Bitácora de experimentos por lanzamiento — reutiliza el look de las notas de pizarra */
 .exp-panel{height:100%;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:14px;max-width:440px}
 .exp-panel-form{display:flex;flex-direction:column}
@@ -2119,6 +2134,7 @@ function App(){
   const[showCtxModal,setShowCtxModal]=useState(null);
   const[showHist,setShowHist]=useState(null);
   const[showNewProj,setShowNewProj]=useState(false);
+  const[pendingSysTpl,setPendingSysTpl]=useState(null); // plantilla de sistemas esperando fecha de inicio
   const[editProj,setEditProj]=useState(null);
   const[editBlock,setEditBlock]=useState(null);
   const[showNewBlock,setShowNewBlock]=useState(false);
@@ -2338,6 +2354,87 @@ function App(){
     return()=>clearInterval(id);
   },[projects,soundCfg]);
 
+  // SISTEMAS: al abrir la app (y cada 30s mientras esté abierta), revisa si
+  // algún sistema tiene una fase marcada ⚙ (punto de automatización) cuya
+  // fecha de inicio ya llegó. Si es así, crea automáticamente el siguiente proyecto (tarea con esos mismos pasos,
+  // fechas encadenadas desde hoy) — sin necesidad de servidor corriendo
+  // 24/7: alcanza con abrir Chronos, se pone al día solo. Cada fase de
+  // automatización dispara una única vez (queda marcada en autoSpawnedFor).
+  useEffect(()=>{
+    function checkSystemsAutomation(){
+      const today=todayDateKey();
+      setSystems(prev=>{
+        let changed=false;
+        const spawned=[];
+        const next=prev.map(s=>{
+          const phases=migrateSysPhases(s);
+          const autoPhase=phases.find(p=>p.automation&&p.startDate&&p.startDate<=today);
+          if(!autoPhase)return s; // sin módulo ⚙ con fecha de inicio alcanzada, no hay nada que hacer
+          if(s.autoSpawnedFor===autoPhase.startDate)return s; // ya se creó el próximo ciclo para esta fecha
+          // El proyecto nuevo arranca el día siguiente al INICIO de la fase ⚙.
+          const nextStart=addDaysToDateKey(autoPhase.startDate,1);
+          const steps=stepsFromSystemForExecute(s,nextStart);
+          if(steps.length){
+            spawned.push({name:'Proyecto automático',projectId:s.projectId,steps});
+          }
+          changed=true;
+          return{...s,autoSpawnedFor:autoPhase.startDate};
+        });
+        if(spawned.length){
+          setTasks(ts=>[...ts,...spawned.map(sp=>({id:uid(),projectId:sp.projectId,name:sp.name,status:'pending',priority:'mid',createdAt:Date.now(),steps:sp.steps,recurrence:null,dueDate:null,sysTemplateId:null}))]);
+          spawned.forEach(sp=>showNotif('⚙ "'+sp.name+'" se repitió — nuevo proyecto creado'));
+          forceSync();
+        }
+        return changed?next:prev;
+      });
+    }
+    checkSystemsAutomation();
+    const id=setInterval(checkSystemsAutomation,30000);
+    return()=>clearInterval(id);
+  },[]);
+
+  // TAREAS/PROYECTOS CON FASE ⚙: igual que checkSystemsAutomation pero para
+  // cualquier tarea (proyecto) que tenga una fase marcada como punto de
+  // automatización, sin necesidad de pasar por el Mapa de Sistemas. Al abrir
+  // Chronos (y cada 30s mientras esté abierto), si esa fase ya arrancó
+  // (startDate <= hoy) se usa la propia tarea como plantilla — mismas fases,
+  // mismos nombres, mismas subtareas, automation preservado — y se crea un
+  // proyecto nuevo real llamado "Proyecto automático" en la misma cuenta,
+  // con las fechas encadenadas desde hoy. Dispara una única vez por fecha
+  // (queda registrado en autoSpawnedFor de la tarea de origen).
+  useEffect(()=>{
+    function checkTaskAutomation(){
+      const today=todayDateKey();
+      setTasks(prev=>{
+        let changed=false;
+        const spawned=[];
+        const next=prev.map(t=>{
+          const steps=t.steps||[];
+          const autoStep=steps.find(s=>s.automation&&s.startDate&&s.startDate<=today);
+          if(!autoStep)return t;
+          if(t.autoSpawnedFor===autoStep.startDate)return t;
+          const nextStart=addDaysToDateKey(autoStep.startDate,1);
+          const tplSteps=stepsToTemplateSteps(steps);
+          const newSteps=templateToSteps({steps:tplSteps},nextStart);
+          if(newSteps.length){
+            spawned.push({projectId:t.projectId,steps:newSteps});
+          }
+          changed=true;
+          return{...t,autoSpawnedFor:autoStep.startDate};
+        });
+        if(spawned.length){
+          setTasks(ts=>[...ts,...spawned.map(sp=>({id:uid(),projectId:sp.projectId,name:'Proyecto automático',status:'pending',priority:'mid',createdAt:Date.now(),steps:sp.steps,recurrence:null,dueDate:null,sysTemplateId:null}))]);
+          spawned.forEach(()=>showNotif('⚙ Se creó "Proyecto automático"'));
+          forceSync();
+        }
+        return changed?next:prev;
+      });
+    }
+    checkTaskAutomation();
+    const id=setInterval(checkTaskAutomation,30000);
+    return()=>clearInterval(id);
+  },[]);
+
   // SB: on connect, pull and restore remote data
   useEffect(()=>{
     if(sbStatus!=='connected') return;
@@ -2393,11 +2490,15 @@ function App(){
     })();
   },[sbStatus]);
 
-  // SB: debounced auto-push — 3s after any data change
+  // SB: auto-push casi instantáneo tras cualquier cambio de datos.
+  // Se usa un debounce mínimo (150ms) — no para hacerte esperar, sino solo
+  // para agrupar cambios que React dispara en el mismo instante (ej. varios
+  // setState seguidos al hacer una sola acción) en una única petición a
+  // Supabase, en vez de mandar 3-4 peticiones simultáneas por el mismo click.
   useEffect(()=>{
     if(sbStatus!=='connected') return;
     // Se marca "sucio" apenas cambia cualquier dato sincronizable, antes de
-    // esperar los 3s de debounce — así, si la página se recarga en ese
+    // que termine de subirse — así, si la página se recarga en ese
     // intervalo, sabemos que hubo un cambio que quizás no llegó a subirse.
     SB.markDirty();
     clearTimeout(sbSyncRef.current);
@@ -2406,7 +2507,7 @@ function App(){
       try{ await SB.push({projects,sessions,intenciones,tasks,blocks,habits,reminders,ctxs,systems,panelLabels,panelVisibility,panelSortModes,templates,sysTemplates}); SB.markSynced(); }
       catch(e){ console.warn('[SB] push error',e); }
       setSbSyncing(false);
-    },3000);
+    },150);
     return()=>clearTimeout(sbSyncRef.current);
   },[projects,sessions,intenciones,tasks,blocks,habits,reminders,ctxs,systems,panelLabels,panelVisibility,panelSortModes,templates,sysTemplates,sbStatus]);
 
@@ -2707,7 +2808,7 @@ function App(){
     const currentBreakSecs=breakStartTs.current?Math.floor((nowMs-breakStartTs.current)/1000):0;
     const realDur=Math.max(0,totalElapsed-breakAccum.current-currentBreakSecs);
     const now=nowTs();
-    const ns={id:uid(),projectId:activeSess.projectId,taskId:activeSess.taskId,startAt:activeSess.startAt,endAt:now,duration:Math.max(0,realDur),mode:activeSess.mode,pomos:pomoCount,day:dayKey()};
+    const ns={id:uid(),projectId:activeSess.projectId,taskId:activeSess.taskId,habitId:activeSess.habitId||null,startAt:activeSess.startAt,endAt:now,duration:Math.max(0,realDur),mode:activeSess.mode,pomos:pomoCount,day:dayKey()};
     setSessions(s=>[...s,ns]);
     const cap=ns;
     setTState('idle');setElapsed(0);setWorkElapsed(0);setPomoElapsed(0);setPomoCount(0);setPomoPhaseDone(false);pomoPhaseDoneRef.current=false;setActiveSess(null);
@@ -2723,7 +2824,7 @@ function App(){
     if(auto)showNotif('Límite alcanzado. Sesión guardada.');
   }
 
-  function doStart(projId,taskId,mode){
+  function doStart(projId,taskId,mode,habitId){
     if(tState!=='idle')doStop(false,null,true);
     const now=Date.now();
     sessStartTs.current=now;
@@ -2733,7 +2834,7 @@ function App(){
     breakStartTs.current=null;
     pomoPhaseStartTs.current=now;
     sessCheckpointId.current=uid();
-    setActiveSess({projectId:projId,taskId:taskId||null,startAt:nowTs(),mode});
+    setActiveSess({projectId:projId,taskId:taskId||null,habitId:habitId||null,startAt:nowTs(),mode});
     setElapsed(0);setWorkElapsed(0);setPomoElapsed(0);setPomoPhase('work');setPomoCount(0);setPomoPhaseDone(false);pomoPhaseDoneRef.current=false;setTState('running');
     if(taskId)setTasks(ts=>ts.map(t=>t.id===taskId?{...t,status:'inprog'}:t));
     showNotif('Sesión iniciada');
@@ -2805,7 +2906,7 @@ function App(){
   }
 
   const activeProj=activeSess?projects.find(p=>p.id===activeSess.projectId):null;
-  const activeTask=activeSess?tasks.find(t=>t.id===activeSess.taskId):null;
+  const activeTask=activeSess?(tasks.find(t=>t.id===activeSess.taskId)||(activeSess.habitId?habits.find(h=>h.id===activeSess.habitId):null)):null;
   const isToday=selectedDay===dayKey();
   const daySess=sessions.filter(s=>s.day===selectedDay&&s.endAt);
   const todayTotal=daySess.reduce((a,s)=>a+s.duration,0)+(isToday&&tState!=='idle'?workElapsed:0);
@@ -2823,6 +2924,25 @@ function App(){
         ? {id:'live',projectId:activeSess.projectId,taskId:activeSess.taskId,startAt:activeSess.startAt,endAt:pausedAt.current?Math.floor(pausedAt.current/1000):nowTs(),live:false}
         : null);
   const selectedProjObj=projects.find(p=>p.id===selProj)||projects[0];
+  // Aplica una plantilla de Mapa de Sistemas al proyecto indicado (o al
+  // seleccionado). Si se pasa startFrom, encadena startDate/dueDate por fase
+  // según la duración estimada de cada una; si no, crea los sistemas sin fecha.
+  function doApplySysTemplate(tpl,startFrom,opts){
+    const targetProjId=(opts&&opts.projectId)||selectedProjObj.id;
+    const idMap={};
+    const newSystems=tpl.systems.map(s=>{
+      const newId=uid();
+      idMap[s.tempId]=newId;
+      const rawPhases=(s.phases||[]).map(p=>({id:uid(),name:p.name,durationDays:Number.isFinite(p.durationDays)&&p.durationDays>0?p.durationDays:null,tasks:(p.tasks||[]).map(t=>({id:uid(),text:t.text,done:false}))}));
+      const phases=startFrom?chainPhaseDates(rawPhases,startFrom):rawPhases;
+      return{id:newId,projectId:targetProjId,name:s.name,icon:s.icon,color:s.color,order:s.order,phases,mmPos:s.mmPos||null,status:'active',lastRun:null,nextRun:null,createdAt:Date.now()};
+    });
+    const newLinks=(tpl.links||[]).filter(l=>idMap[l[0]]&&idMap[l[1]]).map(l=>[idMap[l[0]],idMap[l[1]],l[2]||'']);
+    setSystems(ss=>[...ss,...newSystems]);
+    if(newLinks.length)setProjects(ps=>ps.map(p=>p.id===targetProjId?{...p,sysLinks:[...(p.sysLinks||[]),...newLinks]}:p));
+    forceSync();
+    return newSystems;
+  }
   const showIdleReminder=tState==='idle'&&soundCfg.idleEnabled&&!idleSilenced;
 
   // Alerta global de la campanita: debe encenderse si CUALQUIER proyecto tiene
@@ -2956,6 +3076,8 @@ function App(){
           })
         :view==='dashboard'&&selectedProjObj
         ?e(ProjectDashboard,{
+            workElapsed,
+            onPlayHabit:habitId=>{const h=habits.find(x=>x.id===habitId);setStartFlow({projId:selectedProjObj.id,mode:'pomo',habitId,taskName:h?h.name:null});},
             project:selectedProjObj,
             projects,tasks,sessions,ctxs,habits,systems,
             notes:notes[selectedProjObj.id]||[],
@@ -3105,7 +3227,7 @@ function App(){
               const clonedSystems=projSystems.map((s,i)=>{
                 const tempId=uid();
                 idMap[s.id]=tempId;
-                return{tempId,name:s.name,icon:s.icon,color:s.color,order:i+1,durationDays:null,phases:migrateSysPhases(s),mmPos:s.mmPos||null};
+                return{tempId,name:s.name,icon:s.icon,color:s.color,order:i+1,durationDays:s.durationDays||null,automation:!!s.automation,phases:migrateSysPhases(s),mmPos:s.mmPos||null};
               });
               const clonedLinks=(selectedProjObj.sysLinks||[]).filter(l=>idMap[l[0]]&&idMap[l[1]]).map(l=>[idMap[l[0]],idMap[l[1]],l[2]||'']);
               setSysTemplates(prev=>[...prev,{id:uid(),name:name||('Plantilla — '+selectedProjObj.name),createdAt:Date.now(),systems:clonedSystems,links:clonedLinks}]);
@@ -3121,19 +3243,14 @@ function App(){
             },
             onApplySysTemplate:tplId=>{
               // Clona todos los sistemas de la plantilla dentro del proyecto actual, con ids nuevos,
-              // y remapea los links del mapa a esos ids nuevos.
+              // y remapea los links del mapa a esos ids nuevos. Si la plantilla tiene fases con
+              // duración estimada, primero pide la fecha de inicio para encadenar las fechas
+              // (igual que una plantilla de proyecto normal); si no, se aplica directo.
               const tpl=sysTemplates.find(t=>t.id===tplId);
               if(!tpl)return;
-              const idMap={};
-              const newSystems=tpl.systems.map(s=>{
-                const newId=uid();
-                idMap[s.tempId]=newId;
-                return{id:newId,projectId:selectedProjObj.id,name:s.name,icon:s.icon,color:s.color,order:s.order,phases:(s.phases||[]).map(p=>({id:uid(),name:p.name,tasks:(p.tasks||[]).map(t=>({id:uid(),text:t.text,done:false}))})),mmPos:s.mmPos||null,status:'active',lastRun:null,nextRun:null,createdAt:Date.now()};
-              });
-              const newLinks=(tpl.links||[]).filter(l=>idMap[l[0]]&&idMap[l[1]]).map(l=>[idMap[l[0]],idMap[l[1]],l[2]||'']);
-              setSystems(ss=>[...ss,...newSystems]);
-              setProjects(ps=>ps.map(p=>p.id===selectedProjObj.id?{...p,sysLinks:[...(p.sysLinks||[]),...newLinks]}:p));
-              forceSync();
+              const hasDurations=tpl.systems.some(s=>(s.phases||[]).some(p=>Number.isFinite(p.durationDays)&&p.durationDays>0));
+              if(hasDurations){setPendingSysTpl({tplId,mode:'map'});return;}
+              doApplySysTemplate(tpl,null,{mode:'map'});
             },
             onStartTimer:()=>setStartFlow({projId:selectedProjObj.id,mode:'ask'}),
             onEditProject:()=>setEditProj(selectedProjObj),
@@ -3263,6 +3380,11 @@ function App(){
       pomoCfg,setPomoCfg,
       onClose:()=>setStartFlow(null),
       onStart:(tid,tName,resolvedMode)=>{
+        if(startFlow.habitId){
+          doStart(startFlow.projId,null,resolvedMode||startFlow.mode,startFlow.habitId);
+          setStartFlow(null);
+          return;
+        }
         let finalTid=tid;
         if(!finalTid&&tName&&tName.trim()){finalTid=uid();setTasks(ts=>[...ts,{id:finalTid,projectId:startFlow.projId,name:tName.trim(),status:'pending',priority:'mid',createdAt:Date.now()}]);}
         doStart(startFlow.projId,finalTid||null,resolvedMode||startFlow.mode);setStartFlow(null);
@@ -3282,24 +3404,14 @@ function App(){
         return out;
       });
       forceSync();
-    },onUpdateTask:(id,patch)=>{setTasks(ts=>ts.map(t=>t.id===id?{...t,...patch}:t));forceSync();},onUpdateTaskSteps:(id,steps)=>{setTasks(ts=>ts.map(t=>t.id===id?{...t,steps}:t));forceSync();},onDeleteTask:id=>{setTasks(ts=>ts.filter(t=>t.id!==id));forceSync();},onClose:()=>setShowHist(null),tState,activeSess,onPlayTask:taskId=>{const t=tasks.find(x=>x.id===taskId);setStartFlow({projId:showHist,mode:'pomo',taskId,taskName:t?t.name:null});},onFinishTask:handleStop}),
+    },onUpdateTask:(id,patch)=>{setTasks(ts=>ts.map(t=>t.id===id?{...t,...patch}:t));forceSync();},onUpdateTaskSteps:(id,steps)=>{setTasks(ts=>ts.map(t=>t.id===id?{...t,steps}:t));forceSync();},onDeleteTask:id=>{setTasks(ts=>ts.filter(t=>t.id!==id));forceSync();},onClose:()=>setShowHist(null),tState,activeSess,onPlayTask:taskId=>{const t=tasks.find(x=>x.id===taskId);setStartFlow({projId:showHist,mode:'pomo',taskId,taskName:t?t.name:null});},onFinishTask:handleStop,onPlayHabit:habitId=>{const h=habits.find(x=>x.id===habitId);setStartFlow({projId:showHist,mode:'pomo',habitId,taskName:h?h.name:null});},workElapsed}),
     showNewProj&&e(ProjModal,{sysTemplates,onClose:()=>setShowNewProj(false),onSave:p=>{
       const newId=uid();
       const{_installTplId,...clean}=p;
       setProjects(ps=>[...ps,{...clean,id:newId,status:'active',createdAt:Date.now()}]);
       if(_installTplId){
         const tpl=sysTemplates.find(t=>t.id===_installTplId);
-        if(tpl){
-          const idMap={};
-          const newSystems=tpl.systems.map(s=>{
-            const sysId=uid();
-            idMap[s.tempId]=sysId;
-            return{id:sysId,projectId:newId,name:s.name,icon:s.icon,color:s.color,order:s.order,phases:(s.phases||[]).map(ph=>({id:uid(),name:ph.name,tasks:(ph.tasks||[]).map(t=>({id:uid(),text:t.text,done:false}))})),mmPos:s.mmPos||null,status:'active',lastRun:null,nextRun:null,createdAt:Date.now()};
-          });
-          const newLinks=(tpl.links||[]).filter(l=>idMap[l[0]]&&idMap[l[1]]).map(l=>[idMap[l[0]],idMap[l[1]],l[2]||'']);
-          setSystems(ss=>[...ss,...newSystems]);
-          if(newLinks.length)setProjects(ps=>ps.map(pp=>pp.id===newId?{...pp,sysLinks:newLinks}:pp));
-        }
+        if(tpl)doApplySysTemplate(tpl,todayDateKey(),{projectId:newId});
       }
       setSelProj(newId);
       setView('dashboard');
@@ -3307,6 +3419,33 @@ function App(){
       forceSync();
     }}),
     editProj&&e(ProjModal,{project:editProj,onClose:()=>setEditProj(null),onSave:p=>{setProjects(ps=>ps.map(pp=>pp.id===p.id?p:pp));setEditProj(null);},onDelete:id=>{setProjects(ps=>ps.filter(p=>p.id!==id));if(selProj===id)setSelProj(null);setEditProj(null);}}),
+    pendingSysTpl&&(()=>{
+      const tpl=sysTemplates.find(t=>t.id===pendingSysTpl.tplId);
+      if(!tpl)return null;
+      const totalDays=tpl.systems.reduce((a,s)=>a+(s.phases||[]).reduce((b,p)=>b+(Number.isFinite(p.durationDays)&&p.durationDays>0?p.durationDays:0),0),0);
+      return e('div',{className:'overlay',onClick:ev=>{if(ev.target===ev.currentTarget)setPendingSysTpl(null);}},
+        e('div',{className:'modal',style:{width:360}},
+          e('div',{className:'modal-head'},e('div',{className:'modal-title'},'Aplicar "'+tpl.name+'"'),e('button',{className:'modal-x',onClick:()=>setPendingSysTpl(null)},'✕')),
+          e('div',{className:'modal-body'},
+            e('div',{style:{fontSize:11.5,color:'var(--text2)',lineHeight:1.6,marginBottom:10}},
+              'Esta plantilla tiene fases con duración estimada ('+totalDays+' días en total, sumando todos los sistemas). Elige desde cuándo empezar y las fechas se encadenan automáticamente por sistema — igual las puedes ajustar a mano después.'
+            ),
+            e('div',{className:'fg'},e('label',{className:'flabel'},'Fecha de inicio'),
+              e('input',{className:'finput',type:'date',id:'systpl-start-date',defaultValue:todayDateKey()})
+            )
+          ),
+          e('div',{className:'modal-foot'},
+            e('button',{className:'btn',onClick:()=>setPendingSysTpl(null)},'Cancelar'),
+            e('button',{className:'btn btn-primary',onClick:()=>{
+              const input=document.getElementById('systpl-start-date');
+              const startFrom=(input&&input.value)||todayDateKey();
+              doApplySysTemplate(tpl,startFrom);
+              setPendingSysTpl(null);
+            }},'Aplicar y calcular fechas')
+          )
+        )
+      );
+    })(),
     (editBlock||showNewBlock)&&e(BlockModal,{
       block:editBlock||null,
       preset:newBlockPreset,
@@ -4672,7 +4811,7 @@ function TaskRow({t,onCycleTaskStatus,onDeleteTask,isActive,onPlay,onFinish,onOp
   );
 }
 
-function HistModal({project,ctxs,sessions,habits,onAddHabit,onUpdateHabit,onDeleteHabit,onToggleHabitLog,onToggleHabitSkip,tasks,onAddTask,onCycleTaskStatus,onDeleteTask,onUpdateTask,onClose,tState,activeSess,onPlayTask,onFinishTask}){
+function HistModal({project,ctxs,sessions,habits,onAddHabit,onUpdateHabit,onDeleteHabit,onToggleHabitLog,onToggleHabitSkip,tasks,onAddTask,onCycleTaskStatus,onDeleteTask,onUpdateTask,onClose,tState,activeSess,onPlayTask,onFinishTask,onPlayHabit,workElapsed}){
   if(!project)return null;
   const[habitForm,setHabitForm]=useState(null); // null | 'new' | habit object being edited
   const[newTask,setNewTask]=useState('');
@@ -4681,6 +4820,11 @@ function HistModal({project,ctxs,sessions,habits,onAddHabit,onUpdateHabit,onDele
   const pendingTasks=tasks.filter(t=>t.status!=='done');
   const today=dayKey();
   const isRunningHere=(tState==='running'||tState==='paused')&&activeSess&&activeSess.projectId===project.id;
+  function habitTimeToday(habitId){
+    const done=sessions.filter(s=>s.habitId===habitId&&s.day===today).reduce((a,s)=>a+s.duration,0);
+    const live=(isRunningHere&&activeSess&&activeSess.habitId===habitId&&tState==='running')?workElapsed:0;
+    return done+live;
+  }
 
   useEffect(()=>{
     if(!habitCtxMenu)return;
@@ -4748,7 +4892,13 @@ function HistModal({project,ctxs,sessions,habits,onAddHabit,onUpdateHabit,onDele
               },
                 e('span',{className:'habit-grid-name',style:{display:'flex',alignItems:'center',gap:6,cursor:'pointer'},title:'Doble click para editar · click derecho para más opciones',onDoubleClick:()=>setHabitForm(h)},
                   dueToday&&e('span',{className:'proj-habit-bell',style:{cursor:'default'},title:'Toca cumplir hoy'},e(BellIcon,{active:true,size:10,color:'currentColor'})),
-                  h.name
+                  e('span',{style:{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}},h.name),
+                  habitTimeToday(h.id)>0&&e('span',{className:'habit-time-badge'},fmtS(habitTimeToday(h.id))),
+                  e('span',{style:{marginLeft:'auto',display:'flex'},onClick:ev=>ev.stopPropagation()},
+                    (isRunningHere&&activeSess.habitId===h.id)
+                      ?e('button',{className:'habit-play-btn stop',onClick:()=>{playUI('click');onFinishTask();},title:'Finalizar sesión'},e(StopIcon,null))
+                      :e('button',{className:'habit-play-btn',onClick:()=>{playUI('click');onPlayHabit(h.id);},title:'Iniciar Pomodoro'},e(PlayIcon,null))
+                  )
                 ),
                 week.map(w=>{
                   const scheduled=habitOccursOn(h,dateFromDayKey(w.key));
@@ -6530,6 +6680,10 @@ function SysTemplateEditModal({tpl,onClose,onSave,onDelete}){
   function removePhase(tempId,phaseId){
     setMods(ms=>ms.map(m=>m.tempId===tempId?{...m,phases:m.phases.filter(p=>p.id!==phaseId)}:m));
   }
+  function setPhaseDuration(tempId,phaseId,val){
+    const n=val===''?null:Math.max(0,parseInt(val,10)||0);
+    setMods(ms=>ms.map(m=>m.tempId===tempId?{...m,phases:m.phases.map(p=>p.id===phaseId?{...p,durationDays:n}:p)}:m));
+  }
   function addTask(tempId,phaseId){
     setMods(ms=>ms.map(m=>m.tempId===tempId?{...m,phases:m.phases.map(p=>p.id===phaseId?{...p,tasks:[...p.tasks,{id:uid(),text:'',done:false}]}:p)}:m));
   }
@@ -6542,14 +6696,12 @@ function SysTemplateEditModal({tpl,onClose,onSave,onDelete}){
   function applyPaste(tempId,mode){
     // Mismo parser "1. Fase (días)" + tareas sueltas que ya usan las plantillas
     // de proyecto — pegado rápido tipo Notion, ahora también por módulo.
-    const parsed=parseTemplateText(pasteText).map(s=>({id:uid(),name:s.name,tasks:(s.subtasks||[]).map(t=>({id:uid(),text:t.name,done:false}))}));
+    const parsed=parseTemplateText(pasteText).map(s=>({id:uid(),name:s.name,durationDays:Number.isFinite(s.durationDays)&&s.durationDays>0?s.durationDays:null,tasks:(s.subtasks||[]).map(t=>({id:uid(),text:t.name,done:false}))}));
     if(!parsed.length)return;
     setMods(ms=>ms.map(m=>{
       if(m.tempId!==tempId)return m;
       const base=mode==='append'?(m.phases||[]):[];
-      // si la primera fase pegada trae duración en el texto, la usamos para el módulo
-      const firstDur=parseTemplateText(pasteText)[0]?.durationDays;
-      return{...m,phases:[...base,...parsed],durationDays:Number.isFinite(firstDur)&&firstDur>0?firstDur:m.durationDays};
+      return{...m,phases:[...base,...parsed]};
     }));
     setPasteText('');
     setShowPasteFor(null);
@@ -6634,6 +6786,12 @@ function SysTemplateEditModal({tpl,onClose,onSave,onDelete}){
                   (m.phases||[]).map(p=>e('div',{key:p.id,style:{border:'1px solid var(--border2)',borderRadius:8,padding:8}},
                     e('div',{style:{display:'flex',alignItems:'center',gap:6,marginBottom:6}},
                       e('input',{className:'finput',style:{flex:1,padding:'5px 7px',fontSize:11.5},value:p.name,onChange:ev=>renamePhase(m.tempId,p.id,ev.target.value)}),
+                      e('input',{
+                        type:'number',min:0,placeholder:'d',title:'Días estimados para esta fase — permite recalcular fechas al ejecutar el sistema',
+                        value:p.durationDays==null?'':p.durationDays,
+                        onChange:ev=>setPhaseDuration(m.tempId,p.id,ev.target.value),
+                        style:{width:36,fontSize:11,padding:'3px 4px',textAlign:'center',background:'var(--bg3)',border:'1px solid var(--border2)',borderRadius:6,color:'var(--text0)'}
+                      }),
                       e('button',{className:'ghost-btn',title:'Añadir tarea',onClick:()=>addTask(m.tempId,p.id)},'＋'),
                       e('button',{className:'ghost-btn',title:'Eliminar fase',onClick:()=>removePhase(m.tempId,p.id)},'✕')
                     ),
@@ -6667,6 +6825,21 @@ function migrateSysPhases(system){
   if(system.phases)return system.phases;
   if(system.components&&system.components.length)return[{id:uid(),name:'Componentes',tasks:system.components.map(c=>({id:c.id,text:c.text,done:!!c.done}))}];
   return[];
+}
+// Encadena startDate/dueDate de un array de fases a partir de una fecha de
+// inicio, respetando la duración (durationDays) que ya tenía cada una. Las
+// fases sin duración quedan sin fecha (no rompen la cadena, simplemente no
+// avanzan el cursor). Se usa tanto al aplicar una plantilla del Mapa de
+// Sistemas como al recalcular fechas de un sistema ya creado.
+function chainPhaseDates(phases,startFrom){
+  let cursor=startFrom||todayDateKey();
+  return (phases||[]).map(p=>{
+    if(!Number.isFinite(p.durationDays)||p.durationDays<=0)return{...p,startDate:p.startDate||null,dueDate:p.dueDate||null};
+    const startDate=cursor;
+    const dueDate=addDaysToDateKey(cursor,p.durationDays);
+    cursor=addDaysToDateKey(dueDate,1);
+    return{...p,startDate,dueDate};
+  });
 }
 // Arma los "pasos" (steps) de un proyecto nuevo a partir del sistema actual,
 // respetando el orden en que están puestos los módulos (o las fases, si el
@@ -7011,6 +7184,7 @@ function SystemDetailDrawer({system,onUpdateSystem,onClose,onExecute}){
     }
   },[]);
   const[openIds,setOpenIds]=useState(()=>new Set());
+  const[showRecalcSys,setShowRecalcSys]=useState(false);
   const[addingTaskFor,setAddingTaskFor]=useState(null);
   const[newTaskText,setNewTaskText]=useState('');
   const[showImport,setShowImport]=useState(false);
@@ -7043,6 +7217,10 @@ function SystemDetailDrawer({system,onUpdateSystem,onClose,onExecute}){
   }
   function renamePhase(id,name){
     commitPhases(phases.map(p=>p.id===id?{...p,name}:p));
+  }
+  function setPhaseDuration(id,val){
+    const n=val===''?null:Math.max(0,parseInt(val,10)||0);
+    commitPhases(phases.map(p=>p.id===id?{...p,durationDays:n}:p));
   }
   function deletePhase(id){
     commitPhases(phases.filter(p=>p.id!==id));
@@ -7144,7 +7322,9 @@ function SystemDetailDrawer({system,onUpdateSystem,onClose,onExecute}){
       e('div',{className:'sysdrawer-hdr'},
         e('div',{className:'system-icon-badge',style:{color,background:color+'1f'}},e(ProjIconSVG,{iconKey:system.icon||'target',size:15,color:'currentColor'})),
         e('div',{className:'sysdrawer-title'},system.name),
-        onExecute&&e('button',{className:'btn btn-primary',style:{marginLeft:'auto',fontSize:11},disabled:!canExecute,title:canExecute?'Crea un proyecto nuevo usando el orden actual de fases y tareas':'Agrega al menos una tarea para poder ejecutar',onClick:()=>{setExecuteStart(todayDateKey());setShowExecuteModal(true);}},'▶ Ejecutar'),
+        e('div',{style:{marginLeft:'auto',fontSize:10,color:'var(--text3)'}},'⚙ activa automáticamente'),
+        phases.some(p=>p.startDate&&p.dueDate)&&e('button',{className:'rec-trigger-btn',title:'Cambiar la fecha de inicio y recalcular todas las fases con fecha, sin perder nada',onClick:()=>setShowRecalcSys(true)},e(DashIcon,{name:'refresh',size:12})),
+        onExecute&&e('button',{className:'btn btn-primary',style:{fontSize:11},disabled:!canExecute,title:canExecute?'Crea un proyecto nuevo usando el orden actual de fases y tareas':'Agrega al menos una tarea para poder ejecutar',onClick:()=>{setExecuteStart(todayDateKey());setShowExecuteModal(true);}},'▶ Ejecutar'),
         e('button',{className:'modal-x',onClick:onClose},'✕')
       ),
       e('div',{className:'sysdrawer-body'},
@@ -7179,6 +7359,13 @@ function SystemDetailDrawer({system,onUpdateSystem,onClose,onExecute}){
               e('span',{className:'mm-chev'+(isOpen?' open':'')},'›'),
               e('input',{className:'sysphase-name',value:p.name,onClick:ev=>ev.stopPropagation(),onChange:ev=>renamePhase(p.id,ev.target.value)}),
               e('span',{className:'sysphase-count'},p.tasks.length),
+              e('input',{
+                type:'number',min:0,placeholder:'d',title:'Días estimados para esta fase — permite recalcular fechas al ejecutar',
+                value:p.durationDays==null?'':p.durationDays,
+                onClick:ev=>ev.stopPropagation(),
+                onChange:ev=>setPhaseDuration(p.id,ev.target.value),
+                style:{width:34,fontSize:11,padding:'2px 3px',textAlign:'center',background:'var(--bg3)',border:'1px solid var(--border2)',borderRadius:6,color:'var(--text0)'}
+              }),
               e('button',{className:'ghost-btn',title:p.automation?'Punto de automatización — clic para quitar':'Marcar como punto de automatización',style:{color:p.automation?'var(--accent2)':'var(--text3)'},onClick:ev=>{ev.stopPropagation();commitPhases(phases.map(x=>x.id===p.id?{...x,automation:!x.automation}:x));}},'⚙'),
               e('button',{className:'ghost-btn',onClick:ev=>{ev.stopPropagation();deletePhase(p.id);},title:'Eliminar fase'},'✕')
             ),
@@ -7280,7 +7467,33 @@ function SystemDetailDrawer({system,onUpdateSystem,onClose,onExecute}){
           e('button',{className:'btn btn-primary',disabled:!executeStart,onClick:confirmExecute},'▶ Ejecutar y crear proyecto')
         )
       )
-    )
+    ),
+    showRecalcSys&&(()=>{
+      const datedPhases=phases.filter(p=>p.startDate&&p.dueDate);
+      const currentFirst=datedPhases.reduce((min,p)=>!min||p.startDate<min?p.startDate:min,null);
+      return e('div',{className:'overlay',onClick:ev=>{if(ev.target===ev.currentTarget)setShowRecalcSys(false);}},
+        e('div',{className:'modal',style:{width:380}},
+          e('div',{className:'modal-head'},e('div',{className:'modal-title'},'Recalcular fechas del sistema'),e('button',{className:'modal-x',onClick:()=>setShowRecalcSys(false)},'✕')),
+          e('div',{className:'modal-body'},
+            e('div',{style:{fontSize:11.5,color:'var(--text2)',lineHeight:1.6,marginBottom:10}},
+              'Elige la nueva fecha de inicio y las '+datedPhases.length+' fase(s) con fecha se recorren en cadena a partir de ahí, respetando la duración que ya tenía cada una. No se pierde ningún nombre, tarea ni avance.'
+            ),
+            e('div',{className:'fg'},e('label',{className:'flabel'},'Nueva fecha de inicio'),
+              e('input',{className:'finput',type:'date',id:'sys-recalc-date',defaultValue:currentFirst||todayDateKey()})
+            )
+          ),
+          e('div',{className:'modal-foot'},
+            e('button',{className:'btn',onClick:()=>setShowRecalcSys(false)},'Cancelar'),
+            e('button',{className:'btn btn-primary',onClick:()=>{
+              const input=document.getElementById('sys-recalc-date');
+              const startFrom=(input&&input.value)||todayDateKey();
+              commitPhases(chainPhaseDates(phases,startFrom));
+              setShowRecalcSys(false);
+            }},'Recalcular')
+          )
+        )
+      );
+    })()
   );
 }
 
@@ -7793,10 +8006,10 @@ function ProjectDashboard(props){
     panelLabels,onRenameLabel,panelVisibility,onTogglePanelVisibility,
     panelSortModes,onChangeSortMode,
     blocks,setBlocks,realBlocks,liveBlock,tick,blockOpacity,blockStyle,realStyle,tlZoom,setTlZoom,selectedDay,setSelectedDay,onDblClickTime,onEditBlock,onNewBlock,
-    tState,activeSess,
+    tState,activeSess,workElapsed,
     onAddTask,onCycleTaskStatus,onDeleteTask,onUpdateTask,onUpdateTaskSteps,onPlayTask,onFinishTask,
     templates,onAddTemplate,onUpdateTemplate,onDeleteTemplate,
-    onAddHabit,onUpdateHabit,onDeleteHabit,onToggleHabitLog,onToggleHabitSkip,
+    onAddHabit,onUpdateHabit,onDeleteHabit,onToggleHabitLog,onToggleHabitSkip,onPlayHabit,
     onAddSystem,onUpdateSystem,onDeleteSystem,onCombineSystems,onPatchProject,
     sysTemplates,onSaveSysTemplate,onApplySysTemplate,onDeleteSysTemplate,onUpdateSysTemplate,
     onStartTimer,onEditProject,onBack,
@@ -7844,23 +8057,12 @@ function ProjectDashboard(props){
     });
   }
   function openAddTask(){setShowTaskModal(true);}
-  // ── AUTO-DETECCIÓN DE FASE DE AUTOMATIZACIÓN ──
-  // Si algún proyecto de esta cuenta tiene una fase marcada como "automatización"
-  // (ver findAutomationBreakDate) y esa fase ya arrancó (startDate <= hoy),
-  // el trabajo quedó desatendido y hay tiempo libre: mostramos un aviso
-  // proactivo para lanzar el próximo proyecto con la fecha sugerida ya cargada,
-  // en vez de esperar a que el usuario se acuerde de abrir el modal manualmente.
-  const autoBreakDate=useMemo(()=>findAutomationBreakDate(tasks),[tasks]);
-  const autoBreakReady=!!autoBreakDate&&autoBreakDate<=todayDateKey();
-  const[autoCreatedFor,setAutoCreatedFor]=useState(null); // guarda el autoBreakDate ya usado para auto-crear
+  // La auto-creación real de "Proyecto automático" ahora corre en un efecto
+  // global (ver checkTaskAutomation, junto a checkSystemsAutomation) que no
+  // depende de tener este dashboard abierto ni agrega un día de margen: se
+  // dispara el mismo día en que la fase ⚙ llega a su fecha de inicio.
+  const showAutoBanner=false;
   const[autoBannerDismissed,setAutoBannerDismissed]=useState(null);
-  useEffect(()=>{
-    if(autoBreakReady&&autoCreatedFor!==autoBreakDate){
-      onAddTask('Nuevo proyecto auto',null,[],null);
-      setAutoCreatedFor(autoBreakDate);
-    }
-  },[autoBreakReady,autoBreakDate]);
-  const showAutoBanner=autoBreakReady&&autoCreatedFor===autoBreakDate&&autoBannerDismissed!==autoBreakDate;
   function singularizeLabel(label){
     const first=(label||'').trim().split(/\s+/)[0]||'tarea';
     return (first.length>3&&/s$/i.test(first))?first.slice(0,-1).toLowerCase():first.toLowerCase();
@@ -7890,6 +8092,12 @@ function ProjectDashboard(props){
   const week=currentWeekDays();
   const today=dayKey();
   const todayPomos=pSessions.filter(s=>s.day===today).reduce((a,s)=>a+(s.pomos||0),0);
+  // Tiempo invertido hoy en un hábito específico (sesiones cerradas + en vivo si está corriendo ahora)
+  function habitTimeToday(habitId){
+    const done=pSessions.filter(s=>s.habitId===habitId&&s.day===today).reduce((a,s)=>a+s.duration,0);
+    const live=(isRunningHere&&activeSess&&activeSess.habitId===habitId&&tState==='running')?workElapsed:0;
+    return done+live;
+  }
 
   const todaySessions=pSessions.filter(s=>s.day===today);
   const sparkBuckets=new Array(8).fill(0);
@@ -7941,6 +8149,7 @@ function ProjectDashboard(props){
     {k:'sistemas',label:'Sistemas',icon:'map'},
     {k:'habitos',label:'Hábitos',icon:'habit'},
     {k:'notas',label:'Notas',icon:'image'},
+    {k:'libreta',label:'Libreta de cuenta',icon:'note'},
     {k:'tiempo',label:'Tiempo',icon:'clock'},
     {k:'ajustes',label:'Ajustes',icon:'gear'},
   ];
@@ -8050,6 +8259,10 @@ function ProjectDashboard(props){
                   streak>0&&e('div',{className:'habit-preview-streak'},e(DashIcon,{name:'flame',size:9,color:'#e0954a',fill:'#e0954a'}),streak+' días')
                 ),
                 e('div',{className:'habit-preview-dots'},last5.map(dk=>e('span',{key:dk,className:'habit-dot'+(log.includes(dk)?' on':'')}))),
+                habitTimeToday(h.id)>0&&e('span',{className:'habit-time-badge'},fmtS(habitTimeToday(h.id))),
+                (isRunningHere&&activeSess.habitId===h.id)
+                  ?e('button',{className:'habit-play-btn stop',onClick:ev=>{ev.stopPropagation();playUI('click');onFinishTask();},title:'Finalizar sesión'},e(StopIcon,null))
+                  :e('button',{className:'habit-play-btn',onClick:ev=>{ev.stopPropagation();playUI('click');onPlayHabit(h.id);},title:'Iniciar Pomodoro'},e(PlayIcon,null)),
                 e(HabitCheck,{done:doneSel,due:dueSel,onClick:()=>onToggleHabitLog(h.id,selectedDay),title:doneSel?'Hecho el '+selectedDay:'Marcar como hecho este día'})
               );
             })
@@ -8144,7 +8357,13 @@ function ProjectDashboard(props){
             e('span',{className:'habit-grid-name',style:{display:'flex',alignItems:'center',gap:6,cursor:'pointer'},title:'Doble click para editar · click derecho para más opciones',onDoubleClick:()=>setHabitForm(h)},
               e(ProjIconSVG,{iconKey:h.icon||'target',size:11,color:h.color||'var(--accent2)'}),
               dueSel&&e(BellIcon,{active:true,size:10,color:'var(--accent2)'}),
-              h.name
+              e('span',{style:{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}},h.name),
+              habitTimeToday(h.id)>0&&e('span',{className:'habit-time-badge'},fmtS(habitTimeToday(h.id))),
+              e('span',{style:{marginLeft:'auto',display:'flex'},onClick:ev=>ev.stopPropagation()},
+                (isRunningHere&&activeSess.habitId===h.id)
+                  ?e('button',{className:'habit-play-btn stop',onClick:()=>{playUI('click');onFinishTask();},title:'Finalizar sesión'},e(StopIcon,null))
+                  :e('button',{className:'habit-play-btn',onClick:()=>{playUI('click');onPlayHabit(h.id);},title:'Iniciar Pomodoro'},e(PlayIcon,null))
+              )
             ),
             week.map(w=>{
               const scheduled=habitOccursOn(h,dateFromDayKey(w.key));
@@ -8211,6 +8430,16 @@ function ProjectDashboard(props){
             )
           ))
         )
+      )
+    ),
+
+    tab==='libreta'&&e('div',{className:'dash-body'},
+      e('div',{style:{display:'flex',alignItems:'center',gap:8,marginBottom:10}},
+        e('span',{style:{fontWeight:600,fontSize:13}},'Libreta de cuenta'),
+        e('span',{style:{fontSize:10,color:'var(--text4)'}},'· todas las entradas de la Libreta de cada proyecto, más notas propias de la cuenta')
+      ),
+      e('div',{style:{height:'calc(100vh - 220px)',minHeight:420}},
+        e(AccountNotebookPanel,{project,pTasks,onPatchProject,onUpdateTask})
       )
     ),
 
@@ -8390,6 +8619,8 @@ function templateToSteps(tpl,startFrom){
       startDate=cursor;
       dueDate=addDaysToDateKey(cursor,dur);
       cursor=addDaysToDateKey(dueDate,1); // la siguiente fase empieza al día siguiente, nunca el mismo día
+    }else if(s.automation){
+      startDate=cursor;
     }
     return{
       id:uid(),name:s.name,startDate,dueDate,done:false,actLog:{},automation:!!s.automation,
@@ -8413,9 +8644,14 @@ function sysTemplateToSteps(tpl,startFrom){
         startDate=cursor;
         dueDate=addDaysToDateKey(cursor,dur);
         cursor=addDaysToDateKey(dueDate,1);
+      }else if(s.automation){
+        // Sin duración no hay fecha para encadenar — pero la fase ⚙ SIEMPRE
+        // necesita un startDate para que la automatización tenga algo que
+        // detectar, así que le asignamos la posición actual del cursor.
+        startDate=cursor;
       }
       return{
-        id:uid(),name:s.name,startDate,dueDate,done:false,actLog:{},automation:false,
+        id:uid(),name:s.name,startDate,dueDate,done:false,actLog:{},automation:!!s.automation,
         subtasks:(s.phases||[]).flatMap(p=>(p.tasks||[]).map(t=>({id:uid(),name:t.text,done:false})))
       };
     });
@@ -9028,6 +9264,154 @@ function TaskNotebookPanel({task,onUpdateTask}){
         value:active.text,
         placeholder:'Escribe aquí...',
         onChange:ev=>{patchEntry(active.id,{text:ev.target.value});autoGrow(ev.target);}
+      })
+    )
+  );
+}
+// ═══════════════════════════════════════════
+// LIBRETA DE CUENTA — reúne en un solo lugar todas las entradas de la
+// Libreta de cada proyecto de la cuenta, más notas que pertenecen a la
+// cuenta como tal (sin proyecto asociado). Cada entrada muestra una
+// etiqueta minimalista indicando su origen ("Cuenta" o el nombre del
+// proyecto, activo o no) para saber siempre desde dónde se está viendo.
+// Las notas de cuenta se guardan en project.notebook; las de proyecto
+// siguen viviendo en task.notebook, tal como ya funcionaba.
+// ═══════════════════════════════════════════
+function AccountNotebookPanel({project,pTasks,onPatchProject,onUpdateTask}){
+  const accountEntries=(project.notebook||[]).map(n=>({...n,_scope:'account',_tag:'Cuenta',_taskId:null}));
+  const taskEntries=[];
+  pTasks.forEach(t=>{
+    (t.notebook||[]).forEach(n=>{
+      taskEntries.push({...n,_scope:'task',_tag:t.name||'Proyecto',_taskId:t.id,_taskDone:t.status==='done'});
+    });
+  });
+  const allEntries=[...accountEntries,...taskEntries];
+  const[selectedId,setSelectedId]=useState(null);
+  const[filter,setFilter]=useState('all'); // 'all' | 'account' | taskId
+  const titleRefs=useRef({});
+  const bodyRefs=useRef({});
+
+  function autoGrow(el){ if(!el)return; el.style.height='auto'; el.style.height=el.scrollHeight+'px'; }
+
+  function updateAccount(next){onPatchProject({notebook:next});}
+  function updateTaskNb(taskId,next){onUpdateTask(taskId,{notebook:next});}
+
+  function addEntry(){
+    const now=Date.now();
+    const n={id:uid(),title:'',subtitle:'',text:'',createdAt:now,updatedAt:now,pinned:false};
+    updateAccount([n,...(project.notebook||[])]);
+    setSelectedId(n.id);
+    setFilter(f=>f==='all'?'all':'account');
+  }
+  function patchEntry(entry,patch){
+    if(entry._scope==='account'){
+      updateAccount((project.notebook||[]).map(n=>n.id===entry.id?{...n,...patch,updatedAt:Date.now()}:n));
+    }else{
+      const t=pTasks.find(x=>x.id===entry._taskId);
+      if(!t)return;
+      updateTaskNb(t.id,(t.notebook||[]).map(n=>n.id===entry.id?{...n,...patch,updatedAt:Date.now()}:n));
+    }
+  }
+  function deleteEntry(entry){
+    if(!confirm('¿Eliminar esta entrada de la libreta? No se puede deshacer.'))return;
+    if(entry._scope==='account'){
+      updateAccount((project.notebook||[]).filter(n=>n.id!==entry.id));
+    }else{
+      const t=pTasks.find(x=>x.id===entry._taskId);
+      if(!t)return;
+      updateTaskNb(t.id,(t.notebook||[]).filter(n=>n.id!==entry.id));
+    }
+    if(selectedId===entry.id)setSelectedId(null);
+  }
+  function togglePin(entry){patchEntry(entry,{pinned:!entry.pinned});}
+
+  function fmtWhen2(ts){
+    const key=dayKeyFromTs(ts);
+    const label=key===dayKey()?'Hoy':key===dayKeyFromTs(Date.now()-86400000)?'Ayer':new Date(ts).toLocaleDateString('es-CL',{day:'numeric',month:'short'});
+    return label+' · '+new Date(ts).toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'});
+  }
+
+  const filtered=allEntries.filter(n=>filter==='all'?true:filter==='account'?n._scope==='account':n._taskId===filter);
+  const sorted=[...filtered].sort((a,b)=>{
+    if(!!a.pinned!==!!b.pinned)return a.pinned?-1:1;
+    return b.updatedAt-a.updatedAt;
+  });
+  useEffect(()=>{
+    if(sorted.length>0&&!sorted.find(n=>n.id===selectedId))setSelectedId(sorted[0].id);
+    if(sorted.length===0&&selectedId)setSelectedId(null);
+    // eslint-disable-next-line
+  },[filter,allEntries.length]);
+  useEffect(()=>{
+    const el=titleRefs.current[selectedId];
+    if(el&&!el.value)el.focus();
+  },[selectedId]);
+
+  const active=sorted.find(n=>n.id===selectedId)||null;
+  const taskChips=pTasks.filter(t=>(t.notebook||[]).length>0);
+
+  return e('div',{className:'notebook-wrap'},
+    e('div',{className:'notebook-sidebar'},
+      e('div',{className:'notebook-sidebar-hdr'},
+        e('button',{className:'notebook-new-btn',onClick:addEntry},e(DashIcon,{name:'plus',size:12}),'Nueva nota de cuenta')
+      ),
+      (taskChips.length>0)&&e('div',{className:'nb-filter-row'},
+        e('button',{className:'nb-filter-chip'+(filter==='all'?' on':''),onClick:()=>setFilter('all')},'Todas'),
+        e('button',{className:'nb-filter-chip'+(filter==='account'?' on':''),onClick:()=>setFilter('account')},'Cuenta'),
+        taskChips.map(t=>e('button',{key:t.id,className:'nb-filter-chip'+(filter===t.id?' on':''),onClick:()=>setFilter(t.id)},t.name))
+      ),
+      e('div',{className:'notebook-list'},
+        sorted.length===0&&e('div',{className:'notebook-empty-list'},'Sin entradas aún.'),
+        sorted.map(n=>e('div',{
+          key:n.id,
+          className:'notebook-list-item'+(n.id===selectedId?' active':''),
+          onClick:()=>setSelectedId(n.id)
+        },
+          e('div',{className:'notebook-list-item-title'+(n.title?'':' untitled')},
+            n.pinned&&e(DashIcon,{name:'pin',size:10}),
+            n.title||'Sin título'
+          ),
+          e('span',{className:'nb-tag'+(n._scope==='account'?' nb-tag-account':' nb-tag-task'+(n._taskDone?' done':''))},n._tag),
+          n.subtitle&&e('div',{className:'notebook-list-item-sub'},n.subtitle),
+          e('div',{className:'notebook-list-item-meta'},fmtWhen2(n.updatedAt))
+        ))
+      )
+    ),
+    !active&&e('div',{className:'notebook-page-empty'},
+      e('div',null,'Selecciona una entrada o crea una nueva.'),
+      e('button',{className:'notebook-new-btn',style:{width:'auto',padding:'7px 16px'},onClick:addEntry},e(DashIcon,{name:'plus',size:12}),'Nueva nota de cuenta')
+    ),
+    active&&e('div',{className:'notebook-page',key:active.id},
+      e('div',{className:'notebook-page-top'},
+        e('span',{className:'nb-tag'+(active._scope==='account'?' nb-tag-account':' nb-tag-task'+(active._taskDone?' done':''))},active._tag),
+        e('span',{className:'notebook-page-meta'},fmtWhen2(active.updatedAt)),
+        e('div',{className:'notebook-page-actions'},
+          e('button',{
+            className:'nb-act-btn'+(active.pinned?' on':''),
+            title:active.pinned?'Quitar de fijadas':'Fijar arriba',
+            onClick:()=>togglePin(active)
+          },e(DashIcon,{name:'pin',size:13})),
+          e('button',{className:'nb-act-btn danger',title:'Eliminar entrada',onClick:()=>deleteEntry(active)},e(DashIcon,{name:'trash',size:13}))
+        )
+      ),
+      e('input',{
+        ref:el=>{titleRefs.current[active.id]=el;},
+        className:'notebook-title-input',
+        value:active.title,
+        placeholder:'Sin título',
+        onChange:ev=>patchEntry(active,{title:ev.target.value})
+      }),
+      e('input',{
+        className:'notebook-subtitle-input',
+        value:active.subtitle,
+        placeholder:'Agregar un subtítulo...',
+        onChange:ev=>patchEntry(active,{subtitle:ev.target.value})
+      }),
+      e('textarea',{
+        ref:el=>{bodyRefs.current[active.id]=el;if(el)autoGrow(el);},
+        className:'notebook-body-text',
+        value:active.text,
+        placeholder:'Escribe aquí...',
+        onChange:ev=>{patchEntry(active,{text:ev.target.value});autoGrow(ev.target);}
       })
     )
   );
@@ -9789,11 +10173,9 @@ function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask,templates,onAddTe
                   onClick:()=>updateStep(s.id,{done:!s.done})
                 },s.done?'✓':''),
                 e('input',{className:'sheet-input sheet-input-name',value:s.name,onChange:ev=>updateStep(s.id,{name:ev.target.value})}),
-                e('button',{
-                  className:'ghost-btn',
-                  title:s.automation?'Evento de automatización activo — clic para quitar':'Marcar como evento de automatización (desde aquí, el trabajo queda desatendido)',
-                  style:{fontSize:11,color:s.automation?'var(--accent2)':'var(--text4)',flexShrink:0},
-                  onClick:()=>updateStep(s.id,{automation:!s.automation})
+                s.automation&&e('span',{
+                  title:'Evento de automatización — se marca desde el Mapa de Sistemas',
+                  style:{fontSize:11,color:'var(--accent2)',flexShrink:0}
                 },'⚙'),
                 (s.subtasks||[]).length>0&&e('span',{style:{fontSize:9.5,color:'var(--text4)',flexShrink:0},title:'Tareas dentro de esta fase — visibles en Mapa mental'},(s.subtasks||[]).length+' tareas')
               ),
