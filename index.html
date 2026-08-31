@@ -758,6 +758,25 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .notebook-subtitle-input::placeholder{color:var(--text4)}
 .notebook-body-text{width:100%;flex:1;background:transparent;border:none;outline:none;color:var(--text1);font-size:13px;line-height:1.8;font-family:'Inter',sans-serif;resize:none;padding:0;min-height:240px}
 .notebook-body-text::placeholder{color:var(--text4)}
+/* Editor de bloques tipo Notion: puntos / numerados / separador, con drag handle */
+.nb-blocks{flex:1;min-height:240px;padding-bottom:40px}
+.nb-block-row{display:flex;align-items:flex-start;gap:2px;border-radius:6px;position:relative}
+.nb-block-row.drag-over-above::before{content:'';position:absolute;left:26px;right:0;top:-2px;height:2px;background:var(--accent2);border-radius:2px}
+.nb-block-row.drag-over-below::after{content:'';position:absolute;left:26px;right:0;bottom:-2px;height:2px;background:var(--accent2);border-radius:2px}
+.nb-block-row.dragging{opacity:.4}
+.nb-block-handle{width:18px;height:24px;flex-shrink:0;display:flex;align-items:center;justify-content:center;cursor:grab;color:var(--text4);opacity:0;transition:opacity .1s;letter-spacing:-1px;font-size:12px;line-height:1;user-select:none;margin-top:1px}
+.nb-block-row:hover .nb-block-handle{opacity:1}
+.nb-block-handle:active{cursor:grabbing}
+.nb-block-marker{flex-shrink:0;min-width:18px;text-align:right;color:var(--text3);font-size:13px;line-height:1.8;padding-top:1px;user-select:none}
+.nb-block-marker.bullet{font-size:16px;line-height:1.6}
+.nb-block-input{flex:1;background:transparent;border:none;outline:none;color:var(--text1);font-size:13px;line-height:1.8;font-family:'Inter',sans-serif;resize:none;padding:0;overflow:hidden;min-height:23.4px}
+.nb-block-input::placeholder{color:var(--text4)}
+.nb-block-divider-wrap{flex:1;display:flex;align-items:center;padding:10px 0 10px 18px}
+.nb-block-divider-wrap hr{flex:1;border:none;border-top:1px solid var(--border3)}
+.nb-block-del{width:20px;height:20px;border-radius:5px;border:none;background:transparent;color:var(--text4);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;opacity:0;transition:opacity .1s;font-size:11px;margin-top:1px}
+.nb-block-row:hover .nb-block-del{opacity:1}
+.nb-block-del:hover{color:var(--red)}
+.nb-block-hint{font-size:9.5px;color:var(--text4);padding:6px 0 0 18px;line-height:1.6}
 .notebook-empty{color:var(--text3);font-size:12px;padding:20px 2px;text-align:center}
 /* LIBRETA DE CUENTA — vista agregada de todas las libretas de proyecto + notas propias de la cuenta */
 .nb-filter-row{display:flex;flex-wrap:wrap;gap:4px;padding:0 10px 8px;flex-shrink:0}
@@ -1029,6 +1048,10 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .editable-label:hover .editable-label-pencil{opacity:1}
 .label-edit-input{background:var(--bg2);border:1px solid var(--accent-border);border-radius:4px;color:var(--text0);font-size:11px;font-weight:600;padding:1px 6px;font-family:'Inter',sans-serif;outline:none;max-width:180px}
 .dash-cols{display:grid;grid-template-columns:1fr;gap:14px;align-items:start}
+/* Fila superior del resumen: Proyectos / Notas rápidas / Hábitos, las 3 alineadas y del mismo ancho */
+.dash-top-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;align-items:stretch}
+.dash-top-row .dash-panel,.dash-top-row .qn-panel,.dash-top-row .habitos-mini-panel{width:auto;min-width:0}
+@media (max-width:900px){.dash-top-row{grid-template-columns:1fr}}
 .dash-panel{background:var(--bg1);border:1px solid var(--border2);border-radius:var(--r-lg);display:flex;flex-direction:column;overflow:hidden}
 .dash-panel-hdr{display:flex;align-items:center;padding:11px 14px;border-bottom:1px solid var(--border);gap:8px}
 .dash-panel-title{font-size:11px;font-weight:600;color:var(--text0);flex:1}
@@ -1062,6 +1085,18 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .qn-item-clock.on{opacity:1;color:var(--amber)}
 .qn-remind-row{display:flex;align-items:center;gap:6px;padding-left:21px}
 .qn-remind-input{flex:1;min-width:0;font-size:10.5px;padding:5px 6px;color-scheme:dark}
+.qn-datepop{position:fixed;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r-md);box-shadow:0 10px 28px rgba(0,0,0,.45);z-index:200;padding:10px;display:flex;flex-direction:column;gap:8px}
+.qn-datepop-chips{display:flex;gap:6px;flex-wrap:wrap}
+.qn-chip{background:var(--bg3);border:1px solid var(--border2);color:var(--text2);font-size:11px;padding:5px 10px;border-radius:999px;cursor:pointer;transition:all .12s;font-family:'Inter',sans-serif}
+.qn-chip:hover{background:var(--bg4);color:var(--text0)}
+.qn-chip.sel{background:var(--accent2,#4a9de0);border-color:var(--accent2,#4a9de0);color:#fff}
+.qn-chip-time{padding:5px 9px;font-family:'JetBrains Mono',monospace;font-size:10.5px}
+.qn-datepop-custom{display:flex;gap:6px}
+.qn-datepop-input{flex:1;min-width:0;background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--text1);font-size:11px;padding:5px 7px;color-scheme:dark;font-family:'JetBrains Mono',monospace}
+.qn-datepop-time{flex:0 0 84px}
+.qn-datepop-actions{display:flex;align-items:center;gap:6px;padding-top:2px;border-top:1px solid var(--border);margin-top:2px}
+.qn-datepop-remove{background:transparent;border:none;color:var(--text4);font-size:10.5px;cursor:pointer;padding:0}
+.qn-datepop-remove:hover{color:var(--red,#e05555)}
 .qn-item-del{flex-shrink:0;background:transparent;border:none;color:var(--text4);cursor:pointer;font-size:10.5px;padding:0 2px;opacity:0;transition:opacity .12s;margin-top:1px}
 .qn-item:hover .qn-item-del{opacity:1}
 .qn-item-del:hover{color:var(--red,#e05555)}
@@ -2367,13 +2402,17 @@ function App(){
         let changed=false;
         const spawned=[];
         const next=prev.map(s=>{
-          const phases=migrateSysPhases(s);
+          // Sistemas combinados (Mapa de Sistemas con varias tarjetas unidas)
+          // guardan sus tarjetas en `modules`, no en `phases` — hay que
+          // revisar ahí primero, si no cae al formato viejo (phases/components).
+          const phases=(s.modules&&s.modules.length)?s.modules:migrateSysPhases(s);
           const autoPhase=phases.find(p=>p.automation&&p.startDate&&p.startDate<=today);
           if(!autoPhase)return s; // sin módulo ⚙ con fecha de inicio alcanzada, no hay nada que hacer
           if(s.autoSpawnedFor===autoPhase.startDate)return s; // ya se creó el próximo ciclo para esta fecha
-          // El proyecto nuevo arranca el día siguiente al INICIO de la fase ⚙.
-          const nextStart=addDaysToDateKey(autoPhase.startDate,1);
-          const steps=stepsFromSystemForExecute(s,nextStart);
+          // El proyecto nuevo arranca el día siguiente (hábil, si corresponde) al INICIO de la fase ⚙.
+          const bizOnly=!!s.datesBizOnly;
+          const nextStart=nextChainCursor(autoPhase.startDate,bizOnly);
+          const steps=stepsFromSystemForExecute(s,nextStart,bizOnly);
           if(steps.length){
             spawned.push({name:'Proyecto automático',projectId:s.projectId,steps});
           }
@@ -2405,6 +2444,8 @@ function App(){
   useEffect(()=>{
     function checkTaskAutomation(){
       const today=todayDateKey();
+      let didChange=false;
+      let spawnedCount=0;
       setTasks(prev=>{
         let changed=false;
         const spawned=[];
@@ -2413,22 +2454,26 @@ function App(){
           const autoStep=steps.find(s=>s.automation&&s.startDate&&s.startDate<=today);
           if(!autoStep)return t;
           if(t.autoSpawnedFor===autoStep.startDate)return t;
-          const nextStart=addDaysToDateKey(autoStep.startDate,1);
+          const bizOnly=!!t.datesBizOnly;
+          const nextStart=nextChainCursor(autoStep.startDate,bizOnly);
           const tplSteps=stepsToTemplateSteps(steps);
-          const newSteps=templateToSteps({steps:tplSteps},nextStart);
+          const newSteps=templateToSteps({steps:tplSteps},nextStart,bizOnly);
           if(newSteps.length){
-            spawned.push({projectId:t.projectId,steps:newSteps});
+            spawned.push({projectId:t.projectId,steps:newSteps,datesBizOnly:bizOnly});
           }
           changed=true;
           return{...t,autoSpawnedFor:autoStep.startDate};
         });
-        if(spawned.length){
-          setTasks(ts=>[...ts,...spawned.map(sp=>({id:uid(),projectId:sp.projectId,name:'Proyecto automático',status:'pending',priority:'mid',createdAt:Date.now(),steps:sp.steps,recurrence:null,dueDate:null,sysTemplateId:null}))]);
-          spawned.forEach(()=>showNotif('⚙ Se creó "Proyecto automático"'));
-          forceSync();
-        }
-        return changed?next:prev;
+        didChange=changed;
+        spawnedCount=spawned.length;
+        if(!changed)return prev;
+        if(!spawned.length)return next;
+        return[...next,...spawned.map(sp=>({id:uid(),projectId:sp.projectId,name:'Proyecto automático',status:'pending',priority:'mid',createdAt:Date.now(),steps:sp.steps,recurrence:null,dueDate:null,sysTemplateId:null,datesBizOnly:sp.datesBizOnly}))];
       });
+      if(spawnedCount>0){
+        for(let i=0;i<spawnedCount;i++)showNotif('⚙ Se creó "Proyecto automático"');
+      }
+      if(didChange)forceSync();
     }
     checkTaskAutomation();
     const id=setInterval(checkTaskAutomation,30000);
@@ -2929,13 +2974,14 @@ function App(){
   // según la duración estimada de cada una; si no, crea los sistemas sin fecha.
   function doApplySysTemplate(tpl,startFrom,opts){
     const targetProjId=(opts&&opts.projectId)||selectedProjObj.id;
+    const bizOnly=!!(opts&&opts.bizOnly);
     const idMap={};
     const newSystems=tpl.systems.map(s=>{
       const newId=uid();
       idMap[s.tempId]=newId;
       const rawPhases=(s.phases||[]).map(p=>({id:uid(),name:p.name,durationDays:Number.isFinite(p.durationDays)&&p.durationDays>0?p.durationDays:null,tasks:(p.tasks||[]).map(t=>({id:uid(),text:t.text,done:false}))}));
-      const phases=startFrom?chainPhaseDates(rawPhases,startFrom):rawPhases;
-      return{id:newId,projectId:targetProjId,name:s.name,icon:s.icon,color:s.color,order:s.order,phases,mmPos:s.mmPos||null,status:'active',lastRun:null,nextRun:null,createdAt:Date.now()};
+      const phases=startFrom?chainPhaseDates(rawPhases,startFrom,bizOnly):rawPhases;
+      return{id:newId,projectId:targetProjId,name:s.name,icon:s.icon,color:s.color,order:s.order,phases,mmPos:s.mmPos||null,status:'active',lastRun:null,nextRun:null,createdAt:Date.now(),datesBizOnly:bizOnly};
     });
     const newLinks=(tpl.links||[]).filter(l=>idMap[l[0]]&&idMap[l[1]]).map(l=>[idMap[l[0]],idMap[l[1]],l[2]||'']);
     setSystems(ss=>[...ss,...newSystems]);
@@ -2958,7 +3004,8 @@ function App(){
     (t.dueDate&&t.dueDate<=todayKey_)||
     (t.steps||[]).some(s=>stepNeedsAction(s,todayKey_,!!(t.actLog&&t.actLog[todayKey_])))
   ));
-  const hasAnyAlert=hasHabitAlert||hasSystemAlert||hasTaskAlert;
+  const hasReminderAlert=reminders.some(r=>!r.done&&r.dueAt&&r.dueAt<=Date.now());
+  const hasAnyAlert=hasHabitAlert||hasSystemAlert||hasTaskAlert||hasReminderAlert;
 
   function onProjClick(pid){
     if(selProj===pid)setExpandCtx(v=>v===pid?null:pid);
@@ -3129,7 +3176,7 @@ function App(){
             onAddTemplate:tpl=>{setTemplates(ts=>[...ts,tpl]);forceSync();},
             onUpdateTemplate:(id,patch)=>{setTemplates(ts=>ts.map(t=>t.id===id?{...t,...patch}:t));forceSync();},
             onDeleteTemplate:id=>{setTemplates(ts=>ts.filter(t=>t.id!==id));forceSync();},
-            onAddTask:(name,recurrence,steps,sysTemplateId)=>{setTasks(ts=>[...ts,{id:uid(),projectId:selectedProjObj.id,name,status:'pending',priority:'mid',createdAt:Date.now(),steps:steps||[],recurrence:recurrence||null,dueDate:recurrence?dayKey():null,sysTemplateId:sysTemplateId||null}]);forceSync();},
+            onAddTask:(name,recurrence,steps,sysTemplateId,bizOnly)=>{setTasks(ts=>[...ts,{id:uid(),projectId:selectedProjObj.id,name,status:'pending',priority:'mid',createdAt:Date.now(),steps:steps||[],recurrence:recurrence||null,dueDate:recurrence?dayKey():null,sysTemplateId:sysTemplateId||null,datesBizOnly:!!bizOnly}]);forceSync();},
             onCycleTaskStatus:id=>{
               setTasks(ts=>{
                 const t=ts.find(x=>x.id===id);
@@ -3407,11 +3454,11 @@ function App(){
     },onUpdateTask:(id,patch)=>{setTasks(ts=>ts.map(t=>t.id===id?{...t,...patch}:t));forceSync();},onUpdateTaskSteps:(id,steps)=>{setTasks(ts=>ts.map(t=>t.id===id?{...t,steps}:t));forceSync();},onDeleteTask:id=>{setTasks(ts=>ts.filter(t=>t.id!==id));forceSync();},onClose:()=>setShowHist(null),tState,activeSess,onPlayTask:taskId=>{const t=tasks.find(x=>x.id===taskId);setStartFlow({projId:showHist,mode:'pomo',taskId,taskName:t?t.name:null});},onFinishTask:handleStop,onPlayHabit:habitId=>{const h=habits.find(x=>x.id===habitId);setStartFlow({projId:showHist,mode:'pomo',habitId,taskName:h?h.name:null});},workElapsed}),
     showNewProj&&e(ProjModal,{sysTemplates,onClose:()=>setShowNewProj(false),onSave:p=>{
       const newId=uid();
-      const{_installTplId,...clean}=p;
+      const{_installTplId,_installStartDate,_installBizOnly,...clean}=p;
       setProjects(ps=>[...ps,{...clean,id:newId,status:'active',createdAt:Date.now()}]);
       if(_installTplId){
         const tpl=sysTemplates.find(t=>t.id===_installTplId);
-        if(tpl)doApplySysTemplate(tpl,todayDateKey(),{projectId:newId});
+        if(tpl)doApplySysTemplate(tpl,_installStartDate||todayDateKey(),{projectId:newId,bizOnly:!!_installBizOnly});
       }
       setSelProj(newId);
       setView('dashboard');
@@ -3432,6 +3479,9 @@ function App(){
             ),
             e('div',{className:'fg'},e('label',{className:'flabel'},'Fecha de inicio'),
               e('input',{className:'finput',type:'date',id:'systpl-start-date',defaultValue:todayDateKey()})
+            ),
+            e('div',{style:{fontSize:10.5,color:'var(--text3)',marginTop:6}},
+              tpl.bizOnly?'⏱ Esta plantilla cuenta los días solo de lunes a viernes (configurado en "Editar plantilla").':'Esta plantilla cuenta los días corridos, incluidos fines de semana (cámbialo en "Editar plantilla" → Excluir fines de semana).'
             )
           ),
           e('div',{className:'modal-foot'},
@@ -3439,7 +3489,7 @@ function App(){
             e('button',{className:'btn btn-primary',onClick:()=>{
               const input=document.getElementById('systpl-start-date');
               const startFrom=(input&&input.value)||todayDateKey();
-              doApplySysTemplate(tpl,startFrom);
+              doApplySysTemplate(tpl,startFrom,{bizOnly:!!tpl.bizOnly});
               setPendingSysTpl(null);
             }},'Aplicar y calcular fechas')
           )
@@ -4086,8 +4136,27 @@ function RemindersFloatPanel({reminders,setReminders,habits,setHabits,projects,s
   const[openDd,setOpenDd]=useState(null);
   const[snoozeOpenId,setSnoozeOpenId]=useState(null);
   const[showDone,setShowDone]=useState(false);
+  const[editingDateId,setEditingDateId]=useState(null);
+  const[editDate,setEditDate]=useState('');
+  const[editTime,setEditTime]=useState('');
   const panelRef=useRef(null);
   const projEl=useRef(null);
+
+  function openDateEditor(r){
+    const d=new Date(r.dueAt||Date.now());
+    setEditDate(d.toISOString().slice(0,10));
+    setEditTime(String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'));
+    setEditingDateId(r.id);
+  }
+  function saveDateEditor(){
+    if(!editDate){setEditingDateId(null);return;}
+    const[h,m]=(editTime||'09:00').split(':').map(Number);
+    const d=new Date(editDate+'T00:00:00');
+    d.setHours(h||0,m||0,0,0);
+    setReminders(prev=>prev.map(r=>r.id===editingDateId?{...r,dueAt:d.getTime(),overdue:d.getTime()<=Date.now()}:r));
+    setEditingDateId(null);
+    forceSync();
+  }
 
   useEffect(()=>{
     function h(ev){
@@ -4189,12 +4258,15 @@ function RemindersFloatPanel({reminders,setReminders,habits,setHabits,projects,s
   const chevron=e('svg',{width:8,height:8,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2.5,strokeLinecap:'round',style:{display:'block',flexShrink:0}},e('polyline',{points:'6 9 12 15 18 9'}));
 
   return e('div',{className:'rem-float',ref:panelRef},
-    e('div',{className:'rem-float-hdr'},
-      e('span',{className:'rem-float-title'},
-        dayLabel,
-        overdueCount>0&&e('span',{style:{marginLeft:6,fontSize:9,background:'var(--red,#e05555)',color:'#fff',borderRadius:6,padding:'1px 5px'}},overdueCount)
-      ),
-      e('button',{className:'rem-float-close',onClick:onClose},'✕')
+    e('div',{className:'rem-float-hdr',style:{flexDirection:'column',alignItems:'flex-start',gap:1}},
+      e('span',{style:{fontSize:9,textTransform:'uppercase',letterSpacing:'.8px',color:'var(--text3)',fontWeight:700}},'Recordatorios'),
+      e('div',{style:{display:'flex',alignItems:'center',width:'100%'}},
+        e('span',{className:'rem-float-title'},
+          dayLabel,
+          overdueCount>0&&e('span',{style:{marginLeft:6,fontSize:9,background:'var(--red,#e05555)',color:'#fff',borderRadius:6,padding:'1px 5px'}},overdueCount)
+        ),
+        e('button',{className:'rem-float-close',onClick:onClose},'✕')
+      )
     ),
 
     e('div',{className:'rem-quick'},
@@ -4253,12 +4325,19 @@ function RemindersFloatPanel({reminders,setReminders,habits,setHabits,projects,s
           ),
           e('div',{className:'rem-item-stripe',style:{background:proj?.color||'var(--text4)'}}),
           e('div',{className:'rem-item-body'},
-            e('div',{className:'rem-item-title'},r.title),
-            e('div',{className:'rem-item-meta'+(r.overdue?' over':'')},
-              proj&&e('span',null,proj.name+' · '),
-              e('span',null,fmtTime(r.dueAt)),
-              r.habitId&&e(BellIcon,{active:false,size:9,color:'var(--text4)'})
-            )
+            e('div',{className:'rem-item-title',onDoubleClick:()=>openDateEditor(r),title:'Doble click para cambiar fecha y hora',style:{cursor:'pointer'}},r.title),
+            editingDateId===r.id
+              ?e('div',{className:'rem-sel-row',style:{marginTop:4},onClick:ev=>ev.stopPropagation()},
+                  e('input',{type:'date',className:'rem-sel rem-sel-time',value:editDate,autoFocus:true,onChange:ev=>setEditDate(ev.target.value)}),
+                  e('input',{type:'time',className:'rem-sel rem-sel-time',value:editTime,onChange:ev=>setEditTime(ev.target.value)}),
+                  e('button',{className:'btn btn-primary',style:{fontSize:10,padding:'3px 8px'},onClick:saveDateEditor},'OK'),
+                  e('button',{className:'ghost-btn',style:{fontSize:10},onClick:()=>setEditingDateId(null)},'Cancelar')
+                )
+              :e('div',{className:'rem-item-meta'+(r.overdue?' over':'')},
+                  proj&&e('span',null,proj.name+' · '),
+                  e('span',null,fmtTime(r.dueAt)),
+                  r.habitId&&e(BellIcon,{active:false,size:9,color:'var(--text4)'})
+                )
           ),
           e('button',{className:'rem-snooze',title:'Posponer',onClick:ev=>{ev.stopPropagation();setSnoozeOpenId(snoozeOpenId===r.id?null:r.id);}},
             e('svg',{width:11,height:11,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},
@@ -4484,6 +4563,9 @@ function ProjModal({project,onClose,onSave,onDelete,sysTemplates}){
   const[priority,setPriority]=useState(project?.priority||null);
   const[confirmDel,setConfirmDel]=useState(false);
   const[installTplId,setInstallTplId]=useState(null); // sólo aplica al crear un proyecto nuevo
+  const[installStartDate,setInstallStartDate]=useState(()=>todayDateKey());
+  const installTpl=(sysTemplates||[]).find(t=>t.id===installTplId);
+  const installTplHasDurations=!!installTpl&&installTpl.systems.some(s=>(s.phases||[]).some(p=>Number.isFinite(p.durationDays)&&p.durationDays>0));
   return e('div',{className:'overlay',onClick:ev=>{if(ev.target===ev.currentTarget)onClose();}},
     e('div',{className:'modal',style:{width:420,maxHeight:'88vh'}},
       e('div',{className:'modal-head'},e('div',{className:'modal-title'},project?'Editar cuenta':'Nueva cuenta'),e('button',{className:'modal-x',onClick:onClose},'✕')),
@@ -4557,6 +4639,13 @@ function ProjModal({project,onClose,onSave,onDelete,sysTemplates}){
                 e('span',{style:{fontSize:10,opacity:.7}},t.systems.length+' sistemas')
               )
             )
+          ),
+          installTplHasDurations&&e('div',{style:{marginTop:8}},
+            e('label',{className:'flabel'},'Fecha de inicio (para calcular las fechas de cada fase)'),
+            e('input',{className:'finput',type:'date',value:installStartDate,onChange:ev=>setInstallStartDate(ev.target.value)}),
+            e('div',{style:{fontSize:10,color:'var(--text3)',marginTop:6}},
+              installTpl.bizOnly?'⏱ Este sistema cuenta los días solo de lunes a viernes (configurado en su plantilla).':'Este sistema cuenta los días corridos, incluidos fines de semana. Para cambiarlo, edita la plantilla del sistema → "Excluir fines de semana".'
+            )
           )
         )
       ),
@@ -4565,7 +4654,7 @@ function ProjModal({project,onClose,onSave,onDelete,sysTemplates}){
         project&&onDelete&&confirmDel&&e('button',{className:'btn btn-danger',style:{marginRight:'auto'},onClick:()=>onDelete(project.id)},'Confirmar eliminación'),
         confirmDel&&e('button',{className:'btn',onClick:()=>setConfirmDel(false)},'Cancelar'),
         !confirmDel&&e('button',{className:'btn',onClick:onClose},'Cancelar'),
-        !confirmDel&&e('button',{className:'btn btn-primary',onClick:()=>{if(name.trim())onSave({...(project||{}),name:name.trim(),category:cat,color,icon,dailyLimit:limit,description:desc.trim(),client:client.trim(),priority,_installTplId:installTplId});}},project?'Guardar':'Crear')
+        !confirmDel&&e('button',{className:'btn btn-primary',onClick:()=>{if(name.trim())onSave({...(project||{}),name:name.trim(),category:cat,color,icon,dailyLimit:limit,description:desc.trim(),client:client.trim(),priority,_installTplId:installTplId,_installStartDate:installStartDate,_installBizOnly:!!(installTpl&&installTpl.bizOnly)});}},project?'Guardar':'Crear')
       )
     )
   );
@@ -5798,86 +5887,128 @@ function fmtNoteReminder(ts){
   const d=new Date(ts);
   const today=dayKey();
   const dK=d.toISOString().slice(0,10);
-  if(dK===today)return'Hoy';
+  const hh=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+  if(dK===today)return'Hoy '+hh;
   const tomorrow=new Date();tomorrow.setDate(tomorrow.getDate()+1);
-  if(dK===tomorrow.toISOString().slice(0,10))return'Mañana';
-  return d.toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit',year:dK.slice(0,4)!==today.slice(0,4)?'numeric':undefined});
+  if(dK===tomorrow.toISOString().slice(0,10))return'Mañana '+hh;
+  return d.toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit',year:dK.slice(0,4)!==today.slice(0,4)?'numeric':undefined})+' '+hh;
 }
 function QuickNoteItem({note,onDeleteNote,onToggleNoteDone,onSetNoteReminder}){
   const[editingRemind,setEditingRemind]=useState(false);
   const[val,setVal]=useState('');
+  const[timeVal,setTimeVal]=useState('09:00');
+  const[popPos,setPopPos]=useState(null);
+  const popRef=useRef(null);
+  const rowRef=useRef(null);
+  function toDateStr(d){return d.toISOString().slice(0,10);}
   function openEditor(){
     if(note.remindAt){
-      setVal(new Date(note.remindAt).toISOString().slice(0,10));
+      const d=new Date(note.remindAt);
+      setVal(toDateStr(d));
+      setTimeVal(String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'));
     }else{
-      const d=new Date();d.setDate(d.getDate()+1);
-      setVal(d.toISOString().slice(0,10));
+      setVal(toDateStr(new Date()));
+      setTimeVal('09:00');
+    }
+    if(rowRef.current){
+      const r=rowRef.current.getBoundingClientRect();
+      const width=232;
+      let left=r.left;
+      if(left+width>window.innerWidth-8)left=window.innerWidth-8-width;
+      setPopPos({top:r.bottom+4,left:Math.max(8,left),width});
     }
     setEditingRemind(true);
   }
+  useEffect(()=>{
+    if(!editingRemind)return;
+    function onDocClick(ev){if(popRef.current&&!popRef.current.contains(ev.target))setEditingRemind(false);}
+    window.addEventListener('mousedown',onDocClick);
+    return()=>window.removeEventListener('mousedown',onDocClick);
+  },[editingRemind]);
+  function pickDay(offset){
+    const d=new Date();d.setHours(0,0,0,0);d.setDate(d.getDate()+offset);
+    setVal(toDateStr(d));
+  }
   const active=!!note.remindAt;
-  return e('div',{className:'qn-item'},
+  const todayStr=toDateStr(new Date());
+  const tomorrowD=new Date();tomorrowD.setDate(tomorrowD.getDate()+1);
+  const nextWeekD=new Date();nextWeekD.setDate(nextWeekD.getDate()+7);
+  return e('div',{className:'qn-item',ref:rowRef},
     e('div',{className:'qn-item-row'},
       e('button',{
         className:'qn-item-check',title:'Marcar como hecha (se archiva)',
         onClick:()=>onToggleNoteDone(note.id)
       },'✓'),
       e('div',{className:'qn-item-text-wrap'},
-        e('span',{className:'qn-item-text'},note.text),
-        active&&!editingRemind&&e('span',{className:'qn-item-remind'},e(ClockIcon,{size:9,color:'var(--amber)'}),fmtNoteReminder(note.remindAt))
+        e('span',{className:'qn-item-text',onDoubleClick:openEditor,title:'Doble click para poner fecha y hora',style:{cursor:'pointer'}},note.text),
+        active&&e('span',{className:'qn-item-remind'},e(ClockIcon,{size:9,color:'var(--amber)'}),fmtNoteReminder(note.remindAt))
       ),
-      e('button',{
-        className:'qn-item-clock'+(active?' on':''),
-        title:active?('Recordatorio: '+fmtNoteReminder(note.remindAt)):'Poner recordatorio',
-        onClick:()=>editingRemind?setEditingRemind(false):openEditor()
-      },e(ClockIcon,{size:11})),
       e('button',{className:'qn-item-del',title:'Eliminar',onClick:()=>onDeleteNote(note.id)},'✕')
     ),
-    editingRemind&&e('div',{className:'qn-remind-row'},
-      e('input',{
-        type:'date',className:'finput qn-remind-input',value:val,
-        onChange:ev=>setVal(ev.target.value)
-      }),
-      active&&e('button',{className:'ghost-btn',style:{fontSize:10},onClick:()=>{onSetNoteReminder(null);setEditingRemind(false);}},'Quitar'),
-      e('button',{className:'btn btn-primary',style:{fontSize:10,padding:'3px 10px'},onClick:()=>{
-        if(!val)return;
-        // Se guarda a las 09:00 del día elegido — el sistema de recordatorios
-        // necesita una hora, pero al usuario solo le importa la fecha.
-        onSetNoteReminder(new Date(val+'T09:00:00').getTime());
-        setEditingRemind(false);
-      }},'Guardar')
+    editingRemind&&popPos&&ReactDOM.createPortal(
+      e('div',{className:'qn-datepop',ref:popRef,style:{top:popPos.top,left:popPos.left,width:popPos.width},onClick:ev=>ev.stopPropagation()},
+        e('div',{className:'qn-datepop-chips'},
+          e('button',{className:'qn-chip'+(val===todayStr?' sel':''),onClick:()=>pickDay(0)},'Hoy'),
+          e('button',{className:'qn-chip'+(val===toDateStr(tomorrowD)?' sel':''),onClick:()=>pickDay(1)},'Mañana'),
+          e('button',{className:'qn-chip'+(val===toDateStr(nextWeekD)?' sel':''),onClick:()=>pickDay(7)},'Próx. semana')
+        ),
+        e('div',{className:'qn-datepop-custom'},
+          e('input',{type:'date',className:'qn-datepop-input',value:val,onChange:ev=>setVal(ev.target.value)}),
+          e('input',{type:'time',className:'qn-datepop-input qn-datepop-time',value:timeVal,onChange:ev=>setTimeVal(ev.target.value)})
+        ),
+        e('div',{className:'qn-datepop-chips'},
+          ['09:00','12:00','18:00','21:00'].map(t=>e('button',{key:t,className:'qn-chip qn-chip-time'+(timeVal===t?' sel':''),onClick:()=>setTimeVal(t)},t))
+        ),
+        e('div',{className:'qn-datepop-actions'},
+          active&&e('button',{className:'qn-datepop-remove',onClick:()=>{onSetNoteReminder(null);setEditingRemind(false);}},'Quitar recordatorio'),
+          e('div',{style:{flex:1}}),
+          e('button',{className:'ghost-btn',style:{fontSize:11},onClick:()=>setEditingRemind(false)},'Cancelar'),
+          e('button',{className:'btn btn-primary',style:{fontSize:11,padding:'4px 12px'},onClick:()=>{
+            if(!val)return;
+            onSetNoteReminder(new Date(val+'T'+(timeVal||'09:00')+':00').getTime());
+            setEditingRemind(false);
+          }},'Guardar')
+        )
+      ),
+      document.body
     )
   );
 }
 function QuickNotesPanel({notes,onAddNote,onDeleteNote,onToggleNoteDone,onSetNoteReminder,onOpenAll}){
+  const[adding,setAdding]=useState(false);
   const[val,setVal]=useState('');
+  const inputRef=useRef(null);
   function add(){
     const t=val.trim();
-    if(!t)return;
+    if(!t){setAdding(false);return;}
     onAddNote(t);
     setVal('');
+    setAdding(false);
   }
+  useEffect(()=>{if(adding&&inputRef.current)inputRef.current.focus();},[adding]);
   // Las notas marcadas con check se consideran archivadas: quedan guardadas
   // (por si se quieren revisar desde "Ver todas") pero desaparecen de esta
   // vista compacta, que solo muestra pendientes.
   const list=(notes||[]).filter(n=>!n.done);
   return e('div',{className:'qn-panel'},
     e('div',{className:'qn-hdr'},
-      e(PanelIcon,{name:'note',label:'Notas rápidas'}),
+      e('span',{className:'dash-panel-title'},'Recordatorios'),
       list.length>0&&e('span',{style:{fontSize:10,color:'var(--text4)'}},list.length),
+      e('button',{className:'ghost-btn',title:'Añadir recordatorio',onClick:()=>setAdding(true)},'＋'),
       e('button',{className:'dash-panel-link',title:'Ver todas',onClick:onOpenAll},e(DashIcon,{name:'chevR',size:13}))
     ),
     e('div',{className:'qn-body'},
-      e('div',{className:'qn-input'},
+      adding&&e('div',{className:'qn-input'},
         e('input',{
+          ref:inputRef,
           className:'finput',placeholder:'Anota un pendiente…',value:val,
           onChange:ev=>setVal(ev.target.value),
-          onKeyDown:ev=>{if(ev.key==='Enter')add();}
-        }),
-        e('button',{className:'ghost-btn',title:'Guardar nota',onClick:add},'＋')
+          onKeyDown:ev=>{if(ev.key==='Enter')add();if(ev.key==='Escape'){setVal('');setAdding(false);}},
+          onBlur:add
+        })
       ),
       e('div',{className:'qn-list'},
-        list.length===0&&e('div',{className:'empty',style:{padding:'10px 2px'}},'Sin notas aún'),
+        list.length===0&&!adding&&e('div',{className:'empty',style:{padding:'10px 2px'}},'Sin recordatorios aún'),
         list.slice(0,8).map(n=>e(QuickNoteItem,{
           key:n.id,note:n,onDeleteNote,onToggleNoteDone,
           onSetNoteReminder:dueAt=>onSetNoteReminder(n.id,dueAt)
@@ -6644,6 +6775,7 @@ function SysTemplateManagerModal({sysTemplates,onClose,onApply,onUpdate,onDelete
 function SysTemplateEditModal({tpl,onClose,onSave,onDelete}){
   const[name,setName]=useState(tpl.name);
   const[enabled,setEnabled]=useState(!!tpl.enabled);
+  const[bizOnly,setBizOnly]=useState(!!tpl.bizOnly);
   const[mods,setMods]=useState(()=>(tpl.systems||[]).map(m=>({...m,phases:migrateSysPhases(m)})));
   const[dragId,setDragId]=useState(null);
   const[openModId,setOpenModId]=useState(null); // módulo expandido para editar sus fases/tareas
@@ -6709,7 +6841,7 @@ function SysTemplateEditModal({tpl,onClose,onSave,onDelete}){
   function save(){
     const nm=name.trim();
     if(!nm||!mods.length)return;
-    onSave(tpl.id,{name:nm,systems:mods,enabled});
+    onSave(tpl.id,{name:nm,systems:mods,enabled,bizOnly});
   }
   return e('div',{className:'overlay',onClick:ev=>{if(ev.target===ev.currentTarget)onClose();}},
     e('div',{className:'modal',style:{width:520,maxHeight:'86vh',display:'flex',flexDirection:'column'}},
@@ -6728,6 +6860,13 @@ function SysTemplateEditModal({tpl,onClose,onSave,onDelete}){
             style:{color:enabled?'var(--accent2, #6ee7a0)':'var(--text3)',fontSize:16},
             onClick:()=>setEnabled(v=>!v)
           },enabled?'⏻':'⭘')
+        ),
+        e('label',{className:'fg',style:{display:'flex',alignItems:'center',gap:8,padding:'8px 10px',border:'1px solid var(--border2)',borderRadius:8,cursor:'pointer'}},
+          e('input',{type:'checkbox',checked:bizOnly,onChange:ev=>setBizOnly(ev.target.checked)}),
+          e('div',null,
+            e('div',{style:{fontSize:11.5,color:'var(--text0)',fontWeight:500}},'Excluir fines de semana'),
+            e('div',{style:{fontSize:10,color:'var(--text3)',marginTop:2,maxWidth:320}},'Los "días asignados" de cada módulo se cuentan solo de lunes a viernes, y si la fecha de inicio cae sábado o domingo, se corre al lunes siguiente. Aplica siempre que se instale o encienda este sistema (incluida la auto-creación).')
+          )
         ),
         e('div',{className:'fg'},
           e('div',{style:{display:'flex',alignItems:'baseline',justifyContent:'space-between',marginBottom:6}},
@@ -6831,13 +6970,13 @@ function migrateSysPhases(system){
 // fases sin duración quedan sin fecha (no rompen la cadena, simplemente no
 // avanzan el cursor). Se usa tanto al aplicar una plantilla del Mapa de
 // Sistemas como al recalcular fechas de un sistema ya creado.
-function chainPhaseDates(phases,startFrom){
-  let cursor=startFrom||todayDateKey();
+function chainPhaseDates(phases,startFrom,bizOnly){
+  let cursor=bizOnly?alignToBizDayKey(startFrom||todayDateKey()):(startFrom||todayDateKey());
   return (phases||[]).map(p=>{
     if(!Number.isFinite(p.durationDays)||p.durationDays<=0)return{...p,startDate:p.startDate||null,dueDate:p.dueDate||null};
     const startDate=cursor;
-    const dueDate=addDaysToDateKey(cursor,p.durationDays);
-    cursor=addDaysToDateKey(dueDate,1);
+    const dueDate=addSpanDays(cursor,p.durationDays,bizOnly);
+    cursor=nextChainCursor(dueDate,bizOnly);
     return{...p,startDate,dueDate};
   });
 }
@@ -6847,13 +6986,18 @@ function chainPhaseDates(phases,startFrom){
 // usuario en la vista de Lista. Cada módulo/fase pasa a ser UN paso del
 // proyecto, con sus tareas como subtareas. Si el módulo/fase tiene días
 // asignados, se encadenan las fechas a partir de `startFrom` (o hoy).
-function stepsFromSystemForExecute(system,startFrom){
-  let cursor=startFrom||todayDateKey();
-  function nextDates(dur){
-    if(!Number.isFinite(dur)||dur<=0)return{startDate:null,dueDate:null};
+function stepsFromSystemForExecute(system,startFrom,bizOnly){
+  let cursor=bizOnly?alignToBizDayKey(startFrom||todayDateKey()):(startFrom||todayDateKey());
+  function nextDates(dur,isAutomation){
+    if(!Number.isFinite(dur)||dur<=0){
+      // Sin duración no hay fecha para encadenar — pero la fase ⚙ SIEMPRE
+      // necesita un startDate para que la automatización tenga algo que
+      // detectar, así que le asignamos la posición actual del cursor.
+      return{startDate:isAutomation?cursor:null,dueDate:null};
+    }
     const startDate=cursor;
-    const dueDate=addDaysToDateKey(cursor,dur);
-    cursor=addDaysToDateKey(dueDate,1);
+    const dueDate=addSpanDays(cursor,dur,bizOnly);
+    cursor=nextChainCursor(dueDate,bizOnly);
     return{startDate,dueDate};
   }
   // Si hay un módulo/fase marcado como evento de automatización, el trabajo
@@ -6878,7 +7022,7 @@ function stepsFromSystemForExecute(system,startFrom){
   const modules=system.modules||[];
   if(modules.length>0){
     const built=modules.map(m=>{
-      const{startDate,dueDate}=nextDates(m.durationDays);
+      const{startDate,dueDate}=nextDates(m.durationDays,!!m.automation);
       return{
         id:uid(),name:m.name,startDate,dueDate,done:false,actLog:{},automation:!!m.automation,
         subtasks:(m.phases||[]).flatMap(p=>(p.tasks||[]).map(t=>({id:uid(),name:t.text,done:false})))
@@ -6887,7 +7031,7 @@ function stepsFromSystemForExecute(system,startFrom){
     return pushClosingPastAutomation(built);
   }
   const builtPhases=migrateSysPhases(system).map(p=>{
-    const{startDate,dueDate}=nextDates(p.durationDays);
+    const{startDate,dueDate}=nextDates(p.durationDays,!!p.automation);
     return{
       id:uid(),name:p.name,startDate,dueDate,done:false,actLog:{},automation:!!p.automation,
       subtasks:(p.tasks||[]).map(t=>({id:uid(),name:t.text,done:false}))
@@ -7201,8 +7345,9 @@ function SystemDetailDrawer({system,onUpdateSystem,onClose,onExecute}){
   const[dragTask,setDragTask]=useState(null); // {phaseId,taskId} tarea que se está arrastrando
   const[dropTaskTarget,setDropTaskTarget]=useState(null); // {phaseId,taskId|null} indicador visual de destino
 
-  function commitPhases(next){
+  function commitPhases(next,bizOnly){
     const updated={...system,phases:next};
+    if(bizOnly!==undefined)updated.datesBizOnly=bizOnly;
     delete updated.components;
     onUpdateSystem(updated);
     setPhases(next);
@@ -7309,12 +7454,14 @@ function SystemDetailDrawer({system,onUpdateSystem,onClose,onExecute}){
   const closeSuggestion=useMemo(()=>systemAutomationCloseSuggestion({...system,phases}),[system,phases]);
   const canExecute=onExecute&&phases.some(p=>(p.tasks||[]).length>0);
   const[executeStart,setExecuteStart]=useState(()=>todayDateKey());
+  const[executeBizOnly,setExecuteBizOnly]=useState(()=>!!system.datesBizOnly);
   function confirmExecute(){
     if(!onExecute)return;
-    const steps=stepsFromSystemForExecute({...system,phases},executeStart||todayDateKey());
+    const steps=stepsFromSystemForExecute({...system,phases},executeStart||todayDateKey(),executeBizOnly);
     if(!steps.length)return;
+    if(!!system.datesBizOnly!==executeBizOnly)onUpdateSystem({...system,phases,datesBizOnly:executeBizOnly});
     setShowExecuteModal(false);
-    onExecute(steps);
+    onExecute(steps,executeBizOnly);
   }
 
   return e('div',{className:'sysdrawer-overlay',onClick:ev=>{if(ev.target===ev.currentTarget)onClose();}},
@@ -7323,6 +7470,10 @@ function SystemDetailDrawer({system,onUpdateSystem,onClose,onExecute}){
         e('div',{className:'system-icon-badge',style:{color,background:color+'1f'}},e(ProjIconSVG,{iconKey:system.icon||'target',size:15,color:'currentColor'})),
         e('div',{className:'sysdrawer-title'},system.name),
         e('div',{style:{marginLeft:'auto',fontSize:10,color:'var(--text3)'}},'⚙ activa automáticamente'),
+        e('label',{title:'Los días asignados a cada fase se cuentan solo lun-vie; si la fecha de inicio cae en fin de semana se corre al lunes. Se usa siempre que se ejecute o encienda este sistema.',style:{display:'flex',alignItems:'center',gap:5,fontSize:10,color:'var(--text3)',cursor:'pointer'}},
+          e('input',{type:'checkbox',checked:!!system.datesBizOnly,onChange:ev=>onUpdateSystem({...system,phases,datesBizOnly:ev.target.checked})}),
+          'Excluir fines de semana'
+        ),
         phases.some(p=>p.startDate&&p.dueDate)&&e('button',{className:'rec-trigger-btn',title:'Cambiar la fecha de inicio y recalcular todas las fases con fecha, sin perder nada',onClick:()=>setShowRecalcSys(true)},e(DashIcon,{name:'refresh',size:12})),
         onExecute&&e('button',{className:'btn btn-primary',style:{fontSize:11},disabled:!canExecute,title:canExecute?'Crea un proyecto nuevo usando el orden actual de fases y tareas':'Agrega al menos una tarea para poder ejecutar',onClick:()=>{setExecuteStart(todayDateKey());setShowExecuteModal(true);}},'▶ Ejecutar'),
         e('button',{className:'modal-x',onClick:onClose},'✕')
@@ -7462,6 +7613,10 @@ function SystemDetailDrawer({system,onUpdateSystem,onClose,onExecute}){
           e('label',{className:'flabel'},'Día de inicio'),
           e('input',{className:'finput',type:'date',value:executeStart,onChange:ev=>setExecuteStart(ev.target.value),autoFocus:true})
         ),
+        e('label',{style:{display:'flex',alignItems:'center',gap:7,fontSize:11.5,color:'var(--text2)',marginTop:8,cursor:'pointer'}},
+          e('input',{type:'checkbox',checked:executeBizOnly,onChange:ev=>setExecuteBizOnly(ev.target.checked)}),
+          'Contar solo días de semana (excluir sábado y domingo)'
+        ),
         e('div',{style:{display:'flex',gap:6,justifyContent:'flex-end',marginTop:10}},
           e('button',{className:'ghost-btn',onClick:()=>setShowExecuteModal(false)},'Cancelar'),
           e('button',{className:'btn btn-primary',disabled:!executeStart,onClick:confirmExecute},'▶ Ejecutar y crear proyecto')
@@ -7480,14 +7635,20 @@ function SystemDetailDrawer({system,onUpdateSystem,onClose,onExecute}){
             ),
             e('div',{className:'fg'},e('label',{className:'flabel'},'Nueva fecha de inicio'),
               e('input',{className:'finput',type:'date',id:'sys-recalc-date',defaultValue:currentFirst||todayDateKey()})
+            ),
+            e('label',{style:{display:'flex',alignItems:'center',gap:7,fontSize:11.5,color:'var(--text2)',marginTop:8,cursor:'pointer'}},
+              e('input',{type:'checkbox',id:'sys-recalc-biz-only',defaultChecked:!!system.datesBizOnly}),
+              'Contar solo días de semana (excluir sábado y domingo)'
             )
           ),
           e('div',{className:'modal-foot'},
             e('button',{className:'btn',onClick:()=>setShowRecalcSys(false)},'Cancelar'),
             e('button',{className:'btn btn-primary',onClick:()=>{
               const input=document.getElementById('sys-recalc-date');
+              const bizInput=document.getElementById('sys-recalc-biz-only');
               const startFrom=(input&&input.value)||todayDateKey();
-              commitPhases(chainPhaseDates(phases,startFrom));
+              const bizOnly=!!(bizInput&&bizInput.checked);
+              commitPhases(chainPhaseDates(phases,startFrom,bizOnly),bizOnly);
               setShowRecalcSys(false);
             }},'Recalcular')
           )
@@ -8211,7 +8372,7 @@ function ProjectDashboard(props){
         e(StatCard,{icon:'habit',color:'#2fb87a',label:'Hábitos',value:`${pHabits.filter(h=>(h.log||[]).includes(selectedDay)).length} / ${pHabits.length||0}`,sub:pHabits.length?Math.round(pHabits.filter(h=>(h.log||[]).includes(selectedDay)).length/pHabits.length*100)+'% completados':'Sin hábitos',progress:{value:pHabits.filter(h=>(h.log||[]).includes(selectedDay)).length,max:pHabits.length||1},custom:statCfg.habitos,onChangeCustom:(icon,color)=>setStatCustom('habitos',icon,color),onResetCustom:statCfg.habitos?()=>resetStatCustom('habitos'):null}),
         e(StatCard,{icon:'target',color:'#b06ef5',label:'Sistemas',value:pSystems.filter(s=>s.status!=='paused').length,sub:pSystems.length+' en total',custom:statCfg.sistemas,onChangeCustom:(icon,color)=>setStatCustom('sistemas',icon,color),onResetCustom:statCfg.sistemas?()=>resetStatCustom('sistemas'):null})
       ),
-      e('div',{className:'dash-cols'},
+      e('div',{className:'dash-top-row'},
         e('div',{className:'dash-panel'},
           e('div',{className:'dash-panel-hdr'},
             e(EditableLabel,{value:labels.tareas,onSave:v=>renameLabel('tareas',v)}),
@@ -8223,11 +8384,6 @@ function ProjectDashboard(props){
             pendingTasks.length===0&&e('div',{className:'empty'},'Sin tareas pendientes.'),
             pendingTasks.slice(0,6).map(t=>e(TaskRow,{key:t.id,t,onCycleTaskStatus,onDeleteTask,isActive:isRunningHere&&activeSess.taskId===t.id,onPlay:onPlayTask,onFinish:onFinishTask,onOpenSteps:setStepsForTask,icon:project.icon,color:project.color,onSetPriority:(id,p)=>onUpdateTask(id,{priority:p})}))
           )
-        ),
-      ),
-      e('div',{className:'dash-timeline-row'},
-        e('div',{className:'dash-timeline-wrap'},
-          e(AccountProjectsTimeline,{pTasks:pendingTasks,color:project.color,onOpenProject:setStepsForTask})
         ),
         e(QuickNotesPanel,{notes,onAddNote,onDeleteNote,onToggleNoteDone,onSetNoteReminder,onOpenAll:()=>setTab('notas')}),
         e('div',{className:'dash-panel habitos-mini-panel'},
@@ -8267,6 +8423,11 @@ function ProjectDashboard(props){
               );
             })
           )
+        )
+      ),
+      e('div',{className:'dash-timeline-row'},
+        e('div',{className:'dash-timeline-wrap'},
+          e(AccountProjectsTimeline,{pTasks:pendingTasks,color:project.color,onOpenProject:setStepsForTask})
         )
       )
     )),
@@ -8519,7 +8680,7 @@ function ProjectDashboard(props){
         system:sys,
         onUpdateSystem,
         onClose:()=>setSysDetailId(null),
-        onExecute:steps=>{onAddTask(sys.name,null,steps,null);setSysDetailId(null);}
+        onExecute:(steps,bizOnly)=>{onAddTask(sys.name,null,steps,null,bizOnly);setSysDetailId(null);}
       });
     })(),
     habitForm&&e(HabitFormModal,{
@@ -8577,6 +8738,42 @@ function addDaysToDateKey(dateKey,days){
   d.setDate(d.getDate()+days);
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
+// ¿Cae este date-key en sábado o domingo?
+function isWeekendDateKey(dateKey){
+  const dow=new Date(dateKey+'T00:00:00').getDay();
+  return dow===0||dow===6;
+}
+// Empuja un date-key hacia adelante hasta el próximo día hábil (lun-vie);
+// si ya es hábil, lo deja igual. Se usa para alinear la fecha de inicio
+// cuando el encadenado es "solo días de semana".
+function alignToBizDayKey(dateKey){
+  let d=dateKey;
+  while(isWeekendDateKey(d))d=addDaysToDateKey(d,1);
+  return d;
+}
+// Próximo día hábil ESTRICTAMENTE después de dateKey (nunca el mismo día).
+function nextBizDayKey(dateKey){
+  let d=addDaysToDateKey(dateKey,1);
+  while(isWeekendDateKey(d))d=addDaysToDateKey(d,1);
+  return d;
+}
+// Igual que addDaysToDateKey, pero contando solo días hábiles (lun-vie):
+// avanza `days` días hábiles desde dateKey, saltándose sábados y domingos.
+function addBizDaysToDateKey(dateKey,days){
+  let d=dateKey,count=0;
+  while(count<days){
+    d=addDaysToDateKey(d,1);
+    if(!isWeekendDateKey(d))count++;
+  }
+  return d;
+}
+// Wrappers que eligen días corridos o solo días hábiles según `bizOnly`.
+function addSpanDays(dateKey,days,bizOnly){
+  return bizOnly?addBizDaysToDateKey(dateKey,days):addDaysToDateKey(dateKey,days);
+}
+function nextChainCursor(dateKey,bizOnly){
+  return bizOnly?nextBizDayKey(dateKey):addDaysToDateKey(dateKey,1);
+}
 // Suma meses a un date-key 'YYYY-MM-DD' (respeta cambios de año/mes).
 function addMonthsToDateKey(dateKey,months){
   const d=new Date(dateKey+'T00:00:00');
@@ -8606,19 +8803,21 @@ function todayDateKey(){
   const d=new Date();
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
-function templateToSteps(tpl,startFrom){
+function templateToSteps(tpl,startFrom,bizOnly){
   // Convierte la plantilla (nombres + duración estimada por fase) en fases/
   // tareas reales y nuevas — ids frescos, encadenando startDate/dueDate a
   // partir de `startFrom` (o hoy) según la duración (en días) de cada fase.
   // Sin duración definida, la fase queda sin fechas (se ajusta a mano).
-  let cursor=startFrom||todayDateKey();
+  // Si bizOnly es true, la duración se cuenta solo en días de semana
+  // (lun-vie) y la fecha de inicio se alinea al próximo día hábil.
+  let cursor=bizOnly?alignToBizDayKey(startFrom||todayDateKey()):(startFrom||todayDateKey());
   return (tpl.steps||[]).map(s=>{
     const dur=Number.isFinite(s.durationDays)&&s.durationDays>0?s.durationDays:null;
     let startDate=null,dueDate=null;
     if(dur){
       startDate=cursor;
-      dueDate=addDaysToDateKey(cursor,dur);
-      cursor=addDaysToDateKey(dueDate,1); // la siguiente fase empieza al día siguiente, nunca el mismo día
+      dueDate=addSpanDays(cursor,dur,bizOnly);
+      cursor=nextChainCursor(dueDate,bizOnly); // la siguiente fase empieza al día siguiente (hábil), nunca el mismo día
     }else if(s.automation){
       startDate=cursor;
     }
@@ -8632,8 +8831,8 @@ function templateToSteps(tpl,startFrom){
 // sistemas) en fases del proyecto: cada módulo del sistema pasa a ser UNA fase,
 // en el mismo orden con que se guardó la plantilla, y las tareas de todas las
 // fases internas del módulo se juntan como las subtareas de esa fase.
-function sysTemplateToSteps(tpl,startFrom){
-  let cursor=startFrom||todayDateKey();
+function sysTemplateToSteps(tpl,startFrom,bizOnly){
+  let cursor=bizOnly?alignToBizDayKey(startFrom||todayDateKey()):(startFrom||todayDateKey());
   return (tpl.systems||[])
     .slice()
     .sort((a,b)=>(a.order||0)-(b.order||0))
@@ -8642,8 +8841,8 @@ function sysTemplateToSteps(tpl,startFrom){
       let startDate=null,dueDate=null;
       if(dur){
         startDate=cursor;
-        dueDate=addDaysToDateKey(cursor,dur);
-        cursor=addDaysToDateKey(dueDate,1);
+        dueDate=addSpanDays(cursor,dur,bizOnly);
+        cursor=nextChainCursor(dueDate,bizOnly);
       }else if(s.automation){
         // Sin duración no hay fecha para encadenar — pero la fase ⚙ SIEMPRE
         // necesita un startDate para que la automatización tenga algo que
@@ -8911,6 +9110,7 @@ function NewTaskModal({onClose,onSave,noun,templates,onAddTemplate,onUpdateTempl
   // de inicio sugerida arranca un día después del más tardío de ellos (break).
   const autoBreakDate=useMemo(()=>findAutomationBreakDate(allTasks),[allTasks]);
   const[tplStartDate,setTplStartDate]=useState(()=>autoBreakDate||todayDateKey());
+  const[tplBizOnly,setTplBizOnly]=useState(false);
   const[sysAction,setSysAction]=useState(null); // null | {type:'install',tplId} — solo instala una plantilla de Sistemas si el proyecto todavía no tiene ninguno
   const showSysLink=noun==='proyecto'&&(sysTemplates||[]).length>0;
   const hasProjSystems=(pSystems||[]).length>0;
@@ -8920,8 +9120,9 @@ function NewTaskModal({onClose,onSave,noun,templates,onAddTemplate,onUpdateTempl
     if(!name.trim())return;
     const tpl=(templates||[]).find(t=>t.id===templateId);
     const sysTpl=sysAction?.type==='install'?(sysTemplates||[]).find(t=>t.id===sysAction.tplId):null;
-    const steps=tpl?templateToSteps(tpl,selectedTplHasDurations?tplStartDate:null):(sysTpl?sysTemplateToSteps(sysTpl):[]);
-    onSave(name.trim(),recurrence,steps,sysTpl?sysTpl.id:null);
+    const bizOnly=sysTpl?!!sysTpl.bizOnly:tplBizOnly;
+    const steps=tpl?templateToSteps(tpl,selectedTplHasDurations?tplStartDate:null,bizOnly):(sysTpl?sysTemplateToSteps(sysTpl,null,bizOnly):[]);
+    onSave(name.trim(),recurrence,steps,sysTpl?sysTpl.id:null,bizOnly);
   }
   return e('div',{className:'overlay',onClick:ev=>{if(ev.target===ev.currentTarget)onClose();}},
     e('div',{className:'modal',style:{width:380}},
@@ -8970,10 +9171,17 @@ function NewTaskModal({onClose,onSave,noun,templates,onAddTemplate,onUpdateTempl
           ),
           templateId&&e('div',{style:{fontSize:10,color:'var(--text3)',marginTop:6}},'Se copiarán las fases y tareas de esta plantilla — luego puedes editarlas libremente.'),
           sysAction&&e('div',{style:{fontSize:10,color:'var(--text3)',marginTop:6}},'Se instalarán esos sistemas con sus fases y tareas — luego puedes editarlas libremente.'),
+          sysAction&&sysTemplates.find(t=>t.id===sysAction.tplId)&&e('div',{style:{fontSize:10,color:'var(--text3)',marginTop:4}},
+            (sysTemplates.find(t=>t.id===sysAction.tplId).bizOnly?'⏱ Este sistema cuenta los días solo de lunes a viernes':'Este sistema cuenta los días corridos, incluidos fines de semana')+' (se configura en "Editar plantilla" del sistema).'
+          ),
           selectedTplHasDurations&&e('div',{className:'fg',style:{marginTop:10}},
             e('label',{className:'flabel'},'Fecha de inicio (para calcular las fechas de cada fase)'),
             e('input',{className:'finput',type:'date',value:tplStartDate,onChange:ev=>setTplStartDate(ev.target.value)}),
-            autoBreakDate&&e('div',{style:{fontSize:10,color:'var(--accent2)',marginTop:6}},'⚙ Se detectó automatización activa — fecha sugerida con 1 día de break después de esa fase. Puedes editarla.')
+            autoBreakDate&&e('div',{style:{fontSize:10,color:'var(--accent2)',marginTop:6}},'⚙ Se detectó automatización activa — fecha sugerida con 1 día de break después de esa fase. Puedes editarla.'),
+            e('label',{style:{display:'flex',alignItems:'center',gap:7,fontSize:11,color:'var(--text2)',marginTop:8,cursor:'pointer'}},
+              e('input',{type:'checkbox',checked:tplBizOnly,onChange:ev=>setTplBizOnly(ev.target.checked)}),
+              'Contar solo días de semana (excluir sábado y domingo)'
+            )
           )
         )
       ),
@@ -9160,6 +9368,167 @@ function AutoTextarea({className,value,onChange,onClick,onMouseDown}){
 // Panel derecho: la entrada abierta, con título grande, subtítulo y
 // cuerpo de texto — igual que abrir una página en Notion.
 // ═══════════════════════════════════════════
+// ═══════════════════════════════════════════
+// EDITOR DE BLOQUES DE LA LIBRETA — tipo Notion: cada línea es un bloque
+// que puede ser texto simple, punteo (bullet), lista numerada o un
+// separador. Atajos al escribir: "- " o "* " al inicio → punteo; "1. " →
+// numerada; "----" solo → separador. Cada bloque tiene su propio grip de
+// 6 puntos para arrastrar y reordenar (igual que páginas de Notion).
+// ═══════════════════════════════════════════
+function nbBlocksFromLegacyText(text){
+  const lines=(text||'').split('\n');
+  if(lines.length===1&&!lines[0])return[{id:uid(),type:'text',text:''}];
+  return lines.map(l=>({id:uid(),type:'text',text:l}));
+}
+function NotebookBlockEditor({blocks,legacyText,onChange}){
+  const initial=useMemo(()=>(blocks&&blocks.length)?blocks:nbBlocksFromLegacyText(legacyText),[]); // sólo al montar (la página remonta por key al cambiar de entrada)
+  const[items,setItems]=useState(initial);
+  const inputRefs=useRef({});
+  const dragId=useRef(null);
+  const[dragOverInfo,setDragOverInfo]=useState(null); // {id,pos:'above'|'below'}
+  const didMount=useRef(false);
+
+  useEffect(()=>{
+    if(!didMount.current){didMount.current=true;return;} // evita re-disparar el guardado apenas migra el texto viejo sin cambios reales del usuario
+    onChange(items);
+    // eslint-disable-next-line
+  },[items]);
+
+  function focusBlock(id,atEnd){
+    requestAnimationFrame(()=>{
+      const el=inputRefs.current[id];
+      if(!el)return;
+      el.focus();
+      if(atEnd){const L=el.value.length;el.setSelectionRange(L,L);}
+    });
+  }
+  function autoGrow(el){ if(!el)return; el.style.height='auto'; el.style.height=el.scrollHeight+'px'; }
+  function patchBlock(id,patch){ setItems(prev=>prev.map(b=>b.id===id?{...b,...patch}:b)); }
+  function removeBlock(id){
+    setItems(prev=>{
+      const idx=prev.findIndex(b=>b.id===id);
+      if(idx<0)return prev;
+      const next=prev.filter(b=>b.id!==id);
+      if(next.length===0)return[{id:uid(),type:'text',text:''}];
+      const prevBlock=prev[idx-1];
+      if(prevBlock)focusBlock(prevBlock.id,true);
+      return next;
+    });
+  }
+  function insertAfter(id,newBlock){
+    setItems(prev=>{
+      const idx=prev.findIndex(b=>b.id===id);
+      const next=[...prev];
+      next.splice(idx+1,0,newBlock);
+      return next;
+    });
+    focusBlock(newBlock.id,false);
+  }
+  function handleInput(id,value){
+    const b=items.find(x=>x.id===id);
+    if(!b)return;
+    if(b.type==='text'){
+      if(value==='----'){
+        const newId=uid();
+        setItems(prev=>{
+          const idx=prev.findIndex(x=>x.id===id);
+          const next=[...prev];
+          next[idx]={...b,type:'divider',text:''};
+          next.splice(idx+1,0,{id:newId,type:'text',text:''});
+          return next;
+        });
+        focusBlock(newId,false);
+        return;
+      }
+      if(value.startsWith('- ')||value.startsWith('* ')){
+        patchBlock(id,{type:'bullet',text:value.slice(2)});
+        return;
+      }
+      const m=value.match(/^1\.\s(.*)$/);
+      if(m){
+        patchBlock(id,{type:'numbered',text:m[1]});
+        return;
+      }
+    }
+    patchBlock(id,{text:value});
+  }
+  function handleKeyDown(id,ev){
+    const b=items.find(x=>x.id===id);
+    if(!b)return;
+    if(ev.key==='Enter'){
+      ev.preventDefault();
+      if((b.type==='bullet'||b.type==='numbered')&&!b.text.trim()){
+        patchBlock(id,{type:'text'}); // salir de la lista si la línea está vacía
+        return;
+      }
+      const newType=(b.type==='bullet'||b.type==='numbered')?b.type:'text';
+      insertAfter(id,{id:uid(),type:newType,text:''});
+      return;
+    }
+    if(ev.key==='Backspace'&&!b.text){
+      ev.preventDefault();
+      if(b.type!=='text'){patchBlock(id,{type:'text'});return;}
+      if(items.length>1)removeBlock(id);
+      return;
+    }
+  }
+  function beginDrag(id,ev){ dragId.current=id; ev.dataTransfer.effectAllowed='move'; }
+  function onDragOverRow(id,ev){
+    if(!dragId.current||dragId.current===id)return;
+    ev.preventDefault();
+    const rect=ev.currentTarget.getBoundingClientRect();
+    const pos=(ev.clientY-rect.top)<rect.height/2?'above':'below';
+    setDragOverInfo({id,pos});
+  }
+  function onDropRow(id,ev){
+    ev.preventDefault();
+    const srcId=dragId.current;
+    dragId.current=null;
+    setDragOverInfo(null);
+    if(!srcId||srcId===id)return;
+    setItems(prev=>{
+      const srcIdx=prev.findIndex(b=>b.id===srcId);
+      if(srcIdx<0)return prev;
+      const arr=[...prev];
+      const[moved]=arr.splice(srcIdx,1);
+      let tgtIdx=arr.findIndex(b=>b.id===id);
+      if(dragOverInfo&&dragOverInfo.pos==='below')tgtIdx+=1;
+      arr.splice(tgtIdx,0,moved);
+      return arr;
+    });
+  }
+  let numCounter=0;
+  return e('div',{className:'nb-blocks'},
+    items.map((b,i)=>{
+      if(b.type==='numbered')numCounter++;else numCounter=0;
+      const isOver=dragOverInfo&&dragOverInfo.id===b.id;
+      return e('div',{
+        key:b.id,
+        className:'nb-block-row'+(isOver?(dragOverInfo.pos==='above'?' drag-over-above':' drag-over-below'):'')+(dragId.current===b.id?' dragging':''),
+        onDragOver:ev=>onDragOverRow(b.id,ev),
+        onDrop:ev=>onDropRow(b.id,ev),
+        onDragLeave:()=>setDragOverInfo(cur=>(cur&&cur.id===b.id)?null:cur)
+      },
+        e('div',{className:'nb-block-handle',draggable:true,onDragStart:ev=>beginDrag(b.id,ev),onDragEnd:()=>{dragId.current=null;setDragOverInfo(null);},title:'Arrastra para reordenar'},'⠿'),
+        b.type==='divider'
+          ?e('div',{className:'nb-block-divider-wrap'},e('hr'))
+          :e(React.Fragment,null,
+              b.type==='bullet'&&e('div',{className:'nb-block-marker bullet'},'•'),
+              b.type==='numbered'&&e('div',{className:'nb-block-marker'},numCounter+'.'),
+              e('textarea',{
+                ref:el=>{inputRefs.current[b.id]=el;if(el)autoGrow(el);},
+                className:'nb-block-input',rows:1,
+                value:b.text,
+                placeholder:i===0?'Escribe aquí... ("- " para punteo, "1. " para lista, "----" para separador)':'',
+                onChange:ev=>{handleInput(b.id,ev.target.value);autoGrow(ev.target);},
+                onKeyDown:ev=>handleKeyDown(b.id,ev)
+              })
+            ),
+        items.length>1&&e('button',{className:'nb-block-del',title:'Eliminar bloque',onClick:()=>removeBlock(b.id)},'✕')
+      );
+    })
+  );
+}
 function TaskNotebookPanel({task,onUpdateTask}){
   const entries=task.notebook||[];
   const[selectedId,setSelectedId]=useState(null);
@@ -9258,12 +9627,11 @@ function TaskNotebookPanel({task,onUpdateTask}){
         placeholder:'Agregar un subtítulo...',
         onChange:ev=>patchEntry(active.id,{subtitle:ev.target.value})
       }),
-      e('textarea',{
-        ref:el=>{bodyRefs.current[active.id]=el;if(el)autoGrow(el);},
-        className:'notebook-body-text',
-        value:active.text,
-        placeholder:'Escribe aquí...',
-        onChange:ev=>{patchEntry(active.id,{text:ev.target.value});autoGrow(ev.target);}
+      e(NotebookBlockEditor,{
+        key:active.id,
+        blocks:active.blocks,
+        legacyText:active.text,
+        onChange:blocks=>patchEntry(active.id,{blocks})
       })
     )
   );
@@ -9406,12 +9774,11 @@ function AccountNotebookPanel({project,pTasks,onPatchProject,onUpdateTask}){
         placeholder:'Agregar un subtítulo...',
         onChange:ev=>patchEntry(active,{subtitle:ev.target.value})
       }),
-      e('textarea',{
-        ref:el=>{bodyRefs.current[active.id]=el;if(el)autoGrow(el);},
-        className:'notebook-body-text',
-        value:active.text,
-        placeholder:'Escribe aquí...',
-        onChange:ev=>{patchEntry(active,{text:ev.target.value});autoGrow(ev.target);}
+      e(NotebookBlockEditor,{
+        key:active.id,
+        blocks:active.blocks,
+        legacyText:active.text,
+        onChange:blocks=>patchEntry(active,{blocks})
       })
     )
   );
@@ -9778,8 +10145,9 @@ function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask,templates,onAddTe
       doApplyTemplate(tpl,null);
     }
   }
-  function doApplyTemplate(tpl,startFrom){
-    const built=templateToSteps(tpl,startFrom);
+  function doApplyTemplate(tpl,startFrom,bizOnly){
+    const built=templateToSteps(tpl,startFrom,bizOnly);
+    if(bizOnly!==undefined)onUpdateTask({datesBizOnly:bizOnly});
     if(steps.length===0){
       commit(built);
     }else if(confirm('Ya hay fases en este proyecto. ¿Agregar las fases de "'+tpl.name+'" al final, en vez de reemplazar las existentes?')){
@@ -9793,18 +10161,19 @@ function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask,templates,onAddTe
   // actLog. Las fases sin fecha quedan igual (no participan del encadenado).
   // Sirve para cuando el proyecto arrancó más tarde (o más temprano) de lo
   // planeado y hay que correr todo el calendario sin perder el trabajo ya hecho.
-  function recalcFromStart(newStart){
-    let cursor=newStart;
+  function recalcFromStart(newStart,bizOnly){
+    let cursor=bizOnly?alignToBizDayKey(newStart):newStart;
     const next=steps.map(s=>{
       if(!s.startDate||!s.dueDate)return s; // sin fecha original: se deja tal cual
       const a=new Date(s.startDate+'T00:00:00'),b=new Date(s.dueDate+'T00:00:00');
       const dur=Math.max(0,Math.round((b-a)/86400000));
       const startDate=cursor;
-      const dueDate=addDaysToDateKey(cursor,dur);
-      cursor=addDaysToDateKey(dueDate,1); // nunca se pisa con la fase siguiente
+      const dueDate=addSpanDays(cursor,dur,bizOnly);
+      cursor=nextChainCursor(dueDate,bizOnly); // nunca se pisa con la fase siguiente
       return{...s,startDate,dueDate};
     });
     commit(next);
+    onUpdateTask({datesBizOnly:bizOnly});
     setShowRecalc(false);
   }
   // Sugerencia de cierre real: entre las fases YA EJECUTADAS de este proyecto,
@@ -10413,14 +10782,19 @@ function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask,templates,onAddTe
             ),
             e('div',{className:'fg'},e('label',{className:'flabel'},'Fecha de inicio'),
               e('input',{className:'finput',type:'date',id:'tpl-start-date',defaultValue:todayDateKey()})
+            ),
+            e('label',{style:{display:'flex',alignItems:'center',gap:7,fontSize:11.5,color:'var(--text2)',marginTop:8,cursor:'pointer'}},
+              e('input',{type:'checkbox',id:'tpl-biz-only',defaultChecked:!!task.datesBizOnly}),
+              'Contar solo días de semana (excluir sábado y domingo)'
             )
           ),
           e('div',{className:'modal-foot'},
             e('button',{className:'btn',onClick:()=>setPendingTpl(null)},'Cancelar'),
             e('button',{className:'btn btn-primary',onClick:()=>{
               const input=document.getElementById('tpl-start-date');
+              const bizInput=document.getElementById('tpl-biz-only');
               const startFrom=(input&&input.value)||todayDateKey();
-              doApplyTemplate(pendingTpl,startFrom);
+              doApplyTemplate(pendingTpl,startFrom,!!(bizInput&&bizInput.checked));
             }},'Aplicar y calcular fechas')
           )
         )
@@ -10441,14 +10815,19 @@ function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask,templates,onAddTe
             ),
             e('div',{className:'fg'},e('label',{className:'flabel'},'Nueva fecha de inicio'),
               e('input',{className:'finput',type:'date',id:'recalc-start-date',defaultValue:currentFirst||todayDateKey()})
+            ),
+            e('label',{style:{display:'flex',alignItems:'center',gap:7,fontSize:11.5,color:'var(--text2)',marginTop:8,cursor:'pointer'}},
+              e('input',{type:'checkbox',id:'recalc-biz-only',defaultChecked:!!task.datesBizOnly}),
+              'Contar solo días de semana (excluir sábado y domingo)'
             )
           ),
           e('div',{className:'modal-foot'},
             e('button',{className:'btn',onClick:()=>setShowRecalc(false)},'Cancelar'),
             e('button',{className:'btn btn-primary',onClick:()=>{
               const input=document.getElementById('recalc-start-date');
+              const bizInput=document.getElementById('recalc-biz-only');
               const startFrom=(input&&input.value)||todayDateKey();
-              recalcFromStart(startFrom);
+              recalcFromStart(startFrom,!!(bizInput&&bizInput.checked));
             }},'Recalcular fechas')
           )
         )
