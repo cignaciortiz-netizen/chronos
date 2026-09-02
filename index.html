@@ -727,6 +727,16 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .board-nbcard-subtitle{font-size:11px;color:var(--text2);margin:10px 0 8px}
 .board-nbcard-text{font-size:12px;color:var(--text1);line-height:1.6;background:transparent;border:none;outline:none;width:100%;resize:none;font-family:'Inter',sans-serif;padding:0}
 .board-nbcard-hint{font-size:9px;color:var(--text4);text-align:center;padding:4px 0 0}
+.board-nbcard-mini{padding:0 12px 12px;max-height:280px;overflow-y:auto;border-top:1px solid var(--border)}
+.board-nbcard-mini .nb-blocks{min-height:0;padding-bottom:10px}
+.board-nbcard-mini .nb-block-input{font-size:12px;line-height:1.6}
+/* ── PIZARRA — modo de vincular elementos, estilo mapa mental ── */
+.board-svg{position:absolute;top:0;left:0;pointer-events:none}
+.board-svg line[data-linkline]{pointer-events:stroke;cursor:pointer}
+.board-link-btn.on{background:var(--accent2);color:var(--bg0)}
+.board-hintbar{position:sticky;top:8px;margin:8px 0 8px 10px;font-size:11px;color:var(--text3);background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r-md);padding:5px 10px;display:inline-flex;align-items:center;gap:6px;z-index:10}
+.board-linkable.linking-src{outline:2px solid var(--accent2);outline-offset:2px}
+.board-linkable.linkable-hover{cursor:crosshair}
 
 /* LIBRETA — bitácora tipo Notion, notas de texto libre por proyecto */
 .notebook-wrap{display:flex;height:100%;border:1px solid var(--border2);border-radius:var(--r-lg);overflow:hidden;background:var(--bg0)}
@@ -777,6 +787,38 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .nb-block-row:hover .nb-block-del{opacity:1}
 .nb-block-del:hover{color:var(--red)}
 .nb-block-hint{font-size:9.5px;color:var(--text4);padding:6px 0 0 18px;line-height:1.6}
+/* ── LIBRETA 2.0 — tipos de bloque adicionales, estilo Notion ── */
+.nb-block-input.h1{font-size:22px;font-weight:700;line-height:1.4;color:var(--text0);padding-top:6px}
+.nb-block-input.h2{font-size:18px;font-weight:700;line-height:1.4;color:var(--text0);padding-top:4px}
+.nb-block-input.h3{font-size:15px;font-weight:600;line-height:1.5;color:var(--text0);padding-top:2px}
+.nb-block-input.code{font-family:'JetBrains Mono',monospace;font-size:12px;background:var(--bg3);border-radius:6px;padding:8px 10px;line-height:1.6}
+.nb-block-quote-wrap{flex:1;display:flex;border-left:3px solid var(--accent2);padding-left:10px;margin:2px 0}
+.nb-block-input.quote{font-style:italic;color:var(--text2)}
+.nb-block-todo-wrap{flex:1;display:flex;align-items:flex-start;gap:8px}
+.nb-todo-check{width:16px;height:16px;border-radius:4px;border:1.5px solid var(--border4);background:transparent;flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;margin-top:3px;color:var(--bg0);transition:all .1s}
+.nb-todo-check.on{background:var(--accent2);border-color:var(--accent2)}
+.nb-block-input.todo-done{color:var(--text4);text-decoration:line-through}
+.nb-block-toggle-wrap{flex:1}
+.nb-toggle-hdr{display:flex;align-items:center;gap:6px}
+.nb-toggle-caret{width:16px;height:16px;flex-shrink:0;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text3);transition:transform .12s;font-size:10px;margin-top:3px}
+.nb-toggle-caret.open{transform:rotate(90deg)}
+.nb-toggle-body{margin-top:4px;padding:6px 0 6px 22px;border-left:2px solid var(--border);margin-left:7px}
+.nb-toggle-body textarea{width:100%;background:transparent;border:none;outline:none;color:var(--text2);font-size:12.5px;line-height:1.7;font-family:'Inter',sans-serif;resize:none;padding:0}
+.nb-toggle-body textarea::placeholder{color:var(--text4)}
+.nb-block-img-wrap{flex:1;display:flex;flex-direction:column;gap:5px;padding:2px 0}
+.nb-block-img-wrap img{max-width:100%;border-radius:8px;display:block;border:1px solid var(--border)}
+.nb-block-img-empty{border:1.5px dashed var(--border3);border-radius:8px;padding:16px;text-align:center;font-size:11.5px;color:var(--text3);cursor:pointer;transition:all .12s}
+.nb-block-img-empty:hover{background:var(--bg3);border-color:var(--border4);color:var(--text1)}
+.nb-block-img-cap{width:100%;background:transparent;border:none;outline:none;color:var(--text3);font-size:11px;font-style:italic;padding:0}
+.nb-block-img-cap::placeholder{color:var(--text4)}
+.nb-slash-menu{position:absolute;z-index:20;top:100%;left:18px;margin-top:2px;background:var(--bg2);border:1px solid var(--border3);border-radius:var(--r-md);box-shadow:0 12px 28px #0008;padding:4px;min-width:210px;max-height:280px;overflow-y:auto}
+.nb-slash-item{display:flex;align-items:center;gap:9px;padding:6px 8px;border-radius:6px;cursor:pointer;font-size:12px;color:var(--text1)}
+.nb-slash-item.sel,.nb-slash-item:hover{background:var(--bg4)}
+.nb-slash-item-icon{width:22px;height:22px;border-radius:5px;background:var(--bg3);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:11px;color:var(--text2)}
+.nb-slash-item-sub{font-size:9.5px;color:var(--text4);margin-left:auto;white-space:nowrap}
+.nb-block-typebtn{width:20px;height:20px;border-radius:5px;border:none;background:transparent;color:var(--text4);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;opacity:0;transition:opacity .1s;font-size:10px;margin-top:1px}
+.nb-block-row:hover .nb-block-typebtn{opacity:1}
+.nb-block-typebtn:hover{color:var(--text0);background:var(--bg3)}
 .notebook-empty{color:var(--text3);font-size:12px;padding:20px 2px;text-align:center}
 /* LIBRETA DE CUENTA — vista agregada de todas las libretas de proyecto + notas propias de la cuenta */
 .nb-filter-row{display:flex;flex-wrap:wrap;gap:4px;padding:0 10px 8px;flex-shrink:0}
@@ -1951,6 +1993,12 @@ function nthWeekdayInfo(date){
 // (none/daily/weekly/monthly with interval, days, monthMode, monthDay).
 // habitOccursOn keeps legacy branches (monthly_date/monthly_ordinal) so
 // habits saved before this change keep working.
+// Un recordatorio con fecha (nota rápida de proyecto con remindAt) cuenta
+// como "pendiente" — misma vara que un hábito o una tarea vencida — desde
+// que su fecha/hora ya pasó, hasta que se marca hecho o se le quita la fecha.
+function noteReminderDue(n){
+  return!!(n&&n.remindAt&&!n.remindDone&&!n.done&&n.remindAt<=Date.now());
+}
 function habitOccursOn(habit,date){
   const r=habit.recurrence;
   if(!r||r.type==='none')return false;
@@ -2264,20 +2312,71 @@ function App(){
     setTimeout(()=>{undoRestoringRef.current=false;},0);
   }
 
+  // Límites de memoria del historial. Sin esto, cada snapshot es una copia
+  // COMPLETA del estado en texto — y las imágenes de las pizarras se guardan
+  // como base64 dentro de las tareas, así que un solo snapshot puede pesar
+  // varios MB. 50 de esos en memoria = pestaña muerta con "Out of Memory".
+  const UNDO_MAX_STEPS=25;              // pasos máximos de historial
+  const UNDO_MAX_SNAPSHOT=3*1024*1024;  // 3 MB: sobre esto no se guarda historial de ese estado
+  const UNDO_MAX_TOTAL=12*1024*1024;    // 12 MB: presupuesto total de undo+redo
+  const undoBytesRef=useRef(0);         // suma de caracteres guardados en ambas pilas
+
+  function undoRecount(){
+    let n=0;
+    for(const s of undoStackRef.current)n+=s.length;
+    for(const s of redoStackRef.current)n+=s.length;
+    undoBytesRef.current=n;
+  }
+  // Descarta los snapshots más viejos hasta caber en el presupuesto.
+  function undoTrim(){
+    undoRecount();
+    while(undoStackRef.current.length>UNDO_MAX_STEPS)undoStackRef.current.shift();
+    while(undoBytesRef.current>UNDO_MAX_TOTAL&&undoStackRef.current.length>1){
+      undoStackRef.current.shift();
+      undoRecount();
+    }
+    while(undoBytesRef.current>UNDO_MAX_TOTAL&&redoStackRef.current.length>0){
+      redoStackRef.current.shift();
+      undoRecount();
+    }
+    // Si ni así cabe (un único estado gigante), se suelta el historial entero:
+    // vale más perder el undo que perder la sesión completa.
+    if(undoBytesRef.current>UNDO_MAX_TOTAL){
+      undoStackRef.current=[];
+      redoStackRef.current=[];
+      undoBytesRef.current=0;
+    }
+  }
+
+  // El snapshot se calcula SOLO cuando dejas de escribir 500ms, y solo si
+  // algún dato cambió de verdad. Antes se hacía JSON.stringify de todo el
+  // estado en cada render — es decir, en cada tecla — creando megabytes de
+  // basura por segundo mientras escribías en la Libreta.
   useEffect(()=>{
-    const str=JSON.stringify(undoDataRef.current);
-    if(undoLastStrRef.current===null){undoLastStrRef.current=str;return;} // snapshot inicial, nada que guardar
-    if(undoRestoringRef.current){undoLastStrRef.current=str;return;} // esto YA es un undo/redo, no lo re-capturamos
-    if(str===undoLastStrRef.current)return;
-    const prevStr=undoLastStrRef.current;
+    if(undoRestoringRef.current)return; // esto YA es un undo/redo, no lo re-capturamos
     clearTimeout(undoTimerRef.current);
     undoTimerRef.current=setTimeout(()=>{
-      undoStackRef.current.push(prevStr);
-      if(undoStackRef.current.length>50)undoStackRef.current.shift();
-      redoStackRef.current=[];
+      if(undoRestoringRef.current)return;
+      let str;
+      try{ str=JSON.stringify(undoDataRef.current); }catch(err){ return; }
+      if(undoLastStrRef.current===null){undoLastStrRef.current=str;return;} // snapshot inicial, nada que guardar
+      if(str===undoLastStrRef.current)return;
+      const prevStr=undoLastStrRef.current;
       undoLastStrRef.current=str;
+      // Estado demasiado pesado para historial (ej. pizarras con muchas
+      // imágenes pegadas): se sigue trabajando normal, solo sin undo.
+      if(str.length>UNDO_MAX_SNAPSHOT||prevStr.length>UNDO_MAX_SNAPSHOT){
+        undoStackRef.current=[];
+        redoStackRef.current=[];
+        undoBytesRef.current=0;
+        return;
+      }
+      undoStackRef.current.push(prevStr);
+      redoStackRef.current=[];
+      undoTrim();
     },500);
-  });
+    return()=>clearTimeout(undoTimerRef.current);
+  },[projects,tasks,sessions,blocks,ctxs,habits,notes,systems,sysTemplates,templates,reminders,intenciones,panelLabels,panelVisibility,panelSortModes]);
 
   function doUndo(){
     if(undoStackRef.current.length===0)return;
@@ -2285,6 +2384,7 @@ function App(){
     const curStr=undoLastStrRef.current||JSON.stringify(undoDataRef.current);
     const prevStr=undoStackRef.current.pop();
     redoStackRef.current.push(curStr);
+    undoTrim();
     undoLastStrRef.current=prevStr;
     undoApply({setProjects,setTasks,setSessions,setBlocks,setCtxs,setHabits,setNotes,setSystems,setSysTemplates,setTemplates,setReminders,setIntenciones,setPanelLabels,setPanelVisibility,setPanelSortModes},JSON.parse(prevStr));
     forceSync();
@@ -2296,6 +2396,7 @@ function App(){
     const curStr=undoLastStrRef.current||JSON.stringify(undoDataRef.current);
     const nextStr=redoStackRef.current.pop();
     undoStackRef.current.push(curStr);
+    undoTrim();
     undoLastStrRef.current=nextStr;
     undoApply({setProjects,setTasks,setSessions,setBlocks,setCtxs,setHabits,setNotes,setSystems,setSysTemplates,setTemplates,setReminders,setIntenciones,setPanelLabels,setPanelVisibility,setPanelSortModes},JSON.parse(nextStr));
     forceSync();
@@ -3005,7 +3106,8 @@ function App(){
     (t.steps||[]).some(s=>stepNeedsAction(s,todayKey_,!!(t.actLog&&t.actLog[todayKey_])))
   ));
   const hasReminderAlert=reminders.some(r=>!r.done&&r.dueAt&&r.dueAt<=Date.now());
-  const hasAnyAlert=hasHabitAlert||hasSystemAlert||hasTaskAlert||hasReminderAlert;
+  const hasNoteReminderAlert=Object.values(notes||{}).some(list=>(list||[]).some(noteReminderDue));
+  const hasAnyAlert=hasHabitAlert||hasSystemAlert||hasTaskAlert||hasReminderAlert||hasNoteReminderAlert;
 
   function onProjClick(pid){
     if(selProj===pid)setExpandCtx(v=>v===pid?null:pid);
@@ -3087,7 +3189,7 @@ function App(){
 
       view==='home'
         ?e(HomeResumen,{
-            projects,tasks,sessions,habits,systems,
+            projects,tasks,sessions,habits,systems,notes,
             realBlocks,liveBlock,tick,selectedDay,setSelectedDay,
             tState,activeSess,activeProj,activeTask,workElapsed,todayTotal,
             blocks,onEditBlock:b=>setEditBlock(b),
@@ -3348,8 +3450,9 @@ function App(){
                       (t.dueDate&&t.dueDate<=todayKey_)||
                       (t.steps||[]).some(s=>stepNeedsAction(s,todayKey_,!!(t.actLog&&t.actLog[todayKey_])))
                     ));
-                    const hasAlert=habitDue||systemDue||taskDue;
-                    const alertTitle=habitDue?'Hábito por cumplir hoy':systemDue?'Sistema por revisar':'Tarea pendiente por cumplir';
+                    const noteDue=(notes[proj.id]||[]).some(noteReminderDue);
+                    const hasAlert=habitDue||systemDue||taskDue||noteDue;
+                    const alertTitle=habitDue?'Hábito por cumplir hoy':systemDue?'Sistema por revisar':noteDue&&!taskDue?'Recordatorio vencido':'Tarea pendiente por cumplir';
                     const showCtxStrip=expandCtx===proj.id&&st.lastCtx;
                     return e(React.Fragment,{key:proj.id},
                       e('div',{className:`proj-item${isSel?' sel':''}${isLive?' live':''}`,onMouseEnter:()=>playUI('hover'),onClick:()=>{playUI('click');onProjClick(proj.id);},onDoubleClick:ev=>onProjDbl(ev,proj.id)},
@@ -5941,7 +6044,7 @@ function QuickNoteItem({note,onDeleteNote,onToggleNoteDone,onSetNoteReminder}){
       },'✓'),
       e('div',{className:'qn-item-text-wrap'},
         e('span',{className:'qn-item-text',onDoubleClick:openEditor,title:'Doble click para poner fecha y hora',style:{cursor:'pointer'}},note.text),
-        active&&e('span',{className:'qn-item-remind'},e(ClockIcon,{size:9,color:'var(--amber)'}),fmtNoteReminder(note.remindAt))
+        active&&e('span',{className:'qn-item-remind'},e(ClockIcon,{size:9,color:noteReminderDue(note)?'var(--red,#e05555)':'var(--amber)'}),fmtNoteReminder(note.remindAt))
       ),
       e('button',{className:'qn-item-del',title:'Eliminar',onClick:()=>onDeleteNote(note.id)},'✕')
     ),
@@ -7703,7 +7806,7 @@ function AreaChart({buckets,width=560,height=170}){
 
 function HomeResumen(props){
   const{
-    projects,tasks,sessions,habits,systems,
+    projects,tasks,sessions,habits,systems,notes,
     realBlocks,liveBlock,tick,selectedDay,setSelectedDay,
     tState,activeSess,activeProj,activeTask,workElapsed,todayTotal,
     onOpenProject,onStartProj,onUpdateSystem,onToggleHabitLog,
@@ -7799,8 +7902,9 @@ function HomeResumen(props){
       t.dueDate===today||
       (t.steps||[]).some(s=>stepNeedsAction(s,today,!!(t.actLog&&t.actLog[today])))
     ));
-    const hasAlert=habitDue||systemDue||taskDue;
-    const alertTitle=habitDue?'Hábito por cumplir hoy':systemDue?'Sistema por revisar':'Tarea pendiente por cumplir';
+    const noteDue=((notes&&notes[p.id])||[]).some(noteReminderDue);
+    const hasAlert=habitDue||systemDue||taskDue||noteDue;
+    const alertTitle=habitDue?'Hábito por cumplir hoy':systemDue?'Sistema por revisar':noteDue&&!taskDue?'Recordatorio vencido':'Tarea pendiente por cumplir';
     return{proj:p,lastActivity:pSess[0]?pSess[0].endAt*1000:0,todaySecs:pStats(p).todaySecs,hasAlert,alertTitle};
   }).sort((a,b)=>{
     const rank={urgent:0,important:1,low:2};
@@ -9380,6 +9484,61 @@ function nbBlocksFromLegacyText(text){
   if(lines.length===1&&!lines[0])return[{id:uid(),type:'text',text:''}];
   return lines.map(l=>({id:uid(),type:'text',text:l}));
 }
+// Tipos de bloque disponibles desde el menú de clic derecho — estilo Notion,
+// pero sin exponer atajos de markdown: todo se elige desde el menú.
+const NB_SLASH_ITEMS=[
+  {type:'text',label:'Texto',hint:'Párrafo normal',icon:'Aa'},
+  {type:'h1',label:'Título 1',hint:'Encabezado grande',icon:'H1'},
+  {type:'h2',label:'Título 2',hint:'Encabezado mediano',icon:'H2'},
+  {type:'h3',label:'Título 3',hint:'Encabezado chico',icon:'H3'},
+  {type:'bullet',label:'Lista con viñetas',hint:'Puntos',icon:'•'},
+  {type:'numbered',label:'Lista numerada',hint:'1, 2, 3...',icon:'1.'},
+  {type:'todo',label:'Checklist',hint:'Casilla marcable',icon:'☑'},
+  {type:'toggle',label:'Desplegable',hint:'Oculta contenido',icon:'▸'},
+  {type:'quote',label:'Cita',hint:'Texto destacado',icon:'❝'},
+  {type:'code',label:'Código',hint:'Fuente monoespaciada',icon:'</>'},
+  {type:'image',label:'Imagen',hint:'Sube o pega',icon:'▨'},
+  {type:'divider',label:'Separador',hint:'Línea divisoria',icon:'—'},
+];
+// Reconstruye un bloque al cambiar de tipo desde el menú de clic derecho,
+// preservando lo que tenga sentido conservar.
+function nbBuildBlock(type,old){
+  const base={id:old.id,type};
+  if(type==='divider')return{...base,text:''};
+  if(type==='todo')return{...base,text:old.text||'',checked:!!old.checked};
+  if(type==='toggle')return{...base,text:old.text||'',body:old.body||'',open:old.open!==false};
+  if(type==='image')return{...base,text:'',src:old.src||'',caption:old.caption||''};
+  return{...base,text:old.text||''}; // text/h1/h2/h3/bullet/numbered/quote/code
+}
+// Reescala imágenes pegadas/subidas antes de guardarlas como base64 en el
+// bloque — evita que fotos a resolución completa inflen el estado (y con
+// eso, localStorage, Supabase y el historial de deshacer).
+const NB_IMG_MAX=1400;
+function nbResizeImage(srcDataUrl,cb){
+  try{
+    const im=new Image();
+    im.onload=()=>{
+      try{
+        const scale=Math.min(1,NB_IMG_MAX/Math.max(im.width,im.height));
+        if(scale>=1&&srcDataUrl.length<400000){cb(srcDataUrl);return;}
+        const cv=document.createElement('canvas');
+        cv.width=Math.round(im.width*scale);
+        cv.height=Math.round(im.height*scale);
+        cv.getContext('2d').drawImage(im,0,0,cv.width,cv.height);
+        const out=cv.toDataURL('image/jpeg',0.82);
+        cb(out.length<srcDataUrl.length?out:srcDataUrl);
+      }catch(err){cb(srcDataUrl);}
+    };
+    im.onerror=()=>cb(srcDataUrl);
+    im.src=srcDataUrl;
+  }catch(err){cb(srcDataUrl);}
+}
+function nbFileToBlock(file,cb){
+  if(!file||!file.type||!file.type.startsWith('image/'))return;
+  const reader=new FileReader();
+  reader.onload=()=>nbResizeImage(reader.result,cb);
+  reader.readAsDataURL(file);
+}
 function NotebookBlockEditor({blocks,legacyText,onChange}){
   const initial=useMemo(()=>(blocks&&blocks.length)?blocks:nbBlocksFromLegacyText(legacyText),[]); // sólo al montar (la página remonta por key al cambiar de entrada)
   const[items,setItems]=useState(initial);
@@ -9387,6 +9546,11 @@ function NotebookBlockEditor({blocks,legacyText,onChange}){
   const dragId=useRef(null);
   const[dragOverInfo,setDragOverInfo]=useState(null); // {id,pos:'above'|'below'}
   const didMount=useRef(false);
+  const[slashFor,setSlashFor]=useState(null); // id del bloque con el menú "/" abierto
+  const[slashQuery,setSlashQuery]=useState('');
+  const[slashSel,setSlashSel]=useState(0);
+  const fileInputRef=useRef(null);
+  const pendingImgTarget=useRef(null); // id del bloque que recibirá la imagen subida
 
   useEffect(()=>{
     if(!didMount.current){didMount.current=true;return;} // evita re-disparar el guardado apenas migra el texto viejo sin cambios reales del usuario
@@ -9399,7 +9563,7 @@ function NotebookBlockEditor({blocks,legacyText,onChange}){
       const el=inputRefs.current[id];
       if(!el)return;
       el.focus();
-      if(atEnd){const L=el.value.length;el.setSelectionRange(L,L);}
+      if(atEnd&&el.setSelectionRange){const L=el.value.length;el.setSelectionRange(L,L);}
     });
   }
   function autoGrow(el){ if(!el)return; el.style.height='auto'; el.style.height=el.scrollHeight+'px'; }
@@ -9424,48 +9588,95 @@ function NotebookBlockEditor({blocks,legacyText,onChange}){
     });
     focusBlock(newBlock.id,false);
   }
+  function convertBlock(id,type){
+    setItems(prev=>prev.map(x=>x.id===id?nbBuildBlock(type,x):x));
+    closeSlash();
+    if(type==='image'){ openImagePicker(id); }
+    else focusBlock(id,true);
+  }
+  function openSlash(id,query){ setSlashFor(id); setSlashQuery(query||''); setSlashSel(0); }
+  function closeSlash(){ setSlashFor(null); setSlashQuery(''); setSlashSel(0); }
+  useEffect(()=>{
+    if(!slashFor)return;
+    function onDocMouseDown(ev){
+      if(ev.target.closest&&(ev.target.closest('.nb-slash-menu')||ev.target.closest('.nb-block-typebtn')))return;
+      closeSlash();
+    }
+    document.addEventListener('mousedown',onDocMouseDown);
+    return()=>document.removeEventListener('mousedown',onDocMouseDown);
+    // eslint-disable-next-line
+  },[slashFor]);
+  function slashFiltered(){
+    const q=slashQuery.trim().toLowerCase();
+    if(!q)return NB_SLASH_ITEMS;
+    return NB_SLASH_ITEMS.filter(it=>it.label.toLowerCase().includes(q)||it.type.includes(q));
+  }
+  function openImagePicker(id){
+    pendingImgTarget.current=id;
+    if(fileInputRef.current)fileInputRef.current.click();
+  }
+  function handleFileChosen(ev){
+    const file=ev.target.files&&ev.target.files[0];
+    ev.target.value='';
+    const targetId=pendingImgTarget.current;
+    if(!file||!targetId)return;
+    nbFileToBlock(file,src=>patchBlock(targetId,{src}));
+  }
   function handleInput(id,value){
     const b=items.find(x=>x.id===id);
     if(!b)return;
-    if(b.type==='text'){
-      if(value==='----'){
-        const newId=uid();
-        setItems(prev=>{
-          const idx=prev.findIndex(x=>x.id===id);
-          const next=[...prev];
-          next[idx]={...b,type:'divider',text:''};
-          next.splice(idx+1,0,{id:newId,type:'text',text:''});
-          return next;
-        });
-        focusBlock(newId,false);
-        return;
-      }
-      if(value.startsWith('- ')||value.startsWith('* ')){
-        patchBlock(id,{type:'bullet',text:value.slice(2)});
-        return;
-      }
-      const m=value.match(/^1\.\s(.*)$/);
-      if(m){
-        patchBlock(id,{type:'numbered',text:m[1]});
-        return;
-      }
-    }
     patchBlock(id,{text:value});
+  }
+  function handlePaste(id,ev){
+    const items_=(ev.clipboardData&&ev.clipboardData.items)||[];
+    const imgItem=[...items_].find(it=>it.type&&it.type.startsWith('image/'));
+    if(!imgItem)return;
+    ev.preventDefault();
+    const file=imgItem.getAsFile();
+    if(!file)return;
+    const b=items.find(x=>x.id===id);
+    nbFileToBlock(file,src=>{
+      if(b&&b.type==='text'&&!b.text.trim()){
+        patchBlock(id,{type:'image',src,caption:''});
+      }else{
+        insertAfter(id,{id:uid(),type:'image',src,caption:''});
+      }
+    });
   }
   function handleKeyDown(id,ev){
     const b=items.find(x=>x.id===id);
     if(!b)return;
-    if(ev.key==='Enter'){
+    if(slashFor===id){
+      const list=slashFiltered();
+      if(ev.key==='ArrowDown'){ev.preventDefault();setSlashSel(s=>Math.min(list.length-1,s+1));return;}
+      if(ev.key==='ArrowUp'){ev.preventDefault();setSlashSel(s=>Math.max(0,s-1));return;}
+      if(ev.key==='Escape'){ev.preventDefault();closeSlash();return;}
+      if(ev.key==='Enter'){
+        ev.preventDefault();
+        const pick=list[slashSel]||list[0];
+        if(pick)convertBlock(id,pick.type);
+        return;
+      }
+    }
+    if(ev.key==='Enter'&&(ev.metaKey||ev.ctrlKey)){
       ev.preventDefault();
-      if((b.type==='bullet'||b.type==='numbered')&&!b.text.trim()){
+      insertAfter(id,{id:uid(),type:'text',text:''}); // Ctrl/Cmd+Enter: fuerza un bloque nuevo debajo, útil para salir de un bloque de código
+      return;
+    }
+    if(ev.key==='Enter'&&!ev.shiftKey){
+      if(b.type==='code')return; // salto de línea normal dentro del código
+      ev.preventDefault();
+      if((b.type==='bullet'||b.type==='numbered'||b.type==='todo')&&!b.text.trim()){
         patchBlock(id,{type:'text'}); // salir de la lista si la línea está vacía
         return;
       }
-      const newType=(b.type==='bullet'||b.type==='numbered')?b.type:'text';
-      insertAfter(id,{id:uid(),type:newType,text:''});
+      const newType=(b.type==='bullet'||b.type==='numbered')?b.type:(b.type==='todo'?'todo':'text');
+      const extra=b.type==='todo'?{checked:false}:{};
+      insertAfter(id,{id:uid(),type:newType,text:'',...extra});
       return;
     }
     if(ev.key==='Backspace'&&!b.text){
+      if(b.type==='code'&&ev.target&&ev.target.value)return; // deja borrar dentro del bloque de código normalmente
       ev.preventDefault();
       if(b.type!=='text'){patchBlock(id,{type:'text'});return;}
       if(items.length>1)removeBlock(id);
@@ -9498,33 +9709,116 @@ function NotebookBlockEditor({blocks,legacyText,onChange}){
     });
   }
   let numCounter=0;
+  const HEADING_PH='Escribe aquí... (clic derecho para formato: títulos, checklist, imagen, etc.)';
   return e('div',{className:'nb-blocks'},
+    e('input',{ref:fileInputRef,type:'file',accept:'image/*',style:{display:'none'},onChange:handleFileChosen}),
     items.map((b,i)=>{
       if(b.type==='numbered')numCounter++;else numCounter=0;
       const isOver=dragOverInfo&&dragOverInfo.id===b.id;
+      const list=slashFor===b.id?slashFiltered():null;
       return e('div',{
         key:b.id,
         className:'nb-block-row'+(isOver?(dragOverInfo.pos==='above'?' drag-over-above':' drag-over-below'):'')+(dragId.current===b.id?' dragging':''),
+        style:{position:'relative'},
         onDragOver:ev=>onDragOverRow(b.id,ev),
         onDrop:ev=>onDropRow(b.id,ev),
-        onDragLeave:()=>setDragOverInfo(cur=>(cur&&cur.id===b.id)?null:cur)
+        onDragLeave:()=>setDragOverInfo(cur=>(cur&&cur.id===b.id)?null:cur),
+        onContextMenu:ev=>{ev.preventDefault();openSlash(b.id,'');}
       },
         e('div',{className:'nb-block-handle',draggable:true,onDragStart:ev=>beginDrag(b.id,ev),onDragEnd:()=>{dragId.current=null;setDragOverInfo(null);},title:'Arrastra para reordenar'},'⠿'),
+
         b.type==='divider'
           ?e('div',{className:'nb-block-divider-wrap'},e('hr'))
-          :e(React.Fragment,null,
-              b.type==='bullet'&&e('div',{className:'nb-block-marker bullet'},'•'),
-              b.type==='numbered'&&e('div',{className:'nb-block-marker'},numCounter+'.'),
+
+        :b.type==='image'
+          ?e('div',{className:'nb-block-img-wrap'},
+              b.src
+                ?e('img',{src:b.src,alt:''})
+                :e('div',{className:'nb-block-img-empty',onClick:()=>openImagePicker(b.id)},'📎 Click para subir una imagen (o pega una con Ctrl+V en cualquier bloque de texto)'),
+              b.src&&e('input',{
+                className:'nb-block-img-cap',value:b.caption||'',placeholder:'Agregar una descripción...',
+                onChange:ev=>patchBlock(b.id,{caption:ev.target.value})
+              })
+            )
+
+        :b.type==='toggle'
+          ?e('div',{className:'nb-block-toggle-wrap'},
+              e('div',{className:'nb-toggle-hdr'},
+                e('div',{className:'nb-toggle-caret'+(b.open?' open':''),onClick:()=>patchBlock(b.id,{open:!b.open}),title:b.open?'Contraer':'Expandir'},'▸'),
+                e('textarea',{
+                  ref:el=>{inputRefs.current[b.id]=el;if(el)autoGrow(el);},
+                  className:'nb-block-input',rows:1,style:{fontWeight:600},
+                  value:b.text,placeholder:'Título del desplegable...',
+                  onChange:ev=>{handleInput(b.id,ev.target.value);autoGrow(ev.target);},
+                  onKeyDown:ev=>handleKeyDown(b.id,ev),
+                  onPaste:ev=>handlePaste(b.id,ev)
+                })
+              ),
+              b.open&&e('div',{className:'nb-toggle-body'},
+                e('textarea',{
+                  rows:2,value:b.body||'',placeholder:'Contenido oculto...',
+                  ref:el=>autoGrow(el),
+                  onChange:ev=>{patchBlock(b.id,{body:ev.target.value});autoGrow(ev.target);}
+                })
+              )
+            )
+
+        :b.type==='todo'
+          ?e('div',{className:'nb-block-todo-wrap'},
+              e('button',{className:'nb-todo-check'+(b.checked?' on':''),onClick:()=>patchBlock(b.id,{checked:!b.checked}),title:b.checked?'Marcar como pendiente':'Marcar como hecho'},b.checked?'✓':''),
               e('textarea',{
                 ref:el=>{inputRefs.current[b.id]=el;if(el)autoGrow(el);},
-                className:'nb-block-input',rows:1,
-                value:b.text,
-                placeholder:i===0?'Escribe aquí... ("- " para punteo, "1. " para lista, "----" para separador)':'',
+                className:'nb-block-input'+(b.checked?' todo-done':''),rows:1,
+                value:b.text,placeholder:i===0?HEADING_PH:'',
                 onChange:ev=>{handleInput(b.id,ev.target.value);autoGrow(ev.target);},
-                onKeyDown:ev=>handleKeyDown(b.id,ev)
+                onKeyDown:ev=>handleKeyDown(b.id,ev),
+                onPaste:ev=>handlePaste(b.id,ev)
               })
-            ),
-        items.length>1&&e('button',{className:'nb-block-del',title:'Eliminar bloque',onClick:()=>removeBlock(b.id)},'✕')
+            )
+
+        :b.type==='quote'
+          ?e('div',{className:'nb-block-quote-wrap'},
+              e('textarea',{
+                ref:el=>{inputRefs.current[b.id]=el;if(el)autoGrow(el);},
+                className:'nb-block-input quote',rows:1,
+                value:b.text,placeholder:'Cita...',
+                onChange:ev=>{handleInput(b.id,ev.target.value);autoGrow(ev.target);},
+                onKeyDown:ev=>handleKeyDown(b.id,ev),
+                onPaste:ev=>handlePaste(b.id,ev)
+              })
+            )
+
+        :e(React.Fragment,null,
+            b.type==='bullet'&&e('div',{className:'nb-block-marker bullet'},'•'),
+            b.type==='numbered'&&e('div',{className:'nb-block-marker'},numCounter+'.'),
+            e('textarea',{
+              ref:el=>{inputRefs.current[b.id]=el;if(el)autoGrow(el);},
+              className:'nb-block-input'+(b.type!=='text'&&b.type!=='bullet'&&b.type!=='numbered'?' '+b.type:''),
+              rows:1,
+              value:b.text,
+              placeholder:i===0?HEADING_PH:'',
+              onChange:ev=>{handleInput(b.id,ev.target.value);autoGrow(ev.target);},
+              onKeyDown:ev=>handleKeyDown(b.id,ev),
+              onPaste:ev=>handlePaste(b.id,ev)
+            })
+          ),
+
+        list&&e('div',{className:'nb-slash-menu'},
+          list.length===0&&e('div',{style:{padding:'8px',fontSize:11,color:'var(--text4)'}},'Sin resultados'),
+          list.map((it,idx)=>e('div',{
+            key:it.type,
+            className:'nb-slash-item'+(idx===slashSel?' sel':''),
+            onMouseEnter:()=>setSlashSel(idx),
+            onMouseDown:ev=>{ev.preventDefault();convertBlock(b.id,it.type);}
+          },
+            e('div',{className:'nb-slash-item-icon'},it.icon),
+            e('span',null,it.label),
+            e('span',{className:'nb-slash-item-sub'},it.hint)
+          ))
+        ),
+
+        e('button',{className:'nb-block-typebtn',title:'Cambiar tipo de bloque',onClick:()=>openSlash(b.id,'')},'⋯'),
+        e('button',{className:'nb-block-del',title:'Eliminar bloque',onClick:()=>removeBlock(b.id)},'✕')
       );
     })
   );
@@ -9795,6 +10089,7 @@ function TaskBoardPanel({task,onUpdateTask}){
   })),[rawNotes]);
   const notebook=task.notebook||[];
   const cards=(task.board&&task.board.cards)||[];
+  const links=(task.board&&task.board.links)||[]; // [["img:id","note:id"], ...] — conexiones libres entre cualquier elemento
   const canvasRef=useRef(null);
   const[zoom,setZoom]=useState(1);
   const[dragImg,setDragImg]=useState(null); // {id,startX,startY,origX,origY}
@@ -9805,22 +10100,59 @@ function TaskBoardPanel({task,onUpdateTask}){
   const pasteCounterRef=useRef(0);
   const noteCounterRef=useRef(0);
   const cardCounterRef=useRef(0);
+  // ── Vincular elementos entre sí (como en el Mapa de sistemas) ──
+  const[linkMode,setLinkMode]=useState(false);
+  const[linkFrom,setLinkFrom]=useState(null); // composite id: "img:xxx" | "note:xxx" | "card:xxx"
 
   function clampZoom(z){return Math.max(0.4,Math.min(1.8,Math.round(z*20)/20));}
   function updateImages(next){onUpdateTask({board:{...(task.board||{}),images:next}});}
   function updateNotes(next){onUpdateTask({boardNotes:next});}
   function updateCards(next){onUpdateTask({board:{...(task.board||{}),cards:next}});}
+  function updateLinks(next){onUpdateTask({board:{...(task.board||{}),links:next}});}
   function patchNotebookEntry(entryId,patch){
     onUpdateTask({notebook:notebook.map(n=>n.id===entryId?{...n,...patch,updatedAt:Date.now()}:n)});
   }
+  // Las imágenes de la pizarra viven como base64 DENTRO de la tarea, así que
+  // pegar un screenshot a resolución completa mete varios MB al estado (y de
+  // ahí a localStorage, a Supabase y a cada snapshot de undo). Se reescalan a
+  // un máximo razonable antes de guardarlas: se ven igual en la pizarra y
+  // pesan una fracción.
+  const BOARD_IMG_MAX=1400;
   function addImage(src){
     const n=pasteCounterRef.current++;
     const off=(n%8)*22;
-    const img={id:uid(),x:40+off,y:40+off,w:320,src};
-    updateImages([...images,img]);
+    function push(finalSrc){
+      updateImages([...images,{id:uid(),x:40+off,y:40+off,w:320,src:finalSrc}]);
+    }
+    try{
+      const im=new Image();
+      im.onload=()=>{
+        try{
+          const scale=Math.min(1,BOARD_IMG_MAX/Math.max(im.width,im.height));
+          if(scale>=1&&src.length<400000){push(src);return;}
+          const cv=document.createElement('canvas');
+          cv.width=Math.round(im.width*scale);
+          cv.height=Math.round(im.height*scale);
+          cv.getContext('2d').drawImage(im,0,0,cv.width,cv.height);
+          const out=cv.toDataURL('image/jpeg',0.82);
+          push(out.length<src.length?out:src);
+        }catch(err){push(src);}
+      };
+      im.onerror=()=>push(src);
+      im.src=src;
+    }catch(err){push(src);}
   }
-  function deleteImage(id){updateImages(images.filter(i=>i.id!==id));}
+  // Al borrar un elemento, sus conexiones también se limpian — nunca quedan
+  // líneas colgando de algo que ya no existe.
+  function pruneLinks(compositeId,nextLinksBase){
+    return(nextLinksBase!==undefined?nextLinksBase:links).filter(l=>l[0]!==compositeId&&l[1]!==compositeId);
+  }
+  function deleteImage(id){
+    updateImages(images.filter(i=>i.id!==id));
+    updateLinks(pruneLinks('img:'+id));
+  }
   function beginImgDrag(img,ev){
+    if(linkMode){ev.stopPropagation();handleLinkClick('img:'+img.id);return;}
     ev.preventDefault();
     setDragImg({id:img.id,startX:ev.clientX,startY:ev.clientY,origX:img.x,origY:img.y});
   }
@@ -9867,6 +10199,14 @@ function TaskBoardPanel({task,onUpdateTask}){
     return()=>document.removeEventListener('mousedown',h);
   },[showNbMenu]);
   useEffect(()=>{
+    if(!linkMode)return;
+    function onKey(ev){
+      if(ev.key==='Escape'){setLinkFrom(null);setLinkMode(false);}
+    }
+    window.addEventListener('keydown',onKey);
+    return()=>window.removeEventListener('keydown',onKey);
+  },[linkMode]);
+  useEffect(()=>{
     function onPaste(ev){
       const items=(ev.clipboardData&&ev.clipboardData.items)||[];
       for(const item of items){
@@ -9902,8 +10242,12 @@ function TaskBoardPanel({task,onUpdateTask}){
     updateNotes([note,...notes]);
   }
   function updateNoteText(id,text){updateNotes(notes.map(n=>n.id===id?{...n,text}:n));}
-  function deleteNote(id){updateNotes(notes.filter(n=>n.id!==id));}
+  function deleteNote(id){
+    updateNotes(notes.filter(n=>n.id!==id));
+    updateLinks(pruneLinks('note:'+id));
+  }
   function beginNoteDrag(note,ev){
+    if(linkMode){ev.stopPropagation();handleLinkClick('note:'+note.id);return;}
     if(ev.target.tagName==='TEXTAREA')return;
     ev.preventDefault();
     setDragNote({id:note.id,startX:ev.clientX,startY:ev.clientY,origX:note.x,origY:note.y});
@@ -9914,13 +10258,42 @@ function TaskBoardPanel({task,onUpdateTask}){
     updateCards([card,...cards]);
     setShowNbMenu(false);
   }
-  function deleteCard(id){updateCards(cards.filter(c=>c.id!==id));}
+  function deleteCard(id){
+    updateCards(cards.filter(c=>c.id!==id));
+    updateLinks(pruneLinks('card:'+id));
+  }
   function toggleCardExpand(id){updateCards(cards.map(c=>c.id===id?{...c,expanded:!c.expanded}:c));}
   function beginCardDrag(card,ev){
+    if(linkMode){ev.stopPropagation();handleLinkClick('card:'+card.id);return;}
     if(ev.target.tagName==='TEXTAREA'||ev.target.tagName==='INPUT')return;
     ev.preventDefault();
     setDragCard({id:card.id,startX:ev.clientX,startY:ev.clientY,origX:card.x,origY:card.y});
   }
+  // Punto de anclaje de cada elemento para dibujar las líneas — se usa el
+  // centro superior de su posición conocida (x,y,w), sin depender de medir
+  // el DOM en vivo, así que funciona igual con cualquier alto de contenido.
+  function anchorOf(compositeId){
+    const[kind,id]=[compositeId.slice(0,compositeId.indexOf(':')),compositeId.slice(compositeId.indexOf(':')+1)];
+    const el=kind==='img'?images.find(x=>x.id===id):kind==='note'?notes.find(x=>x.id===id):cards.find(x=>x.id===id);
+    if(!el)return null;
+    return{x:el.x+(el.w||220)/2,y:el.y+12};
+  }
+  function handleLinkClick(compositeId){
+    if(!linkFrom){setLinkFrom(compositeId);return;}
+    if(linkFrom===compositeId){setLinkFrom(null);return;}
+    const a=linkFrom,b=compositeId;
+    const exists=links.some(l=>(l[0]===a&&l[1]===b)||(l[0]===b&&l[1]===a));
+    if(!exists)updateLinks([...links,[a,b]]);
+    setLinkFrom(a===compositeId?null:compositeId); // sigue encadenando desde el último elemento tocado
+  }
+  function removeLink(idx){ updateLinks(links.filter((_,i)=>i!==idx)); }
+
+  const allElements=[
+    ...images.map(i=>({...i,_kind:'img'})),
+    ...notes.map(n=>({...n,_kind:'note'})),
+    ...cards.map(c=>({...c,_kind:'card'}))
+  ];
+  const boardHasContent=images.length>0||notes.length>0||cards.length>0;
 
   return e('div',{className:'board-wrap'},
     e('div',{className:'board-canvas-scroll',ref:canvasRef,onWheel},
@@ -9929,8 +10302,8 @@ function TaskBoardPanel({task,onUpdateTask}){
         e('span',{className:'tl-zoom-val'},Math.round(zoom*100)+'%'),
         e('button',{className:'tl-zoom-btn',onClick:()=>setZoom(z=>clampZoom(z+0.1))},'+'),
         e('span',{className:'divider'}),
-        e('button',{className:'board-add-note-btn',onClick:addNote,title:'Agregar una nota de texto sobre la pizarra'},
-          e(DashIcon,{name:'plus',size:11}),'Nota'
+        e('button',{className:'board-add-note-btn',onClick:addNote,title:'Agregar una tarjeta de texto libre sobre la pizarra'},
+          e(DashIcon,{name:'plus',size:11}),'Tarjeta'
         ),
         e('div',{className:'board-add-nb-wrap',ref:nbMenuRef},
           e('button',{className:'board-add-note-btn',onClick:()=>setShowNbMenu(v=>!v),title:'Traer una entrada de la Libreta a la pizarra'},
@@ -9944,67 +10317,91 @@ function TaskBoardPanel({task,onUpdateTask}){
               onClick:()=>addCardFromEntry(en.id)
             },en.title||'Sin título'))
           )
-        )
+        ),
+        e('span',{className:'divider'}),
+        e('button',{
+          className:'board-add-note-btn board-link-btn'+(linkMode?' on':''),
+          onClick:()=>{setLinkMode(v=>!v);setLinkFrom(null);},
+          title:'Vincular dos elementos de la pizarra con una línea'
+        },e(DashIcon,{name:'network',size:11}),'Vincular')
       ),
-      e('div',{className:'board-canvas',style:{transform:`scale(${zoom})`,transformOrigin:'0 0'}},
-        images.length===0&&notes.length===0&&cards.length===0&&e('div',{className:'board-hint'},
+      linkMode&&e('div',{className:'board-hintbar'},
+        linkFrom?'Click en otro elemento para conectarlo · Esc para salir':'Click en un elemento, después en otro, para conectarlos · Esc para salir'
+      ),
+      e('div',{className:'board-canvas',style:{transform:`scale(${zoom})`,transformOrigin:'0 0',cursor:linkMode?'crosshair':'default'}},
+        !boardHasContent&&e('div',{className:'board-hint'},
           e(DashIcon,{name:'image',size:22,color:'var(--text4)'}),
-          e('div',null,'Pegá una imagen con Ctrl+V, presioná "Nota" para escribir directamente sobre la pizarra, o "Libreta" para traer una entrada ya escrita.')
+          e('div',null,'Pegá una imagen con Ctrl+V, presioná "Tarjeta" para escribir directamente sobre la pizarra, "Libreta" para traer una entrada ya escrita, o "Vincular" para conectarlas entre sí.')
+        ),
+        e('svg',{className:'board-svg',width:2200,height:1500},
+          links.map((l,idx)=>{
+            const a=anchorOf(l[0]),b=anchorOf(l[1]);
+            if(!a||!b)return null;
+            return e('g',{key:idx},
+              e('line',{x1:a.x,y1:a.y,x2:b.x,y2:b.y,stroke:'var(--accent2)',strokeWidth:1.6,strokeDasharray:'5 4',opacity:.75}),
+              e('line',{'data-linkline':1,x1:a.x,y1:a.y,x2:b.x,y2:b.y,stroke:'transparent',strokeWidth:14,onDoubleClick:()=>removeLink(idx),title:'Doble click para desconectar'})
+            );
+          })
         ),
         images.map(img=>e('div',{
-          key:img.id,className:'board-img'+(dragImg&&dragImg.id===img.id?' dragging':''),
+          key:img.id,className:'board-img board-linkable'+(dragImg&&dragImg.id===img.id?' dragging':'')+(linkFrom==='img:'+img.id?' linking-src':'')+(linkMode?' linkable-hover':''),
           style:{left:img.x,top:img.y,width:img.w},
           onMouseDown:ev=>beginImgDrag(img,ev)
         },
           e('img',{src:img.src,draggable:false,style:{width:'100%',display:'block',borderRadius:8,pointerEvents:'none'}}),
-          e('button',{className:'board-img-del',onMouseDown:ev=>ev.stopPropagation(),onClick:()=>deleteImage(img.id),title:'Eliminar imagen'},'✕')
+          !linkMode&&e('button',{className:'board-img-del',onMouseDown:ev=>ev.stopPropagation(),onClick:()=>deleteImage(img.id),title:'Eliminar imagen'},'✕')
         )),
         notes.map(n=>e('div',{
-          key:n.id,className:'board-note'+(dragNote&&dragNote.id===n.id?' dragging':''),
+          key:n.id,className:'board-note board-linkable'+(dragNote&&dragNote.id===n.id?' dragging':'')+(linkFrom==='note:'+n.id?' linking-src':'')+(linkMode?' linkable-hover':''),
           style:{left:n.x,top:n.y,width:n.w,height:n.h},
           onMouseDown:ev=>beginNoteDrag(n,ev)
         },
           e('div',{className:'board-note-hdr'},
-            e('button',{className:'board-note-del',onMouseDown:ev=>ev.stopPropagation(),onClick:()=>deleteNote(n.id),title:'Eliminar nota'},'✕')
+            !linkMode&&e('button',{className:'board-note-del',onMouseDown:ev=>ev.stopPropagation(),onClick:()=>deleteNote(n.id),title:'Eliminar tarjeta'},'✕')
           ),
           e('textarea',{
             className:'board-note-text',
             placeholder:'Escribe aquí...',
             defaultValue:n.text,
-            onMouseDown:ev=>ev.stopPropagation(),
+            disabled:linkMode,
+            onMouseDown:ev=>{if(!linkMode)ev.stopPropagation();},
             onBlur:ev=>updateNoteText(n.id,ev.target.value)
           })
         )),
         cards.map(c=>{
           const entry=notebook.find(n=>n.id===c.entryId);
+          const linkCls=' board-linkable'+(linkFrom==='card:'+c.id?' linking-src':'')+(linkMode?' linkable-hover':'');
           if(!entry){
             return e('div',{
-              key:c.id,className:'board-nbcard'+(dragCard&&dragCard.id===c.id?' dragging':''),
+              key:c.id,className:'board-nbcard'+linkCls+(dragCard&&dragCard.id===c.id?' dragging':''),
               style:{left:c.x,top:c.y,width:c.w},
               onMouseDown:ev=>beginCardDrag(c,ev)
             },
               e('div',{className:'board-nbcard-hdr'},
                 e('span',{className:'board-nbcard-title untitled'},'Esta entrada fue eliminada'),
-                e('button',{className:'board-nbcard-del',onMouseDown:ev=>ev.stopPropagation(),onClick:()=>deleteCard(c.id),title:'Quitar tarjeta'},'✕')
+                !linkMode&&e('button',{className:'board-nbcard-del',onMouseDown:ev=>ev.stopPropagation(),onClick:()=>deleteCard(c.id),title:'Quitar tarjeta'},'✕')
               )
             );
           }
           return e('div',{
-            key:c.id,className:'board-nbcard'+(dragCard&&dragCard.id===c.id?' dragging':''),
-            style:{left:c.x,top:c.y,width:c.expanded?Math.max(c.w,260):c.w},
+            key:c.id,className:'board-nbcard'+linkCls+(dragCard&&dragCard.id===c.id?' dragging':''),
+            style:{left:c.x,top:c.y,width:c.expanded?Math.max(c.w,280):c.w},
             onMouseDown:ev=>beginCardDrag(c,ev)
           },
             e('div',{
               className:'board-nbcard-hdr',
-              onDoubleClick:()=>toggleCardExpand(c.id),
+              onDoubleClick:()=>!linkMode&&toggleCardExpand(c.id),
               title:'Doble clic para '+(c.expanded?'contraer':'expandir')
             },
               e('span',{className:'board-nbcard-icon'},e(DashIcon,{name:'note',size:12})),
               e('span',{className:'board-nbcard-title'+(entry.title?'':' untitled')},entry.title||'Sin título'),
-              e('button',{className:'board-nbcard-del',onMouseDown:ev=>ev.stopPropagation(),onClick:()=>deleteCard(c.id),title:'Quitar tarjeta de la pizarra (no borra la nota)'},'✕')
+              !linkMode&&e('button',{className:'board-nbcard-del',onMouseDown:ev=>ev.stopPropagation(),onClick:()=>deleteCard(c.id),title:'Quitar tarjeta de la pizarra (no borra la nota)'},'✕')
             ),
-            !c.expanded&&e('div',{className:'board-nbcard-hint'},'doble clic para abrir'),
-            c.expanded&&e('div',{className:'board-nbcard-body',onMouseDown:ev=>ev.stopPropagation()},
+            !c.expanded&&e('div',{className:'board-nbcard-hint'},'doble clic para abrir · vista miniatura de la nota'),
+            // Vista en miniatura: el editor real de la Libreta (con sus bloques,
+            // checklist, imágenes, etc.), embebido y con scroll, para editar sin
+            // salir de la pizarra.
+            c.expanded&&e('div',{className:'board-nbcard-mini',onMouseDown:ev=>ev.stopPropagation()},
               e('input',{
                 className:'notebook-subtitle-input',
                 style:{fontSize:11.5,marginBottom:0,marginTop:10},
@@ -10012,12 +10409,11 @@ function TaskBoardPanel({task,onUpdateTask}){
                 placeholder:'Agregar un subtítulo...',
                 onChange:ev=>patchNotebookEntry(entry.id,{subtitle:ev.target.value})
               }),
-              e('textarea',{
-                className:'board-nbcard-text',
-                style:{marginTop:8,minHeight:60},
-                value:entry.text,
-                placeholder:'Escribe aquí...',
-                onChange:ev=>patchNotebookEntry(entry.id,{text:ev.target.value})
+              e(NotebookBlockEditor,{
+                key:entry.id,
+                blocks:entry.blocks,
+                legacyText:entry.text,
+                onChange:blocks=>patchNotebookEntry(entry.id,{blocks})
               })
             )
           );
