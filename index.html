@@ -2300,6 +2300,7 @@ function App(){
   const redoStackRef=useRef([]);
   const undoLastStrRef=useRef(null); // último snapshot ya "confirmado" en el historial
   const undoTimerRef=useRef(null);
+  const tasksSaveTimerRef=useRef(null); // debounce del guardado de 'tasks' — es el estado más pesado (notebooks + imágenes de pizarra en base64), escribirlo entero a localStorage en CADA tecla es lo que hacía que tipear se sintiera trabado/crasheado
   const undoRestoringRef=useRef(false); // true mientras aplicamos un undo/redo, para no re-capturarlo
 
   function undoApply(setters,d){
@@ -2744,6 +2745,8 @@ function App(){
 
   useEffect(()=>{
     function flush(){
+      clearTimeout(tasksSaveTimerRef.current);
+      save('chr4_tasks',(sbLatestRef.current&&sbLatestRef.current.tasks)||tasks);
       saveLocalCheckpoint();
       if(sbStatus!=='connected'||!SB.configured()||!sbLatestRef.current) return;
       try{
@@ -2803,7 +2806,11 @@ function App(){
 
   // persist
   useEffect(()=>save('chr4_proj',projects),[projects]);
-  useEffect(()=>save('chr4_tasks',tasks),[tasks]);
+  useEffect(()=>{
+    clearTimeout(tasksSaveTimerRef.current);
+    tasksSaveTimerRef.current=setTimeout(()=>save('chr4_tasks',tasks),300);
+    return()=>clearTimeout(tasksSaveTimerRef.current);
+  },[tasks]);
   useEffect(()=>save('chr4_sess',sessions),[sessions]);
   useEffect(()=>save('chr4_blocks',blocks),[blocks]);
   useEffect(()=>save('chr4_ctxs',ctxs),[ctxs]);
@@ -9543,6 +9550,16 @@ function NotebookBlockEditor({blocks,legacyText,onChange}){
   const initial=useMemo(()=>(blocks&&blocks.length)?blocks:nbBlocksFromLegacyText(legacyText),[]); // sólo al montar (la página remonta por key al cambiar de entrada)
   const[items,setItems]=useState(initial);
   const inputRefs=useRef({});
+  const refCallbacks=useRef({}); // memoiza un callback de ref por bloque — evita que React lo re-dispare (y con eso, un reflow forzado) en cada tecla
+  function refFor(id){
+    if(!refCallbacks.current[id]){
+      refCallbacks.current[id]=el=>{
+        inputRefs.current[id]=el;
+        if(el)autoGrow(el); // solo corre al MONTAR ese bloque — al tipear, autoGrow ya se llama desde onChange
+      };
+    }
+    return refCallbacks.current[id];
+  }
   const dragId=useRef(null);
   const[dragOverInfo,setDragOverInfo]=useState(null); // {id,pos:'above'|'below'}
   const didMount=useRef(false);
@@ -9569,6 +9586,9 @@ function NotebookBlockEditor({blocks,legacyText,onChange}){
   function autoGrow(el){ if(!el)return; el.style.height='auto'; el.style.height=el.scrollHeight+'px'; }
   function patchBlock(id,patch){ setItems(prev=>prev.map(b=>b.id===id?{...b,...patch}:b)); }
   function removeBlock(id){
+    delete refCallbacks.current[id];
+    delete refCallbacks.current[id+'_body'];
+    delete inputRefs.current[id];
     setItems(prev=>{
       const idx=prev.findIndex(b=>b.id===id);
       if(idx<0)return prev;
@@ -9746,7 +9766,7 @@ function NotebookBlockEditor({blocks,legacyText,onChange}){
               e('div',{className:'nb-toggle-hdr'},
                 e('div',{className:'nb-toggle-caret'+(b.open?' open':''),onClick:()=>patchBlock(b.id,{open:!b.open}),title:b.open?'Contraer':'Expandir'},'▸'),
                 e('textarea',{
-                  ref:el=>{inputRefs.current[b.id]=el;if(el)autoGrow(el);},
+                  ref:refFor(b.id),
                   className:'nb-block-input',rows:1,style:{fontWeight:600},
                   value:b.text,placeholder:'Título del desplegable...',
                   onChange:ev=>{handleInput(b.id,ev.target.value);autoGrow(ev.target);},
@@ -9757,7 +9777,7 @@ function NotebookBlockEditor({blocks,legacyText,onChange}){
               b.open&&e('div',{className:'nb-toggle-body'},
                 e('textarea',{
                   rows:2,value:b.body||'',placeholder:'Contenido oculto...',
-                  ref:el=>autoGrow(el),
+                  ref:refFor(b.id+'_body'),
                   onChange:ev=>{patchBlock(b.id,{body:ev.target.value});autoGrow(ev.target);}
                 })
               )
@@ -9767,7 +9787,7 @@ function NotebookBlockEditor({blocks,legacyText,onChange}){
           ?e('div',{className:'nb-block-todo-wrap'},
               e('button',{className:'nb-todo-check'+(b.checked?' on':''),onClick:()=>patchBlock(b.id,{checked:!b.checked}),title:b.checked?'Marcar como pendiente':'Marcar como hecho'},b.checked?'✓':''),
               e('textarea',{
-                ref:el=>{inputRefs.current[b.id]=el;if(el)autoGrow(el);},
+                ref:refFor(b.id),
                 className:'nb-block-input'+(b.checked?' todo-done':''),rows:1,
                 value:b.text,placeholder:i===0?HEADING_PH:'',
                 onChange:ev=>{handleInput(b.id,ev.target.value);autoGrow(ev.target);},
@@ -9779,7 +9799,7 @@ function NotebookBlockEditor({blocks,legacyText,onChange}){
         :b.type==='quote'
           ?e('div',{className:'nb-block-quote-wrap'},
               e('textarea',{
-                ref:el=>{inputRefs.current[b.id]=el;if(el)autoGrow(el);},
+                ref:refFor(b.id),
                 className:'nb-block-input quote',rows:1,
                 value:b.text,placeholder:'Cita...',
                 onChange:ev=>{handleInput(b.id,ev.target.value);autoGrow(ev.target);},
@@ -9792,7 +9812,7 @@ function NotebookBlockEditor({blocks,legacyText,onChange}){
             b.type==='bullet'&&e('div',{className:'nb-block-marker bullet'},'•'),
             b.type==='numbered'&&e('div',{className:'nb-block-marker'},numCounter+'.'),
             e('textarea',{
-              ref:el=>{inputRefs.current[b.id]=el;if(el)autoGrow(el);},
+              ref:refFor(b.id),
               className:'nb-block-input'+(b.type!=='text'&&b.type!=='bullet'&&b.type!=='numbered'?' '+b.type:''),
               rows:1,
               value:b.text,
