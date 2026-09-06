@@ -14,6 +14,7 @@
 :root{
   --bg0:#15161b;--bg1:#191b21;--bg2:#1d1f27;--bg3:#22242d;--bg4:#282a34;--bg5:#2f313c;
   --border:#c89a5712;--border2:#c89a571e;--border3:#c89a5730;--border4:#ffffff40;
+  --border-neutral2:#ffffff14;--border-neutral3:#ffffff20;
   --text0:#f2f2f4;--text1:#c9cbd3;--text2:#9497a4;--text3:#6e7180;--text4:#4e5160;
   --accent:#c89a57;--accent2:#e0b876;--accentd:#8c723f;--accent-bg:#c89a5714;--accent-border:#c89a573a;
   --green:#34c386;--green-bg:#34c38614;--green-border:#34c3863a;
@@ -1134,6 +1135,37 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .dash-tab.on::after{content:'';position:absolute;left:10px;right:10px;bottom:-1px;height:2px;border-radius:2px;background:var(--accent)}
 .dash-body{padding:20px 26px 100px;flex:1;display:flex;flex-direction:column;gap:18px}
 .dash-stats-row{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+.dash-hero-row{display:grid;grid-template-columns:2fr 1fr 1fr;gap:12px}
+@media (max-width:820px){.dash-hero-row{grid-template-columns:1fr 1fr}}
+.dash-head-menu-wrap{position:relative}
+.dash-head-more-btn{
+  width:32px;height:32px;border-radius:var(--r-md);border:1px solid var(--border-neutral2);background:var(--bg3);
+  color:var(--text2);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .1s
+}
+.dash-head-more-btn:hover{background:var(--bg4);color:var(--text0)}
+.dash-head-menu{
+  position:absolute;top:calc(100% + 6px);right:0;background:var(--bg2);border:1px solid var(--border-neutral3);
+  border-radius:var(--r-md);padding:4px;min-width:200px;z-index:60;box-shadow:0 12px 30px #0007
+}
+.dash-head-menu-item{
+  display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:7px;font-size:12px;color:var(--text1);cursor:pointer;white-space:nowrap
+}
+.dash-head-menu-item:hover{background:var(--bg4);color:var(--text0)}
+.dash-hero-card{
+  background:linear-gradient(155deg,var(--bg2) 0%,var(--bg1) 65%);border:1px solid var(--border-neutral2);border-radius:var(--r-xl);
+  padding:16px 20px;display:flex;align-items:center;gap:16px;min-width:0;transition:border-color .15s;grid-column:span 1
+}
+.dash-hero-card:hover{border-color:var(--border-neutral3)}
+.dash-hero-info{min-width:0}
+.dash-hero-lbl{font-size:11px;color:var(--text3)}
+.dash-hero-val{font-size:26px;font-weight:600;color:var(--text0);font-family:'JetBrains Mono',monospace;line-height:1.2;font-variant-numeric:tabular-nums}
+.dash-hero-sub{font-size:10.5px;color:var(--text3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dash-hero-sep{width:1px;align-self:stretch;background:var(--border2);flex-shrink:0}
+.dash-hero-session{display:flex;align-items:center;gap:9px;min-width:0}
+.dash-hero-session-dot{width:8px;height:8px;border-radius:50%;background:var(--text4);flex-shrink:0}
+.dash-hero-session-dot.on{background:var(--green);box-shadow:0 0 0 3px var(--green-bg);animation:pulse 2s ease-in-out infinite}
+.dash-hero-session-lbl{font-size:12px;color:var(--text1);font-weight:500;white-space:nowrap}
+.dash-hero-session-sub{font-size:10.5px;color:var(--text3);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px}
 /* ── Bento del resumen — bloque de foco + hábitos/recordatorios/tareas/racha/actividad ── */
 .bento-row{display:grid;grid-template-columns:repeat(12,1fr);gap:12px}
 .bento-blk{background:var(--bg1);border:1px solid var(--border2);border-radius:var(--r-xl);padding:16px 18px;min-width:0}
@@ -1185,8 +1217,8 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .bento-wk-bar{width:100%;border-radius:3px 3px 1px 1px;background:linear-gradient(180deg,var(--accent2) 0%,var(--accentd) 100%);min-height:2px}
 .bento-wk-lbls{display:flex;gap:6px;margin-top:6px}
 .bento-wk-lbls span{flex:1;text-align:center;font-size:9px;color:var(--text4);font-family:'JetBrains Mono',monospace}
-.dash-stat-card{background:linear-gradient(155deg,var(--bg2) 0%,var(--bg1) 65%);border:1px solid var(--border2);border-radius:var(--r-xl);padding:15px 16px;display:flex;flex-direction:column;gap:5px;min-width:0;position:relative;transition:border-color .15s}
-.dash-stat-card:hover{border-color:var(--border3)}
+.dash-stat-card{background:linear-gradient(155deg,var(--bg2) 0%,var(--bg1) 65%);border:1px solid var(--border-neutral2);border-radius:var(--r-xl);padding:15px 16px;display:flex;flex-direction:column;gap:5px;min-width:0;position:relative;transition:border-color .15s}
+.dash-stat-card:hover{border-color:var(--border-neutral3)}
 .dash-stat-lbl{font-size:11px;color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .dash-stat-val{font-size:21px;font-weight:600;color:var(--text0);font-family:'JetBrains Mono',monospace;line-height:1.15;font-variant-numeric:tabular-nums}
 .dash-stat-sub{font-size:10px;color:var(--text3)}
@@ -1207,8 +1239,8 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .dash-top-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;align-items:stretch}
 .dash-top-row .dash-panel,.dash-top-row .qn-panel,.dash-top-row .habitos-mini-panel{width:auto;min-width:0}
 @media (max-width:900px){.dash-top-row{grid-template-columns:1fr}}
-.dash-panel{background:var(--bg1);border:1px solid var(--border2);border-radius:var(--r-xl);display:flex;flex-direction:column;overflow:hidden;transition:border-color .15s}
-.dash-panel:hover{border-color:var(--border3)}
+.dash-panel{background:var(--bg1);border:1px solid var(--border-neutral2);border-radius:var(--r-xl);display:flex;flex-direction:column;overflow:hidden;transition:border-color .15s}
+.dash-panel:hover{border-color:var(--border-neutral3)}
 .dash-panel-hdr{display:flex;align-items:center;padding:13px 16px;border-bottom:1px solid var(--border);gap:8px}
 .dash-panel-title{font-size:12px;font-weight:600;color:var(--text0);flex:1}
 .dash-panel-title.panel-icon{display:inline-flex;align-items:center;flex:0 0 auto;color:var(--text2);cursor:default}
@@ -1257,8 +1289,8 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .qn-item:hover .qn-item-del{opacity:1}
 .qn-item-del:hover{color:var(--red,#e05555)}
 @media (max-width:900px){.dash-timeline-row{flex-direction:column}.qn-panel{width:auto}}
-.dash-timeline-wrap{background:var(--bg1);border:1px solid var(--border2);border-radius:var(--r-xl);overflow:hidden;display:flex;flex-direction:column;padding:16px 18px 18px;transition:border-color .15s}
-.dash-timeline-wrap:hover{border-color:var(--border3)}
+.dash-timeline-wrap{background:var(--bg1);border:1px solid var(--border-neutral2);border-radius:var(--r-xl);overflow:hidden;display:flex;flex-direction:column;padding:16px 18px 18px;transition:border-color .15s}
+.dash-timeline-wrap:hover{border-color:var(--border-neutral3)}
 .dash-add-btn{background:transparent;border:none;color:var(--text3);cursor:pointer;font-size:15px;padding:0 2px;line-height:1;border-radius:4px}
 .dash-add-btn:hover{color:var(--accent2)}
 /* HORIZONTAL TIMELINE — Bloques de tiempo */
@@ -6213,6 +6245,7 @@ function SystemModal({system,onClose,onSave,onDelete,onUpdateSystem}){
 // DASHBOARD ICON SET — small consistent line icons
 // ═══════════════════════════════════════════
 const DASH_ICON_PATHS={
+  moreH:e=>[e('circle',{cx:5,cy:12,r:1.6,fill:'currentColor',stroke:'none'}),e('circle',{cx:12,cy:12,r:1.6,fill:'currentColor',stroke:'none'}),e('circle',{cx:19,cy:12,r:1.6,fill:'currentColor',stroke:'none'})],
   clock:e=>[e('circle',{cx:12,cy:12,r:9}),e('path',{d:'M12 7v5l3.5 2'})],
   pause:e=>[e('rect',{x:6,y:4,width:4,height:16,rx:1}),e('rect',{x:14,y:4,width:4,height:16,rx:1})],
   play:e=>[e('path',{d:'M7 4l13 8-13 8V4z'})],
@@ -8750,6 +8783,14 @@ function ProjectDashboard(props){
   const[showDoneTasks,setShowDoneTasks]=useState(false);
   const[habitCtxMenu,setHabitCtxMenu]=useState(null); // {x,y,habit}
   const[newNoteText,setNewNoteText]=useState('');
+  const[showHeadMenu,setShowHeadMenu]=useState(false);
+  const headMenuRef=useRef(null);
+  useEffect(()=>{
+    if(!showHeadMenu)return;
+    function close(ev){if(headMenuRef.current&&!headMenuRef.current.contains(ev.target))setShowHeadMenu(false);}
+    document.addEventListener('mousedown',close);
+    return()=>document.removeEventListener('mousedown',close);
+  },[showHeadMenu]);
 
   useEffect(()=>{
     if(!habitCtxMenu)return;
@@ -8908,9 +8949,19 @@ function ProjectDashboard(props){
             e('span',{className:'dash-date-lbl',onClick:()=>setSelectedDay(dayKey()),title:'Ir a hoy'},dayLabelStr),
             e('button',{className:'dash-date-btn',onClick:()=>shiftDay(1),title:'Día siguiente'},e(DashIcon,{name:'chevR',size:12}))
           ),
-          e('button',{className:'btn',title:'Ver mapa de todos los sistemas del proyecto',style:{display:'inline-flex',alignItems:'center',gap:5},onClick:()=>setSystemsMapOpen(true)},e(DashIcon,{name:'map',size:12}),'Sistemas'),
-          e('button',{className:'btn',style:{display:'inline-flex',alignItems:'center',gap:5},onClick:exportCSV},e(DashIcon,{name:'download',size:12}),'Exportar'),
-          e('button',{className:'btn',onClick:openAddTask},'+ Añadir '+taskNoun),
+          e('div',{className:'dash-head-menu-wrap',ref:headMenuRef},
+            e('button',{className:'dash-head-more-btn',title:'Más opciones',onClick:()=>setShowHeadMenu(v=>!v)},
+              e(DashIcon,{name:'moreH',size:14})
+            ),
+            showHeadMenu&&e('div',{className:'dash-head-menu'},
+              e('div',{className:'dash-head-menu-item',onClick:()=>{setShowHeadMenu(false);setSystemsMapOpen(true);}},
+                e(DashIcon,{name:'map',size:13}),'Ver mapa de sistemas'
+              ),
+              e('div',{className:'dash-head-menu-item',onClick:()=>{setShowHeadMenu(false);exportCSV();}},
+                e(DashIcon,{name:'download',size:13}),'Exportar sesiones (CSV)'
+              )
+            )
+          ),
           e('button',{className:'btn btn-primary',onClick:onStartTimer},isRunningHere?'■ En curso':'▶ Iniciar timer')
         )
       ),
@@ -8918,21 +8969,26 @@ function ProjectDashboard(props){
     ),
 
     tab==='resumen'&&e(React.Fragment,null,
-    e('div',{className:'foco-widget'},
-      e(DonutRing,{pct:focusPct,size:56,stroke:6,color:project.color}),
-      e('div',null,
-        e('div',{className:'foco-widget-title'},'Foco total'),
-        e('div',{className:'foco-widget-sub'},todaySessions.length,' sesiones hoy'),
-        e('div',{className:'foco-widget-sub'},fmtS(stats.todaySecs),' enfocado')
-      )
-    ),
     e('div',{className:'dash-body'},
-      e('div',{className:'dash-stats-row'},
-        e(StatCard,{icon:'clock',color:'#e0954a',label:'Tiempo hoy',value:fmtS(stats.todaySecs),sub:'de '+fmtS(dailyGoal)+' objetivo',sparkline:sparkBuckets,custom:statCfg.tiempo,onChangeCustom:(icon,color)=>setStatCustom('tiempo',icon,color),onResetCustom:statCfg.tiempo?()=>resetStatCustom('tiempo'):null}),
-        e(StatCard,{icon:isRunningHere?'pause':'play',color:'#4a9de0',label:'Sesión actual',value:isRunningHere?fmt(stats.todaySecs%86400):'—',sub:isRunningHere?(activeSess&&(tasks.find(t=>t.id===activeSess.taskId)||{}).name||'Sin tarea'):'Sin sesión activa',custom:statCfg.sesion,onChangeCustom:(icon,color)=>setStatCustom('sesion',icon,color),onResetCustom:statCfg.sesion?()=>resetStatCustom('sesion'):null}),
+      e('div',{className:'dash-hero-row'},
+        e('div',{className:'dash-hero-card'},
+          e(DonutRing,{pct:focusPct,size:72,stroke:7,color:project.color}),
+          e('div',{className:'dash-hero-info'},
+            e('div',{className:'dash-hero-lbl'},'Tiempo hoy'),
+            e('div',{className:'dash-hero-val'},fmtS(stats.todaySecs)),
+            e('div',{className:'dash-hero-sub'},'de '+fmtS(dailyGoal)+' objetivo · '+todaySessions.length+' sesión'+(todaySessions.length===1?'':'es')+' hoy')
+          ),
+          e('div',{className:'dash-hero-sep'}),
+          e('div',{className:'dash-hero-session'},
+            e('span',{className:'dash-hero-session-dot'+(isRunningHere?' on':'')}),
+            e('div',null,
+              e('div',{className:'dash-hero-session-lbl'},isRunningHere?'Sesión en curso':'Sin sesión activa'),
+              isRunningHere&&e('div',{className:'dash-hero-session-sub'},(activeSess&&(tasks.find(t=>t.id===activeSess.taskId)||{}).name)||'Sin tarea')
+            )
+          )
+        ),
         e(StatCard,{icon:'check',color:'#2fb87a',label:'Tareas',value:pendingTasks.length,sub:pendingTasks.length?'pendientes':'Sin pendientes',custom:statCfg.tareas,onChangeCustom:(icon,color)=>setStatCustom('tareas',icon,color),onResetCustom:statCfg.tareas?()=>resetStatCustom('tareas'):null}),
-        e(StatCard,{icon:'habit',color:'#2fb87a',label:'Hábitos',value:`${pHabits.filter(h=>(h.log||[]).includes(selectedDay)).length} / ${pHabits.length||0}`,sub:pHabits.length?Math.round(pHabits.filter(h=>(h.log||[]).includes(selectedDay)).length/pHabits.length*100)+'% completados':'Sin hábitos',progress:{value:pHabits.filter(h=>(h.log||[]).includes(selectedDay)).length,max:pHabits.length||1},custom:statCfg.habitos,onChangeCustom:(icon,color)=>setStatCustom('habitos',icon,color),onResetCustom:statCfg.habitos?()=>resetStatCustom('habitos'):null}),
-        e(StatCard,{icon:'target',color:'#b06ef5',label:'Sistemas',value:pSystems.filter(s=>s.status!=='paused').length,sub:pSystems.length+' en total',custom:statCfg.sistemas,onChangeCustom:(icon,color)=>setStatCustom('sistemas',icon,color),onResetCustom:statCfg.sistemas?()=>resetStatCustom('sistemas'):null})
+        e(StatCard,{icon:'habit',color:'#2fb87a',label:'Hábitos',value:`${pHabits.filter(h=>(h.log||[]).includes(selectedDay)).length} / ${pHabits.length||0}`,sub:pHabits.length?Math.round(pHabits.filter(h=>(h.log||[]).includes(selectedDay)).length/pHabits.length*100)+'% completados':'Sin hábitos',progress:{value:pHabits.filter(h=>(h.log||[]).includes(selectedDay)).length,max:pHabits.length||1},custom:statCfg.habitos,onChangeCustom:(icon,color)=>setStatCustom('habitos',icon,color),onResetCustom:statCfg.habitos?()=>resetStatCustom('habitos'):null})
       ),
       e('div',{className:'dash-top-row'},
         e('div',{className:'dash-panel'},
