@@ -2295,7 +2295,7 @@ const TASK_STATUS_LABEL={pending:'Pendiente',inprog:'En curso',done:'Hecho'};
 // rápidos, visible en cualquier vista (Inicio, Analíticas, Proyecto).
 // Colapsable a un riel de íconos; el estado se guarda entre sesiones.
 // ═══════════════════════════════════════════
-function GlobalSidebar({projects,habits,systems,tasks,notes,view,setView,selProj,onOpenProject,onNewProject,onArchiveProject,onShowArchived,collapsed,onToggleCollapse,onOpenCmdk,onOpenSettings}){
+const GlobalSidebar=React.memo(function GlobalSidebar({projects,habits,systems,tasks,notes,view,setView,selProj,onOpenProject,onNewProject,onArchiveProject,onShowArchived,collapsed,onToggleCollapse,onOpenCmdk,onOpenSettings}){
   const todayK=dayKey();
   const activeProjects=projects.filter(p=>p.status!=='archived');
   const[ctxMenu,setCtxMenu]=useState(null); // {x,y,proj}
@@ -2390,13 +2390,13 @@ function GlobalSidebar({projects,habits,systems,tasks,notes,view,setView,selProj
       )
     )
   );
-}
+});
 
 // ═══════════════════════════════════════════
 // COMMAND PALETTE — ⌘K / Ctrl+K. Navegar a proyectos, cambiar de vista,
 // crear cosas — todo real, sin acciones de utilería.
 // ═══════════════════════════════════════════
-function CommandPalette({open,onClose,projects,onOpenProject,setView,onNewProject,onNewTask,activeProjects}){
+const CommandPalette=React.memo(function CommandPalette({open,onClose,projects,onOpenProject,setView,onNewProject,onNewTask,activeProjects}){
   const[q,setQ]=useState('');
   const[sel,setSel]=useState(0);
   const inputRef=useRef(null);
@@ -2454,7 +2454,7 @@ function CommandPalette({open,onClose,projects,onOpenProject,setView,onNewProjec
       )
     )
   );
-}
+});
 
 function App(){
   const[view,setView]=useState('home');
@@ -2504,7 +2504,20 @@ function App(){
   const[showThemeCfg,setShowThemeCfg]=useState(false);
   const[showArchivedProjects,setShowArchivedProjects]=useState(false);
   const[sidebarCollapsed,setSidebarCollapsed]=useState(()=>load('chr4_sidebarCollapsed',false));
-  function toggleSidebar(){setSidebarCollapsed(v=>{save('chr4_sidebarCollapsed',!v);return!v;});}
+  const toggleSidebar=useCallback(()=>{setSidebarCollapsed(v=>{save('chr4_sidebarCollapsed',!v);return!v;});},[]);
+  // Identidades estables para las props de GlobalSidebar/CommandPalette — si se
+  // recrearan en cada render (como funciones flecha inline), el React.memo de
+  // esos componentes no serviría de nada: seguirían re-renderizando (y
+  // recalculando la alerta de cada proyecto) en cada tick del cronómetro.
+  const onOpenProjectCb=useCallback(pid=>{setSelProj(pid);setView('dashboard');},[]);
+  const onNewProjectCb=useCallback(()=>setShowNewProj(true),[]);
+  const onArchiveProjectCb=useCallback(pid=>{setProjects(ps=>ps.map(p=>p.id===pid?{...p,status:'archived'}:p));forceSync();},[]);
+  const onShowArchivedCb=useCallback(()=>setShowArchivedProjects(true),[]);
+  const onOpenCmdkCb=useCallback(()=>setShowCmdk(true),[]);
+  const onOpenSettingsCb=useCallback(()=>setShowThemeCfg(true),[]);
+  const onCloseCmdkCb=useCallback(()=>setShowCmdk(false),[]);
+  const activeProjectsForCmdk=useMemo(()=>projects.filter(p=>p.status!=='archived'),[projects]);
+  const onNewTaskCb=useCallback(()=>{},[]); // reservado — el palette no crea tareas todavía
   const[showCmdk,setShowCmdk]=useState(false);
   const[blockToast,setBlockToast]=useState(null); // {label,color}
   const[showCierre,setShowCierre]=useState(false);
@@ -3353,11 +3366,17 @@ function App(){
   const activeProj=activeSess?projects.find(p=>p.id===activeSess.projectId):null;
   const activeTask=activeSess?(tasks.find(t=>t.id===activeSess.taskId)||(activeSess.habitId?habits.find(h=>h.id===activeSess.habitId):null)):null;
   const isToday=selectedDay===dayKey();
-  const daySess=sessions.filter(s=>s.day===selectedDay&&s.endAt);
+  // sessions puede acumular miles de registros tras meses de uso — filtrar
+  // TODO el historial en cada render (cada tick del cronómetro, cada tecla
+  // que se escribe en cualquier parte de la app) es justo el tipo de trabajo
+  // repetido que termina presionando la memoria hasta el "Out of Memory".
+  // Se memoiza para que solo se recalcule cuando sessions o el día realmente
+  // cambian — no en cada latido del timer ni en cada letra tipeada.
+  const daySess=useMemo(()=>sessions.filter(s=>s.day===selectedDay&&s.endAt),[sessions,selectedDay]);
   const todayTotal=daySess.reduce((a,s)=>a+s.duration,0)+(isToday&&tState!=='idle'?workElapsed:0);
   const todayCount=daySess.length+(isToday&&tState!=='idle'?1:0);
   const todayPomos=daySess.reduce((a,s)=>a+s.pomos,0)+(isToday?pomoCount:0);
-  const realBlocks=sessions.filter(s=>s.day===selectedDay&&s.endAt&&s.duration>30);
+  const realBlocks=useMemo(()=>sessions.filter(s=>s.day===selectedDay&&s.endAt&&s.duration>30),[sessions,selectedDay]);
   // El bloque "en vivo" solo debe seguir creciendo mientras tState==='running'
   // (trabajando de verdad). En 'paused' — ya sea porque el usuario apretó
   // pausa o porque terminó la fase de trabajo y está esperando que se
@@ -3424,13 +3443,13 @@ function App(){
     e('div',{className:'shell2'+(sidebarCollapsed?' gsb-collapsed':'')},
       e(GlobalSidebar,{
         projects,habits,systems,tasks,notes,view,setView,selProj,
-        onOpenProject:pid=>{setSelProj(pid);setView('dashboard');},
-        onNewProject:()=>setShowNewProj(true),
-        onArchiveProject:pid=>{setProjects(ps=>ps.map(p=>p.id===pid?{...p,status:'archived'}:p));forceSync();},
-        onShowArchived:()=>setShowArchivedProjects(true),
+        onOpenProject:onOpenProjectCb,
+        onNewProject:onNewProjectCb,
+        onArchiveProject:onArchiveProjectCb,
+        onShowArchived:onShowArchivedCb,
         collapsed:sidebarCollapsed,onToggleCollapse:toggleSidebar,
-        onOpenCmdk:()=>setShowCmdk(true),
-        onOpenSettings:()=>setShowThemeCfg(true)
+        onOpenCmdk:onOpenCmdkCb,
+        onOpenSettings:onOpenSettingsCb
       }),
     e('div',{className:'app'},
       // TOPBAR
@@ -3825,11 +3844,11 @@ function App(){
     ), // end shell2
 
     e(CommandPalette,{
-      open:showCmdk,onClose:()=>setShowCmdk(false),
-      projects,activeProjects:projects.filter(p=>p.status!=='archived'),
-      onOpenProject:pid=>{setSelProj(pid);setView('dashboard');},
+      open:showCmdk,onClose:onCloseCmdkCb,
+      projects,activeProjects:activeProjectsForCmdk,
+      onOpenProject:onOpenProjectCb,
       setView,
-      onNewProject:()=>setShowNewProj(true)
+      onNewProject:onNewProjectCb
     }),
 
     // TIMER WIDGET — floating, compact, visible while inside a Project Dashboard or Inicio
@@ -8179,7 +8198,9 @@ function HomeResumen(props){
   },[openFlagMenu]);
 
   const today=dayKey();
-  const activeProjects=projects.filter(p=>p.status!=='archived');
+  const isToday=selectedDay===today;
+  const HOURS=Array.from({length:15},(_,i)=>8+i); // 08:00–22:00, usado por el bucket horario y por la vista "Línea" de bloques
+  const activeProjects=useMemo(()=>projects.filter(p=>p.status!=='archived'),[projects]);
   const dayLabelStr=dateFromDayKey(selectedDay).toLocaleDateString('es-CL',{weekday:'short',day:'numeric',month:'short'});
   function shiftDay(delta){
     const d=dateFromDayKey(selectedDay);
@@ -8207,8 +8228,84 @@ function HomeResumen(props){
     }
   }
 
-  // Tiempo por proyecto (hoy) — para el donut
-  const projTimes=activeProjects.map(p=>({proj:p,secs:pStats(p).todaySecs})).filter(r=>r.secs>0).sort((a,b)=>b.secs-a.secs);
+  const FULL_DAY_LABEL={mon:'Lun',tue:'Mar',wed:'Mié',thu:'Jue',fri:'Vie',sat:'Sáb',sun:'Dom'};
+  // Todo este bloque escanea el historial completo de sesiones por cada
+  // proyecto (donut, gráfico por hora, semana, recordatorios, lista de
+  // proyectos con su alerta). Sin memoizar, se recalculaba en CADA render de
+  // Inicio — es decir, dos veces por segundo mientras el cronómetro corre, y
+  // en cada tecla escrita en cualquier parte de la app — sin importar que
+  // ninguno de esos datos hubiera cambiado. Con meses de sesiones acumuladas
+  // y varios proyectos, eso es justo el tipo de trabajo repetido que termina
+  // presionando la memoria hasta el "Out of Memory". Se memoiza, y de paso se
+  // reemplaza el "un .filter() del historial completo POR proyecto" por un
+  // solo recorrido de las sesiones de hoy que reparte el tiempo en un mapa.
+  const{todaySecsByProj,hourBuckets,weekTotals,weekTotalSecs,weekMax,dueNotes,recentProjectsBase}=useMemo(()=>{
+    const daySessHere=sessions.filter(s=>s.day===selectedDay&&s.endAt);
+    const todaySecsByProj={};
+    daySessHere.forEach(s=>{ todaySecsByProj[s.projectId]=(todaySecsByProj[s.projectId]||0)+s.duration; });
+
+    // Actividad en el tiempo — buckets por hora (08:00-22:00) — un solo
+    // recorrido de daySessHere (ya filtrado al día) en vez de 15 filtros del
+    // historial completo.
+    const hourSecs={};
+    daySessHere.forEach(s=>{ const h=new Date(s.endAt*1000).getHours(); hourSecs[h]=(hourSecs[h]||0)+s.duration; });
+    const hourBuckets=HOURS.map(h=>({v:hourSecs[h]||0,lbl:String(h).padStart(2,'0')+':00'}));
+
+    // Resumen semanal — un recorrido de sessions agrupando por día, en vez de
+    // 7 filtros separados del historial completo.
+    const week=currentWeekDays();
+    const weekKeys=new Set(week.map(w=>w.key));
+    const weekSecs={};
+    sessions.forEach(s=>{ if(s.endAt&&weekKeys.has(s.day)) weekSecs[s.day]=(weekSecs[s.day]||0)+s.duration; });
+    const weekTotals=week.map(w=>({...w,secs:weekSecs[w.key]||0}));
+    const weekTotalSecs=weekTotals.reduce((a,w)=>a+w.secs,0);
+    const weekMax=Math.max(1,...weekTotals.map(w=>w.secs));
+
+    // Recordatorios vencidos de cualquier proyecto, para el bloque del resumen —
+    // misma noción de "vencido" que ya enciende la campanita roja de cada proyecto.
+    const dueNotes=activeProjects.flatMap(p=>((notes&&notes[p.id])||[]).filter(noteReminderDue).map(n=>({...n,projectId:p.id,projName:p.name}))).sort((a,b)=>a.remindAt-b.remindAt);
+
+    // Última actividad por proyecto — un recorrido de sessions agrupando por
+    // proyecto, en vez de un .filter()+.sort() del historial completo POR proyecto.
+    const lastActivityByProj={};
+    sessions.forEach(s=>{ if(s.endAt&&(!lastActivityByProj[s.projectId]||s.endAt>lastActivityByProj[s.projectId])) lastActivityByProj[s.projectId]=s.endAt; });
+
+    const recentProjectsBase=activeProjects.map(p=>{
+      const habitDue=habits.some(h=>h.projectId===p.id&&habitOccursOn(h,dateFromDayKey(today))&&!(h.log||[]).includes(today)&&!(h.skipLog||[]).includes(today));
+      const systemDue=systems.some(s=>s.projectId===p.id&&s.status!=='paused'&&s.nextRun&&s.nextRun<=Date.now());
+      // Solo cuenta como "pendiente de hoy" una tarea cuya fecha sea HOY.
+      // Antes usaba dueDate<=today, así que cualquier tarea vieja con fecha
+      // pasada quedaba marcada como pendiente de hoy para siempre (incluso
+      // meses después), inflando la alerta en proyectos que en verdad no
+      // tienen nada que corresponda al día de hoy.
+      const taskDue=tasks.some(t=>t.projectId===p.id&&t.status!=='done'&&(
+        t.dueDate===today||
+        (t.steps||[]).some(s=>stepNeedsAction(s,today,!!(t.actLog&&t.actLog[today])))
+      ));
+      const noteDue=((notes&&notes[p.id])||[]).some(noteReminderDue);
+      const hasAlert=habitDue||systemDue||taskDue||noteDue;
+      const alertTitle=habitDue?'Hábito por cumplir hoy':systemDue?'Sistema por revisar':noteDue&&!taskDue?'Recordatorio vencido':'Tarea pendiente por cumplir';
+      return{proj:p,lastActivity:(lastActivityByProj[p.id]||0)*1000,hasAlert,alertTitle};
+    }).sort((a,b)=>{
+      const rank={urgent:0,important:1,low:2};
+      const ra=rank[a.proj.priority]!=null?rank[a.proj.priority]:3;
+      const rb=rank[b.proj.priority]!=null?rank[b.proj.priority]:3;
+      if(ra!==rb)return ra-rb;
+      return b.lastActivity-a.lastActivity;
+    });
+
+    return{todaySecsByProj,hourBuckets,weekTotals,weekTotalSecs,weekMax,dueNotes,recentProjectsBase};
+    // eslint-disable-next-line
+  },[sessions,selectedDay,activeProjects,habits,systems,tasks,notes,today]);
+
+  // Fuera del memo: sumar el tiempo de la sesión EN VIVO al proyecto activo.
+  // Es trabajo barato (recorre solo la lista de proyectos, no el historial),
+  // así que puede — y debe — actualizarse en cada tick sin volver a escanear
+  // meses de sesiones.
+  const liveProjId=(isToday&&tState!=='idle'&&activeSess)?activeSess.projectId:null;
+  function projTodaySecs(projId){ return(todaySecsByProj[projId]||0)+(projId===liveProjId?workElapsed:0); }
+  const recentProjects=recentProjectsBase.map(r=>({...r,todaySecs:projTodaySecs(r.proj.id)}));
+  const projTimes=activeProjects.map(p=>({proj:p,secs:projTodaySecs(p.id)})).filter(r=>r.secs>0).sort((a,b)=>b.secs-a.secs);
   const topProjTimes=projTimes.slice(0,5);
   const otherSecs=projTimes.slice(5).reduce((a,r)=>a+r.secs,0);
   const donutSegments=[
@@ -8216,50 +8313,6 @@ function HomeResumen(props){
     ...(otherSecs>0?[{label:'Otros',value:otherSecs,color:'var(--text4)'}]:[])
   ];
   const projTimesTotal=donutSegments.reduce((a,s)=>a+s.value,0)||1;
-
-  // Actividad en el tiempo — buckets por hora (08:00-22:00)
-  const HOURS=Array.from({length:15},(_,i)=>8+i);
-  const hourBuckets=HOURS.map(h=>{
-    const secs=sessions.filter(s=>s.day===selectedDay&&s.endAt&&new Date(s.endAt*1000).getHours()===h).reduce((a,s)=>a+s.duration,0);
-    return{v:secs,lbl:String(h).padStart(2,'0')+':00'};
-  });
-
-  // Resumen semanal
-  const week=currentWeekDays();
-  const weekTotals=week.map(w=>({...w,secs:sessions.filter(s=>s.day===w.key&&s.endAt).reduce((a,s)=>a+s.duration,0)}));
-  const weekTotalSecs=weekTotals.reduce((a,w)=>a+w.secs,0);
-  const weekMax=Math.max(1,...weekTotals.map(w=>w.secs));
-  const FULL_DAY_LABEL={mon:'Lun',tue:'Mar',wed:'Mié',thu:'Jue',fri:'Vie',sat:'Sáb',sun:'Dom'};
-
-  // Proyectos recientes — por actividad más reciente
-  // Recordatorios vencidos de cualquier proyecto, para el bloque del resumen —
-  // misma noción de "vencido" que ya enciende la campanita roja de cada proyecto.
-  const dueNotes=activeProjects.flatMap(p=>((notes&&notes[p.id])||[]).filter(noteReminderDue).map(n=>({...n,projectId:p.id,projName:p.name}))).sort((a,b)=>a.remindAt-b.remindAt);
-
-  const recentProjects=activeProjects.map(p=>{
-    const pSess=sessions.filter(s=>s.projectId===p.id&&s.endAt).sort((a,b)=>b.endAt-a.endAt);
-    const habitDue=habits.some(h=>h.projectId===p.id&&habitOccursOn(h,dateFromDayKey(today))&&!(h.log||[]).includes(today)&&!(h.skipLog||[]).includes(today));
-    const systemDue=systems.some(s=>s.projectId===p.id&&s.status!=='paused'&&s.nextRun&&s.nextRun<=Date.now());
-    // Solo cuenta como "pendiente de hoy" una tarea cuya fecha sea HOY.
-    // Antes usaba dueDate<=today, así que cualquier tarea vieja con fecha
-    // pasada quedaba marcada como pendiente de hoy para siempre (incluso
-    // meses después), inflando la alerta en proyectos que en verdad no
-    // tienen nada que corresponda al día de hoy.
-    const taskDue=tasks.some(t=>t.projectId===p.id&&t.status!=='done'&&(
-      t.dueDate===today||
-      (t.steps||[]).some(s=>stepNeedsAction(s,today,!!(t.actLog&&t.actLog[today])))
-    ));
-    const noteDue=((notes&&notes[p.id])||[]).some(noteReminderDue);
-    const hasAlert=habitDue||systemDue||taskDue||noteDue;
-    const alertTitle=habitDue?'Hábito por cumplir hoy':systemDue?'Sistema por revisar':noteDue&&!taskDue?'Recordatorio vencido':'Tarea pendiente por cumplir';
-    return{proj:p,lastActivity:pSess[0]?pSess[0].endAt*1000:0,todaySecs:pStats(p).todaySecs,hasAlert,alertTitle};
-  }).sort((a,b)=>{
-    const rank={urgent:0,important:1,low:2};
-    const ra=rank[a.proj.priority]!=null?rank[a.proj.priority]:3;
-    const rb=rank[b.proj.priority]!=null?rank[b.proj.priority]:3;
-    if(ra!==rb)return ra-rb;
-    return b.lastActivity-a.lastActivity;
-  });
 
   function fmtBlockTime(tsSec){
     return new Date(tsSec*1000).toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit',hour12:false});
