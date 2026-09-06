@@ -635,8 +635,8 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .tl-bar-handle.right{right:0}
 .tl-bar-handle::after{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:3px;height:14px;border-radius:2px;background:var(--border4);opacity:0;transition:opacity .1s}
 .tl-bar:hover .tl-bar-handle::after,.tl-bar-handle:hover::after{opacity:1;background:var(--accent2)}
-.mm-wrap{padding:0}
-.mm-canvas-scroll{overflow:auto;max-height:62vh;border-radius:12px;background:var(--bg1,#111);background-image:radial-gradient(var(--border3) 1px,transparent 1px);background-size:22px 22px;position:relative}
+.mm-wrap{padding:0;flex:1;min-height:0;display:flex;flex-direction:column}
+.mm-canvas-scroll{flex:1;min-height:0;overflow:auto;border-radius:12px;background:var(--bg1,#111);background-image:radial-gradient(var(--border3) 1px,transparent 1px);background-size:22px 22px;position:relative}
 .mm-canvas{position:relative}
 .mm-svg{position:absolute;top:0;left:0;pointer-events:none}
 .mm-node{position:absolute;width:238px;flex-shrink:0}
@@ -861,7 +861,13 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .nb-toggle-body textarea{width:100%;background:transparent;border:none;outline:none;color:var(--text2);font-size:12.5px;line-height:1.7;font-family:'Inter',sans-serif;resize:none;padding:0}
 .nb-toggle-body textarea::placeholder{color:var(--text4)}
 .nb-block-img-wrap{flex:1;display:flex;flex-direction:column;gap:5px;padding:2px 0}
-.nb-block-img-wrap img{max-width:100%;border-radius:8px;display:block;border:1px solid var(--border)}
+.nb-block-img-frame{position:relative;display:inline-block;max-width:100%}
+.nb-block-img-frame img{max-width:100%;width:100%;border-radius:8px;display:block;border:1px solid var(--border)}
+.nb-block-img-resize{
+  position:absolute;right:-3px;bottom:-3px;width:14px;height:14px;border-radius:4px;
+  background:var(--bg3);border:1.5px solid var(--border4);cursor:nwse-resize;opacity:0;transition:opacity .12s;
+}
+.nb-block-img-frame:hover .nb-block-img-resize{opacity:1}
 .nb-block-img-empty{border:1.5px dashed var(--border3);border-radius:8px;padding:16px;text-align:center;font-size:11.5px;color:var(--text3);cursor:pointer;transition:all .12s}
 .nb-block-img-empty:hover{background:var(--bg3);border-color:var(--border4);color:var(--text1)}
 .nb-block-img-cap{width:100%;background:transparent;border:none;outline:none;color:var(--text3);font-size:11px;font-style:italic;padding:0}
@@ -2108,6 +2114,66 @@ function nthWeekdayInfo(date){
 function noteReminderDue(n){
   return!!(n&&n.remindAt&&!n.remindDone&&!n.done&&n.remindAt<=Date.now());
 }
+// Pan con barra espaciadora + arrastre, estilo Miro/Figma — reutilizable en
+// cualquier contenedor con scroll nativo (overflow:auto). Mantener espacio
+// cambia el cursor a "mano"; clic y arrastrar mueve el contenido ajustando
+// scrollLeft/scrollTop directamente, sin pelear con el drag normal de las
+// tarjetas (que solo se activa si espacio NO está presionado).
+function usePanOnSpace(scrollRef,active){
+  const spaceHeld=useRef(false);
+  const panState=useRef(null); // {startX,startY,startLeft,startTop}
+  useEffect(()=>{
+    if(!active)return;
+    function onKeyDown(ev){
+      if(ev.code!=='Space')return;
+      const tag=(ev.target&&ev.target.tagName||'').toLowerCase();
+      if(tag==='input'||tag==='textarea'||(ev.target&&ev.target.isContentEditable))return; // no interferir al escribir
+      if(spaceHeld.current)return;
+      spaceHeld.current=true;
+      ev.preventDefault();
+      if(scrollRef.current)scrollRef.current.style.cursor='grab';
+    }
+    function onKeyUp(ev){
+      if(ev.code!=='Space')return;
+      spaceHeld.current=false;
+      panState.current=null;
+      if(scrollRef.current)scrollRef.current.style.cursor='';
+    }
+    function onMouseDown(ev){
+      if(!spaceHeld.current||!scrollRef.current)return;
+      ev.preventDefault();
+      ev.stopPropagation(); // evita que una tarjeta bajo el cursor también arranque su propio drag
+      panState.current={startX:ev.clientX,startY:ev.clientY,startLeft:scrollRef.current.scrollLeft,startTop:scrollRef.current.scrollTop};
+      scrollRef.current.style.cursor='grabbing';
+    }
+    function onMouseMove(ev){
+      if(!panState.current||!scrollRef.current)return;
+      scrollRef.current.scrollLeft=panState.current.startLeft-(ev.clientX-panState.current.startX);
+      scrollRef.current.scrollTop=panState.current.startTop-(ev.clientY-panState.current.startY);
+    }
+    function onMouseUp(){
+      if(!panState.current)return;
+      panState.current=null;
+      if(scrollRef.current)scrollRef.current.style.cursor=spaceHeld.current?'grab':'';
+    }
+    window.addEventListener('keydown',onKeyDown);
+    window.addEventListener('keyup',onKeyUp);
+    const el=scrollRef.current;
+    el&&el.addEventListener('mousedown',onMouseDown,true);
+    window.addEventListener('mousemove',onMouseMove);
+    window.addEventListener('mouseup',onMouseUp);
+    return()=>{
+      window.removeEventListener('keydown',onKeyDown);
+      window.removeEventListener('keyup',onKeyUp);
+      el&&el.removeEventListener('mousedown',onMouseDown,true);
+      window.removeEventListener('mousemove',onMouseMove);
+      window.removeEventListener('mouseup',onMouseUp);
+      spaceHeld.current=false; panState.current=null;
+      if(el)el.style.cursor='';
+    };
+  },[active,scrollRef]);
+}
+
 function habitOccursOn(habit,date){
   const r=habit.recurrence;
   if(!r||r.type==='none')return false;
@@ -6767,6 +6833,7 @@ function SystemsMindMap({systems,onUpdateSystem,onDeleteSystem,onPatchProject,pr
   const[showTplMgr,setShowTplMgr]=useState(false);
   const links=project.sysLinks||[];
   const canvasRef=useRef(null);
+  usePanOnSpace(canvasRef,true);
   const[canvasW,setCanvasW]=useState(1000);
   const[dragPreview,setDragPreview]=useState(null); // {id,x,y}
   const[linkFrom,setLinkFrom]=useState(null); // id de sistema en modo "conectar"
@@ -6966,7 +7033,25 @@ function SystemsMindMap({systems,onUpdateSystem,onDeleteSystem,onPatchProject,pr
     })});
   }
   const positions={};
-  systems.forEach((s,i)=>{positions[s.id]=getPos(s,i);});
+  // Fecha efectiva de un sistema: la fecha de inicio más temprana entre sus
+  // fases (la misma que se asigna desde la lista/línea de tiempo). Sin fecha
+  // asignada, va al final — así las tarjetas nuevas no desordenan las que sí
+  // tienen fecha.
+  function sysEffectiveDate(s){
+    const dates=migrateSysPhases(s).map(p=>p.startDate).filter(Boolean).sort();
+    return dates[0]||null;
+  }
+  // Solo importa el orden para las tarjetas que TODAVÍA no se movieron a mano
+  // (sin mmPos) — esas se acomodan por fecha; las que ya tienen una posición
+  // manual conservan exactamente donde el usuario las dejó.
+  const dateOrderedIds=systems.slice().sort((a,b)=>{
+    const da=sysEffectiveDate(a),db=sysEffectiveDate(b);
+    if(da&&db)return da<db?-1:da>db?1:0;
+    if(da&&!db)return -1;
+    if(!da&&db)return 1;
+    return 0; // ambas sin fecha: se deja el orden original entre ellas
+  }).map(s=>s.id);
+  systems.forEach(s=>{positions[s.id]=getPos(s,dateOrderedIds.indexOf(s.id));});
   const maxX=Math.max(canvasW,...systems.map(s=>(positions[s.id]?.x||0)+CARD_W+60+(expandedId===s.id?PANEL_GAP+PANEL_W:0)),200);
   const maxY=Math.max(420,...systems.map(s=>(positions[s.id]?.y||0)+CARD_H+60+(expandedId===s.id?260:0)));
 
@@ -9928,6 +10013,7 @@ function NotebookBlockEditor({blocks,legacyText,onChange}){
   }
   const dragId=useRef(null);
   const[dragOverInfo,setDragOverInfo]=useState(null); // {id,pos:'above'|'below'}
+  const[imgResize,setImgResize]=useState(null); // {id,startX,startW,wrapW}
   const didMount=useRef(false);
   const[slashFor,setSlashFor]=useState(null); // id del bloque con el menú "/" abierto
   const[slashQuery,setSlashQuery]=useState('');
@@ -9951,9 +10037,31 @@ function NotebookBlockEditor({blocks,legacyText,onChange}){
   }
   function autoGrow(el){ if(!el)return; el.style.height='auto'; el.style.height=el.scrollHeight+'px'; }
   function patchBlock(id,patch){ setItems(prev=>prev.map(b=>b.id===id?{...b,...patch}:b)); }
+  function beginImageResize(id,ev,frameEl){
+    ev.preventDefault();
+    const wrapEl=frameEl&&frameEl.parentElement; // .nb-block-img-wrap — el 100% real, sin escalar
+    const wrapW=wrapEl?wrapEl.getBoundingClientRect().width:400;
+    const startW=frameEl?frameEl.getBoundingClientRect().width:wrapW;
+    setImgResize({id,startX:ev.clientX,startW,wrapW});
+  }
+  useEffect(()=>{
+    if(!imgResize)return;
+    function onMove(ev){
+      const dx=ev.clientX-imgResize.startX;
+      const newW=Math.max(120,Math.min(imgResize.wrapW,imgResize.startW+dx));
+      const pct=Math.round(newW/imgResize.wrapW*100);
+      patchBlock(imgResize.id,{widthPct:pct});
+    }
+    function onUp(){setImgResize(null);}
+    window.addEventListener('mousemove',onMove);
+    window.addEventListener('mouseup',onUp);
+    return()=>{window.removeEventListener('mousemove',onMove);window.removeEventListener('mouseup',onUp);};
+    // eslint-disable-next-line
+  },[imgResize]);
   function removeBlock(id){
     delete refCallbacks.current[id];
     delete refCallbacks.current[id+'_body'];
+    delete refCallbacks.current[id+'_cap'];
     delete inputRefs.current[id];
     setItems(prev=>{
       const idx=prev.findIndex(b=>b.id===id);
@@ -10006,7 +10114,7 @@ function NotebookBlockEditor({blocks,legacyText,onChange}){
     ev.target.value='';
     const targetId=pendingImgTarget.current;
     if(!file||!targetId)return;
-    nbFileToBlock(file,src=>patchBlock(targetId,{src}));
+    nbFileToBlock(file,src=>{patchBlock(targetId,{src});focusBlock(targetId+'_cap',false);});
   }
   function handleInput(id,value){
     const b=items.find(x=>x.id===id);
@@ -10024,8 +10132,11 @@ function NotebookBlockEditor({blocks,legacyText,onChange}){
     nbFileToBlock(file,src=>{
       if(b&&b.type==='text'&&!b.text.trim()){
         patchBlock(id,{type:'image',src,caption:''});
+        focusBlock(id+'_cap',false);
       }else{
-        insertAfter(id,{id:uid(),type:'image',src,caption:''});
+        const newId=uid();
+        insertAfter(id,{id:newId,type:'image',src,caption:''});
+        focusBlock(newId+'_cap',false);
       }
     });
   }
@@ -10119,11 +10230,28 @@ function NotebookBlockEditor({blocks,legacyText,onChange}){
         :b.type==='image'
           ?e('div',{className:'nb-block-img-wrap'},
               b.src
-                ?e('img',{src:b.src,alt:''})
+                ?e('div',{
+                    className:'nb-block-img-frame',
+                    style:{width:(b.widthPct||100)+'%'}
+                  },
+                    e('img',{src:b.src,alt:''}),
+                    e('div',{
+                      className:'nb-block-img-resize',
+                      title:'Arrastra para ajustar el tamaño',
+                      onMouseDown:ev=>beginImageResize(b.id,ev,ev.currentTarget.parentElement)
+                    })
+                  )
                 :e('div',{className:'nb-block-img-empty',onClick:()=>openImagePicker(b.id)},'📎 Click para subir una imagen (o pega una con Ctrl+V en cualquier bloque de texto)'),
               b.src&&e('input',{
+                ref:refFor(b.id+'_cap'),
                 className:'nb-block-img-cap',value:b.caption||'',placeholder:'Agregar una descripción...',
-                onChange:ev=>patchBlock(b.id,{caption:ev.target.value})
+                onChange:ev=>patchBlock(b.id,{caption:ev.target.value}),
+                onKeyDown:ev=>{
+                  if(ev.key==='Enter'){
+                    ev.preventDefault();
+                    insertAfter(b.id,{id:uid(),type:'text',text:''}); // "Enter" tras una imagen: baja y abre una línea nueva para seguir escribiendo
+                  }
+                }
               })
             )
 
@@ -10972,6 +11100,7 @@ function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask,templates,onAddTe
   const mmSubDragIdx=useRef(null);
   const[mmCanvasW,setMmCanvasW]=useState(1200);
   const mmCanvasRef=useRef(null);
+  const mmScrollRef=useRef(null); // el contenedor con scroll real (.mm-canvas-scroll) — distinto de mmCanvasRef, que es solo el contenido
   const[mmDragPreview,setMmDragPreview]=useState(null); // {id,x,y}
   const MM_CARD_W=238,MM_GAP_X=56,MM_GAP_Y=48,MM_ROW_H=170;
   useEffect(()=>{
@@ -10981,6 +11110,9 @@ function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask,templates,onAddTe
     window.addEventListener('resize',measure);
     return()=>window.removeEventListener('resize',measure);
   },[view]);
+  // Pan estilo Miro: mantener espacio + click y arrastrar para desplazar el
+  // mapa, en vez de depender solo de las barras de scroll.
+  usePanOnSpace(mmScrollRef,view==='mindmap');
   function mmDefaultPos(idx){
     const cols=Math.max(1,Math.floor((mmCanvasW+MM_GAP_X)/(MM_CARD_W+MM_GAP_X)));
     const row=Math.floor(idx/cols),col=idx%cols;
@@ -11425,7 +11557,7 @@ function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask,templates,onAddTe
             const maxX=Math.max(...positions.map(p=>p.x))+MM_CARD_W+40;
             const maxY=Math.max(...positions.map(p=>p.y))+MM_ROW_H+40;
             const canvasH=Math.max(maxY,420);
-            return e('div',{className:'mm-canvas-scroll'},
+            return e('div',{className:'mm-canvas-scroll',ref:mmScrollRef},
               e('div',{className:'mm-canvas',ref:mmCanvasRef,style:{minHeight:canvasH,width:'100%'}},
                 e('svg',{className:'mm-svg',style:{width:Math.max(maxX,mmCanvasW),height:canvasH}},
                   steps.slice(0,-1).map((s,idx)=>{
