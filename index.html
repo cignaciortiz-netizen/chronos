@@ -753,6 +753,11 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .board-canvas{position:relative;width:2200px;height:1500px;transform-origin:0 0}
 .board-hint{position:absolute;top:60px;left:40px;display:flex;flex-direction:column;align-items:flex-start;gap:6px;font-size:11.5px;color:var(--text4);max-width:260px;line-height:1.5}
 .board-img{position:absolute;cursor:grab;box-shadow:0 8px 24px #0008;border-radius:8px}
+.board-img-resize{
+  position:absolute;right:-4px;bottom:-4px;width:15px;height:15px;border-radius:4px;
+  background:var(--bg3);border:1.5px solid var(--border4);cursor:nwse-resize;opacity:0;transition:opacity .1s;z-index:2;
+}
+.board-img:hover .board-img-resize{opacity:1}
 .board-img.dragging{cursor:grabbing;opacity:.85;z-index:5}
 .board-img-del{position:absolute;top:-8px;right:-8px;width:20px;height:20px;border-radius:50%;background:var(--bg2);border:1px solid var(--border3);color:var(--text2);font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .1s}
 .board-img:hover .board-img-del{opacity:1}
@@ -1182,8 +1187,8 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .bento-blk{background:var(--bg1);border:1px solid var(--border2);border-radius:var(--r-xl);padding:16px 18px;min-width:0}
 .bento-hero{grid-column:span 7;background:linear-gradient(150deg,var(--bg2) 0%,var(--bg1) 65%)}
 .bento-side{grid-column:span 5;display:flex;flex-direction:column;gap:12px}
-.bento-third{grid-column:span 4}
-@media (max-width:1100px){.bento-hero,.bento-side{grid-column:span 12}.bento-third{grid-column:span 6}}
+.bento-third{grid-column:span 6}
+@media (max-width:1100px){.bento-hero,.bento-side{grid-column:span 12}.bento-third{grid-column:span 12}}
 .bento-eyebrow{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--text3);margin-bottom:12px}
 .hero-focus-row{display:flex;align-items:flex-end;gap:22px}
 .hero-ring-wrap{position:relative;width:104px;height:104px;flex-shrink:0}
@@ -1218,11 +1223,6 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .bento-tk-check.done{background:var(--green);border-color:var(--green)}
 .bento-tk-name{font-size:12px;color:var(--text1);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
 .bento-tk-name.done{color:var(--text4);text-decoration:line-through}
-.bento-streak-num{font-family:'Space Grotesk',sans-serif;font-size:32px;font-weight:700;color:var(--text0);display:flex;align-items:baseline;gap:7px}
-.bento-streak-num span{font-size:11px;color:var(--text3);font-weight:500}
-.bento-streak-bars{display:flex;gap:4px;margin-top:12px;align-items:flex-end;height:30px}
-.bento-streak-bars i{flex:1;background:var(--border2);border-radius:3px;display:block}
-.bento-streak-bars i.on{background:var(--accent2)}
 .bento-wk-chart{display:flex;align-items:stretch;gap:6px;height:44px;margin-top:8px}
 .bento-wk-wrap{flex:1;height:100%;display:flex;align-items:flex-end}
 .bento-wk-bar{width:100%;border-radius:3px 3px 1px 1px;background:linear-gradient(180deg,var(--accent2) 0%,var(--accentd) 100%);min-height:2px}
@@ -2260,6 +2260,28 @@ function usePanOnSpace(scrollRef,active){
   },[active,scrollRef]);
 }
 
+// % de avance de un proyecto — según las tareas de fase de TODOS sus
+// sistemas (no si la fase está marcada completa, sino cuántas tareas
+// individuales de cada fase ya están hechas). null si el proyecto no tiene
+// ninguna tarea de fase definida todavía (nada que calcular).
+function projectCompletionPct(projId,systems){
+  let total=0,done=0;
+  systems.filter(s=>s.projectId===projId).forEach(s=>{
+    migrateSysPhases(s).forEach(ph=>{
+      (ph.tasks||[]).forEach(t=>{ total++; if(t.done)done++; });
+    });
+  });
+  return total>0?Math.round(done/total*100):null;
+}
+// Anillo de progreso compacto para filas de lista (sidebar) — mismo cálculo
+// que DonutRing pero sin el número superpuesto, que no cabe a este tamaño.
+function MiniProgressRing({pct,size=18,stroke=2.5,color='var(--accent2)'}){
+  const r=(size-stroke)/2,c=2*Math.PI*r,off=c*(1-Math.min(100,Math.max(0,pct))/100);
+  return e('svg',{width:size,height:size,viewBox:`0 0 ${size} ${size}`,style:{display:'block',flexShrink:0}},
+    e('circle',{cx:size/2,cy:size/2,r,fill:'none',stroke:'var(--bg4)',strokeWidth:stroke}),
+    e('circle',{cx:size/2,cy:size/2,r,fill:'none',stroke:color,strokeWidth:stroke,strokeLinecap:'round',strokeDasharray:c,strokeDashoffset:off,transform:`rotate(-90 ${size/2} ${size/2})`})
+  );
+}
 function habitOccursOn(habit,date){
   const r=habit.recurrence;
   if(!r||r.type==='none')return false;
@@ -2503,17 +2525,21 @@ const GlobalSidebar=React.memo(function GlobalSidebar({projects,habits,systems,t
     ),
     e('div',{className:'gsb-projlist'},
       activeProjects.length===0&&!collapsed&&e('div',{className:'empty',style:{padding:'4px 10px'}},'Sin proyectos aún.'),
-      activeProjects.map(p=>e('div',{
-        key:p.id,
-        className:'gsb-proj'+(view==='dashboard'&&selProj===p.id?' active':''),
-        onClick:()=>{playUI('click');onOpenProject(p.id);},
-        onContextMenu:ev=>{ev.preventDefault();ev.stopPropagation();playUI('click');setCtxMenu({x:ev.clientX,y:ev.clientY,proj:p});},
-        title:p.name
-      },
-        e('span',{className:'gsb-proj-dot',style:{background:p.color}}),
-        e('span',{className:'gsb-proj-name'},p.name),
-        projAlert(p)&&e('span',{className:'gsb-proj-alert'})
-      ))
+      activeProjects.map(p=>{
+        const pct=projectCompletionPct(p.id,systems);
+        return e('div',{
+          key:p.id,
+          className:'gsb-proj'+(view==='dashboard'&&selProj===p.id?' active':''),
+          onClick:()=>{playUI('click');onOpenProject(p.id);},
+          onContextMenu:ev=>{ev.preventDefault();ev.stopPropagation();playUI('click');setCtxMenu({x:ev.clientX,y:ev.clientY,proj:p});},
+          title:p.name+(pct!=null?' — '+pct+'% completado (según tareas de fase)':'')
+        },
+          e('span',{className:'gsb-proj-dot',style:{background:p.color}}),
+          e('span',{className:'gsb-proj-name'},p.name),
+          pct!=null&&e(MiniProgressRing,{pct,color:p.color}),
+          projAlert(p)&&e('span',{className:'gsb-proj-alert'})
+        );
+      })
     ),
     ctxMenu&&e('div',{
       onClick:ev=>ev.stopPropagation(),
@@ -8873,15 +8899,10 @@ function HomeResumen(props){
         ),
 
         e('div',{className:'bento-blk bento-third'},
-          e('div',{className:'bento-eyebrow'},'Racha de enfoque'),
-          e('div',{className:'bento-streak-num'},streak,e('span',null,streak===1?'día seguido':'días seguidos')),
-          e('div',{className:'bento-streak-bars'},
-            weekTotals.map(w=>e('i',{key:w.key,className:w.secs>0?'on':'',style:{height:Math.max(8,Math.min(100,Math.round(w.secs/(weekMax||1)*100)))+'%'}}))
-          )
-        ),
-
-        e('div',{className:'bento-blk bento-third'},
-          e('div',{className:'bento-eyebrow'},'Actividad de la semana'),
+          e('div',{style:{display:'flex',alignItems:'baseline',justifyContent:'space-between',marginBottom:6}},
+            e('span',{className:'bento-eyebrow',style:{margin:0}},'Actividad de la semana'),
+            e('span',{style:{fontSize:11,color:'var(--text3)',fontFamily:"'JetBrains Mono',monospace",display:'flex',alignItems:'center',gap:4}},'🔥',streak,streak===1?'día':'días')
+          ),
           e('div',{className:'bento-wk-chart'},
             weekTotals.map(w=>e('div',{key:w.key,className:'bento-wk-wrap'},e('div',{className:'bento-wk-bar',style:{height:Math.max(3,Math.round(w.secs/(weekMax||1)*100))+'%'}})))
           ),
@@ -9100,6 +9121,18 @@ function ProjectDashboard(props){
   const[sysDetailId,setSysDetailId]=useState(null); // id del sistema abierto en el drawer
   const[habitForm,setHabitForm]=useState(null);
   const[showTaskModal,setShowTaskModal]=useState(false);
+  const[showBulkPasteTasks,setShowBulkPasteTasks]=useState(false);
+  const[bulkTasksText,setBulkTasksText]=useState('');
+  function applyBulkPasteTasks(){
+    const parsed=parseTemplateText(bulkTasksText);
+    if(!parsed.length)return;
+    parsed.forEach(s=>{
+      const steps=(s.subtasks||[]).map(t=>({id:uid(),name:t.name,done:false}));
+      onAddTask(s.name,null,steps);
+    });
+    setBulkTasksText('');
+    setShowBulkPasteTasks(false);
+  }
   const[stepsForTask,setStepsForTask]=useState(null);
   const[showDoneTasks,setShowDoneTasks]=useState(false);
   const[habitCtxMenu,setHabitCtxMenu]=useState(null); // {x,y,habit}
@@ -9124,7 +9157,7 @@ function ProjectDashboard(props){
   const DEFAULT_LABELS={tareas:'Tareas prioritarias',sistemas:'Sistemas',habitos:'Hábitos'};
   const labels={...DEFAULT_LABELS,...(panelLabels||{})};
   const visible={tareas:true,sistemas:true,habitos:true,...(panelVisibility||{})};
-  const sortModes={tareas:'proximity',sistemas:'sequence',habitos:'proximity',...(panelSortModes||{})};
+  const sortModes=useMemo(()=>({tareas:'proximity',sistemas:'sequence',habitos:'proximity',...(panelSortModes||{})}),[panelSortModes]);
   function renameLabel(key,val){onRenameLabel(key,val);}
   function setSortMode(key,mode){onChangeSortMode(key,mode);}
   function cycleAllProjectSystems(){
@@ -9157,37 +9190,59 @@ function ProjectDashboard(props){
   function setStatCustom(key,icon,color){onPatchProject({statConfig:{...(project.statConfig||{}),[key]:{icon,color}}});}
   function resetStatCustom(key){const next={...(project.statConfig||{})};delete next[key];onPatchProject({statConfig:next});}
 
-  const pTasks=tasks.filter(t=>t.projectId===project.id);
-  const pendingTasks=applySortMode(pTasks.filter(t=>t.status!=='done'),sortModes.tareas,{
-    getDueTs:taskDueTs,getCreatedTs:t=>t.createdAt,getName:t=>t.name,getDone:t=>t.status==='done'
-  });
-  const doneTasks=pTasks.filter(t=>t.status==='done').sort((a,b)=>(b.completedAt||b.createdAt||0)-(a.completedAt||a.createdAt||0));
-  const pSystems=applySortMode(systems.filter(s=>s.projectId===project.id),sortModes.sistemas,{
-    getDueTs:systemDueTs,getCreatedTs:s=>s.createdAt,getName:s=>s.name,getDone:s=>!(s.nextRun&&s.nextRun<=Date.now()),getOrder:s=>s.order
-  });
-  const pHabits=applySortMode(habits.filter(h=>h.projectId===project.id),sortModes.habitos,{
-    getDueTs:nextHabitDueTs,getCreatedTs:h=>h.createdAt,getName:h=>h.name,getDone:h=>(h.log||[]).includes(selectedDay)
-  });
-  const pSessions=sessions.filter(s=>s.projectId===project.id&&s.endAt).sort((a,b)=>b.endAt-a.endAt);
-  const pCtxs=ctxs.filter(c=>c.projectId===project.id).sort((a,b)=>b.createdAt-a.createdAt);
-  const stats=pStats(project);
-  const totalSecs=pSessions.reduce((a,s)=>a+s.duration,0);
-  const lastActivity=pSessions[0]?pSessions[0].endAt*1000:null;
+  // Todo este bloque filtra/ordena tasks, systems, habits, sessions y ctxs
+  // — sessions puede tener miles de registros tras meses de uso. Sin
+  // memoizar, esto se recalculaba en CADA render de la pantalla del
+  // proyecto, incluida CADA TECLA escrita en la Libreta de cuenta (editar
+  // project.notebook cambia la referencia de "project" y volvía a disparar
+  // todo esto desde cero). Se memoiza sobre los datos reales — project.id en
+  // vez de "project" completo — para que escribir una nota no lo toque.
+  const{pTasks,pendingTasks,doneTasks,pSystems,pHabits,pSessions,pCtxs,totalSecs,lastActivity,todayPomosBase,todaySessions,sparkBuckets,weekSecs,statsBase}=useMemo(()=>{
+    const pTasks=tasks.filter(t=>t.projectId===project.id);
+    const pendingTasks=applySortMode(pTasks.filter(t=>t.status!=='done'),sortModes.tareas,{
+      getDueTs:taskDueTs,getCreatedTs:t=>t.createdAt,getName:t=>t.name,getDone:t=>t.status==='done'
+    });
+    const doneTasks=pTasks.filter(t=>t.status==='done').sort((a,b)=>(b.completedAt||b.createdAt||0)-(a.completedAt||a.createdAt||0));
+    const pSystems=applySortMode(systems.filter(s=>s.projectId===project.id),sortModes.sistemas,{
+      getDueTs:systemDueTs,getCreatedTs:s=>s.createdAt,getName:s=>s.name,getDone:s=>!(s.nextRun&&s.nextRun<=Date.now()),getOrder:s=>s.order
+    });
+    const pHabits=applySortMode(habits.filter(h=>h.projectId===project.id),sortModes.habitos,{
+      getDueTs:nextHabitDueTs,getCreatedTs:h=>h.createdAt,getName:h=>h.name,getDone:h=>(h.log||[]).includes(selectedDay)
+    });
+    const pSessions=sessions.filter(s=>s.projectId===project.id&&s.endAt).sort((a,b)=>b.endAt-a.endAt);
+    const pCtxs=ctxs.filter(c=>c.projectId===project.id).sort((a,b)=>b.createdAt-a.createdAt);
+    const today_=dayKey();
+    const daySessHere=pSessions.filter(s=>s.day===today_);
+    const totalSecs=pSessions.reduce((a,s)=>a+s.duration,0);
+    const lastActivity=pSessions[0]?pSessions[0].endAt*1000:null;
+    const todayPomosBase=daySessHere.reduce((a,s)=>a+(s.pomos||0),0);
+    const sparkBuckets=new Array(8).fill(0);
+    daySessHere.forEach(s=>{const hr=new Date(s.endAt*1000).getHours();sparkBuckets[Math.min(7,Math.floor(hr/3))]+=s.duration;});
+    const weekSecs=pSessions.filter(s=>(Date.now()-s.endAt*1000)<7*86400000).reduce((a,s)=>a+s.duration,0);
+    const statsBase={
+      todaySecs:daySessHere.reduce((a,s)=>a+s.duration,0),
+      sessions:daySessHere.length,
+      lastCtx:pCtxs[0]||null,
+      allCtxs:pCtxs
+    };
+    return{pTasks,pendingTasks,doneTasks,pSystems,pHabits,pSessions,pCtxs,totalSecs,lastActivity,todayPomosBase,todaySessions:daySessHere,sparkBuckets,weekSecs,statsBase};
+    // eslint-disable-next-line
+  },[project.id,tasks,systems,habits,sessions,ctxs,sortModes,selectedDay]);
   const isRunningHere=(tState==='running'||tState==='paused')&&activeSess&&activeSess.projectId===project.id;
   const week=currentWeekDays();
   const today=dayKey();
-  const todayPomos=pSessions.filter(s=>s.day===today).reduce((a,s)=>a+(s.pomos||0),0);
+  // La adición "en vivo" (sesión corriendo ahora mismo) es barata — no toca
+  // el historial — así que se calcula aparte, fuera de la memo, y sí puede
+  // actualizarse en cada tick sin volver a escanear sessions.
+  const liveSecsHere=(selectedDay===today&&tState!=='idle'&&activeSess?.projectId===project.id)?workElapsed:0;
+  const stats={...statsBase,todaySecs:statsBase.todaySecs+liveSecsHere,sessions:statsBase.sessions+(liveSecsHere?1:0)};
+  const todayPomos=todayPomosBase;
   // Tiempo invertido hoy en un hábito específico (sesiones cerradas + en vivo si está corriendo ahora)
   function habitTimeToday(habitId){
-    const done=pSessions.filter(s=>s.habitId===habitId&&s.day===today).reduce((a,s)=>a+s.duration,0);
+    const done=todaySessions.filter(s=>s.habitId===habitId&&s.day===today).reduce((a,s)=>a+s.duration,0);
     const live=(isRunningHere&&activeSess&&activeSess.habitId===habitId&&tState==='running')?workElapsed:0;
     return done+live;
   }
-
-  const todaySessions=pSessions.filter(s=>s.day===today);
-  const sparkBuckets=new Array(8).fill(0);
-  todaySessions.forEach(s=>{const hr=new Date(s.endAt*1000).getHours();sparkBuckets[Math.min(7,Math.floor(hr/3))]+=s.duration;});
-  const weekSecs=pSessions.filter(s=>(Date.now()-s.endAt*1000)<7*86400000).reduce((a,s)=>a+s.duration,0);
   const dailyGoal=(project.dailyLimit||8*3600);
   const focusPct=Math.min(100,Math.round(stats.todaySecs/dailyGoal*100));
 
@@ -9260,7 +9315,7 @@ function ProjectDashboard(props){
           ),
           project.description&&e('div',{className:'dash-desc'},project.description),
           e('div',{className:'dash-meta-row'},
-            e('span',{className:'dash-meta-item'},'Tiempo total: ',e('b',null,fmtS(totalSecs))),
+            e('span',{className:'dash-meta-item',title:'Suma de todas las sesiones registradas para este proyecto, desde siempre — no es el tiempo de hoy'},'Tiempo histórico total: ',e('b',null,fmtS(totalSecs))),
             e('span',{className:'dash-meta-item'},'Última actividad: ',e('b',null,lastActivity?fmtWhen(lastActivity):'—'))
           )
         ),
@@ -9383,6 +9438,7 @@ function ProjectDashboard(props){
               onClick:()=>{playUI('click');setShowDoneTasks(v=>!v);},
               title:'Ver registro de completadas'
             },showDoneTasks?'Ocultar registro':'Ver registro ('+doneTasks.length+')'),
+            e('button',{className:'ghost-btn',onClick:()=>{playUI('click');setBulkTasksText('');setShowBulkPasteTasks(true);},title:'Crear varias de una vez pegando texto: "1. Nombre" = nueva, líneas sueltas debajo = sus pasos'},'⤓'),
             e('button',{className:'ghost-btn',onClick:()=>{playUI('click');openAddTask();},title:'Añadir '+taskNoun},'＋')
           )
         ),
@@ -9645,6 +9701,22 @@ function ProjectDashboard(props){
       onClose:()=>setShowTaskModal(false),
       onSave:(name,recurrence,steps,sysTemplateId)=>{onAddTask(name,recurrence,steps,sysTemplateId);setShowTaskModal(false);}
     }),
+    showBulkPasteTasks&&e('div',{className:'sysmap-tplsave-overlay',onClick:ev=>{if(ev.target===ev.currentTarget)setShowBulkPasteTasks(false);}},
+      e('div',{className:'sysmap-tplsave-box',style:{width:420}},
+        e('div',{className:'sysmap-tplsave-title'},'Pegar texto'),
+        e('div',{className:'sysmap-tplsave-sub'},'Una línea numerada ("1. Nombre") crea una '+taskNoun+' nueva. Las líneas sin número debajo se agregan como sus pasos.'),
+        e('textarea',{
+          className:'finput',rows:10,autoFocus:true,
+          style:{resize:'vertical',fontFamily:'inherit',lineHeight:1.5},
+          value:bulkTasksText,onChange:ev=>setBulkTasksText(ev.target.value),
+          placeholder:'1. Nombre de la primera\nPaso A\nPaso B\n2. Nombre de la segunda\nPaso C'
+        }),
+        e('div',{style:{display:'flex',gap:6,justifyContent:'flex-end',marginTop:10}},
+          e('button',{className:'ghost-btn',onClick:()=>setShowBulkPasteTasks(false)},'Cancelar'),
+          e('button',{className:'btn btn-primary',disabled:!bulkTasksText.trim(),onClick:applyBulkPasteTasks},'Crear')
+        )
+      )
+    ),
     stepsForTask&&e(TaskStepsModal,{
       task:tasks.find(x=>x.id===stepsForTask.id)||stepsForTask,
       noun:taskNoun,
@@ -10973,6 +11045,7 @@ function TaskBoardPanel({task,onUpdateTask}){
   const canvasRef=useRef(null);
   const[zoom,setZoom]=useState(1);
   const[dragImg,setDragImg]=useState(null); // {id,startX,startY,origX,origY}
+  const[resizeImg,setResizeImg]=useState(null); // {id,startX,startW}
   const[dragNote,setDragNote]=useState(null); // {id,startX,startY,origX,origY}
   const[dragCard,setDragCard]=useState(null); // {id,startX,startY,origX,origY}
   const[showNbMenu,setShowNbMenu]=useState(false);
@@ -11028,8 +11101,7 @@ function TaskBoardPanel({task,onUpdateTask}){
     return(nextLinksBase!==undefined?nextLinksBase:links).filter(l=>l[0]!==compositeId&&l[1]!==compositeId);
   }
   function deleteImage(id){
-    updateImages(images.filter(i=>i.id!==id));
-    updateLinks(pruneLinks('img:'+id));
+    onUpdateTask({board:{...(task.board||{}),images:images.filter(i=>i.id!==id),links:pruneLinks('img:'+id)}});
   }
   function beginImgDrag(img,ev){
     if(linkMode){ev.stopPropagation();handleLinkClick('img:'+img.id);return;}
@@ -11048,6 +11120,24 @@ function TaskBoardPanel({task,onUpdateTask}){
     return()=>{window.removeEventListener('mousemove',onMove);window.removeEventListener('mouseup',onUp);};
     // eslint-disable-next-line
   },[dragImg,zoom]);
+  useEffect(()=>{
+    if(!resizeImg)return;
+    function onMove(ev){
+      const dx=(ev.clientX-resizeImg.startX)/zoom;
+      const newW=Math.max(80,Math.round(resizeImg.startW+dx));
+      updateImages(images.map(i=>i.id===resizeImg.id?{...i,w:newW}:i));
+    }
+    function onUp(){setResizeImg(null);}
+    window.addEventListener('mousemove',onMove);
+    window.addEventListener('mouseup',onUp);
+    return()=>{window.removeEventListener('mousemove',onMove);window.removeEventListener('mouseup',onUp);};
+    // eslint-disable-next-line
+  },[resizeImg,zoom]);
+  function beginImgResize(img,ev){
+    ev.preventDefault();
+    ev.stopPropagation();
+    setResizeImg({id:img.id,startX:ev.clientX,startW:img.w||320});
+  }
   useEffect(()=>{
     if(!dragNote)return;
     function onMove(ev){
@@ -11139,8 +11229,7 @@ function TaskBoardPanel({task,onUpdateTask}){
     setShowNbMenu(false);
   }
   function deleteCard(id){
-    updateCards(cards.filter(c=>c.id!==id));
-    updateLinks(pruneLinks('card:'+id));
+    onUpdateTask({board:{...(task.board||{}),cards:cards.filter(c=>c.id!==id),links:pruneLinks('card:'+id)}});
   }
   function toggleCardExpand(id){updateCards(cards.map(c=>c.id===id?{...c,expanded:!c.expanded}:c));}
   function beginCardDrag(card,ev){
@@ -11229,6 +11318,7 @@ function TaskBoardPanel({task,onUpdateTask}){
           onMouseDown:ev=>beginImgDrag(img,ev)
         },
           e('img',{src:img.src,draggable:false,style:{width:'100%',display:'block',borderRadius:8,pointerEvents:'none'}}),
+          !linkMode&&e('div',{className:'board-img-resize',title:'Arrastra para ajustar el tamaño',onMouseDown:ev=>beginImgResize(img,ev)}),
           !linkMode&&e('button',{className:'board-img-del',onMouseDown:ev=>ev.stopPropagation(),onClick:()=>deleteImage(img.id),title:'Eliminar imagen'},'✕')
         )),
         notes.map(n=>e('div',{
