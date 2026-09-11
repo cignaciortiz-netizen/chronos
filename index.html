@@ -821,6 +821,17 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .notebook-title-input{width:100%;background:transparent;border:none;outline:none;color:var(--text0);font-size:24px;font-weight:600;font-family:'Space Grotesk',sans-serif;padding:0;margin-bottom:5px}
 .notebook-title-input::placeholder{color:var(--text4);font-weight:500}
 .notebook-subtitle-input{width:100%;background:transparent;border:none;outline:none;color:var(--text2);font-size:13px;font-family:'Inter',sans-serif;padding:0;margin-bottom:18px}
+/* ── Registro de sistema — misma cara que la Libreta instalada, pero de
+   pantalla completa (una sola entrada, sin lista lateral) ── */
+.sysnote-overlay{position:fixed;inset:0;background:var(--bg0);z-index:500;display:flex;flex-direction:column}
+.sysnote-hdr{display:flex;align-items:center;gap:10px;padding:14px 24px;border-bottom:1px solid var(--border2);flex-shrink:0}
+.sysnote-hdr-icon{font-size:15px;flex-shrink:0}
+.sysnote-hdr-sys{font-weight:600;font-size:14px;color:var(--text0);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sysnote-hdr-tag{font-size:10.5px;color:var(--text3);background:var(--bg3);padding:2px 9px;border-radius:999px;flex-shrink:0}
+.sysnote-hdr-link{font-size:11px;color:var(--text3);white-space:nowrap;flex-shrink:0}
+.sysnote-body{flex:1;overflow-y:auto;display:flex;justify-content:center}
+.sysnote-page{width:100%;max-width:760px;padding:34px 24px 60px}
+@media (max-width:900px){.sysnote-hdr-link{display:none}}
 .notebook-subtitle-input::placeholder{color:var(--text4)}
 .notebook-body-text{width:100%;flex:1;background:transparent;border:none;outline:none;color:var(--text1);font-size:13px;line-height:1.8;font-family:'Inter',sans-serif;resize:none;padding:0;min-height:240px}
 .notebook-body-text::placeholder{color:var(--text4)}
@@ -1265,7 +1276,8 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .qn-item-check{flex-shrink:0;width:14px;height:14px;margin-top:1px;border-radius:4px;border:1px solid var(--border3);background:transparent;color:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:9px;line-height:1;transition:all .12s;padding:0}
 .qn-item-check:hover{border-color:var(--green-border);color:var(--green)}
 .qn-item-text-wrap{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
-.qn-item-text{white-space:pre-wrap;word-break:break-word;color:var(--text1)}
+.qn-item-text{white-space:pre-wrap;word-break:break-word;color:var(--text1);cursor:pointer}
+.qn-item-text-input{width:100%;background:var(--bg3);border:1px solid var(--border3);border-radius:6px;color:var(--text0);font-size:inherit;font-family:inherit;padding:3px 6px;outline:none}
 .qn-item-remind{font-size:9.5px;color:var(--amber);font-family:'JetBrains Mono',monospace;display:flex;align-items:center;gap:3px}
 .qn-item-clock{flex-shrink:0;width:14px;height:14px;margin-top:1px;border:none;background:transparent;color:var(--text4);cursor:pointer;opacity:0;transition:opacity .12s,color .12s;padding:0;display:flex;align-items:center;justify-content:center}
 .qn-item:hover .qn-item-clock{opacity:1}
@@ -1436,6 +1448,48 @@ const{createRoot}=ReactDOM;
     localStorage.setItem('sb_uid', 'ChWqvaxwWxPRf_Vs');
   }
 })();
+// ── MisFinanzas — mismo proyecto Supabase que usa la app MisFinanzas ya
+// desplegada. Chronos solo LEE de acá (no escribe ni sincroniza nada de
+// vuelta) — la fuente de verdad de tus finanzas sigue siendo MisFinanzas.
+const MF_SB={
+  url:'https://fokiszemjatdpbhglpas.supabase.co',
+  anon:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZva2lzemVtamF0ZHBiaGdscGFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI2NzI0NTMsImV4cCI6MjA5ODI0ODQ1M30.xO7UTcbHhLZiMf2svaqrnnuJXItfSybIcDHuaehts0U',
+  uid:'17ebb2ae-b868-51c2-80a2-220519cc4795',
+  headers(){ return{apikey:this.anon,Authorization:'Bearer '+this.anon,'Content-Type':'application/json'}; }
+};
+async function mfSelect(table,filters){
+  const url=`${MF_SB.url}/rest/v1/${table}?select=*${filters?'&'+filters:''}`;
+  const r=await fetch(url,{headers:MF_SB.headers()});
+  if(!r.ok)throw new Error(table+': HTTP '+r.status);
+  return r.json();
+}
+function mfTxFromSB(r){return{id:r.id,date:r.fecha,amount:Number(r.monto),cat:r.categoria,acc:r.cuenta,desc:r.descripcion,isTransfer:r.is_transfer};}
+function mfAccFromSB(r){return{id:r.id,name:r.nombre,type:r.tipo,base:Number(r.base),color:r.color,active:r.activa};}
+function mfBudgetFromSB(r){return{id:r.id,cat:r.categoria,limit:Number(r.limite),month:r.mes};}
+function mfGoalFromSB(r){return{id:r.id,name:r.nombre,target:Number(r.objetivo),saved:Number(r.actual),color:r.color,deadline:r.fecha_meta};}
+function mfDebtFromSB(r){return{id:r.id,name:r.nombre,total:Number(r.monto),paid:Number(r.pagado),rate:Number(r.tasa),installments:r.cuotas,startDate:r.inicio};}
+function mfCatFromSB(r){return{id:r.id,name:r.nombre,icon:r.icono};}
+async function loadFinanzas(){
+  const uid=MF_SB.uid;
+  const[txRows,accRows,budRows,goalRows,debtRows,catRows]=await Promise.all([
+    mfSelect('transacciones',`user_id=eq.${uid}&order=fecha.desc`),
+    mfSelect('cuentas',`user_id=eq.${uid}`),
+    mfSelect('presupuestos',`user_id=eq.${uid}`),
+    mfSelect('metas',`user_id=eq.${uid}`),
+    mfSelect('deudas',`user_id=eq.${uid}`),
+    mfSelect('categorias',`user_id=eq.${uid}`)
+  ]);
+  return{
+    transactions:txRows.map(mfTxFromSB),
+    accounts:accRows.map(mfAccFromSB),
+    budgets:budRows.map(mfBudgetFromSB),
+    goals:goalRows.map(mfGoalFromSB),
+    debts:debtRows.map(mfDebtFromSB),
+    cats:catRows.map(mfCatFromSB)
+  };
+}
+function mfClp(n){return new Intl.NumberFormat('es-CL',{style:'currency',currency:'CLP',minimumFractionDigits:0}).format(Math.round(n||0));}
+function mfNowMonth(){const d=new Date();return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;}
 const e=React.createElement;
 
 // ── SOUNDS ──
@@ -2435,6 +2489,10 @@ const GlobalSidebar=React.memo(function GlobalSidebar({projects,habits,systems,t
       e('div',{className:'gsb-item'+(view==='analytics'?' active':''),onClick:()=>{playUI('click');setView('analytics');}},
         e('svg',{width:14,height:14,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},e('path',{d:'M3 3v18h18'}),e('path',{d:'M18 17V9M13 17V5M8 17v-4'})),
         e('span',null,'Analíticas')
+      ),
+      e('div',{className:'gsb-item'+(view==='finanzas'?' active':''),onClick:()=>{playUI('click');setView('finanzas');}},
+        e('svg',{width:14,height:14,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},e('path',{d:'M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6'})),
+        e('span',null,'Finanzas')
       )
     ),
     e('div',{className:'gsb-groupline'},
@@ -3416,14 +3474,21 @@ function App(){
   function handleStartNextPhase(){
     if(!pomoPhaseDone)return;
     const now=Date.now();
+    // Instante real en que la fase recién terminada se completó (el momento en
+    // que se congeló el timer), ANTES de limpiarlo — no el momento en que el
+    // usuario finalmente apretó el botón. Usar "now" acá era el bug: si te
+    // demorabas en apretar "Iniciar siguiente sesión" después del descanso,
+    // ese rato de espera se sumaba TAMBIÉN como si hubiera sido descanso,
+    // restando ese tiempo extra del total trabajado.
+    const phaseEndTs=pausedAt.current||now;
     // the time spent "stuck" on the finished phase (since it auto-paused) doesn't count toward the new phase
     if(pausedAt.current) pausedAccum.current+=now-pausedAt.current;
     pausedAt.current=null;
     pomoPhaseStartTs.current=now;
     const nextPhase=pomoPhase==='work'?'break':'work';
-    // If transitioning back to work, accumulate break time
+    // If transitioning back to work, accumulate break time — usando el fin real del descanso
     if(nextPhase==='work'&&breakStartTs.current){
-      breakAccum.current+=Math.floor((now-breakStartTs.current)/1000);
+      breakAccum.current+=Math.floor((phaseEndTs-breakStartTs.current)/1000);
       breakStartTs.current=null;
     }
     // If transitioning to break, start tracking break time
@@ -3683,6 +3748,14 @@ function App(){
               });
               forceSync();
             },
+            onEditNoteText:(id,text)=>{
+              const pid=selectedProjObj.id;
+              setNotes(n=>({...n,[pid]:(n[pid]||[]).map(x=>x.id===id?{...x,text}:x)}));
+              // el recordatorio vinculado (si existe) muestra el mismo texto — se
+              // renombra junto con la nota para que no quede desactualizado
+              setReminders(rs=>rs.map(r=>r.noteId===id?{...r,title:text}:r));
+              forceSync();
+            },
             panelLabels,onRenameLabel:(key,val)=>{setPanelLabels(p=>({...p,[key]:val}));forceSync();},
             panelVisibility,onTogglePanelVisibility:(key)=>{setPanelVisibility(p=>({...p,[key]:!(p[key]!==false)}));forceSync();},
             panelSortModes,onChangeSortMode:(key,mode)=>{
@@ -3833,6 +3906,8 @@ function App(){
             onBack:()=>setView('home'),
             fmtWhen,pStats
           })
+        :view==='finanzas'
+        ?e('div',{className:'dashboard-view'},e(FinanzasView,null))
         :e(React.Fragment,null,
 
       // LEFT COL
@@ -4162,7 +4237,7 @@ function TimerView({tState,elapsed,workElapsed,activeSess,activeProj,activeTask,
     ?(pomoPhase==='work'?'Descanso listo para iniciar':'Sesión lista para iniciar')
     :(tState==='running'?(isPomo&&pomoPhase==='break'?'En descanso':'En progreso'):tState==='paused'?'Pausado':'Listo');
   // In free mode show work elapsed; in pomo mode the display shows phase countdown via pomoElapsed
-  const displayTime=isPomo?elapsed:workElapsed;
+  const displayTime=workElapsed; // tiempo enfocado real (sin descansos) — el mismo número en todas las pantallas, incluida Inicio
   return e(React.Fragment,null,
     e('div',{className:'timer-top-bar'},
       e('div',{className:'tstat'},e('div',{className:'tstat-val'},fmtS(todayTotal)),e('div',{className:'tstat-label'},isToday?'Hoy':new Date(selectedDay+'T12:00:00Z').toLocaleDateString('es-CL',{weekday:'short',day:'numeric'}))),
@@ -5737,6 +5812,125 @@ function TZPanel({onClose}){
 // ═══════════════════════════════════════════
 // ANALYTICS
 // ═══════════════════════════════════════════
+// ═══════════════════════════════════════════
+// FINANZAS — integra los datos de MisFinanzas (misma base de datos, mismo
+// usuario). Solo lectura: Chronos nunca escribe ni sincroniza nada de vuelta,
+// MisFinanzas sigue siendo la fuente de verdad y donde se editan los datos.
+// ═══════════════════════════════════════════
+function FinanzasView(){
+  const[data,setData]=useState(null);
+  const[error,setError]=useState(null);
+  const[loading,setLoading]=useState(true);
+  const[refreshTick,setRefreshTick]=useState(0);
+
+  useEffect(()=>{
+    let alive=true;
+    setLoading(true);setError(null);
+    loadFinanzas().then(d=>{if(alive){setData(d);setLoading(false);}}).catch(err=>{if(alive){setError(err.message||'Error desconocido');setLoading(false);}});
+    return()=>{alive=false;};
+  },[refreshTick]);
+
+  if(loading)return e('div',{className:'analytics-wrap'},e('div',{className:'empty',style:{gridColumn:'1/-1'}},'Cargando tus finanzas…'));
+  if(error)return e('div',{className:'analytics-wrap'},
+    e('div',{className:'an-card',style:{gridColumn:'1/-1'}},
+      e('div',{className:'an-title'},'No se pudo conectar con MisFinanzas'),
+      e('div',{style:{fontSize:12,color:'var(--text2)',marginBottom:10}},error),
+      e('button',{className:'btn',onClick:()=>setRefreshTick(t=>t+1)},'Reintentar')
+    )
+  );
+  if(!data)return null;
+
+  const{transactions,accounts,budgets,goals,debts}=data;
+  const activeAccounts=accounts.filter(a=>a.active!==false);
+  function accBalance(a){return(a.base||0)+transactions.filter(t=>t.acc===a.id).reduce((s,t)=>s+(t.amount||0),0);}
+  const totalBalance=activeAccounts.reduce((sum,a)=>sum+accBalance(a),0);
+
+  const month=mfNowMonth();
+  const monthTx=transactions.filter(t=>t.date&&t.date.slice(0,7)===month&&!t.isTransfer);
+  const income=monthTx.filter(t=>t.amount>0).reduce((a,t)=>a+t.amount,0);
+  const expense=monthTx.filter(t=>t.amount<0).reduce((a,t)=>a+t.amount,0); // negativo
+  const net=income+expense;
+
+  const catMap={};
+  monthTx.filter(t=>t.amount<0).forEach(t=>{const c=t.cat||'Otros';catMap[c]=(catMap[c]||0)+Math.abs(t.amount);});
+  const catArr=Object.entries(catMap).sort((a,b)=>b[1]-a[1]);
+  const maxCat=catArr[0]?.[1]||1;
+
+  const monthBudgets=budgets.filter(b=>b.month===month);
+
+  return e('div',{className:'analytics-wrap'},
+    e('div',{className:'kpi-grid'},
+      [
+        {l:'Balance total',v:mfClp(totalBalance)},
+        {l:'Ingresos (mes)',v:mfClp(income)},
+        {l:'Gastos (mes)',v:mfClp(Math.abs(expense))},
+        {l:'Neto (mes)',v:mfClp(net)}
+      ].map(({l,v})=>e('div',{key:l,className:'kpi'},e('div',{className:'kpi-val'},v),e('div',{className:'kpi-lbl'},l)))
+    ),
+
+    e('div',{className:'an-card'},
+      e('div',{className:'an-title'},'Cuentas'),
+      activeAccounts.length===0&&e('div',{className:'empty'},'Sin cuentas registradas en MisFinanzas.'),
+      activeAccounts.map(a=>e('div',{key:a.id,className:'bar-row'},
+        e('div',{className:'bar-lbl',style:{width:110}},a.name),
+        e('div',{style:{flex:1}}),
+        e('div',{className:'bar-val',style:{width:'auto',color:accBalance(a)<0?'var(--red)':'var(--text2)'}},mfClp(accBalance(a)))
+      ))
+    ),
+
+    e('div',{className:'an-card'},
+      e('div',{className:'an-title'},'Gasto por categoría (este mes)'),
+      catArr.length===0&&e('div',{className:'empty'},'Sin gastos registrados este mes.'),
+      catArr.map(([cat,amt])=>e('div',{key:cat,className:'bar-row'},
+        e('div',{className:'bar-lbl',style:{width:110}},cat),
+        e('div',{className:'bar-track'},e('div',{className:'bar-fill',style:{width:(amt/maxCat*100)+'%',background:'var(--accent2)'}})),
+        e('div',{className:'bar-val',style:{width:'auto'}},mfClp(amt))
+      ))
+    ),
+
+    monthBudgets.length>0&&e('div',{className:'an-card'},
+      e('div',{className:'an-title'},'Presupuestos (este mes)'),
+      monthBudgets.map(b=>{
+        const spent=catMap[b.cat]||0;
+        const over=spent>b.limit;
+        return e('div',{key:b.id,className:'bar-row'},
+          e('div',{className:'bar-lbl',style:{width:110}},b.cat),
+          e('div',{className:'bar-track'},e('div',{className:'bar-fill',style:{width:Math.min(100,Math.round(spent/(b.limit||1)*100))+'%',background:over?'var(--red)':'var(--green)'}})),
+          e('div',{className:'bar-val',style:{width:'auto'}},mfClp(spent)+' / '+mfClp(b.limit))
+        );
+      })
+    ),
+
+    goals.length>0&&e('div',{className:'an-card'},
+      e('div',{className:'an-title'},'Metas'),
+      goals.map(g=>e('div',{key:g.id,className:'bar-row'},
+        e('div',{className:'bar-lbl',style:{width:110}},g.name),
+        e('div',{className:'bar-track'},e('div',{className:'bar-fill',style:{width:Math.min(100,Math.round(g.saved/(g.target||1)*100))+'%',background:g.color||'var(--accent2)'}})),
+        e('div',{className:'bar-val',style:{width:'auto'}},mfClp(g.saved)+' / '+mfClp(g.target))
+      ))
+    ),
+
+    debts.length>0&&e('div',{className:'an-card'},
+      e('div',{className:'an-title'},'Deudas'),
+      debts.map(d=>e('div',{key:d.id,className:'bar-row'},
+        e('div',{className:'bar-lbl',style:{width:110}},d.name),
+        e('div',{className:'bar-track'},e('div',{className:'bar-fill',style:{width:Math.min(100,Math.round(d.paid/(d.total||1)*100))+'%',background:'var(--amber)'}})),
+        e('div',{className:'bar-val',style:{width:'auto'}},mfClp(d.paid)+' / '+mfClp(d.total))
+      ))
+    ),
+
+    e('div',{className:'an-card',style:{gridColumn:'1/-1'}},
+      e('div',{className:'an-title'},'Transacciones recientes'),
+      transactions.length===0&&e('div',{className:'empty'},'Sin transacciones registradas.'),
+      transactions.slice(0,15).map(t=>e('div',{key:t.id,className:'bar-row'},
+        e('div',{className:'bar-lbl',style:{width:220}},t.desc||t.cat||'—'),
+        e('div',{style:{flex:1,fontSize:10,color:'var(--text4)'}},t.date),
+        e('div',{className:'bar-val',style:{width:'auto',color:t.amount<0?'var(--red)':'var(--green)'}},mfClp(t.amount))
+      ))
+    )
+  );
+}
+
 function AnalyticsView({projects,sessions,tasks}){
   const allDays=[...new Set(sessions.map(s=>s.day))].sort().reverse().slice(0,7);
   const projTotals=projects.map(p=>({proj:p,total:sessions.filter(s=>s.projectId===p.id&&s.endAt).reduce((a,s)=>a+s.duration,0)})).sort((a,b)=>b.total-a.total);
@@ -6060,7 +6254,7 @@ function SbModal({status,onClose,onSaved,onDisconnect,onManualSync,syncing}){
 function TimerWidget({tState,elapsed,workElapsed,activeSess,activeProj,activeTask,pomoCfg,pomoPhase,pomoCount,pomoElapsed,pomoPhaseDone,onStart,onPause,onStop,onStartNextPhase}){
   const[collapsed,setCollapsed]=useState(false);
   const isPomo=activeSess?.mode==='pomo';
-  const displayTime=isPomo?elapsed:workElapsed;
+  const displayTime=workElapsed; // tiempo enfocado real (sin descansos) — el mismo número en todas las pantallas, incluida Inicio
   const phLen=(pomoPhase==='work'?pomoCfg.work:pomoCfg.brk)*60;
   const rem=Math.max(0,phLen-pomoElapsed);
   return e('div',{className:'timer-widget'+(collapsed?' collapsed':'')},
@@ -6458,13 +6652,21 @@ function fmtNoteReminder(ts){
   if(dK===tomorrow.toISOString().slice(0,10))return'Mañana '+hh;
   return d.toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit',year:dK.slice(0,4)!==today.slice(0,4)?'numeric':undefined})+' '+hh;
 }
-function QuickNoteItem({note,onDeleteNote,onToggleNoteDone,onSetNoteReminder}){
+function QuickNoteItem({note,onDeleteNote,onToggleNoteDone,onSetNoteReminder,onEditNoteText}){
   const[editingRemind,setEditingRemind]=useState(false);
+  const[editingText,setEditingText]=useState(false);
+  const[textVal,setTextVal]=useState(note.text);
   const[val,setVal]=useState('');
   const[timeVal,setTimeVal]=useState('09:00');
   const[popPos,setPopPos]=useState(null);
   const popRef=useRef(null);
   const rowRef=useRef(null);
+  useEffect(()=>{ if(!editingText)setTextVal(note.text); },[note.text,editingText]);
+  function commitText(){
+    setEditingText(false);
+    const t=textVal.trim();
+    if(t&&t!==note.text)onEditNoteText(t);else setTextVal(note.text);
+  }
   function toDateStr(d){return d.toISOString().slice(0,10);}
   function openEditor(){
     if(note.remindAt){
@@ -6505,7 +6707,15 @@ function QuickNoteItem({note,onDeleteNote,onToggleNoteDone,onSetNoteReminder}){
         onClick:()=>onToggleNoteDone(note.id)
       },'✓'),
       e('div',{className:'qn-item-text-wrap'},
-        e('span',{className:'qn-item-text',onDoubleClick:openEditor,title:'Doble click para poner fecha y hora',style:{cursor:'pointer'}},note.text),
+        editingText
+          ?e('input',{
+              className:'qn-item-text-input',value:textVal,autoFocus:true,
+              onFocus:ev=>ev.target.select(),
+              onChange:ev=>setTextVal(ev.target.value),
+              onBlur:commitText,
+              onKeyDown:ev=>{if(ev.key==='Enter')commitText();if(ev.key==='Escape'){setTextVal(note.text);setEditingText(false);}}
+            })
+          :e('span',{className:'qn-item-text',onClick:openEditor,onDoubleClick:()=>setEditingText(true),title:'Click: fecha y hora · Doble click: renombrar'},note.text),
         active&&e('span',{className:'qn-item-remind'},e(ClockIcon,{size:9,color:noteReminderDue(note)?'var(--red,#e05555)':'var(--amber)'}),fmtNoteReminder(note.remindAt))
       ),
       e('button',{className:'qn-item-del',title:'Eliminar',onClick:()=>onDeleteNote(note.id)},'✕')
@@ -6539,7 +6749,46 @@ function QuickNoteItem({note,onDeleteNote,onToggleNoteDone,onSetNoteReminder}){
     )
   );
 }
-function QuickNotesPanel({notes,onAddNote,onDeleteNote,onToggleNoteDone,onSetNoteReminder,onOpenAll}){
+// Fila de nota en la pestaña completa "Notas" — con el mismo lápiz para
+// renombrar que las notas rápidas, pero en textarea (los textos acá pueden
+// ser más largos/multilínea).
+function FullNoteRow({note:n,onToggleNoteDone,onDeleteNote,onEditNoteText,fmtWhen}){
+  const[editing,setEditing]=useState(false);
+  const[val,setVal]=useState(n.text);
+  useEffect(()=>{ if(!editing)setVal(n.text); },[n.text,editing]);
+  function commit(){
+    setEditing(false);
+    const t=val.trim();
+    if(t&&t!==n.text)onEditNoteText(n.id,t);else setVal(n.text);
+  }
+  return e('div',{
+    style:{border:'1px solid var(--border,#ffffff14)',borderRadius:8,padding:'10px 12px',display:'flex',flexDirection:'column',gap:6,opacity:n.done?.55:1}
+  },
+    editing
+      ?e('textarea',{
+          className:'finput ftextarea',autoFocus:true,rows:3,value:val,
+          style:{fontSize:12.5},
+          onFocus:ev=>ev.target.select(),
+          onChange:ev=>setVal(ev.target.value),
+          onBlur:commit,
+          onKeyDown:ev=>{
+            if(ev.key==='Enter'&&(ev.ctrlKey||ev.metaKey))commit();
+            if(ev.key==='Escape'){setVal(n.text);setEditing(false);}
+          }
+        })
+      :e('div',{style:{flex:1,whiteSpace:'pre-wrap',fontSize:12.5,lineHeight:1.5,textDecoration:n.done?'line-through':'none',cursor:'text'},onClick:()=>setEditing(true),title:'Click para editar'},n.text),
+    e('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between'}},
+      e('span',{style:{fontSize:10,color:'var(--text4)'}},
+        (n.done?'Archivada · ':'')+(fmtWhen?fmtWhen(n.createdAt):new Date(n.createdAt).toLocaleString('es-CL'))
+      ),
+      e('div',{style:{display:'flex',gap:4}},
+        e('button',{className:'qn-item-check',title:n.done?'Desmarcar':'Marcar como hecha (se archiva)',style:n.done?{borderColor:'var(--green-border)',color:'var(--green)'}:null,onClick:()=>onToggleNoteDone(n.id)},'✓'),
+        e('button',{className:'ghost-btn',title:'Eliminar nota',onClick:()=>onDeleteNote(n.id)},'✕')
+      )
+    )
+  );
+}
+function QuickNotesPanel({notes,onAddNote,onDeleteNote,onToggleNoteDone,onSetNoteReminder,onEditNoteText,onOpenAll}){
   const[adding,setAdding]=useState(false);
   const[val,setVal]=useState('');
   const inputRef=useRef(null);
@@ -6576,7 +6825,8 @@ function QuickNotesPanel({notes,onAddNote,onDeleteNote,onToggleNoteDone,onSetNot
         list.length===0&&!adding&&e('div',{className:'empty',style:{padding:'10px 2px'}},'Sin recordatorios aún'),
         list.slice(0,8).map(n=>e(QuickNoteItem,{
           key:n.id,note:n,onDeleteNote,onToggleNoteDone,
-          onSetNoteReminder:dueAt=>onSetNoteReminder(n.id,dueAt)
+          onSetNoteReminder:dueAt=>onSetNoteReminder(n.id,dueAt),
+          onEditNoteText:text=>onEditNoteText(n.id,text)
         }))
       )
     )
@@ -6862,6 +7112,71 @@ function SysMapEditableTitle({value,onSave,className,placeholder}){
   },value||placeholder);
 }
 
+// ═══════════════════════════════════════════
+// REGISTRO DE SISTEMA — doble click en una tarjeta del mapa mental abre esto.
+// La entrada vive en project.notebook (systemId marca el vínculo), así que
+// es la MISMA entrada que aparece en la Libreta de cuenta — se edita desde
+// cualquiera de los dos lados y queda sincronizada.
+// ═══════════════════════════════════════════
+function SystemNoteModal({system,project,onPatchProject,onClose}){
+  const entryIdRef=useRef(null);
+  const notebook=project.notebook||[];
+  const existing=system?notebook.find(n=>n.systemId===system.id):null;
+  useEffect(()=>{
+    if(!system)return;
+    if(existing){entryIdRef.current=existing.id;return;}
+    const now=Date.now();
+    const newEntry={id:uid(),title:'Registro: '+system.name,subtitle:'',text:'',blocks:null,createdAt:now,updatedAt:now,pinned:false,systemId:system.id};
+    entryIdRef.current=newEntry.id;
+    onPatchProject({notebook:[newEntry,...notebook]});
+    // eslint-disable-next-line
+  },[system&&system.id]);
+  useEffect(()=>{
+    function onKey(ev){if(ev.key==='Escape')onClose();}
+    window.addEventListener('keydown',onKey);
+    return()=>window.removeEventListener('keydown',onKey);
+  },[onClose]);
+  if(!system)return null;
+  const liveEntry=notebook.find(n=>n.id===entryIdRef.current)||existing;
+  function patch(p){
+    onPatchProject({notebook:(project.notebook||[]).map(n=>n.id===entryIdRef.current?{...n,...p,updatedAt:Date.now()}:n)});
+  }
+  return e('div',{className:'sysnote-overlay'},
+    e('div',{className:'sysnote-hdr'},
+      e('span',{className:'sysnote-hdr-icon'},'⚙'),
+      e('span',{className:'sysnote-hdr-sys'},system.name),
+      e('span',{className:'sysnote-hdr-tag'},'Registro de cambios'),
+      e('div',{style:{flex:1}}),
+      e('span',{className:'sysnote-hdr-link'},'📓 También aparece en la Libreta de cuenta'),
+      e('button',{className:'modal-x',onClick:onClose,title:'Cerrar (Esc)'},'✕')
+    ),
+    e('div',{className:'sysnote-body'},
+      liveEntry
+        ?e('div',{className:'sysnote-page'},
+            e('input',{
+              className:'notebook-title-input',
+              value:liveEntry.title||'',
+              placeholder:'Sin título',
+              onChange:ev=>patch({title:ev.target.value})
+            }),
+            e('input',{
+              className:'notebook-subtitle-input',
+              value:liveEntry.subtitle||'',
+              placeholder:'Agregar un subtítulo...',
+              onChange:ev=>patch({subtitle:ev.target.value})
+            }),
+            e(NotebookBlockEditor,{
+              key:liveEntry.id,
+              blocks:liveEntry.blocks,
+              legacyText:liveEntry.text,
+              onChange:blocks=>patch({blocks})
+            })
+          )
+        :e('div',{className:'empty'},'Creando entrada…')
+    )
+  );
+}
+
 function SystemsMindMap({systems,onUpdateSystem,onDeleteSystem,onPatchProject,project,onClose,onOpenDetail,onBulkAdd,sysTemplates,onSaveSysTemplate,onApplySysTemplate,onDeleteSysTemplate,onUpdateSysTemplate,title,embedded}){
   const[showTplMgr,setShowTplMgr]=useState(false);
   const links=project.sysLinks||[];
@@ -6874,6 +7189,7 @@ function SystemsMindMap({systems,onUpdateSystem,onDeleteSystem,onPatchProject,pr
   const[marquee,setMarquee]=useState(null); // {x0,y0,x1,y1} coords de canvas
   const[zoom,setZoom]=useState(1); // alt + rueda para acercar/alejar todo el mapa
   const[expandedId,setExpandedId]=useState(null); // id de nodo con el panel lateral de fases/tareas abierto
+  const[noteSystemId,setNoteSystemId]=useState(null); // id del sistema con la libreta de registro abierta
   const[expPanelId,setExpPanelId]=useState(null); // id de nodo con el panel de experimentos abierto
   const[showSaveTpl,setShowSaveTpl]=useState(false);
   const[tplName,setTplName]=useState('');
@@ -7234,7 +7550,7 @@ function SystemsMindMap({systems,onUpdateSystem,onDeleteSystem,onPatchProject,pr
               const doneCount=phases.reduce((a,p)=>a+(p.tasks||[]).filter(t=>t.done).length,0);
               const isExpanded=expandedId===s.id;
               return e('div',{key:s.id,'data-node-id':s.id,className:'sysmap-node'+(linkFrom===s.id?' linking':'')+(selected.has(s.id)?' selected':''),style:{left:pos.x,top:pos.y,width:CARD_W}},
-                e('div',{className:'sysmap-card'+(s.automation?' automation':''),onMouseDown:ev=>beginDrag(s,idx,ev),title:s.name},
+                e('div',{className:'sysmap-card'+(s.automation?' automation':''),onMouseDown:ev=>beginDrag(s,idx,ev),onDoubleClick:ev=>{ev.stopPropagation();setNoteSystemId(s.id);},title:s.name+' — doble click para llevar registro en la Libreta'},
                   e('div',{className:'sysmap-card-top'},
                     e('span',{className:'sysmap-order-badge no-drag',title:'Cambiar color',style:{background:color+'22',color},onMouseDown:ev=>ev.stopPropagation(),onClick:ev=>{ev.stopPropagation();cycleNodeColor(s);}},idx+1),
                     e(SysMapEditableTitle,{className:'sysmap-card-name',value:s.name,onSave:v=>onUpdateSystem({...s,name:v})}),
@@ -7307,7 +7623,12 @@ function SystemsMindMap({systems,onUpdateSystem,onDeleteSystem,onPatchProject,pr
             })
           )
         )
-    )
+    ),
+    noteSystemId&&e(SystemNoteModal,{
+      system:systems.find(s=>s.id===noteSystemId),
+      project,onPatchProject,
+      onClose:()=>setNoteSystemId(null)
+    })
   );
 }
 
@@ -8758,7 +9079,7 @@ function HomeResumen(props){
 function ProjectDashboard(props){
   const{
     project,projects,tasks,sessions,ctxs,habits,systems,
-    notes,onAddNote,onDeleteNote,onToggleNoteDone,onSetNoteReminder,
+    notes,onAddNote,onDeleteNote,onToggleNoteDone,onSetNoteReminder,onEditNoteText,
     panelLabels,onRenameLabel,panelVisibility,onTogglePanelVisibility,
     panelSortModes,onChangeSortMode,
     blocks,setBlocks,realBlocks,liveBlock,tick,blockOpacity,blockStyle,realStyle,tlZoom,setTlZoom,selectedDay,setSelectedDay,onDblClickTime,onEditBlock,onNewBlock,
@@ -9003,7 +9324,7 @@ function ProjectDashboard(props){
             pendingTasks.slice(0,6).map(t=>e(TaskRow,{key:t.id,t,onCycleTaskStatus,onDeleteTask,isActive:isRunningHere&&activeSess.taskId===t.id,onPlay:onPlayTask,onFinish:onFinishTask,onOpenSteps:setStepsForTask,icon:project.icon,color:project.color,onSetPriority:(id,p)=>onUpdateTask(id,{priority:p})}))
           )
         ),
-        e(QuickNotesPanel,{notes,onAddNote,onDeleteNote,onToggleNoteDone,onSetNoteReminder,onOpenAll:()=>setTab('notas')}),
+        e(QuickNotesPanel,{notes,onAddNote,onDeleteNote,onToggleNoteDone,onSetNoteReminder,onEditNoteText,onOpenAll:()=>setTab('notas')}),
         e('div',{className:'dash-panel habitos-mini-panel'},
           e('div',{className:'dash-panel-hdr'},
             e(EditableLabel,{value:labels.habitos,onSave:v=>renameLabel('habitos',v)}),
@@ -9193,21 +9514,7 @@ function ProjectDashboard(props){
       e('div',{className:'dash-panel',style:{maxWidth:640,marginTop:14}},
         e('div',{className:'dash-panel-body',style:{display:'flex',flexDirection:'column',gap:10}},
           (notes||[]).length===0&&e('div',{className:'empty'},'Sin notas aún. Usa el cuadro de arriba para registrar avances, decisiones o pendientes de este proyecto.'),
-          (notes||[]).map(n=>e('div',{
-            key:n.id,
-            style:{border:'1px solid var(--border,#ffffff14)',borderRadius:8,padding:'10px 12px',display:'flex',flexDirection:'column',gap:6,opacity:n.done?.55:1}
-          },
-            e('div',{style:{whiteSpace:'pre-wrap',fontSize:12.5,lineHeight:1.5,textDecoration:n.done?'line-through':'none'}},n.text),
-            e('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between'}},
-              e('span',{style:{fontSize:10,color:'var(--text4)'}},
-                (n.done?'Archivada · ':'')+(fmtWhen?fmtWhen(n.createdAt):new Date(n.createdAt).toLocaleString('es-CL'))
-              ),
-              e('div',{style:{display:'flex',gap:4}},
-                e('button',{className:'qn-item-check',title:n.done?'Desmarcar':'Marcar como hecha (se archiva)',style:n.done?{borderColor:'var(--green-border)',color:'var(--green)'}:null,onClick:()=>onToggleNoteDone(n.id)},'✓'),
-                e('button',{className:'ghost-btn',title:'Eliminar nota',onClick:()=>onDeleteNote(n.id)},'✕')
-              )
-            )
-          ))
+          (notes||[]).map(n=>e(FullNoteRow,{key:n.id,note:n,onToggleNoteDone,onDeleteNote,onEditNoteText,fmtWhen}))
         )
       )
     ),
@@ -9218,7 +9525,7 @@ function ProjectDashboard(props){
         e('span',{style:{fontSize:10,color:'var(--text4)'}},'· todas las entradas de la Libreta de cada proyecto, más notas propias de la cuenta')
       ),
       e('div',{style:{height:'calc(100vh - 220px)',minHeight:420}},
-        e(AccountNotebookPanel,{project,pTasks,onPatchProject,onUpdateTask})
+        e(AccountNotebookPanel,{project,pTasks,pSystems,onPatchProject,onUpdateTask})
       )
     ),
 
@@ -10509,8 +10816,11 @@ function TaskNotebookPanel({task,onUpdateTask}){
 // Las notas de cuenta se guardan en project.notebook; las de proyecto
 // siguen viviendo en task.notebook, tal como ya funcionaba.
 // ═══════════════════════════════════════════
-function AccountNotebookPanel({project,pTasks,onPatchProject,onUpdateTask}){
-  const accountEntries=(project.notebook||[]).map(n=>({...n,_scope:'account',_tag:'Cuenta',_taskId:null}));
+function AccountNotebookPanel({project,pTasks,pSystems,onPatchProject,onUpdateTask}){
+  const accountEntries=(project.notebook||[]).map(n=>{
+    const linkedSys=n.systemId&&(pSystems||[]).find(s=>s.id===n.systemId);
+    return{...n,_scope:'account',_tag:linkedSys?'⚙ '+linkedSys.name:'Cuenta',_taskId:null};
+  });
   const taskEntries=[];
   pTasks.forEach(t=>{
     (t.notebook||[]).forEach(n=>{
