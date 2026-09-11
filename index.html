@@ -2264,6 +2264,24 @@ function usePanOnSpace(scrollRef,active){
 // sistemas (no si la fase está marcada completa, sino cuántas tareas
 // individuales de cada fase ya están hechas). null si el proyecto no tiene
 // ninguna tarea de fase definida todavía (nada que calcular).
+// % de avance de UNA tarea — según las subtareas de cada paso (no si el
+// paso está marcado completo, sino cuántas subtareas de cada paso ya están
+// hechas). Un paso sin subtareas cuenta como una sola unidad (él mismo).
+// null si la tarea no tiene ningún paso todavía.
+function taskCompletionPct(task){
+  const steps=task.steps||[];
+  if(!steps.length)return null;
+  let total=0,done=0;
+  steps.forEach(s=>{
+    const subs=s.subtasks||[];
+    if(subs.length){
+      subs.forEach(st=>{ total++; if(st.done)done++; });
+    }else{
+      total++; if(s.done)done++;
+    }
+  });
+  return total>0?Math.round(done/total*100):null;
+}
 function projectCompletionPct(projId,systems){
   let total=0,done=0;
   systems.filter(s=>s.projectId===projId).forEach(s=>{
@@ -2275,9 +2293,10 @@ function projectCompletionPct(projId,systems){
 }
 // Anillo de progreso compacto para filas de lista (sidebar) — mismo cálculo
 // que DonutRing pero sin el número superpuesto, que no cabe a este tamaño.
-function MiniProgressRing({pct,size=18,stroke=2.5,color='var(--accent2)'}){
+function MiniProgressRing({pct,size=18,stroke=2.5,color='var(--accent2)',title}){
   const r=(size-stroke)/2,c=2*Math.PI*r,off=c*(1-Math.min(100,Math.max(0,pct))/100);
   return e('svg',{width:size,height:size,viewBox:`0 0 ${size} ${size}`,style:{display:'block',flexShrink:0}},
+    title&&e('title',null,title),
     e('circle',{cx:size/2,cy:size/2,r,fill:'none',stroke:'var(--bg4)',strokeWidth:stroke}),
     e('circle',{cx:size/2,cy:size/2,r,fill:'none',stroke:color,strokeWidth:stroke,strokeLinecap:'round',strokeDasharray:c,strokeDashoffset:off,transform:`rotate(-90 ${size/2} ${size/2})`})
   );
@@ -2525,21 +2544,17 @@ const GlobalSidebar=React.memo(function GlobalSidebar({projects,habits,systems,t
     ),
     e('div',{className:'gsb-projlist'},
       activeProjects.length===0&&!collapsed&&e('div',{className:'empty',style:{padding:'4px 10px'}},'Sin proyectos aún.'),
-      activeProjects.map(p=>{
-        const pct=projectCompletionPct(p.id,systems);
-        return e('div',{
-          key:p.id,
-          className:'gsb-proj'+(view==='dashboard'&&selProj===p.id?' active':''),
-          onClick:()=>{playUI('click');onOpenProject(p.id);},
-          onContextMenu:ev=>{ev.preventDefault();ev.stopPropagation();playUI('click');setCtxMenu({x:ev.clientX,y:ev.clientY,proj:p});},
-          title:p.name+(pct!=null?' — '+pct+'% completado (según tareas de fase)':'')
-        },
-          e('span',{className:'gsb-proj-dot',style:{background:p.color}}),
-          e('span',{className:'gsb-proj-name'},p.name),
-          pct!=null&&e(MiniProgressRing,{pct,color:p.color}),
-          projAlert(p)&&e('span',{className:'gsb-proj-alert'})
-        );
-      })
+      activeProjects.map(p=>e('div',{
+        key:p.id,
+        className:'gsb-proj'+(view==='dashboard'&&selProj===p.id?' active':''),
+        onClick:()=>{playUI('click');onOpenProject(p.id);},
+        onContextMenu:ev=>{ev.preventDefault();ev.stopPropagation();playUI('click');setCtxMenu({x:ev.clientX,y:ev.clientY,proj:p});},
+        title:p.name
+      },
+        e('span',{className:'gsb-proj-dot',style:{background:p.color}}),
+        e('span',{className:'gsb-proj-name'},p.name),
+        projAlert(p)&&e('span',{className:'gsb-proj-alert'})
+      ))
     ),
     ctxMenu&&e('div',{
       onClick:ev=>ev.stopPropagation(),
@@ -5516,13 +5531,15 @@ function TaskRow({t,onCycleTaskStatus,onDeleteTask,isActive,onPlay,onFinish,onOp
   },[flagOpen]);
   const PRI={urgent:'#e05555',important:'#e0b73a',low:'#2fb87a'};
   const priColor=t.priority?PRI[t.priority]:null;
+  const taskPct=taskCompletionPct(t);
   return e('div',{className:'task-row'},
     e('div',{className:'task-main',onDoubleClick:()=>onOpenSteps&&onOpenSteps(t),title:onOpenSteps?'Doble click para ver pasos':undefined},
       e('div',{style:{display:'flex',alignItems:'center',gap:6}},
         e('div',{className:'proj-icon-badge',style:{'--proj-color':color||'var(--text4)',width:16,height:16,flexShrink:0}},
           e(ProjIconSVG,{iconKey:icon||DEFAULT_ICON,size:10,color:color||'var(--text3)'})
         ),
-        e('span',{className:'task-name'},t.name)
+        e('span',{className:'task-name'},t.name),
+        taskPct!=null&&e(MiniProgressRing,{pct:taskPct,color:color||'var(--accent2)',title:taskPct+'% completado (según subtareas de cada paso)'})
       ),
       t.recurrence&&t.recurrence.type!=='none'&&e('span',{className:'task-rec-badge',title:recurrenceLabel(t.recurrence)},
         e(RepeatIcon,{size:9,color:'currentColor'}),recurrenceLabel(t.recurrence)
