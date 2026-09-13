@@ -472,6 +472,35 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .kpi-val{font-size:22px;font-weight:500;font-family:'JetBrains Mono',monospace;color:var(--text0);line-height:1.1}
 .kpi-lbl{font-size:9px;color:var(--text4);text-transform:uppercase;letter-spacing:.6px;margin-top:3px}
 
+/* FINANZAS — mismo look que la app MisFinanzas */
+.mf-wrap{flex:1;overflow-y:auto;padding:20px 24px 40px;display:flex;flex-direction:column;gap:12px}
+.mf-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+.mf-title{font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;color:var(--text0)}
+.mf-period{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text3)}
+.mf-period-input{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r-md);padding:7px 10px;color:var(--text0);font-family:'JetBrains Mono',monospace;font-size:12px}
+.mf-card{background:var(--bg1);border:1px solid var(--border2);border-radius:var(--r-lg);padding:18px}
+.mf-card-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.mf-card-title{font-size:14px;font-weight:600;color:var(--text0)}
+.mf-acc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
+.mf-acc-tile{background:var(--bg2);border-radius:12px;padding:12px 14px;border-left:3px solid var(--acc-color);position:relative;overflow:hidden;transition:background .1s}
+.mf-acc-tile:hover{background:var(--bg3)}
+.mf-acc-glow{position:absolute;top:-10px;right:-10px;width:44px;height:44px;border-radius:50%;background:var(--acc-color);opacity:.08}
+.mf-acc-bank{font-size:11px;color:var(--text3);margin-bottom:2px;display:flex;align-items:center;gap:4px}
+.mf-acc-name{font-size:12px;color:var(--text0);font-weight:500;margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mf-acc-bal{font-size:18px;font-weight:700;font-family:'JetBrains Mono',monospace;letter-spacing:-.5px}
+.mf-kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.mf-kpi{background:var(--bg1);border:1px solid var(--border2);border-radius:var(--r-lg);padding:12px 15px;display:flex;justify-content:space-between;align-items:center}
+.mf-kpi-lbl{font-size:10px;color:var(--text3);margin-bottom:2px}
+.mf-kpi-val{font-size:16px;font-weight:700;font-family:'JetBrains Mono',monospace}
+.mf-kpi-ic{font-size:22px;opacity:.7}
+.mf-2col{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:900px){.mf-2col{grid-template-columns:1fr}.mf-kpi-row{grid-template-columns:1fr 1fr}}
+.mf-trend{display:flex;align-items:flex-end;gap:14px;height:180px;padding-top:10px}
+.mf-trend-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%}
+.mf-trend-bars{flex:1;display:flex;align-items:flex-end;gap:3px;width:100%;justify-content:center}
+.mf-trend-bar{width:13px;border-radius:3px 3px 0 0;min-height:2px}
+.mf-trend-lbl{font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace}
+
 /* MODALS */
 .overlay{position:fixed;inset:0;background:#00000099;z-index:100;display:flex;align-items:center;justify-content:center}
 .modal{background:var(--bg2);border:1px solid var(--border3);border-radius:var(--r-xl);display:flex;flex-direction:column;box-shadow:0 40px 80px #0009;overflow:hidden}
@@ -488,6 +517,7 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .fg{display:flex;flex-direction:column;gap:3px}
 .flabel{font-size:10px;color:var(--text2);font-weight:500;text-transform:uppercase;letter-spacing:.4px}
 .finput{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-md);padding:7px 10px;color:var(--text0);font-size:12px;font-family:'Inter',sans-serif;outline:none;transition:border-color .1s;width:100%}
+.ffield{display:flex;flex-direction:column;gap:4px;font-size:10.5px;color:var(--text3);flex:1;min-width:0}
 .finput:focus{border-color:var(--accent-border)}
 .ftextarea{resize:vertical;min-height:54px;line-height:1.5}
 .fselect{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-md);padding:7px 10px;color:var(--text0);font-size:12px;font-family:'Inter',sans-serif;outline:none;cursor:pointer;width:100%}
@@ -1464,7 +1494,7 @@ async function mfSelect(table,filters){
   return r.json();
 }
 function mfTxFromSB(r){return{id:r.id,date:r.fecha,amount:Number(r.monto),cat:r.categoria,acc:r.cuenta,desc:r.descripcion,isTransfer:r.is_transfer};}
-function mfAccFromSB(r){return{id:r.id,name:r.nombre,type:r.tipo,base:Number(r.base),color:r.color,active:r.activa};}
+function mfAccFromSB(r){return{id:r.id,name:r.nombre,type:r.tipo,base:Number(r.base),color:r.color,active:r.activa,bank:r.banco||r.bank||''};}
 function mfBudgetFromSB(r){return{id:r.id,cat:r.categoria,limit:Number(r.limite),month:r.mes};}
 function mfGoalFromSB(r){return{id:r.id,name:r.nombre,target:Number(r.objetivo),saved:Number(r.actual),color:r.color,deadline:r.fecha_meta};}
 function mfDebtFromSB(r){return{id:r.id,name:r.nombre,total:Number(r.monto),paid:Number(r.pagado),rate:Number(r.tasa),installments:r.cuotas,startDate:r.inicio};}
@@ -1490,6 +1520,29 @@ async function loadFinanzas(){
 }
 function mfClp(n){return new Intl.NumberFormat('es-CL',{style:'currency',currency:'CLP',minimumFractionDigits:0}).format(Math.round(n||0));}
 function mfNowMonth(){const d=new Date();return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;}
+// ── Escritura — mismo patrón que ya usa MisFinanzas (upsert por id resuelve
+// tanto crear como editar en una sola llamada; nunca se toca nada más que
+// estas tablas, y siempre con el mismo user_id fijo). ──
+async function mfUpsert(table,row){
+  const url=`${MF_SB.url}/rest/v1/${table}`;
+  const r=await fetch(url,{
+    method:'POST',
+    headers:{...MF_SB.headers(),'Prefer':'resolution=merge-duplicates,return=representation'},
+    body:JSON.stringify([row])
+  });
+  if(!r.ok){const body=await r.text();throw new Error(table+': HTTP '+r.status+' — '+body);}
+  return r.json();
+}
+async function mfDeleteRow(table,id){
+  const url=`${MF_SB.url}/rest/v1/${table}?id=eq.${id}`;
+  const r=await fetch(url,{method:'DELETE',headers:MF_SB.headers()});
+  if(!r.ok)throw new Error(table+': HTTP '+r.status);
+}
+function mfTxToSB(t){return{id:t.id||uid(),user_id:MF_SB.uid,fecha:t.date,monto:Number(t.amount)||0,tipo:(Number(t.amount)||0)>=0?'ingreso':'gasto',categoria:t.cat||'Otros',cuenta:t.acc||'',descripcion:t.desc||'',is_transfer:!!t.isTransfer};}
+function mfAccToSB(a){return{id:a.id||uid(),user_id:MF_SB.uid,nombre:a.name||'',tipo:a.type||'corriente',base:Number(a.base)||0,color:a.color||null,activa:a.active!==false};}
+function mfBudgetToSB(b){return{id:b.id||uid(),user_id:MF_SB.uid,categoria:b.cat,limite:Number(b.limit)||0,mes:b.month||mfNowMonth()};}
+function mfGoalToSB(g){return{id:g.id||uid(),user_id:MF_SB.uid,nombre:g.name||'',objetivo:Number(g.target)||0,actual:Number(g.saved)||0,color:g.color||null,fecha_meta:g.deadline||null};}
+function mfDebtToSB(d){return{id:d.id||uid(),user_id:MF_SB.uid,nombre:d.name||'',monto:Number(d.total)||0,pagado:Number(d.paid)||0,tasa:Number(d.rate)||0,cuotas:d.installments||1,inicio:d.startDate||null};}
 const e=React.createElement;
 
 // ── SOUNDS ──
@@ -5860,11 +5913,108 @@ function TZPanel({onClose}){
 // usuario). Solo lectura: Chronos nunca escribe ni sincroniza nada de vuelta,
 // MisFinanzas sigue siendo la fuente de verdad y donde se editan los datos.
 // ═══════════════════════════════════════════
+// Modal genérico de alta/edición — un solo componente para los 5 tipos de
+// dato editable, cambia sus campos según "type".
+function FinanzasFormModal({type,initial,accounts,cats,onSave,onClose,onDelete}){
+  const[form,setForm]=useState(()=>initial||{});
+  const[saving,setSaving]=useState(false);
+  const[err,setErr]=useState(null);
+  function set(k,v){setForm(f=>({...f,[k]:v}));}
+  async function submit(){
+    setSaving(true);setErr(null);
+    try{ await onSave(form); }
+    catch(e){ setErr(e.message||'No se pudo guardar'); setSaving(false); return; }
+    setSaving(false);
+  }
+  const TITLES={tx:'Transacción',acc:'Cuenta',budget:'Presupuesto',goal:'Meta',debt:'Deuda'};
+  return e('div',{className:'overlay',onClick:ev=>{if(ev.target===ev.currentTarget)onClose();}},
+    e('div',{className:'modal',style:{width:400}},
+      e('div',{className:'modal-head'},
+        e('div',{className:'modal-title'},(initial&&initial.id?'Editar ':'Nueva ')+TITLES[type]),
+        e('button',{className:'modal-x',onClick:onClose},'✕')
+      ),
+      e('div',{className:'modal-body',style:{display:'flex',flexDirection:'column',gap:10}},
+        err&&e('div',{style:{fontSize:11.5,color:'var(--red)'}},err),
+
+        type==='tx'&&e(React.Fragment,null,
+          e('div',{style:{display:'flex',gap:8}},
+            e('label',{className:'ffield'},'Fecha',e('input',{className:'finput',type:'date',value:form.date||mfNowMonth()+'-01',onChange:ev=>set('date',ev.target.value)})),
+            e('label',{className:'ffield'},'Monto (+ ingreso, − gasto)',e('input',{className:'finput',type:'number',value:form.amount??'',placeholder:'-15000',onChange:ev=>set('amount',ev.target.value)}))
+          ),
+          e('label',{className:'ffield'},'Categoría',e('input',{className:'finput',list:'fin-cats',value:form.cat||'',placeholder:'Comida, Transporte…',onChange:ev=>set('cat',ev.target.value)})),
+          e('datalist',{id:'fin-cats'},(cats||[]).map(c=>e('option',{key:c.id,value:c.name}))),
+          e('label',{className:'ffield'},'Cuenta',
+            e('select',{className:'finput',value:form.acc||'',onChange:ev=>set('acc',ev.target.value)},
+              e('option',{value:''},'Sin cuenta'),
+              (accounts||[]).map(a=>e('option',{key:a.id,value:a.id},a.name))
+            )
+          ),
+          e('label',{className:'ffield'},'Descripción',e('input',{className:'finput',value:form.desc||'',onChange:ev=>set('desc',ev.target.value)}))
+        ),
+
+        type==='acc'&&e(React.Fragment,null,
+          e('label',{className:'ffield'},'Nombre',e('input',{className:'finput',value:form.name||'',onChange:ev=>set('name',ev.target.value)})),
+          e('label',{className:'ffield'},'Saldo inicial',e('input',{className:'finput',type:'number',value:form.base??'',onChange:ev=>set('base',ev.target.value)})),
+          e('label',{className:'ffield'},'Tipo',
+            e('select',{className:'finput',value:form.type||'corriente',onChange:ev=>set('type',ev.target.value)},
+              e('option',{value:'corriente'},'Cuenta corriente'),e('option',{value:'ahorro'},'Ahorro'),e('option',{value:'efectivo'},'Efectivo'),e('option',{value:'credito'},'Tarjeta de crédito')
+            )
+          )
+        ),
+
+        type==='budget'&&e(React.Fragment,null,
+          e('label',{className:'ffield'},'Categoría',e('input',{className:'finput',list:'fin-cats',value:form.cat||'',onChange:ev=>set('cat',ev.target.value)})),
+          e('datalist',{id:'fin-cats'},(cats||[]).map(c=>e('option',{key:c.id,value:c.name}))),
+          e('label',{className:'ffield'},'Límite mensual',e('input',{className:'finput',type:'number',value:form.limit??'',onChange:ev=>set('limit',ev.target.value)})),
+          e('label',{className:'ffield'},'Mes (AAAA-MM)',e('input',{className:'finput',value:form.month||mfNowMonth(),onChange:ev=>set('month',ev.target.value)}))
+        ),
+
+        type==='goal'&&e(React.Fragment,null,
+          e('label',{className:'ffield'},'Nombre',e('input',{className:'finput',value:form.name||'',onChange:ev=>set('name',ev.target.value)})),
+          e('div',{style:{display:'flex',gap:8}},
+            e('label',{className:'ffield'},'Objetivo',e('input',{className:'finput',type:'number',value:form.target??'',onChange:ev=>set('target',ev.target.value)})),
+            e('label',{className:'ffield'},'Ahorrado',e('input',{className:'finput',type:'number',value:form.saved??'',onChange:ev=>set('saved',ev.target.value)}))
+          )
+        ),
+
+        type==='debt'&&e(React.Fragment,null,
+          e('label',{className:'ffield'},'Nombre',e('input',{className:'finput',value:form.name||'',onChange:ev=>set('name',ev.target.value)})),
+          e('div',{style:{display:'flex',gap:8}},
+            e('label',{className:'ffield'},'Monto total',e('input',{className:'finput',type:'number',value:form.total??'',onChange:ev=>set('total',ev.target.value)})),
+            e('label',{className:'ffield'},'Pagado',e('input',{className:'finput',type:'number',value:form.paid??'',onChange:ev=>set('paid',ev.target.value)}))
+          ),
+          e('div',{style:{display:'flex',gap:8}},
+            e('label',{className:'ffield'},'Tasa % (opcional)',e('input',{className:'finput',type:'number',value:form.rate??'',onChange:ev=>set('rate',ev.target.value)})),
+            e('label',{className:'ffield'},'Cuotas',e('input',{className:'finput',type:'number',value:form.installments??1,onChange:ev=>set('installments',ev.target.value)}))
+          )
+        )
+      ),
+      e('div',{className:'modal-foot'},
+        initial&&initial.id&&onDelete&&e('button',{className:'btn',style:{color:'var(--red)',marginRight:'auto'},onClick:onDelete},'Eliminar'),
+        e('button',{className:'btn',onClick:onClose},'Cancelar'),
+        e('button',{className:'btn btn-primary',disabled:saving,onClick:submit},saving?'Guardando…':'Guardar')
+      )
+    )
+  );
+}
+
+const MF_ACC_TYPE_LABEL={corriente:'Cuenta corriente',ahorro:'Ahorro',efectivo:'Efectivo',credito:'Tarjeta de crédito'};
+const MF_CAT_COLORS=['#6EE7B7','#60A5FA','#F472B6','#FBBF24','#A78BFA','#34D399','#F87171','#38BDF8','#FB923C','#E879F9'];
+function mfMonthLabel(monthKey){
+  const[y,m]=monthKey.split('-').map(Number);
+  const d=new Date(y,m-1,1);
+  const s=d.toLocaleDateString('es-CL',{month:'long',year:'numeric'});
+  return s.charAt(0).toUpperCase()+s.slice(1);
+}
 function FinanzasView(){
   const[data,setData]=useState(null);
   const[error,setError]=useState(null);
   const[loading,setLoading]=useState(true);
   const[refreshTick,setRefreshTick]=useState(0);
+  const[formState,setFormState]=useState(null); // {type,initial}
+  const[selMonth,setSelMonth]=useState(mfNowMonth());
+  const[showAllBudgets,setShowAllBudgets]=useState(false);
+  const[showImportNote,setShowImportNote]=useState(false);
 
   useEffect(()=>{
     let alive=true;
@@ -5873,23 +6023,42 @@ function FinanzasView(){
     return()=>{alive=false;};
   },[refreshTick]);
 
-  if(loading)return e('div',{className:'analytics-wrap'},e('div',{className:'empty',style:{gridColumn:'1/-1'}},'Cargando tus finanzas…'));
-  if(error)return e('div',{className:'analytics-wrap'},
-    e('div',{className:'an-card',style:{gridColumn:'1/-1'}},
-      e('div',{className:'an-title'},'No se pudo conectar con MisFinanzas'),
-      e('div',{style:{fontSize:12,color:'var(--text2)',marginBottom:10}},error),
-      e('button',{className:'btn',onClick:()=>setRefreshTick(t=>t+1)},'Reintentar')
+  function refresh(){setRefreshTick(t=>t+1);}
+
+  async function handleSave(type,form){
+    const toSB={tx:mfTxToSB,acc:mfAccToSB,budget:mfBudgetToSB,goal:mfGoalToSB,debt:mfDebtToSB}[type];
+    const table={tx:'transacciones',acc:'cuentas',budget:'presupuestos',goal:'metas',debt:'deudas'}[type];
+    await mfUpsert(table,toSB(form));
+    setFormState(null);
+    refresh();
+  }
+  async function handleDelete(type){
+    if(!formState||!formState.initial||!formState.initial.id)return;
+    if(!confirm('¿Eliminar este registro de MisFinanzas? No se puede deshacer.'))return;
+    const table={tx:'transacciones',acc:'cuentas',budget:'presupuestos',goal:'metas',debt:'deudas'}[type];
+    try{
+      await mfDeleteRow(table,formState.initial.id);
+      setFormState(null);
+      refresh();
+    }catch(e){ alert('No se pudo eliminar: '+e.message); }
+  }
+
+  if(loading)return e('div',{className:'mf-wrap'},e('div',{className:'empty',style:{padding:40}},'Cargando tus finanzas…'));
+  if(error)return e('div',{className:'mf-wrap'},
+    e('div',{className:'mf-card'},
+      e('div',{className:'mf-card-hdr'},e('span',{className:'mf-card-title'},'No se pudo conectar con MisFinanzas')),
+      e('div',{style:{fontSize:12,color:'var(--text2)',margin:'6px 0 12px'}},error),
+      e('button',{className:'btn',onClick:refresh},'Reintentar')
     )
   );
   if(!data)return null;
 
-  const{transactions,accounts,budgets,goals,debts}=data;
+  const{transactions,accounts,budgets,goals,debts,cats}=data;
   const activeAccounts=accounts.filter(a=>a.active!==false);
   function accBalance(a){return(a.base||0)+transactions.filter(t=>t.acc===a.id).reduce((s,t)=>s+(t.amount||0),0);}
   const totalBalance=activeAccounts.reduce((sum,a)=>sum+accBalance(a),0);
 
-  const month=mfNowMonth();
-  const monthTx=transactions.filter(t=>t.date&&t.date.slice(0,7)===month&&!t.isTransfer);
+  const monthTx=transactions.filter(t=>t.date&&t.date.slice(0,7)===selMonth&&!t.isTransfer);
   const income=monthTx.filter(t=>t.amount>0).reduce((a,t)=>a+t.amount,0);
   const expense=monthTx.filter(t=>t.amount<0).reduce((a,t)=>a+t.amount,0); // negativo
   const net=income+expense;
@@ -5897,80 +6066,165 @@ function FinanzasView(){
   const catMap={};
   monthTx.filter(t=>t.amount<0).forEach(t=>{const c=t.cat||'Otros';catMap[c]=(catMap[c]||0)+Math.abs(t.amount);});
   const catArr=Object.entries(catMap).sort((a,b)=>b[1]-a[1]);
-  const maxCat=catArr[0]?.[1]||1;
+  const catSegments=catArr.map(([name,value],i)=>({label:name,value,color:MF_CAT_COLORS[i%MF_CAT_COLORS.length]}));
+  const catTotal=catArr.reduce((a,[,v])=>a+v,0)||1;
 
-  const monthBudgets=budgets.filter(b=>b.month===month);
+  const monthBudgets=budgets.filter(b=>b.month===selMonth);
+  const visibleBudgets=showAllBudgets?budgets:monthBudgets;
 
-  return e('div',{className:'analytics-wrap'},
-    e('div',{className:'kpi-grid'},
-      [
-        {l:'Balance total',v:mfClp(totalBalance)},
-        {l:'Ingresos (mes)',v:mfClp(income)},
-        {l:'Gastos (mes)',v:mfClp(Math.abs(expense))},
-        {l:'Neto (mes)',v:mfClp(net)}
-      ].map(({l,v})=>e('div',{key:l,className:'kpi'},e('div',{className:'kpi-val'},v),e('div',{className:'kpi-lbl'},l)))
+  // Tendencia de los últimos 6 meses terminando en el mes seleccionado
+  const[selY,selM]=selMonth.split('-').map(Number);
+  const trend=Array.from({length:6},(_,i)=>{
+    const d=new Date(selY,selM-1-(5-i),1);
+    const key=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+    const tx=transactions.filter(t=>t.date&&t.date.slice(0,7)===key&&!t.isTransfer);
+    return{
+      key,label:String(d.getMonth()+1).padStart(2,'0'),
+      inc:tx.filter(t=>t.amount>0).reduce((a,t)=>a+t.amount,0),
+      exp:Math.abs(tx.filter(t=>t.amount<0).reduce((a,t)=>a+t.amount,0))
+    };
+  });
+  const trendMax=Math.max(1,...trend.map(t=>Math.max(t.inc,t.exp)));
+
+  return e('div',{className:'mf-wrap'},
+    e('div',{className:'mf-header'},
+      e('div',{className:'mf-title'},'Panel Principal'),
+      e('div',{className:'mf-period'},
+        e('span',null,'Período:'),
+        e('input',{type:'month',className:'mf-period-input',value:selMonth,onChange:ev=>setSelMonth(ev.target.value||mfNowMonth())})
+      )
     ),
 
-    e('div',{className:'an-card'},
-      e('div',{className:'an-title'},'Cuentas'),
-      activeAccounts.length===0&&e('div',{className:'empty'},'Sin cuentas registradas en MisFinanzas.'),
-      activeAccounts.map(a=>e('div',{key:a.id,className:'bar-row'},
-        e('div',{className:'bar-lbl',style:{width:110}},a.name),
-        e('div',{style:{flex:1}}),
-        e('div',{className:'bar-val',style:{width:'auto',color:accBalance(a)<0?'var(--red)':'var(--text2)'}},mfClp(accBalance(a)))
-      ))
+    e('div',{className:'mf-card'},
+      e('div',{className:'mf-card-hdr'},
+        e('span',{className:'mf-card-title'},'🏦 Mis Cuentas'),
+        e('button',{className:'ghost-btn',onClick:()=>setFormState({type:'acc',initial:null})},'＋ Gestionar')
+      ),
+      activeAccounts.length===0
+        ?e('div',{className:'empty',style:{padding:'18px 0'}},'Sin cuentas — crea la primera con el botón de arriba.')
+        :e('div',{className:'mf-acc-grid'},
+            activeAccounts.map(a=>{
+              const bal=accBalance(a);
+              const color=a.color||'var(--green)';
+              return e('div',{key:a.id,className:'mf-acc-tile',style:{'--acc-color':color,cursor:'pointer'},onClick:()=>setFormState({type:'acc',initial:a})},
+                e('div',{className:'mf-acc-glow'}),
+                e('div',{className:'mf-acc-bank'},'🏛 ',a.bank||MF_ACC_TYPE_LABEL[a.type]||''),
+                e('div',{className:'mf-acc-name'},a.name),
+                e('div',{className:'mf-acc-bal',style:{color:bal<0?'var(--red)':color}},mfClp(bal))
+              );
+            })
+          )
     ),
 
-    e('div',{className:'an-card'},
-      e('div',{className:'an-title'},'Gasto por categoría (este mes)'),
-      catArr.length===0&&e('div',{className:'empty'},'Sin gastos registrados este mes.'),
-      catArr.map(([cat,amt])=>e('div',{key:cat,className:'bar-row'},
-        e('div',{className:'bar-lbl',style:{width:110}},cat),
-        e('div',{className:'bar-track'},e('div',{className:'bar-fill',style:{width:(amt/maxCat*100)+'%',background:'var(--accent2)'}})),
-        e('div',{className:'bar-val',style:{width:'auto'}},mfClp(amt))
-      ))
+    e('div',{className:'mf-kpi-row'},
+      e('div',{className:'mf-kpi'},e('div',null,e('div',{className:'mf-kpi-lbl'},'Balance Total'),e('div',{className:'mf-kpi-val',style:{color:'var(--green)'}},mfClp(totalBalance))),e('span',{className:'mf-kpi-ic'},'🏦')),
+      e('div',{className:'mf-kpi'},e('div',null,e('div',{className:'mf-kpi-lbl'},'Ingresos'),e('div',{className:'mf-kpi-val',style:{color:'#34D399'}},mfClp(income))),e('span',{className:'mf-kpi-ic'},'📈')),
+      e('div',{className:'mf-kpi'},e('div',null,e('div',{className:'mf-kpi-lbl'},'Gastos'),e('div',{className:'mf-kpi-val',style:{color:'var(--red)'}},mfClp(Math.abs(expense)))),e('span',{className:'mf-kpi-ic'},'📉')),
+      e('div',{className:'mf-kpi'},e('div',null,e('div',{className:'mf-kpi-lbl'},'Neto'),e('div',{className:'mf-kpi-val',style:{color:net>=0?'var(--green)':'var(--amber)'}},mfClp(net))),e('span',{className:'mf-kpi-ic'},net>=0?'✅':'⚠️'))
     ),
 
-    monthBudgets.length>0&&e('div',{className:'an-card'},
-      e('div',{className:'an-title'},'Presupuestos (este mes)'),
-      monthBudgets.map(b=>{
-        const spent=catMap[b.cat]||0;
-        const over=spent>b.limit;
-        return e('div',{key:b.id,className:'bar-row'},
-          e('div',{className:'bar-lbl',style:{width:110}},b.cat),
-          e('div',{className:'bar-track'},e('div',{className:'bar-fill',style:{width:Math.min(100,Math.round(spent/(b.limit||1)*100))+'%',background:over?'var(--red)':'var(--green)'}})),
-          e('div',{className:'bar-val',style:{width:'auto'}},mfClp(spent)+' / '+mfClp(b.limit))
-        );
-      })
+    e('div',{className:'mf-card'},
+      e('div',{className:'mf-card-hdr'},e('span',{className:'mf-card-title'},'📊 Tendencia 6 meses')),
+      e('div',{className:'mf-trend'},
+        trend.map(m=>e('div',{key:m.key,className:'mf-trend-col'},
+          e('div',{className:'mf-trend-bars'},
+            e('div',{className:'mf-trend-bar',title:'Ingresos: '+mfClp(m.inc),style:{height:Math.max(2,Math.round(m.inc/trendMax*100))+'%',background:'var(--green)'}}),
+            e('div',{className:'mf-trend-bar',title:'Gastos: '+mfClp(m.exp),style:{height:Math.max(2,Math.round(m.exp/trendMax*100))+'%',background:'var(--red)'}})
+          ),
+          e('div',{className:'mf-trend-lbl'},m.label)
+        ))
+      )
     ),
 
-    goals.length>0&&e('div',{className:'an-card'},
-      e('div',{className:'an-title'},'Metas'),
-      goals.map(g=>e('div',{key:g.id,className:'bar-row'},
-        e('div',{className:'bar-lbl',style:{width:110}},g.name),
-        e('div',{className:'bar-track'},e('div',{className:'bar-fill',style:{width:Math.min(100,Math.round(g.saved/(g.target||1)*100))+'%',background:g.color||'var(--accent2)'}})),
-        e('div',{className:'bar-val',style:{width:'auto'}},mfClp(g.saved)+' / '+mfClp(g.target))
-      ))
+    e('div',{className:'mf-2col'},
+      e('div',{className:'mf-card'},
+        e('div',{className:'mf-card-hdr'},e('span',{className:'mf-card-title'},'🍊 Por categoría')),
+        catArr.length===0
+          ?e('div',{className:'empty',style:{padding:'32px 0'}},'Sin gastos este mes')
+          :e('div',{style:{display:'flex',gap:16,alignItems:'flex-start'}},
+              e(MultiDonut,{segments:catSegments,size:140,stroke:38,center:e('div',null)}),
+              e('div',{style:{flex:1,display:'flex',flexDirection:'column',gap:6,minWidth:0}},
+                catArr.map(([name,val],i)=>e('div',{key:name,style:{display:'flex',alignItems:'center',gap:7}},
+                  e('span',{style:{width:8,height:8,borderRadius:'50%',background:MF_CAT_COLORS[i%MF_CAT_COLORS.length],flexShrink:0}}),
+                  e('span',{style:{fontSize:11.5,color:'var(--text2)',flex:1,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}},name),
+                  e('span',{style:{fontSize:10.5,color:'var(--text4)',flexShrink:0}},Math.round(val/catTotal*100)+'%'),
+                  e('span',{style:{fontSize:11.5,color:'var(--text0)',fontWeight:600,fontFamily:"'JetBrains Mono',monospace",flexShrink:0,minWidth:70,textAlign:'right'}},mfClp(val))
+                ))
+              )
+            )
+      ),
+      e('div',{className:'mf-card'},
+        e('div',{className:'mf-card-hdr'},
+          e('span',{className:'mf-card-title'},'🎯 Presupuestos del mes'),
+          e('button',{className:'ghost-btn',onClick:()=>setShowAllBudgets(v=>!v)},showAllBudgets?'Solo este mes':'Ver todos')
+        ),
+        visibleBudgets.length===0
+          ?e('div',{className:'empty',style:{padding:'18px 0'}},'Sin presupuestos'+(showAllBudgets?'':' este mes'))
+          :visibleBudgets.map(b=>{
+              const spent=catMap[b.cat]||0;
+              const over=spent>b.limit;
+              return e('div',{key:b.id,className:'bar-row',style:{cursor:'pointer'},onClick:()=>setFormState({type:'budget',initial:b})},
+                e('div',{className:'bar-lbl',style:{width:100}},b.cat),
+                e('div',{className:'bar-track'},e('div',{className:'bar-fill',style:{width:Math.min(100,Math.round(spent/(b.limit||1)*100))+'%',background:over?'var(--red)':'var(--green)'}})),
+                e('div',{className:'bar-val',style:{width:'auto'}},mfClp(spent)+' / '+mfClp(b.limit))
+              );
+            }),
+        e('button',{className:'ghost-btn',style:{marginTop:8},onClick:()=>setFormState({type:'budget',initial:{month:selMonth}})},'＋ Nuevo presupuesto')
+      )
     ),
 
-    debts.length>0&&e('div',{className:'an-card'},
-      e('div',{className:'an-title'},'Deudas'),
-      debts.map(d=>e('div',{key:d.id,className:'bar-row'},
-        e('div',{className:'bar-lbl',style:{width:110}},d.name),
-        e('div',{className:'bar-track'},e('div',{className:'bar-fill',style:{width:Math.min(100,Math.round(d.paid/(d.total||1)*100))+'%',background:'var(--amber)'}})),
-        e('div',{className:'bar-val',style:{width:'auto'}},mfClp(d.paid)+' / '+mfClp(d.total))
-      ))
+    e('div',{className:'mf-2col'},
+      e('div',{className:'mf-card'},
+        e('div',{className:'mf-card-hdr'},
+          e('span',{className:'mf-card-title'},'Metas'),
+          e('button',{className:'ghost-btn',onClick:()=>setFormState({type:'goal',initial:null})},'＋')
+        ),
+        goals.length===0?e('div',{className:'empty'},'Sin metas registradas.'):
+        goals.map(g=>e('div',{key:g.id,className:'bar-row',style:{cursor:'pointer'},onClick:()=>setFormState({type:'goal',initial:g})},
+          e('div',{className:'bar-lbl',style:{width:100}},g.name),
+          e('div',{className:'bar-track'},e('div',{className:'bar-fill',style:{width:Math.min(100,Math.round(g.saved/(g.target||1)*100))+'%',background:g.color||'var(--accent2)'}})),
+          e('div',{className:'bar-val',style:{width:'auto'}},mfClp(g.saved)+' / '+mfClp(g.target))
+        ))
+      ),
+      e('div',{className:'mf-card'},
+        e('div',{className:'mf-card-hdr'},
+          e('span',{className:'mf-card-title'},'Deudas'),
+          e('button',{className:'ghost-btn',onClick:()=>setFormState({type:'debt',initial:null})},'＋')
+        ),
+        debts.length===0?e('div',{className:'empty'},'Sin deudas registradas.'):
+        debts.map(d=>e('div',{key:d.id,className:'bar-row',style:{cursor:'pointer'},onClick:()=>setFormState({type:'debt',initial:d})},
+          e('div',{className:'bar-lbl',style:{width:100}},d.name),
+          e('div',{className:'bar-track'},e('div',{className:'bar-fill',style:{width:Math.min(100,Math.round(d.paid/(d.total||1)*100))+'%',background:'var(--amber)'}})),
+          e('div',{className:'bar-val',style:{width:'auto'}},mfClp(d.paid)+' / '+mfClp(d.total))
+        ))
+      )
     ),
 
-    e('div',{className:'an-card',style:{gridColumn:'1/-1'}},
-      e('div',{className:'an-title'},'Transacciones recientes'),
+    e('div',{className:'mf-card'},
+      e('div',{className:'mf-card-hdr'},
+        e('span',{className:'mf-card-title'},'Transacciones recientes'),
+        e('div',{style:{display:'flex',gap:6}},
+          e('button',{className:'ghost-btn',onClick:()=>setShowImportNote(v=>!v),title:'Importar cartola bancaria'},'⤓ Importar'),
+          e('button',{className:'ghost-btn',onClick:()=>setFormState({type:'tx',initial:{date:selMonth+'-'+String(new Date().getDate()).padStart(2,'0')}})},'＋ Nueva')
+        )
+      ),
+      showImportNote&&e('div',{style:{fontSize:11.5,color:'var(--text2)',background:'var(--bg3)',borderRadius:8,padding:'8px 10px',marginBottom:8}},
+        'La importación de cartolas bancarias (Excel/BCI, detección de duplicados) sigue viviendo en tu app MisFinanzas — es un flujo grande y delicado con tu plata real, así que preferí no reconstruirlo a la carrera acá. Impórtalo ahí como siempre; apenas guardes, aparece acá también porque es la misma base de datos. Si quieres, puedo agregar más adelante un "pegar texto" para cargar varias transacciones sueltas de una vez.'
+      ),
       transactions.length===0&&e('div',{className:'empty'},'Sin transacciones registradas.'),
-      transactions.slice(0,15).map(t=>e('div',{key:t.id,className:'bar-row'},
+      transactions.slice(0,15).map(t=>e('div',{key:t.id,className:'bar-row',style:{cursor:'pointer'},onClick:()=>setFormState({type:'tx',initial:t})},
         e('div',{className:'bar-lbl',style:{width:220}},t.desc||t.cat||'—'),
         e('div',{style:{flex:1,fontSize:10,color:'var(--text4)'}},t.date),
         e('div',{className:'bar-val',style:{width:'auto',color:t.amount<0?'var(--red)':'var(--green)'}},mfClp(t.amount))
       ))
-    )
+    ),
+
+    formState&&e(FinanzasFormModal,{
+      type:formState.type,initial:formState.initial,accounts:activeAccounts,cats,
+      onSave:form=>handleSave(formState.type,form),
+      onClose:()=>setFormState(null),
+      onDelete:formState.initial&&formState.initial.id?()=>handleDelete(formState.type):null
+    })
   );
 }
 
@@ -8609,7 +8863,7 @@ function SystemDetailDrawer({system,onUpdateSystem,onClose,onExecute}){
 // ═══════════════════════════════════════════
 // PROJECT DASHBOARD — Chronos 2.0
 // ═══════════════════════════════════════════
-function MultiDonut({segments,size=170,stroke=26}){
+function MultiDonut({segments,size=170,stroke=26,center}){
   const total=segments.reduce((a,s)=>a+s.value,0)||1;
   let acc=0;
   const stops=segments.map(s=>{
@@ -8621,8 +8875,10 @@ function MultiDonut({segments,size=170,stroke=26}){
   return e('div',{style:{position:'relative',width:size,height:size,flexShrink:0}},
     e('div',{style:{width:size,height:size,borderRadius:'50%',background:segments.length?`conic-gradient(${stops})`:'var(--bg4)'}}),
     e('div',{style:{position:'absolute',inset:stroke,borderRadius:'50%',background:'var(--bg1)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center'}},
-      e('div',{style:{fontSize:18,fontWeight:600,fontFamily:"'JetBrains Mono',monospace",color:'var(--text0)'}},fmtS(total)),
-      e('div',{style:{fontSize:9,color:'var(--text3)',textTransform:'uppercase',letterSpacing:.5}},'Total')
+      center!==undefined?center:e(React.Fragment,null,
+        e('div',{style:{fontSize:18,fontWeight:600,fontFamily:"'JetBrains Mono',monospace",color:'var(--text0)'}},fmtS(total)),
+        e('div',{style:{fontSize:9,color:'var(--text3)',textTransform:'uppercase',letterSpacing:.5}},'Total')
+      )
     )
   );
 }
