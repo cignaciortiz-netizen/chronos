@@ -2801,6 +2801,7 @@ function App(){
   const[showSbModal,setShowSbModal]=useState(false);
   const[sbSyncing,setSbSyncing]=useState(false);
   const sbSyncRef=useRef(null);
+  const sbFailStreakRef=useRef(0); // sincronizaciones fallidas seguidas — para esperar más si Supabase está inestable, en vez de seguir golpeándolo al mismo ritmo
 
   useEffect(()=>{const id=setInterval(()=>setTick(t=>t+1),20000);return()=>clearInterval(id);},[]);
 
@@ -3192,11 +3193,18 @@ function App(){
     })();
   },[sbStatus]);
 
-  // SB: auto-push casi instantáneo tras cualquier cambio de datos.
-  // Se usa un debounce mínimo (150ms) — no para hacerte esperar, sino solo
-  // para agrupar cambios que React dispara en el mismo instante (ej. varios
-  // setState seguidos al hacer una sola acción) en una única petición a
-  // Supabase, en vez de mandar 3-4 peticiones simultáneas por el mismo click.
+  // SB: auto-push tras cualquier cambio de datos, agrupado en un solo
+  // debounce (2s) — antes había DOS mecanismos separados corriendo en
+  // paralelo (este + forceSync más abajo), cada uno reaccionando a los
+  // mismos cambios de estado: casi cualquier acción (marcar una tarea,
+  // arrastrar una imagen, tocar un hábito) disparaba DOS peticiones POST
+  // casi simultáneas a Postgres — una instantánea desde forceSync y otra
+  // ~150ms después desde este efecto. Con uso normal eso es fácilmente el
+  // doble de conexiones de las necesarias, cada una subiendo el estado
+  // completo de la app. Ahora ambos comparten el mismo temporizador único,
+  // y el debounce se alarga a 2s para agrupar de verdad ráfagas de
+  // actividad (escribir, arrastrar, tickear varias cosas seguidas) en una
+  // sola petición en vez de una por cada micro-cambio.
   useEffect(()=>{
     if(sbStatus!=='connected') return;
     // Se marca "sucio" apenas cambia cualquier dato sincronizable, antes de
@@ -3204,28 +3212,36 @@ function App(){
     // intervalo, sabemos que hubo un cambio que quizás no llegó a subirse.
     SB.markDirty();
     clearTimeout(sbSyncRef.current);
+    // Si las últimas subidas vinieron fallando (Supabase inestable/saturado),
+    // se espera más antes de reintentar — 3s, 6s, 12s... hasta un techo de
+    // 60s — en vez de seguir golpeándolo al mismo ritmo. El dato sigue a
+    // salvo en localStorage mientras tanto, así que esperar más no arriesga
+    // nada, y le da margen a Supabase para recuperarse en vez de sumarle
+    // más carga justo cuando está mal.
+    const backoff=Math.min(60000,3000*Math.pow(2,sbFailStreakRef.current));
     sbSyncRef.current=setTimeout(async()=>{
       setSbSyncing(true);
-      try{ await SB.push({projects,sessions,intenciones,tasks,blocks,habits,reminders,ctxs,systems,panelLabels,panelVisibility,panelSortModes,templates,sysTemplates}); SB.markSynced(); }
-      catch(e){ console.warn('[SB] push error',e); }
+      try{
+        await SB.push({projects,sessions,intenciones,tasks,blocks,habits,reminders,ctxs,systems,panelLabels,panelVisibility,panelSortModes,templates,sysTemplates});
+        SB.markSynced();
+        sbFailStreakRef.current=0;
+      }catch(e){
+        console.warn('[SB] push error',e);
+        sbFailStreakRef.current=Math.min(5,sbFailStreakRef.current+1); // tope en 5 → no pasa de 60s de espera
+      }
       setSbSyncing(false);
-    },150);
+    },backoff);
     return()=>clearTimeout(sbSyncRef.current);
   },[projects,sessions,intenciones,tasks,blocks,habits,reminders,ctxs,systems,panelLabels,panelVisibility,panelSortModes,templates,sysTemplates,sbStatus]);
 
-  // SB: force-immediate push (bypasses the 3s debounce) — used for edits the
-  // user explicitly expects to be persisted right away (systems, panel labels)
-  const[forceSyncTick,setForceSyncTick]=useState(0);
-  const forceSync=()=>setForceSyncTick(t=>t+1);
-  useEffect(()=>{
-    if(forceSyncTick===0||sbStatus!=='connected')return;
-    (async()=>{
-      setSbSyncing(true);
-      try{ await SB.push({projects,sessions,intenciones,tasks,blocks,habits,reminders,ctxs,systems,panelLabels,panelVisibility,panelSortModes,templates,sysTemplates}); SB.markSynced(); }
-      catch(e){ console.warn('[SB] push error',e); }
-      setSbSyncing(false);
-    })();
-  },[forceSyncTick]);
+  // forceSync(): ya NO dispara su propio push inmediato/paralelo (esa era la
+  // causa del doble envío). El efecto de arriba ya reacciona automáticamente
+  // a estos mismos datos — forceSync() ahora es solo un "reasegurar que el
+  // debounce está corriendo" para el puñado de casos donde el cambio ocurre
+  // fuera del árbol de estado observado ahí arriba (ninguno crítico hoy).
+  // Se deja como función real (no un no-op) para no tener que tocar los 57
+  // lugares que ya la llaman, y por si a futuro hace falta de nuevo.
+  const forceSync=()=>{};
 
   // Recurrence engine (trigger: 'onSchedule') — for tasks whose recurrence says
   // "create the next one on its scheduled date, regardless of status", this scans
@@ -3299,22 +3315,33 @@ function App(){
   }
 
   useEffect(()=>{
-    function flush(){
+    function flush(force){
       clearTimeout(tasksSaveTimerRef.current);
       save('chr4_tasks',(sbLatestRef.current&&sbLatestRef.current.tasks)||tasks);
       saveLocalCheckpoint();
       if(sbStatus!=='connected'||!SB.configured()||!sbLatestRef.current) return;
+      // Evita el envío duplicado: si ya había una subida debounced esperando
+      // su turno (3s), este flush la reemplaza — sin cancelarla, ambas
+      // terminaban mandándose (una al toque, otra cuando el setTimeout
+      // original cumplía su plazo en segundo plano).
+      clearTimeout(sbSyncRef.current);
+      // visibilitychange se dispara con CUALQUIER cambio de pestaña o de app
+      // (no solo al cerrar) — mucho más seguido que un cierre real. Si no hay
+      // nada pendiente de subir (ya está todo sincronizado), no vale la pena
+      // gastar una conexión en una subida que no cambia nada.
+      if(!force&&!SB.isDirty())return;
       try{
         const url=`${SB.url}/rest/v1/chronos`;
         const liveCheckpoint=buildLiveCheckpoint();
         const data=liveCheckpoint?{...sbLatestRef.current,liveCheckpoint}:sbLatestRef.current;
         const body=JSON.stringify({ user_id: SB.uid, data, updated_at: new Date().toISOString() });
         fetch(url,{method:'POST',keepalive:true,headers:{'apikey':SB.anon,'Authorization':'Bearer '+SB.anon,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates'},body});
+        SB.markSynced();
       }catch(e){ /* best effort */ }
     }
-    window.addEventListener('beforeunload',flush);
-    window.addEventListener('pagehide',flush);
-    document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden') flush(); });
+    window.addEventListener('beforeunload',()=>flush(true));
+    window.addEventListener('pagehide',()=>flush(true));
+    document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden') flush(false); });
     return()=>{ window.removeEventListener('beforeunload',flush); window.removeEventListener('pagehide',flush); };
   },[sbStatus]);
 
@@ -6006,10 +6033,11 @@ function mfMonthLabel(monthKey){
   const s=d.toLocaleDateString('es-CL',{month:'long',year:'numeric'});
   return s.charAt(0).toUpperCase()+s.slice(1);
 }
+let mfCache=null; // último snapshot cargado — evita 6 peticiones nuevas cada vez que se vuelve a esta vista
 function FinanzasView(){
-  const[data,setData]=useState(null);
+  const[data,setData]=useState(mfCache);
   const[error,setError]=useState(null);
-  const[loading,setLoading]=useState(true);
+  const[loading,setLoading]=useState(!mfCache);
   const[refreshTick,setRefreshTick]=useState(0);
   const[formState,setFormState]=useState(null); // {type,initial}
   const[selMonth,setSelMonth]=useState(mfNowMonth());
@@ -6017,9 +6045,10 @@ function FinanzasView(){
   const[showImportNote,setShowImportNote]=useState(false);
 
   useEffect(()=>{
+    if(refreshTick===0&&mfCache)return; // ya tenemos datos de una visita anterior — se muestran al toque, sin red
     let alive=true;
     setLoading(true);setError(null);
-    loadFinanzas().then(d=>{if(alive){setData(d);setLoading(false);}}).catch(err=>{if(alive){setError(err.message||'Error desconocido');setLoading(false);}});
+    loadFinanzas().then(d=>{if(alive){mfCache=d;setData(d);setLoading(false);}}).catch(err=>{if(alive){setError(err.message||'Error desconocido');setLoading(false);}});
     return()=>{alive=false;};
   },[refreshTick]);
 
