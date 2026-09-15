@@ -1949,14 +1949,66 @@ const SB = {
     if(!resp.ok) throw new Error(await resp.text());
   },
 
-  async pull(){
+  // ── Sessions en fila aparte (misma tabla, sin cambiar el esquema) ──
+  // "sessions" es lo único que crece para siempre y casi nunca hace falta
+  // re-subirlo solo porque editaste una tarea o una nota — separarlo evita
+  // que cada edición chica arrastre cientos de KB de historial que no
+  // cambió. Se guarda bajo una segunda fila con user_id+":sessions" — la
+  // misma tabla "chronos", sin tocar columnas ni crear nada nuevo en
+  // Supabase. push() de arriba sigue mandando el bloque completo (con
+  // sessions incluido) cada 3 minutos y al cerrar la pestaña, como respaldo
+  // redundante — así que aunque esta parte tuviera un error, la fila
+  // principal nunca queda más de un rato atrás con una copia completa.
+  get sessionsUid(){ return this.uid+':sessions'; },
+  async pushSessions(sessions){
+    if(!this.configured()) return;
+    const resp = await fetch(`${this.url}/rest/v1/chronos`, {
+      method: 'POST',
+      headers: {
+        'apikey': this.anon,
+        'Authorization': 'Bearer '+this.anon,
+        'Content-Type': 'application/json',
+        'Prefer': 'resolution=merge-duplicates',
+      },
+      body: JSON.stringify({ user_id: this.sessionsUid, data: {sessions}, updated_at: new Date().toISOString() }),
+    });
+    if(!resp.ok) throw new Error(await resp.text());
+  },
+  async pullSessions(){
     if(!this.configured()) return null;
-    const resp = await fetch(`${this.url}/rest/v1/chronos?user_id=eq.${this.uid}&select=data`, {
+    const resp = await fetch(`${this.url}/rest/v1/chronos?user_id=eq.${encodeURIComponent(this.sessionsUid)}&select=data`, {
       headers: { 'apikey': this.anon, 'Authorization': 'Bearer '+this.anon },
     });
     if(!resp.ok) throw new Error(await resp.text());
     const rows = await resp.json();
     return rows.length > 0 ? rows[0].data : null;
+  },
+
+  async pull(){
+    if(!this.configured()) return null;
+    const[mainResp,sessResp]=await Promise.all([
+      fetch(`${this.url}/rest/v1/chronos?user_id=eq.${this.uid}&select=data`, {
+        headers: { 'apikey': this.anon, 'Authorization': 'Bearer '+this.anon },
+      }),
+      fetch(`${this.url}/rest/v1/chronos?user_id=eq.${encodeURIComponent(this.sessionsUid)}&select=data`, {
+        headers: { 'apikey': this.anon, 'Authorization': 'Bearer '+this.anon },
+      }).catch(()=>null) // si esta falla, igual seguimos con lo que haya en la fila principal
+    ]);
+    if(!mainResp.ok) throw new Error(await mainResp.text());
+    const mainRows = await mainResp.json();
+    if(mainRows.length===0) return null;
+    const main = mainRows[0].data;
+    // Prioriza la fila nueva de sessions si ya existe; si no, usa las que
+    // vengan incrustadas en la fila principal (usuarios que aún no migraron)
+    // — nunca se pierde el historial por no encontrar la fila nueva.
+    let sessFromSplit=null;
+    try{
+      if(sessResp&&sessResp.ok){
+        const sessRows=await sessResp.json();
+        if(sessRows.length>0) sessFromSplit=sessRows[0].data.sessions;
+      }
+    }catch(e){ /* fila nueva no disponible aún — se usa el fallback de abajo */ }
+    return{...main, sessions: sessFromSplit!=null?sessFromSplit:(main.sessions||[])};
   },
 
   disconnect(){
@@ -3219,10 +3271,16 @@ function App(){
     // nada, y le da margen a Supabase para recuperarse en vez de sumarle
     // más carga justo cuando está mal.
     const backoff=Math.min(60000,3000*Math.pow(2,sbFailStreakRef.current));
+    // "sessions" queda AFUERA a propósito — va por su cuenta en el efecto de
+    // abajo. Esto es lo que se dispara con casi cualquier edición (tocar una
+    // tarea, arrastrar una imagen, tickear un hábito), así que dejarlo sin
+    // el historial de sesiones (lo que más pesa y más crece con el tiempo)
+    // es la diferencia real: una edición chica ya no arrastra cientos de KB
+    // de historial que no cambió.
     sbSyncRef.current=setTimeout(async()=>{
       setSbSyncing(true);
       try{
-        await SB.push({projects,sessions,intenciones,tasks,blocks,habits,reminders,ctxs,systems,panelLabels,panelVisibility,panelSortModes,templates,sysTemplates});
+        await SB.push({projects,intenciones,tasks,blocks,habits,reminders,ctxs,systems,panelLabels,panelVisibility,panelSortModes,templates,sysTemplates});
         SB.markSynced();
         sbFailStreakRef.current=0;
       }catch(e){
@@ -3232,7 +3290,30 @@ function App(){
       setSbSyncing(false);
     },backoff);
     return()=>clearTimeout(sbSyncRef.current);
-  },[projects,sessions,intenciones,tasks,blocks,habits,reminders,ctxs,systems,panelLabels,panelVisibility,panelSortModes,templates,sysTemplates,sbStatus]);
+  },[projects,intenciones,tasks,blocks,habits,reminders,ctxs,systems,panelLabels,panelVisibility,panelSortModes,templates,sysTemplates,sbStatus]);
+
+  // Sesiones — efecto aparte, con su propio debounce y su propio backoff.
+  // Solo se dispara cuando el historial de sesiones realmente cambia
+  // (terminaste una sesión, o el respaldo periódico mientras corre el
+  // cronómetro) — no con cada edición de tarea/nota/hábito como antes.
+  const sbSessSyncRef=useRef(null);
+  const sbSessFailStreakRef=useRef(0);
+  useEffect(()=>{
+    if(sbStatus!=='connected') return;
+    SB.markDirty();
+    clearTimeout(sbSessSyncRef.current);
+    const backoff=Math.min(60000,3000*Math.pow(2,sbSessFailStreakRef.current));
+    sbSessSyncRef.current=setTimeout(async()=>{
+      try{
+        await SB.pushSessions(sessions);
+        sbSessFailStreakRef.current=0;
+      }catch(e){
+        console.warn('[SB] push sessions error',e);
+        sbSessFailStreakRef.current=Math.min(5,sbSessFailStreakRef.current+1);
+      }
+    },backoff);
+    return()=>clearTimeout(sbSessSyncRef.current);
+  },[sessions,sbStatus]);
 
   // forceSync(): ya NO dispara su propio push inmediato/paralelo (esa era la
   // causa del doble envío). El efecto de arriba ya reacciona automáticamente
