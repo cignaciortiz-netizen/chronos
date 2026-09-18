@@ -873,15 +873,27 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 /* Editor de bloques tipo Notion: puntos / numerados / separador, con drag handle */
 .nb-blocks{flex:1;min-height:240px;padding-bottom:40px}
 .nb-block-row{display:flex;align-items:flex-start;gap:2px;border-radius:6px;position:relative}
+.nb-block-row.selected{background:var(--accent-bg,#c89a5714)}
 .nb-block-row.drag-over-above::before{content:'';position:absolute;left:26px;right:0;top:-2px;height:2px;background:var(--accent2);border-radius:2px}
 .nb-block-row.drag-over-below::after{content:'';position:absolute;left:26px;right:0;bottom:-2px;height:2px;background:var(--accent2);border-radius:2px}
 .nb-block-row.dragging{opacity:.4}
 .nb-block-handle{width:18px;height:24px;flex-shrink:0;display:flex;align-items:center;justify-content:center;cursor:grab;color:var(--text4);opacity:0;transition:opacity .1s;letter-spacing:-1px;font-size:12px;line-height:1;user-select:none;margin-top:1px}
+.nb-block-handle.selected{opacity:1;color:var(--accent2)}
+.nb-multimenu{position:fixed;z-index:60;background:var(--bg2);border:1px solid var(--border3);border-radius:var(--r-md);box-shadow:0 12px 28px #0008;padding:4px;min-width:210px;max-height:320px;overflow-y:auto}
+.nb-multimenu-lbl{font-size:9.5px;color:var(--text4);padding:4px 8px 2px;text-transform:uppercase;letter-spacing:.4px}
+.nb-multimenu-row{display:flex;gap:3px;padding:2px 4px 4px}
+.nb-multimenu-fmt{flex:1;height:28px;border-radius:6px;border:none;background:var(--bg3);color:var(--text1);cursor:pointer;font-size:13px;font-family:'Inter',sans-serif;display:flex;align-items:center;justify-content:center}
+.nb-multimenu-fmt:hover{background:var(--bg4)}
+.nb-multimenu-sep{height:1px;background:var(--border2);margin:4px 2px}
+.nb-slash-item.danger{color:var(--red,#e05555)}
+.nb-slash-item.danger:hover{background:var(--red-bg,#e6675f14)}
 .nb-block-row:hover .nb-block-handle{opacity:1}
 .nb-block-handle:active{cursor:grabbing}
 .nb-block-marker{flex-shrink:0;min-width:18px;text-align:right;color:var(--text3);font-size:13px;line-height:1.8;padding-top:1px;user-select:none}
 .nb-block-marker.bullet{font-size:16px;line-height:1.6}
 .nb-block-input{flex:1;background:transparent;border:none;outline:none;color:var(--text1);font-size:13px;line-height:1.8;font-family:'Inter',sans-serif;resize:none;padding:0;overflow:hidden;min-height:23.4px}
+.nb-block-preview{cursor:text;white-space:pre-wrap;word-break:break-word}
+.nb-hl{background:var(--amber-bg,#dba14a2a);color:inherit;border-radius:3px;padding:0 2px}
 .nb-block-input::placeholder{color:var(--text4)}
 .nb-block-divider-wrap{flex:1;display:flex;align-items:center;padding:10px 0 10px 18px}
 .nb-block-divider-wrap hr{flex:1;border:none;border-top:1px solid var(--border3)}
@@ -1221,13 +1233,13 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 @media (max-width:1100px){.bento-hero,.bento-side{grid-column:span 12}.bento-third{grid-column:span 12}}
 .bento-eyebrow{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--text3);margin-bottom:12px}
 .hero-focus-row{display:flex;align-items:flex-end;gap:22px}
-.hero-ring-wrap{position:relative;width:104px;height:104px;flex-shrink:0}
-.hero-ring-wrap svg{transform:rotate(-90deg)}
-.hero-ring-bg{fill:none;stroke:var(--border2);stroke-width:6}
-.hero-ring-fg{fill:none;stroke:var(--accent2);stroke-width:6;stroke-linecap:round}
-.hero-ring-time{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
-.hero-ring-time .t{font-family:'JetBrains Mono',monospace;font-size:14.5px;font-weight:500;color:var(--text0)}
-.hero-ring-time .l{font-size:8.5px;color:var(--text3);margin-top:1px}
+.hero-clock-wrap{
+  width:104px;height:104px;flex-shrink:0;border-radius:50%;
+  border:1px solid var(--border2);background:var(--bg2);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px
+}
+.hero-clock-t{font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:600;color:var(--text0);letter-spacing:-.3px}
+.hero-clock-l{font-size:9px;color:var(--text3)}
 .hero-focus-info{flex:1;min-width:0}
 .hero-focus-proj{display:flex;align-items:center;gap:7px;margin-bottom:5px;font-size:11.5px;color:var(--text2);font-weight:500}
 .hero-focus-proj .d{width:7px;height:7px;border-radius:50%;flex-shrink:0}
@@ -9197,12 +9209,9 @@ function HomeResumen(props){
           tState!=='idle'&&activeSess
             ?e(React.Fragment,null,
                 e('div',{className:'hero-focus-row'},
-                  e('div',{className:'hero-ring-wrap'},
-                    e('svg',{width:104,height:104,viewBox:'0 0 104 104'},
-                      e('circle',{className:'hero-ring-bg',cx:52,cy:52,r:46}),
-                      e('circle',{className:'hero-ring-fg',cx:52,cy:52,r:46,strokeDasharray:289,strokeDashoffset:289*(1-((workElapsed%3600)/3600))})
-                    ),
-                    e('div',{className:'hero-ring-time'},e('div',{className:'t'},fmt(workElapsed)),e('div',{className:'l'},'esta hora'))
+                  e('div',{className:'hero-clock-wrap'},
+                    e('div',{className:'hero-clock-t'},fmt(workElapsed)),
+                    e('div',{className:'hero-clock-l'},tState==='paused'?'En pausa':'Enfocando')
                   ),
                   e('div',{className:'hero-focus-info'},
                     e('div',{className:'hero-focus-proj'},e('span',{className:'d',style:{background:activeProj?.color||'var(--accent2)'}}),activeProj?.name||'Proyecto'),
@@ -10760,6 +10769,48 @@ function nbBlocksFromLegacyText(text){
   if(lines.length===1&&!lines[0])return[{id:uid(),type:'text',text:''}];
   return lines.map(l=>({id:uid(),type:'text',text:l}));
 }
+// ── Formato en línea (negrita/tachado/destacado/cursiva) — estilo Notion:
+// se activa por atajo de teclado sobre el texto seleccionado, nunca por un
+// botón o texto visible en la interfaz. Se guarda como marcadores simples
+// dentro del mismo texto plano (**negrita**, ~~tachado~~, ==destacado==,
+// *cursiva*) y se muestran ya renderizados apenas el bloque pierde el foco
+// — mientras se está escribiendo se ve el texto plano, igual que en
+// editores tipo Obsidian/Bear.
+const NB_INLINE_RE=/(\*\*[^*\n]+\*\*|~~[^~\n]+~~|==[^=\n]+==|\*[^*\n]+\*)/g;
+function renderInlineMd(text){
+  if(!text)return null;
+  const parts=text.split(NB_INLINE_RE);
+  return parts.map((part,i)=>{
+    if(!part)return null;
+    if(part.startsWith('**')&&part.endsWith('**')&&part.length>=4)return e('strong',{key:i},part.slice(2,-2));
+    if(part.startsWith('~~')&&part.endsWith('~~')&&part.length>=4)return e('s',{key:i},part.slice(2,-2));
+    if(part.startsWith('==')&&part.endsWith('==')&&part.length>=4)return e('mark',{key:i,className:'nb-hl'},part.slice(2,-2));
+    if(part.startsWith('*')&&part.endsWith('*')&&part.length>=2)return e('em',{key:i},part.slice(1,-1));
+    return part;
+  });
+}
+const NB_FORMAT_MARKERS={b:'**',strike:'~~',hl:'==',i:'*'};
+// Envuelve (o desenvuelve, si ya estaba envuelta — toggle real) la selección
+// actual del textarea con el marcador dado, y devuelve el texto + la nueva
+// posición del cursor para poder restaurarla tras el cambio de estado.
+function nbToggleInlineFormat(el,mark){
+  const{value}=el;
+  let start=el.selectionStart,end=el.selectionEnd;
+  const before=value.slice(0,start),sel=value.slice(start,end),after=value.slice(end);
+  const mLen=mark.length;
+  // ¿la selección ya viene envuelta exactamente en este marcador? -> quitarlo
+  if(before.slice(-mLen)===mark&&after.slice(0,mLen)===mark){
+    const next=before.slice(0,-mLen)+sel+after.slice(mLen);
+    return{text:next,start:start-mLen,end:end-mLen};
+  }
+  if(sel.length>0){
+    const next=before+mark+sel+mark+after;
+    return{text:next,start:start+mLen,end:end+mLen};
+  }
+  // sin selección: inserta el par vacío y deja el cursor en el medio, listo para escribir
+  const next=before+mark+mark+after;
+  return{text:next,start:start+mLen,end:start+mLen};
+}
 // Tipos de bloque disponibles desde el menú de clic derecho — estilo Notion,
 // pero sin exponer atajos de markdown: todo se elige desde el menú.
 const NB_SLASH_ITEMS=[
@@ -10834,6 +10885,11 @@ function NotebookBlockEditor({blocks,legacyText,onChange}){
   const[imgResize,setImgResize]=useState(null); // {id,startX,startW,wrapW}
   const didMount=useRef(false);
   const[slashFor,setSlashFor]=useState(null); // id del bloque con el menú "/" abierto
+  const[focusedBlockId,setFocusedBlockId]=useState(null); // bloque actualmente en edición — muestra texto plano; el resto muestra el formato ya renderizado
+  // ── Selección de varios bloques a la vez (estilo Notion) ──
+  const[selectedIds,setSelectedIds]=useState([]); // ids de bloques seleccionados juntos
+  const selAnchorRef=useRef(null); // último bloque usado como ancla para extender la selección con Shift+click
+  const[multiMenu,setMultiMenu]=useState(null); // {x,y} del menú contextual para la selección múltiple
   const[slashQuery,setSlashQuery]=useState('');
   const[slashSel,setSlashSel]=useState(0);
   const fileInputRef=useRef(null);
@@ -10906,6 +10962,49 @@ function NotebookBlockEditor({blocks,legacyText,onChange}){
     if(type==='image'){ openImagePicker(id); }
     else focusBlock(id,true);
   }
+  function toggleSelect(id,ev){
+    if(ev&&ev.shiftKey&&selAnchorRef.current){
+      const ids=items.map(x=>x.id);
+      const a=ids.indexOf(selAnchorRef.current),bIdx=ids.indexOf(id);
+      if(a>-1&&bIdx>-1){
+        const[lo,hi]=a<bIdx?[a,bIdx]:[bIdx,a];
+        setSelectedIds(ids.slice(lo,hi+1));
+        return;
+      }
+    }
+    selAnchorRef.current=id;
+    setSelectedIds(prev=>prev.includes(id)?prev.filter(x=>x!==id):[...prev,id]);
+  }
+  function clearSelection(){ setSelectedIds([]); setMultiMenu(null); selAnchorRef.current=null; }
+  function applyMultiFormat(mark){
+    setItems(prev=>prev.map(b=>{
+      if(!selectedIds.includes(b.id))return b;
+      const t=b.text||'';
+      if(!t)return b;
+      if(t.startsWith(mark)&&t.endsWith(mark)&&t.length>=mark.length*2)return{...b,text:t.slice(mark.length,t.length-mark.length)}; // ya estaba — toggle off
+      return{...b,text:mark+t+mark};
+    }));
+    setMultiMenu(null);
+  }
+  function applyMultiConvert(type){
+    setItems(prev=>prev.map(b=>selectedIds.includes(b.id)?nbBuildBlock(type,b):b));
+    clearSelection();
+  }
+  function deleteSelected(){
+    setItems(prev=>{
+      const next=prev.filter(b=>!selectedIds.includes(b.id));
+      return next.length?next:[{id:uid(),type:'text',text:''}];
+    });
+    clearSelection();
+  }
+  useEffect(()=>{
+    if(selectedIds.length===0)return;
+    function onKey(ev){ if(ev.key==='Escape')clearSelection(); }
+    function onClickAway(ev){ if(!ev.target.closest('.nb-multimenu'))setMultiMenu(null); }
+    window.addEventListener('keydown',onKey);
+    window.addEventListener('mousedown',onClickAway);
+    return()=>{ window.removeEventListener('keydown',onKey); window.removeEventListener('mousedown',onClickAway); };
+  },[selectedIds.length]);
   function openSlash(id,query){ setSlashFor(id); setSlashQuery(query||''); setSlashSel(0); }
   function closeSlash(){ setSlashFor(null); setSlashQuery(''); setSlashSel(0); }
   useEffect(()=>{
@@ -10961,6 +11060,22 @@ function NotebookBlockEditor({blocks,legacyText,onChange}){
   function handleKeyDown(id,ev){
     const b=items.find(x=>x.id===id);
     if(!b)return;
+    if((ev.metaKey||ev.ctrlKey)&&b.type!=='code'&&b.type!=='image'&&b.type!=='divider'){
+      const key=ev.key.toLowerCase();
+      let mark=null;
+      if(key==='b'&&!ev.shiftKey)mark=NB_FORMAT_MARKERS.b;
+      else if(key==='i'&&!ev.shiftKey)mark=NB_FORMAT_MARKERS.i;
+      else if(key==='s'&&ev.shiftKey)mark=NB_FORMAT_MARKERS.strike;
+      else if(key==='h'&&ev.shiftKey)mark=NB_FORMAT_MARKERS.hl;
+      if(mark){
+        ev.preventDefault();
+        const el=ev.target;
+        const{text,start,end}=nbToggleInlineFormat(el,mark);
+        patchBlock(id,{text});
+        requestAnimationFrame(()=>{ if(el&&el.setSelectionRange){el.focus();el.setSelectionRange(start,end);} });
+        return;
+      }
+    }
     if(slashFor===id){
       const list=slashFiltered();
       if(ev.key==='ArrowDown'){ev.preventDefault();setSlashSel(s=>Math.min(list.length-1,s+1));return;}
@@ -11024,6 +11139,30 @@ function NotebookBlockEditor({blocks,legacyText,onChange}){
     });
   }
   let numCounter=0;
+  function nbTextField(b,opts){
+    opts=opts||{};
+    const isFocused=focusedBlockId===b.id;
+    const cls='nb-block-input'+(opts.extraClass?' '+opts.extraClass:'');
+    if(!isFocused&&b.text&&b.text.trim()){
+      return e('div',{
+        className:cls+' nb-block-preview',
+        style:opts.style,
+        tabIndex:0,
+        onClick:()=>{if(selectedIds.length)clearSelection();setFocusedBlockId(b.id);focusBlock(b.id,true);},
+        onFocus:()=>{setFocusedBlockId(b.id);focusBlock(b.id,true);}
+      },renderInlineMd(b.text));
+    }
+    return e('textarea',{
+      ref:refFor(b.id),
+      className:cls,rows:1,style:opts.style,
+      value:b.text,placeholder:opts.placeholder||'',
+      onChange:ev=>{handleInput(b.id,ev.target.value);autoGrow(ev.target);},
+      onKeyDown:ev=>handleKeyDown(b.id,ev),
+      onPaste:ev=>handlePaste(b.id,ev),
+      onFocus:()=>{if(selectedIds.length)clearSelection();setFocusedBlockId(b.id);},
+      onBlur:()=>setFocusedBlockId(cur=>cur===b.id?null:cur)
+    });
+  }
   const HEADING_PH='Escribe aquí... (clic derecho para formato: títulos, checklist, imagen, etc.)';
   return e('div',{className:'nb-blocks'},
     e('input',{ref:fileInputRef,type:'file',accept:'image/*',style:{display:'none'},onChange:handleFileChosen}),
@@ -11033,14 +11172,25 @@ function NotebookBlockEditor({blocks,legacyText,onChange}){
       const list=slashFor===b.id?slashFiltered():null;
       return e('div',{
         key:b.id,
-        className:'nb-block-row'+(isOver?(dragOverInfo.pos==='above'?' drag-over-above':' drag-over-below'):'')+(dragId.current===b.id?' dragging':''),
+        className:'nb-block-row'+(isOver?(dragOverInfo.pos==='above'?' drag-over-above':' drag-over-below'):'')+(dragId.current===b.id?' dragging':'')+(selectedIds.includes(b.id)?' selected':''),
         style:{position:'relative'},
         onDragOver:ev=>onDragOverRow(b.id,ev),
         onDrop:ev=>onDropRow(b.id,ev),
         onDragLeave:()=>setDragOverInfo(cur=>(cur&&cur.id===b.id)?null:cur),
-        onContextMenu:ev=>{ev.preventDefault();openSlash(b.id,'');}
+        onContextMenu:ev=>{
+          ev.preventDefault();
+          if(selectedIds.length>0){ setMultiMenu({x:ev.clientX,y:ev.clientY}); return; }
+          openSlash(b.id,'');
+        }
       },
-        e('div',{className:'nb-block-handle',draggable:true,onDragStart:ev=>beginDrag(b.id,ev),onDragEnd:()=>{dragId.current=null;setDragOverInfo(null);},title:'Arrastra para reordenar'},'⠿'),
+        e('div',{
+          className:'nb-block-handle'+(selectedIds.includes(b.id)?' selected':''),
+          draggable:true,
+          onDragStart:ev=>beginDrag(b.id,ev),
+          onDragEnd:()=>{dragId.current=null;setDragOverInfo(null);},
+          onClick:ev=>{ev.stopPropagation();toggleSelect(b.id,ev);},
+          title:'Arrastra para reordenar · click para seleccionar varias líneas (Shift+click para un rango)'
+        },'⠿'),
 
         b.type==='divider'
           ?e('div',{className:'nb-block-divider-wrap'},e('hr'))
@@ -11077,14 +11227,7 @@ function NotebookBlockEditor({blocks,legacyText,onChange}){
           ?e('div',{className:'nb-block-toggle-wrap'},
               e('div',{className:'nb-toggle-hdr'},
                 e('div',{className:'nb-toggle-caret'+(b.open?' open':''),onClick:()=>patchBlock(b.id,{open:!b.open}),title:b.open?'Contraer':'Expandir'},'▸'),
-                e('textarea',{
-                  ref:refFor(b.id),
-                  className:'nb-block-input',rows:1,style:{fontWeight:600},
-                  value:b.text,placeholder:'Título del desplegable...',
-                  onChange:ev=>{handleInput(b.id,ev.target.value);autoGrow(ev.target);},
-                  onKeyDown:ev=>handleKeyDown(b.id,ev),
-                  onPaste:ev=>handlePaste(b.id,ev)
-                })
+                nbTextField(b,{style:{fontWeight:600},placeholder:'Título del desplegable...'})
               ),
               b.open&&e('div',{className:'nb-toggle-body'},
                 e('textarea',{
@@ -11098,41 +11241,18 @@ function NotebookBlockEditor({blocks,legacyText,onChange}){
         :b.type==='todo'
           ?e('div',{className:'nb-block-todo-wrap'},
               e('button',{className:'nb-todo-check'+(b.checked?' on':''),onClick:()=>patchBlock(b.id,{checked:!b.checked}),title:b.checked?'Marcar como pendiente':'Marcar como hecho'},b.checked?'✓':''),
-              e('textarea',{
-                ref:refFor(b.id),
-                className:'nb-block-input'+(b.checked?' todo-done':''),rows:1,
-                value:b.text,placeholder:i===0?HEADING_PH:'',
-                onChange:ev=>{handleInput(b.id,ev.target.value);autoGrow(ev.target);},
-                onKeyDown:ev=>handleKeyDown(b.id,ev),
-                onPaste:ev=>handlePaste(b.id,ev)
-              })
+              nbTextField(b,{extraClass:b.checked?'todo-done':'',placeholder:i===0?HEADING_PH:''})
             )
 
         :b.type==='quote'
           ?e('div',{className:'nb-block-quote-wrap'},
-              e('textarea',{
-                ref:refFor(b.id),
-                className:'nb-block-input quote',rows:1,
-                value:b.text,placeholder:'Cita...',
-                onChange:ev=>{handleInput(b.id,ev.target.value);autoGrow(ev.target);},
-                onKeyDown:ev=>handleKeyDown(b.id,ev),
-                onPaste:ev=>handlePaste(b.id,ev)
-              })
+              nbTextField(b,{extraClass:'quote',placeholder:'Cita...'})
             )
 
         :e(React.Fragment,null,
             b.type==='bullet'&&e('div',{className:'nb-block-marker bullet'},'•'),
             b.type==='numbered'&&e('div',{className:'nb-block-marker'},numCounter+'.'),
-            e('textarea',{
-              ref:refFor(b.id),
-              className:'nb-block-input'+(b.type!=='text'&&b.type!=='bullet'&&b.type!=='numbered'?' '+b.type:''),
-              rows:1,
-              value:b.text,
-              placeholder:i===0?HEADING_PH:'',
-              onChange:ev=>{handleInput(b.id,ev.target.value);autoGrow(ev.target);},
-              onKeyDown:ev=>handleKeyDown(b.id,ev),
-              onPaste:ev=>handlePaste(b.id,ev)
-            })
+            nbTextField(b,{extraClass:b.type!=='text'&&b.type!=='bullet'&&b.type!=='numbered'?b.type:'',placeholder:i===0?HEADING_PH:''})
           ),
 
         list&&e('div',{className:'nb-slash-menu'},
@@ -11152,7 +11272,33 @@ function NotebookBlockEditor({blocks,legacyText,onChange}){
         e('button',{className:'nb-block-typebtn',title:'Cambiar tipo de bloque',onClick:()=>openSlash(b.id,'')},'⋯'),
         e('button',{className:'nb-block-del',title:'Eliminar bloque',onClick:()=>removeBlock(b.id)},'✕')
       );
-    })
+    }),
+    multiMenu&&e('div',{
+      className:'nb-multimenu',
+      style:{left:multiMenu.x,top:multiMenu.y}
+    },
+      e('div',{className:'nb-multimenu-lbl'},selectedIds.length+' líneas'),
+      e('div',{className:'nb-multimenu-row'},
+        e('button',{className:'nb-multimenu-fmt',style:{fontWeight:700},title:'Negrita',onClick:()=>applyMultiFormat(NB_FORMAT_MARKERS.b)},'B'),
+        e('button',{className:'nb-multimenu-fmt',style:{fontStyle:'italic'},title:'Cursiva',onClick:()=>applyMultiFormat(NB_FORMAT_MARKERS.i)},'I'),
+        e('button',{className:'nb-multimenu-fmt',style:{textDecoration:'line-through'},title:'Tachado',onClick:()=>applyMultiFormat(NB_FORMAT_MARKERS.strike)},'S'),
+        e('button',{className:'nb-multimenu-fmt',title:'Destacado',onClick:()=>applyMultiFormat(NB_FORMAT_MARKERS.hl)},e('span',{className:'nb-hl'},'H'))
+      ),
+      e('div',{className:'nb-multimenu-sep'}),
+      NB_SLASH_ITEMS.filter(it=>['text','h1','h2','h3','bullet','numbered','todo','quote'].includes(it.type)).map(it=>e('div',{
+        key:it.type,
+        className:'nb-slash-item',
+        onMouseDown:ev=>{ev.preventDefault();applyMultiConvert(it.type);}
+      },
+        e('div',{className:'nb-slash-item-icon'},it.icon),
+        e('span',null,it.label)
+      )),
+      e('div',{className:'nb-multimenu-sep'}),
+      e('div',{className:'nb-slash-item danger',onMouseDown:ev=>{ev.preventDefault();deleteSelected();}},
+        e('div',{className:'nb-slash-item-icon'},'✕'),
+        e('span',null,'Eliminar seleccionadas')
+      )
+    )
   );
 }
 function TaskNotebookPanel({task,onUpdateTask}){
