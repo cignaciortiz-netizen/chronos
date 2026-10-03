@@ -753,9 +753,9 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .sysmap-auto-note{font-size:9.5px;color:var(--accent2);margin-top:5px;line-height:1.4}
 .sysmap-connect-dot{position:absolute;left:50%;bottom:-6px;transform:translateX(-50%);width:12px;height:12px;border-radius:50%;background:var(--bg1,#111);border:1.6px solid var(--border4);cursor:crosshair}
 .sysmap-connect-dot:hover{border-color:var(--accent)}
-.sysmap-panel{position:absolute;width:270px;background:var(--bg2);border:1px solid var(--border3);border-radius:var(--r-lg);box-shadow:0 14px 40px #000a;z-index:25;overflow:hidden}
+.sysmap-panel{position:absolute;min-width:270px;width:max-content;max-width:min(440px,90vw);background:var(--bg2);border:1px solid var(--border3);border-radius:var(--r-lg);box-shadow:0 14px 40px #000a;z-index:25;overflow:hidden}
 .sysmap-panel-hdr{display:flex;align-items:center;gap:8px;padding:9px 10px;border-bottom:1px solid var(--border2)}
-.sysmap-panel-title{flex:1;min-width:0;font-size:12px;font-weight:600;color:var(--text0);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sysmap-panel-title{flex:1;min-width:0;font-size:12px;font-weight:600;color:var(--text0);white-space:normal;word-break:break-word;line-height:1.3}
 .sysmap-panel-expand{flex-shrink:0;background:transparent;border:none;color:var(--accent2);font-size:10px;cursor:pointer;padding:3px 4px;border-radius:5px}
 .sysmap-panel-expand:hover{background:var(--bg3)}
 .sysmap-panel-x{flex-shrink:0;background:transparent;border:none;color:var(--text3);cursor:pointer;font-size:10.5px;padding:2px 4px;border-radius:4px}
@@ -763,10 +763,10 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .sysmap-panel-body{max-height:360px;overflow-y:auto;padding:8px}
 .sysmap-panel-phase{margin-bottom:8px;border:1px solid var(--border2);border-radius:8px;padding:8px}
 .sysmap-panel-phase-hdr{display:flex;align-items:center;gap:6px;margin-bottom:6px}
-.sysmap-panel-phase-name{flex:1;min-width:0;background:transparent;border:none;color:var(--text1);font-size:12px;font-weight:600;padding:2px 0}
+.sysmap-panel-phase-name{flex:1;min-width:0;background:transparent;border:none;color:var(--text1);font-size:12px;font-weight:600;padding:2px 0;white-space:normal;word-break:break-word}
 .sysmap-panel-task{display:flex;align-items:center;gap:7px;padding:3px 2px;border-radius:5px;font-size:12px}
 .sysmap-panel-task:hover{background:var(--bg3)}
-.sysmap-panel-task-text{flex:1;color:var(--text1)}
+.sysmap-panel-task-text{flex:1;color:var(--text1);white-space:normal;word-break:break-word;line-height:1.35}
 .sysmap-panel-task-text.done{color:var(--text4);text-decoration:line-through}
 .sysmap-panel-addtask{display:flex;padding:3px 2px}
 .sysmap-panel-addtask input{flex:1;background:transparent;border:none;color:var(--text1);font-size:12px;padding:2px 0}
@@ -890,6 +890,10 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .nb-block-row.selected{background:var(--accent-bg,#c89a5714)}
 .nb-block-row.drag-over-above::before{content:'';position:absolute;left:26px;right:0;top:-2px;height:2px;background:var(--accent2);border-radius:2px}
 .nb-block-row.drag-over-below::after{content:'';position:absolute;left:26px;right:0;bottom:-2px;height:2px;background:var(--accent2);border-radius:2px}
+.gsb-proj{position:relative;cursor:grab}
+.gsb-proj.dragging{opacity:.4}
+.gsb-proj.drag-over-above::before{content:'';position:absolute;left:8px;right:8px;top:-2px;height:2px;background:var(--accent2);border-radius:2px;z-index:1}
+.gsb-proj.drag-over-below::after{content:'';position:absolute;left:8px;right:8px;bottom:-2px;height:2px;background:var(--accent2);border-radius:2px;z-index:1}
 .nb-block-row.dragging{opacity:.4}
 .nb-block-handle{width:18px;height:24px;flex-shrink:0;display:flex;align-items:center;justify-content:center;cursor:grab;color:var(--text4);opacity:0;transition:opacity .1s;letter-spacing:-1px;font-size:12px;line-height:1;user-select:none;margin-top:1px}
 .nb-block-handle.selected{opacity:1;color:var(--accent2)}
@@ -906,7 +910,7 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .nb-block-marker{flex-shrink:0;min-width:18px;text-align:right;color:var(--text3);font-size:13px;line-height:1.8;padding-top:1px;user-select:none}
 .nb-block-marker.bullet{font-size:16px;line-height:1.6}
 .nb-block-input{flex:1;background:transparent;border:none;outline:none;color:var(--text1);font-size:13px;line-height:1.8;font-family:'Inter',sans-serif;resize:none;padding:0;overflow:hidden;min-height:23.4px}
-.nb-block-preview{cursor:text;white-space:pre-wrap;word-break:break-word}
+.nb-block-preview{cursor:text;white-space:pre-wrap;word-break:break-word;user-select:text;-webkit-user-select:text}
 .nb-hl{background:var(--amber-bg,#dba14a2a);color:inherit;border-radius:3px;padding:0 2px}
 .nb-block-input::placeholder{color:var(--text4)}
 .nb-block-divider-wrap{flex:1;display:flex;align-items:center;padding:10px 0 10px 18px}
@@ -1198,6 +1202,34 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .dash-date-btn:hover{background:var(--bg3);color:var(--text1)}
 .dash-date-lbl{font-size:10.5px;color:var(--text1);padding:0 8px;cursor:pointer;text-transform:capitalize;white-space:nowrap}
 .dash-tabs{display:flex;gap:2px;padding:16px 26px 0;border-bottom:1px solid var(--border);flex-shrink:0}
+/* ── Calendario de proyecto ── */
+.cal-wrap{max-width:700px;margin:0 auto;padding:20px 0;display:flex;flex-direction:column;gap:0}
+.cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding:0 2px}
+.cal-month-label{font-size:14px;font-weight:600;color:var(--text0)}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:var(--border);border-radius:10px;overflow:hidden}
+.cal-dow{background:var(--bg1);text-align:center;font-size:9.5px;color:var(--text4);padding:6px 0;font-weight:600;letter-spacing:.4px}
+.cal-cell{background:var(--bg1);min-height:72px;padding:6px 7px;cursor:pointer;transition:background .1s;position:relative;display:flex;flex-direction:column;gap:3px}
+.cal-cell:hover{background:var(--bg2)}
+.cal-cell-empty{background:var(--bg0);cursor:default}
+.cal-today .cal-day-num{background:var(--accent2);color:#fff;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center}
+.cal-sel{background:var(--bg3)!important;outline:2px solid var(--accent2);outline-offset:-2px}
+.cal-overdue{background:color-mix(in srgb,var(--red) 5%,var(--bg1))}
+.cal-day-num{font-size:11px;font-weight:500;color:var(--text2);line-height:20px;width:20px;text-align:center}
+.cal-dots{display:flex;gap:3px;flex-wrap:wrap;margin-top:2px}
+.cal-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.cal-dot-done{background:var(--text4)}
+.cal-detail{margin-top:14px;background:var(--bg2);border:1px solid var(--border2);border-radius:10px;padding:12px 14px}
+.cal-detail-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.cal-detail-title{font-size:12.5px;font-weight:600;color:var(--text0);text-transform:capitalize}
+.cal-task-row{display:flex;align-items:center;gap:8px;padding:6px 4px;border-radius:6px;cursor:pointer;transition:background .1s}
+.cal-task-row:hover{background:var(--bg3)}
+.cal-task-row.done{opacity:.5}
+.cal-task-check{font-size:11px;color:var(--text3);width:16px;text-align:center;flex-shrink:0;cursor:pointer}
+.cal-task-row.done .cal-task-check{color:var(--green)}
+.cal-task-name{flex:1;font-size:12px;color:var(--text1);text-decoration:none}
+.cal-task-row.done .cal-task-name{text-decoration:line-through}
+.cal-task-phases{font-size:10px;color:var(--text4);flex-shrink:0}
+.cal-cell-label{font-size:9px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2;margin-top:2px}
 .dash-tab{background:transparent;border:none;color:var(--text3);font-size:12px;font-family:'Inter',sans-serif;padding:8px 12px 10px;cursor:pointer;position:relative;transition:color .12s;border-radius:6px 6px 0 0}
 .dash-tab-icon{display:flex;align-items:center;justify-content:center;padding:9px 14px 11px}
 .dash-tab-icon:hover{background:var(--bg3);color:var(--text1)}
@@ -2094,6 +2126,7 @@ const SYSTEM_TEMPLATES=[
   {label:'Ventas',stages:['Calificación','Demo','Propuesta','Negociación','Cierre','Onboarding']},
 ];
 const INIT_SOUND_CFG={
+  remindSound:'bell',remindVol:0.5, // sonido principal de recordatorios (campanita, hábitos)
   blockSound:'chime',blockVol:0.5,
   idleSound:'nudge',idleVol:0.4,idleInterval:10,idleEnabled:true,
   hoverSound:'clack',clickSound:'glass',uiVol:0.25,uiEnabled:true,
@@ -2619,10 +2652,12 @@ const TASK_STATUS_LABEL={pending:'Pendiente',inprog:'En curso',done:'Hecho'};
 // rápidos, visible en cualquier vista (Inicio, Analíticas, Proyecto).
 // Colapsable a un riel de íconos; el estado se guarda entre sesiones.
 // ═══════════════════════════════════════════
-const GlobalSidebar=React.memo(function GlobalSidebar({projects,habits,systems,tasks,notes,view,setView,selProj,onOpenProject,onNewProject,onArchiveProject,onShowArchived,collapsed,onToggleCollapse,onOpenCmdk,onOpenSettings}){
+const GlobalSidebar=React.memo(function GlobalSidebar({projects,habits,systems,tasks,notes,view,setView,selProj,onOpenProject,onNewProject,onArchiveProject,onShowArchived,onReorderProjects,collapsed,onToggleCollapse,onOpenCmdk,onOpenSettings}){
   const todayK=dayKey();
   const activeProjects=projects.filter(p=>p.status!=='archived');
   const[ctxMenu,setCtxMenu]=useState(null); // {x,y,proj}
+  const[sortByAlert,setSortByAlert]=useState(()=>{try{return localStorage.getItem('chr4_sbsort')==='alert';}catch{return false;}});
+  useEffect(()=>{try{localStorage.setItem('chr4_sbsort',sortByAlert?'alert':'manual');}catch{};},[sortByAlert]);
   useEffect(()=>{
     if(!ctxMenu)return;
     const close=()=>setCtxMenu(null);
@@ -2630,6 +2665,31 @@ const GlobalSidebar=React.memo(function GlobalSidebar({projects,habits,systems,t
     window.addEventListener('scroll',close,true);
     return()=>{window.removeEventListener('click',close);window.removeEventListener('scroll',close,true);};
   },[ctxMenu]);
+  // Arrastrar para reordenar los proyectos de la sidebar — mismo patrón que
+  // ya se usa para reordenar bloques en la Libreta.
+  const dragProjId=useRef(null);
+  const[dragOverProj,setDragOverProj]=useState(null); // {id,pos:'above'|'below'}
+  function beginProjDrag(id,ev){
+    dragProjId.current=id;
+    ev.dataTransfer.effectAllowed='move';
+  }
+  function onProjDragOver(id,ev){
+    if(!dragProjId.current||dragProjId.current===id)return;
+    ev.preventDefault();
+    const rect=ev.currentTarget.getBoundingClientRect();
+    const pos=(ev.clientY-rect.top)<rect.height/2?'above':'below';
+    setDragOverProj({id,pos});
+  }
+  function onProjDrop(id,ev){
+    ev.preventDefault();
+    const srcId=dragProjId.current;
+    dragProjId.current=null;
+    const pos=dragOverProj&&dragOverProj.id===id?dragOverProj.pos:'above';
+    setDragOverProj(null);
+    if(!srcId||srcId===id)return;
+    onReorderProjects&&onReorderProjects(srcId,id,pos);
+  }
+  function onProjDragEnd(){ dragProjId.current=null; setDragOverProj(null); }
   function projAlert(p){
     const habitDue=habits.some(h=>h.projectId===p.id&&habitOccursOn(h,dateFromDayKey(todayK))&&!(h.log||[]).includes(todayK)&&!(h.skipLog||[]).includes(todayK));
     const systemDue=systems.some(s=>s.projectId===p.id&&s.status!=='paused'&&s.nextRun&&s.nextRun<=Date.now());
@@ -2669,15 +2729,30 @@ const GlobalSidebar=React.memo(function GlobalSidebar({projects,habits,systems,t
     ),
     e('div',{className:'gsb-groupline'},
       e('span',null,'PROYECTOS'),
+      !collapsed&&e('button',{
+        className:'ghost-btn',
+        title:sortByAlert?'Orden manual (arrastra para reordenar)':'Ordenar: pendientes primero',
+        style:{fontSize:9,padding:'1px 4px',color:sortByAlert?'var(--red,#e05555)':'var(--text4)',marginRight:2},
+        onClick:ev=>{ev.stopPropagation();setSortByAlert(v=>!v);}
+      },sortByAlert?'● Alertas':'⇅'),
       e('div',{className:'add',onClick:onNewProject,title:'Nuevo proyecto'},
         e('svg',{width:11,height:11,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2.4,strokeLinecap:'round'},e('path',{d:'M12 5v14M5 12h14'}))
       )
     ),
     e('div',{className:'gsb-projlist'},
       activeProjects.length===0&&!collapsed&&e('div',{className:'empty',style:{padding:'4px 10px'}},'Sin proyectos aún.'),
-      activeProjects.map(p=>e('div',{
+      (sortByAlert
+        ? activeProjects.slice().sort((a,b)=>(projAlert(b)?1:0)-(projAlert(a)?1:0))
+        : activeProjects
+      ).map(p=>e('div',{
         key:p.id,
-        className:'gsb-proj'+(view==='dashboard'&&selProj===p.id?' active':''),
+        className:'gsb-proj'+(view==='dashboard'&&selProj===p.id?' active':'')+(dragProjId.current===p.id?' dragging':'')+(dragOverProj&&dragOverProj.id===p.id?(dragOverProj.pos==='above'?' drag-over-above':' drag-over-below'):''),
+        draggable:true,
+        onDragStart:ev=>beginProjDrag(p.id,ev),
+        onDragOver:ev=>onProjDragOver(p.id,ev),
+        onDrop:ev=>onProjDrop(p.id,ev),
+        onDragEnd:onProjDragEnd,
+        onDragLeave:()=>setDragOverProj(cur=>(cur&&cur.id===p.id)?null:cur),
         onClick:()=>{playUI('click');onOpenProject(p.id);},
         onContextMenu:ev=>{ev.preventDefault();ev.stopPropagation();playUI('click');setCtxMenu({x:ev.clientX,y:ev.clientY,proj:p});},
         title:p.name
@@ -2840,6 +2915,23 @@ function App(){
   const onOpenProjectCb=useCallback(pid=>{setSelProj(pid);setView('dashboard');},[]);
   const onNewProjectCb=useCallback(()=>setShowNewProj(true),[]);
   const onArchiveProjectCb=useCallback(pid=>{setProjects(ps=>ps.map(p=>p.id===pid?{...p,status:'archived'}:p));forceSync();},[]);
+  // Arrastrar y soltar en la sidebar reordena el arreglo "projects" de
+  // verdad (no solo la vista) — así el orden que elijas queda guardado y
+  // sincronizado, igual que cualquier otro cambio.
+  const onReorderProjectsCb=useCallback((srcId,targetId,pos)=>{
+    setProjects(ps=>{
+      const srcIdx=ps.findIndex(p=>p.id===srcId);
+      if(srcIdx<0)return ps;
+      const arr=[...ps];
+      const[moved]=arr.splice(srcIdx,1);
+      let tgtIdx=arr.findIndex(p=>p.id===targetId);
+      if(tgtIdx<0)return ps;
+      if(pos==='below')tgtIdx+=1;
+      arr.splice(tgtIdx,0,moved);
+      return arr;
+    });
+    forceSync();
+  },[]);
   const onShowArchivedCb=useCallback(()=>setShowArchivedProjects(true),[]);
   const onOpenCmdkCb=useCallback(()=>setShowCmdk(true),[]);
   const onOpenSettingsCb=useCallback(()=>setShowThemeCfg(true),[]);
@@ -2880,6 +2972,7 @@ function App(){
   const[sbSyncing,setSbSyncing]=useState(false);
   const sbSyncRef=useRef(null);
   const sbFailStreakRef=useRef(0); // sincronizaciones fallidas seguidas — para esperar más si Supabase está inestable, en vez de seguir golpeándolo al mismo ritmo
+  const sbUrgentRef=useRef(false); // marca la próxima subida como urgente (300ms en vez del debounce normal) — para acciones puntuales importantes como crear un recordatorio
 
   useEffect(()=>{const id=setInterval(()=>setTick(t=>t+1),20000);return()=>clearInterval(id);},[]);
 
@@ -3100,17 +3193,44 @@ function App(){
   },[projects,soundCfg]);
 
   const remindersFirstRun=useRef(true);
+  // Marca los recordatorios YA vencidos al abrir la app para que no
+  // disparen audio — solo queremos audio para los que vencen MIENTRAS
+  // la app está abierta, no para los del pasado que el usuario ya sabe.
+  const startupOverdueRef=useRef(new Set());
+  useEffect(()=>{
+    // Primera ejecución: registrar qué recordatorios ya estaban vencidos
+    // ANTES de abrir la app. Si llegan más tarde (desde Supabase), se
+    // registran también como "startup" para no disparar audio.
+    const now=Date.now();
+    reminders.forEach(r=>{if(r.dueAt&&now>=r.dueAt)startupOverdueRef.current.add(r.id);});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[]);// solo al montar
+
+  useEffect(()=>{
+    // Cuando Supabase restaura recordatorios, los que ya estaban vencidos
+    // se agregan al set de "startup" para que no suenen.
+    const now=Date.now();
+    reminders.forEach(r=>{
+      if(r.dueAt&&now>=r.dueAt&&!firedRemsRef.current.has(r.id)){
+        startupOverdueRef.current.add(r.id);
+      }
+    });
+  },[reminders.length]);// cuando cambia la cantidad (ej. Supabase restaura)
+
   useEffect(()=>{
     function check(){
       const now=Date.now();
       setReminders(prev=>prev.map(r=>{
         if(r.done) return r;
-        if(r.dueAt&&now<r.dueAt&&firedRemsRef.current.has(r.id)) firedRemsRef.current.delete(r.id); // postponed → allow re-fire later
+        if(r.dueAt&&now<r.dueAt&&firedRemsRef.current.has(r.id)) firedRemsRef.current.delete(r.id);
         if(firedRemsRef.current.has(r.id)) return r;
         if(r.dueAt&&now>=r.dueAt){
           firedRemsRef.current.add(r.id);
           const proj=projects.find(p=>p.id===r.projId);
-          if(!remindersFirstRun.current){
+          // Solo audio si NO estaba vencido al abrir la app y NO es la
+          // primera pasada del intervalo (para no sonar al reconectar a SB)
+          const wasStartupOverdue=startupOverdueRef.current.has(r.id);
+          if(!remindersFirstRun.current&&!wasStartupOverdue){
             playSound(soundCfg.remindSound||'bell',soundCfg.remindVol!=null?soundCfg.remindVol:0.6);
             setRemToast({id:r.id,title:r.title,projName:proj?.name||'',color:proj?.color||'var(--accent)'});
           }
@@ -3229,7 +3349,8 @@ function App(){
         if(SB.isDirty()){
           await SB.push({projects,sessions,intenciones,tasks,blocks,habits,reminders,ctxs,systems,panelLabels,panelVisibility,panelSortModes,templates,sysTemplates});
           SB.markSynced();
-          return;
+          // NO hacemos return: leemos igual para restaurar recordatorios
+          // y cualquier dato que no esté en localStorage por actualizar el app.
         }
         const remote = await SB.pull();
         if(remote){
@@ -3243,7 +3364,17 @@ function App(){
           if(remote.panelLabels)       setPanelLabels(remote.panelLabels);
           if(remote.panelVisibility)   setPanelVisibility(remote.panelVisibility);
           if(remote.panelSortModes)    setPanelSortModes(remote.panelSortModes);
-          if(remote.reminders?.length) setReminders(remote.reminders);
+          // Recordatorios: siempre restauramos desde Supabase aunque el
+          // arreglo local no esté vacío — así sobreviven a actualizaciones
+          // del archivo. Merge: remotos ganan en conflicto, locales offline
+          // (sin id en remoto) se conservan.
+          if(remote.reminders!=null){
+            setReminders(prev=>{
+              const remoteIds=new Set((remote.reminders||[]).map(r=>r.id));
+              const onlyLocal=prev.filter(r=>!remoteIds.has(r.id));
+              return[...(remote.reminders||[]),...onlyLocal];
+            });
+          }
           if(remote.ctxs?.length)      setCtxs(remote.ctxs);
           if(remote.templates?.length) setTemplates(remote.templates);
           if(remote.sysTemplates?.length) setSysTemplates(remote.sysTemplates);
@@ -3296,7 +3427,8 @@ function App(){
     // salvo en localStorage mientras tanto, así que esperar más no arriesga
     // nada, y le da margen a Supabase para recuperarse en vez de sumarle
     // más carga justo cuando está mal.
-    const backoff=Math.min(60000,3000*Math.pow(2,sbFailStreakRef.current));
+    const backoff=sbUrgentRef.current?300:Math.min(60000,3000*Math.pow(2,sbFailStreakRef.current));
+    sbUrgentRef.current=false;
     // "sessions" queda AFUERA a propósito — va por su cuenta en el efecto de
     // abajo. Esto es lo que se dispara con casi cualquier edición (tocar una
     // tarea, arrastrar una imagen, tickear un hábito), así que dejarlo sin
@@ -3342,13 +3474,14 @@ function App(){
   },[sessions,sbStatus]);
 
   // forceSync(): ya NO dispara su propio push inmediato/paralelo (esa era la
-  // causa del doble envío). El efecto de arriba ya reacciona automáticamente
-  // a estos mismos datos — forceSync() ahora es solo un "reasegurar que el
-  // debounce está corriendo" para el puñado de casos donde el cambio ocurre
-  // fuera del árbol de estado observado ahí arriba (ninguno crítico hoy).
-  // Se deja como función real (no un no-op) para no tener que tocar los 57
-  // lugares que ya la llaman, y por si a futuro hace falta de nuevo.
-  const forceSync=()=>{};
+  // causa del doble envío) — sigue habiendo un único temporizador. Lo que sí
+  // hace es marcar la PRÓXIMA subida como urgente, así que en vez de esperar
+  // los 3 segundos normales, se manda casi de inmediato (300ms) — sin crear
+  // una segunda petición en paralelo. Se usa para acciones puntuales e
+  // importantes que uno no quiere que se queden esperando el debounce normal
+  // por si se cierra la pestaña o se borran los datos del navegador justo
+  // después — como crear o editar un recordatorio.
+  const forceSync=()=>{ sbUrgentRef.current=true; };
 
   // Recurrence engine (trigger: 'onSchedule') — for tasks whose recurrence says
   // "create the next one on its scheduled date, regardless of status", this scans
@@ -3837,6 +3970,7 @@ function App(){
         onOpenProject:onOpenProjectCb,
         onNewProject:onNewProjectCb,
         onArchiveProject:onArchiveProjectCb,
+        onReorderProjects:onReorderProjectsCb,
         onShowArchived:onShowArchivedCb,
         collapsed:sidebarCollapsed,onToggleCollapse:toggleSidebar,
         onOpenCmdk:onOpenCmdkCb,
@@ -3949,7 +4083,16 @@ function App(){
             onPlayHabit:habitId=>{const h=habits.find(x=>x.id===habitId);setStartFlow({projId:selectedProjObj.id,mode:'pomo',habitId,taskName:h?h.name:null});},
             project:selectedProjObj,
             projects,tasks,sessions,ctxs,habits,systems,
-            notes:notes[selectedProjObj.id]||[],
+            notes:[
+              ...(notes[selectedProjObj.id]||[]),
+              // Recordatorios creados desde la campanita para este proyecto —
+              // los normalizamos al mismo shape que las notas (text, remindAt)
+              // para que QuickNotesPanel/QuickNoteItem los muestre igual,
+              // con su hora en ámbar o rojo según si están vencidos.
+              ...reminders
+                .filter(r=>r.projId===selectedProjObj.id&&!r.noteId&&!r.habitId&&!r.done)
+                .map(r=>({id:r.id,text:r.title,createdAt:r.createdAt||0,done:false,remindAt:r.dueAt,remindDone:false,_fromReminder:true}))
+            ],
             onAddNote:text=>{
               const t=(text||'').trim();
               if(!t)return;
@@ -3957,31 +4100,45 @@ function App(){
               forceSync();
             },
             onDeleteNote:id=>{
-              setNotes(n=>({...n,[selectedProjObj.id]:(n[selectedProjObj.id]||[]).filter(x=>x.id!==id)}));
+              const pid=selectedProjObj.id;
+              const isRem=reminders.some(r=>r.id===id&&r.projId===pid&&!r.noteId&&!r.habitId);
+              if(isRem)setReminders(rs=>rs.filter(r=>r.id!==id));
+              else setNotes(n=>({...n,[pid]:(n[pid]||[]).filter(x=>x.id!==id)}));
               forceSync();
             },
             onToggleNoteDone:id=>{
-              setNotes(n=>({...n,[selectedProjObj.id]:(n[selectedProjObj.id]||[]).map(x=>x.id===id?{...x,done:!x.done}:x)}));
+              const pid=selectedProjObj.id;
+              const isRem=reminders.some(r=>r.id===id&&r.projId===pid&&!r.noteId&&!r.habitId);
+              if(isRem)setReminders(rs=>rs.map(r=>r.id===id?{...r,done:!r.done}:r));
+              else setNotes(n=>({...n,[pid]:(n[pid]||[]).map(x=>x.id===id?{...x,done:!x.done}:x)}));
               forceSync();
             },
             onSetNoteReminder:(id,dueAt)=>{
               const pid=selectedProjObj.id;
-              setNotes(n=>({...n,[pid]:(n[pid]||[]).map(x=>x.id===id?{...x,remindAt:dueAt||null,remindDone:false}:x)}));
-              setReminders(rs=>{
-                const withoutOld=rs.filter(r=>r.noteId!==id);
-                if(!dueAt)return withoutOld;
-                const note=(notes[pid]||[]).find(x=>x.id===id);
-                const r={id:uid(),title:note?note.text:'Nota',projId:pid,dueAt,done:false,overdue:false,createdAt:Date.now(),noteId:id};
-                return[r,...withoutOld];
-              });
+              const isRem=reminders.some(r=>r.id===id&&r.projId===pid&&!r.noteId&&!r.habitId);
+              if(isRem){
+                if(!dueAt)setReminders(rs=>rs.filter(r=>r.id!==id));
+                else setReminders(rs=>rs.map(r=>r.id===id?{...r,dueAt,overdue:dueAt<=Date.now()}:r));
+              }else{
+                setNotes(n=>({...n,[pid]:(n[pid]||[]).map(x=>x.id===id?{...x,remindAt:dueAt||null,remindDone:false}:x)}));
+                setReminders(rs=>{
+                  const withoutOld=rs.filter(r=>r.noteId!==id);
+                  if(!dueAt)return withoutOld;
+                  const note=(notes[pid]||[]).find(x=>x.id===id);
+                  const r={id:uid(),title:note?note.text:'Nota',projId:pid,dueAt,done:false,overdue:false,createdAt:Date.now(),noteId:id};
+                  return[r,...withoutOld];
+                });
+              }
               forceSync();
             },
             onEditNoteText:(id,text)=>{
               const pid=selectedProjObj.id;
-              setNotes(n=>({...n,[pid]:(n[pid]||[]).map(x=>x.id===id?{...x,text}:x)}));
-              // el recordatorio vinculado (si existe) muestra el mismo texto — se
-              // renombra junto con la nota para que no quede desactualizado
-              setReminders(rs=>rs.map(r=>r.noteId===id?{...r,title:text}:r));
+              const isRem=reminders.some(r=>r.id===id&&r.projId===pid&&!r.noteId&&!r.habitId);
+              if(isRem)setReminders(rs=>rs.map(r=>r.id===id?{...r,title:text}:r));
+              else{
+                setNotes(n=>({...n,[pid]:(n[pid]||[]).map(x=>x.id===id?{...x,text}:x)}));
+                setReminders(rs=>rs.map(r=>r.noteId===id?{...r,title:text}:r));
+              }
               forceSync();
             },
             panelLabels,onRenameLabel:(key,val)=>{setPanelLabels(p=>({...p,[key]:val}));forceSync();},
@@ -4372,7 +4529,13 @@ function App(){
             if(remote.panelLabels)     setPanelLabels(remote.panelLabels);
             if(remote.panelVisibility) setPanelVisibility(remote.panelVisibility);
             if(remote.panelSortModes)  setPanelSortModes(remote.panelSortModes);
-            if(remote.reminders?.length)setReminders(remote.reminders);
+            if(remote.reminders!=null){
+              setReminders(prev=>{
+                const remoteIds=new Set((remote.reminders||[]).map(r=>r.id));
+                const onlyLocal=prev.filter(r=>!remoteIds.has(r.id));
+                return[...(remote.reminders||[]),...onlyLocal];
+              });
+            }
             if(remote.ctxs?.length)     setCtxs(remote.ctxs);
             if(remote.templates?.length)setTemplates(remote.templates);
             if(remote.sysTemplates?.length)setSysTemplates(remote.sysTemplates);
@@ -4822,8 +4985,25 @@ function SoundCfgModal({cfg,onChange,onClose}){
         e('button',{className:'modal-x',onClick:onClose},'✕')
       ),
       e('div',{className:'modal-body'},
+        // Section: MAIN reminder sound (recordatorios de la campanita/panel)
+        e('div',{style:{fontSize:10,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.8px',marginBottom:6}},'🔔 Recordatorios y avisos'),
+        e('div',{className:'fg'},
+          e('label',{className:'flabel'},'Sonido principal de notificación'),
+          e('div',{className:'sound-row'},
+            e('select',{className:'fselect',style:{flex:1},value:c.remindSound||'bell',onChange:ev=>upd('remindSound',ev.target.value)},
+              Object.entries(SOUNDS).map(([k,s])=>e('option',{key:k,value:k},s.label))
+            ),
+            e('button',{className:'sound-play',onClick:()=>playSound(c.remindSound||'bell',c.remindVol!=null?c.remindVol:0.6),title:'Probar'},'▶')
+          )
+        ),
+        e('div',{className:'fg'},
+          e('label',{className:'flabel'},'Volumen ({0}%)'.replace('{0}',Math.round((c.remindVol!=null?c.remindVol:0.6)*100))),
+          e('input',{type:'range',min:0,max:1,step:.05,value:c.remindVol!=null?c.remindVol:0.6,onChange:ev=>upd('remindVol',parseFloat(ev.target.value)),style:{width:'100%',accentColor:'var(--accent)'}}),
+          e('div',{className:'hint-row'},'Este es el sonido que suena cuando un recordatorio vence (hábitos, recordatorios manuales). El que sonaba fuerte al inicio ya está corregido.')
+        ),
+        e('div',{style:{height:1,background:'var(--border)',margin:'4px 0'}}),
         // Section: block reminders
-        e('div',{style:{fontSize:10,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.8px',marginBottom:6}},'Recordatorio de bloques'),
+        e('div',{style:{fontSize:10,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.8px',marginBottom:6}},'Recordatorio de bloques de tiempo'),
         e('div',{className:'fg'},
           e('label',{className:'flabel'},'Sonido por defecto para bloques nuevos'),
           e('div',{className:'sound-row'},
@@ -7149,7 +7329,7 @@ function QuickNoteItem({note,onDeleteNote,onToggleNoteDone,onSetNoteReminder,onE
               onKeyDown:ev=>{if(ev.key==='Enter')commitText();if(ev.key==='Escape'){setTextVal(note.text);setEditingText(false);}}
             })
           :e('span',{className:'qn-item-text',onClick:openEditor,onDoubleClick:()=>setEditingText(true),title:'Click: fecha y hora · Doble click: renombrar'},note.text),
-        active&&e('span',{className:'qn-item-remind'},e(ClockIcon,{size:9,color:noteReminderDue(note)?'var(--red,#e05555)':'var(--amber)'}),fmtNoteReminder(note.remindAt))
+        active&&e('span',{className:'qn-item-remind'},e(ClockIcon,{size:9,color:noteReminderDue(note)?'var(--red,#e05555)':((note.remindAt-Date.now())<2*24*60*60*1000?'var(--amber)':'var(--text4)')}),fmtNoteReminder(note.remindAt))
       ),
       e('button',{className:'qn-item-del',title:'Eliminar',onClick:()=>onDeleteNote(note.id)},'✕')
     ),
@@ -7236,7 +7416,15 @@ function QuickNotesPanel({notes,onAddNote,onDeleteNote,onToggleNoteDone,onSetNot
   // Las notas marcadas con check se consideran archivadas: quedan guardadas
   // (por si se quieren revisar desde "Ver todas") pero desaparecen de esta
   // vista compacta, que solo muestra pendientes.
-  const list=(notes||[]).filter(n=>!n.done);
+  // Orden: primero las que tienen fecha de recordatorio, de la más próxima a
+  // la más tardía; después las que no tienen fecha, por orden de creación.
+  const list=(notes||[]).filter(n=>!n.done).sort((a,b)=>{
+    const ha=!!a.remindAt,hb=!!b.remindAt;
+    if(ha&&hb)return a.remindAt-b.remindAt; // ambas con fecha: más próxima primero
+    if(ha)return-1; // a tiene fecha, b no → a va primero
+    if(hb)return 1;  // b tiene fecha, a no → b va primero
+    return b.createdAt-a.createdAt; // ninguna tiene fecha: más reciente primero
+  });
   return e('div',{className:'qn-panel'},
     e('div',{className:'qn-hdr'},
       e('span',{className:'dash-panel-title'},'Recordatorios'),
@@ -8682,6 +8870,14 @@ function SystemDetailDrawer({system,onUpdateSystem,onClose,onExecute}){
   const[dragPhaseId,setDragPhaseId]=useState(null); // fase que se está arrastrando
   const[dragTask,setDragTask]=useState(null); // {phaseId,taskId} tarea que se está arrastrando
   const[dropTaskTarget,setDropTaskTarget]=useState(null); // {phaseId,taskId|null} indicador visual de destino
+  const[phaseCtxMenu,setPhaseCtxMenu]=useState(null); // {x,y,phaseId} — menú de clic derecho sobre una fase
+  useEffect(()=>{
+    if(!phaseCtxMenu)return;
+    const close=()=>setPhaseCtxMenu(null);
+    window.addEventListener('click',close);
+    window.addEventListener('scroll',close,true);
+    return()=>{window.removeEventListener('click',close);window.removeEventListener('scroll',close,true);};
+  },[phaseCtxMenu]);
 
   function commitPhases(next,bizOnly){
     const updated={...system,phases:next};
@@ -8707,6 +8903,24 @@ function SystemDetailDrawer({system,onUpdateSystem,onClose,onExecute}){
   }
   function deletePhase(id){
     commitPhases(phases.filter(p=>p.id!==id));
+  }
+  // Duplica una fase completa con todas sus tareas adentro — mismo nombre
+  // con "(copia)", tareas frescas (sin marcar como hechas), justo después
+  // de la original. Para no tener que volver a escribir todo a mano.
+  function duplicatePhase(id){
+    const idx=phases.findIndex(p=>p.id===id);
+    if(idx<0)return;
+    const orig=phases[idx];
+    const copy={
+      ...orig,
+      id:uid(),
+      name:orig.name+' (copia)',
+      tasks:(orig.tasks||[]).map(t=>({...t,id:uid(),done:false}))
+    };
+    const next=phases.slice();
+    next.splice(idx+1,0,copy);
+    commitPhases(next);
+    setOpenIds(prev=>new Set(prev).add(copy.id));
   }
   function reorderPhase(fromId,toId){
     if(fromId===toId)return;
@@ -8843,7 +9057,7 @@ function SystemDetailDrawer({system,onUpdateSystem,onClose,onExecute}){
             onDragOver:ev=>{if(dragPhaseId&&dragPhaseId!==p.id)ev.preventDefault();},
             onDrop:ev=>{ev.preventDefault();if(dragPhaseId)reorderPhase(dragPhaseId,p.id);setDragPhaseId(null);}
           },
-            e('div',{className:'sysphase-hdr',onClick:()=>togglePhaseOpen(p.id)},
+            e('div',{className:'sysphase-hdr',onClick:()=>togglePhaseOpen(p.id),onContextMenu:ev=>{ev.preventDefault();ev.stopPropagation();playUI('click');setPhaseCtxMenu({x:ev.clientX,y:ev.clientY,phaseId:p.id});}},
               e('span',{className:'sysphase-grip',title:'Arrastra para reordenar'},'⠿'),
               e('span',{className:'mm-chev'+(isOpen?' open':'')},'›'),
               e('input',{className:'sysphase-name',value:p.name,onClick:ev=>ev.stopPropagation(),onChange:ev=>renamePhase(p.id,ev.target.value)}),
@@ -8992,7 +9206,24 @@ function SystemDetailDrawer({system,onUpdateSystem,onClose,onExecute}){
           )
         )
       );
-    })()
+    })(),
+    phaseCtxMenu&&e('div',{
+      style:{position:'fixed',top:phaseCtxMenu.y,left:phaseCtxMenu.x,background:'var(--bg3)',border:'1px solid var(--border3)',borderRadius:'var(--r-md)',padding:'4px',zIndex:700,boxShadow:'0 8px 24px #0009',minWidth:170},
+      onClick:ev=>ev.stopPropagation()
+    },
+      e('div',{
+        style:{padding:'5px 10px',borderRadius:'var(--r-sm)',cursor:'pointer',fontSize:11,color:'var(--text1)',display:'flex',alignItems:'center',gap:6},
+        onMouseEnter:ev=>ev.currentTarget.style.background='var(--bg4)',
+        onMouseLeave:ev=>ev.currentTarget.style.background='',
+        onClick:()=>{playUI('click');duplicatePhase(phaseCtxMenu.phaseId);setPhaseCtxMenu(null);}
+      },'⧉  Duplicar fase (con sus tareas)'),
+      e('div',{
+        style:{padding:'5px 10px',borderRadius:'var(--r-sm)',cursor:'pointer',fontSize:11,color:'var(--red,#e05555)',display:'flex',alignItems:'center',gap:6},
+        onMouseEnter:ev=>ev.currentTarget.style.background='var(--red-bg,#e0555522)',
+        onMouseLeave:ev=>ev.currentTarget.style.background='',
+        onClick:()=>{playUI('click');deletePhase(phaseCtxMenu.phaseId);setPhaseCtxMenu(null);}
+      },'✕  Eliminar fase')
+    )
   );
 }
 
@@ -9503,6 +9734,119 @@ function HomeResumen(props){
   );
 }
 
+function CalendarView({tasks,project,onOpenSteps}){
+  const now=new Date();
+  const[year,setYear]=useState(()=>{
+    // Abre el mes donde haya fases más próximas al hoy
+    const today=dayKey();
+    let nearest=null;
+    (tasks||[]).forEach(t=>(t.steps||[]).forEach(s=>{
+      if(s.dueDate&&(!nearest||s.dueDate<nearest)&&s.dueDate>=today)nearest=s.dueDate;
+    }));
+    return nearest?parseInt(nearest.slice(0,4)):now.getFullYear();
+  });
+  const[month,setMonth]=useState(()=>{
+    const today=dayKey();
+    let nearest=null;
+    (tasks||[]).forEach(t=>(t.steps||[]).forEach(s=>{
+      if(s.dueDate&&(!nearest||s.dueDate<nearest)&&s.dueDate>=today)nearest=s.dueDate;
+    }));
+    return nearest?parseInt(nearest.slice(5,7))-1:now.getMonth();
+  });
+  const[selDay,setSelDay]=useState(null);
+
+  function prevMonth(){ if(month===0){setMonth(11);setYear(y=>y-1);}else setMonth(m=>m-1); setSelDay(null); }
+  function nextMonth(){ if(month===11){setMonth(0);setYear(y=>y+1);}else setMonth(m=>m+1); setSelDay(null); }
+
+  const todayKey=dayKey();
+
+  // Recopilar todas las fases con fecha de término de este proyecto
+  // Estructura: {[dueDate]: [{taskName, taskId, task, step, done}]}
+  const byDay={};
+  (tasks||[]).forEach(task=>{
+    (task.steps||[]).forEach(step=>{
+      if(!step.dueDate)return;
+      if(!byDay[step.dueDate])byDay[step.dueDate]=[];
+      byDay[step.dueDate].push({taskId:task.id,task,taskName:task.name,step,done:!!step.done});
+    });
+  });
+
+  const hasAnyPhases=Object.keys(byDay).length>0;
+
+  // Grilla del mes
+  const firstDay=new Date(year,month,1);
+  const startDow=(firstDay.getDay()+6)%7; // lunes=0
+  const daysInMonth=new Date(year,month+1,0).getDate();
+  const cells=[];
+  for(let i=0;i<startDow;i++)cells.push(null);
+  for(let d=1;d<=daysInMonth;d++)cells.push(d);
+  while(cells.length%7!==0)cells.push(null);
+
+  const monthLabel=firstDay.toLocaleDateString('es-CL',{month:'long',year:'numeric'});
+  const DOW=['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+
+  const selItems=selDay?(byDay[selDay]||[]).slice().sort((a,b)=>a.done-b.done):[];
+
+  return e('div',{className:'cal-wrap'},
+    e('div',{className:'cal-nav'},
+      e('button',{className:'ghost-btn',style:{fontSize:18,lineHeight:1},onClick:prevMonth},'‹'),
+      e('span',{className:'cal-month-label'},monthLabel.charAt(0).toUpperCase()+monthLabel.slice(1)),
+      e('button',{className:'ghost-btn',style:{fontSize:18,lineHeight:1},onClick:nextMonth},'›')
+    ),
+    e('div',{className:'cal-grid'},
+      DOW.map(d=>e('div',{key:d,className:'cal-dow'},d)),
+      cells.map((day,i)=>{
+        if(!day)return e('div',{key:'e'+i,className:'cal-cell cal-cell-empty'});
+        const dk=`${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+        const items=byDay[dk]||[];
+        const pending=items.filter(x=>!x.done);
+        const done=items.filter(x=>x.done);
+        const isToday=dk===todayKey;
+        const isPast=dk<todayKey;
+        const isSel=dk===selDay;
+        const hasOverdue=isPast&&pending.length>0;
+        return e('div',{
+          key:dk,
+          className:'cal-cell'+(isToday?' cal-today':'')+(isSel?' cal-sel':'')+(hasOverdue?' cal-overdue':''),
+          onClick:items.length?()=>setSelDay(isSel?null:dk):undefined,
+          style:items.length?{cursor:'pointer'}:undefined
+        },
+          e('span',{className:'cal-day-num'},day),
+          pending.length>0&&e('div',{className:'cal-dots'},
+            pending.slice(0,4).map((_,j)=>e('span',{key:j,className:'cal-dot',style:{background:project.color}}))
+          ),
+          done.length>0&&!pending.length&&e('div',{className:'cal-dots'},
+            e('span',{className:'cal-dot cal-dot-done'})
+          ),
+          // Nombres de las fases dentro de la celda si hay pocas
+          pending.length===1&&e('div',{className:'cal-cell-label'},pending[0].step.name)
+        );
+      })
+    ),
+    selDay&&selItems.length>0&&e('div',{className:'cal-detail'},
+      e('div',{className:'cal-detail-hdr'},
+        e('span',{className:'cal-detail-title'},
+          new Date(selDay+'T12:00:00').toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'long'})
+        ),
+        e('button',{className:'ghost-btn',onClick:()=>setSelDay(null)},'✕')
+      ),
+      selItems.map((item,i)=>e('div',{
+        key:i,
+        className:'cal-task-row'+(item.done?' done':''),
+        onClick:()=>onOpenSteps&&onOpenSteps(item.task)
+      },
+        e('span',{className:'cal-task-check'},item.done?'✓':'○'),
+        e('div',{style:{flex:1,minWidth:0}},
+          e('div',{className:'cal-task-name'},item.step.name),
+          e('div',{style:{fontSize:10,color:'var(--text4)',marginTop:1}},item.taskName)
+        )
+      ))
+    ),
+    !hasAnyPhases&&e('div',{className:'empty',style:{padding:'32px 0',textAlign:'center'}},
+      'Ninguna fase tiene fecha de término asignada. Abre una tarea, ve a la vista de lista y agrega fechas a sus fases.'
+    )
+  );
+}
 function ProjectDashboard(props){
   const{
     project,projects,tasks,sessions,ctxs,habits,systems,
@@ -9857,6 +10201,8 @@ function ProjectDashboard(props){
         )
       )
     ),
+
+
 
     tab==='sistemas'&&e('div',{className:'dash-body'},
       e('div',{style:{display:'flex',alignItems:'center',gap:8,marginBottom:2}},
@@ -11223,12 +11569,29 @@ function NotebookBlockEditor({blocks,legacyText,onChange}){
     const isFocused=focusedBlockId===b.id;
     const cls='nb-block-input'+(opts.extraClass?' '+opts.extraClass:'');
     if(!isFocused&&b.text&&b.text.trim()){
+      let mdX=0,mdY=0;
       return e('div',{
         className:cls+' nb-block-preview',
         style:opts.style,
         tabIndex:0,
-        onClick:()=>{if(selectedIds.length)clearSelection();setFocusedBlockId(b.id);focusBlock(b.id,true);},
-        onFocus:()=>{setFocusedBlockId(b.id);focusBlock(b.id,true);}
+        // Guardamos la posición del mousedown para saber si el usuario
+        // arrastró (selección de texto) o solo hizo clic. Si hay movimiento
+        // significativo (>4px), es una selección — no robamos el foco para
+        // no interrumpirla. Si es un clic sin movimiento, entramos a editar.
+        onMouseDown:ev=>{mdX=ev.clientX;mdY=ev.clientY;},
+        onClick:ev=>{
+          const moved=Math.abs(ev.clientX-mdX)>4||Math.abs(ev.clientY-mdY)>4;
+          if(moved)return; // el usuario estaba seleccionando texto — no interrumpir
+          if(selectedIds.length)clearSelection();
+          setFocusedBlockId(b.id);
+          focusBlock(b.id,true);
+        },
+        onFocus:ev=>{
+          // Solo entramos a modo edición desde el teclado (Tab/focus sin clic);
+          // el clic ya se maneja en onClick con la lógica de arrastre.
+          if(ev.relatedTarget)return;
+          setFocusedBlockId(b.id);focusBlock(b.id,true);
+        }
       },renderRetroLine(b.text));
     }
     return e('textarea',{
@@ -12108,7 +12471,7 @@ function TaskExperimentsPanel({task,onUpdateTask,pSystems}){
 // Este orden se guarda a nivel de plataforma: aplica por igual a proyectos y cuentas.
 // El primer elemento del orden es siempre la vista por defecto al abrir cualquier proyecto/cuenta.
 const VIEWTAB_ORDER_KEY='chronos_viewtab_order_v1';
-const VIEWTAB_DEFAULT_ORDER=['list','timeline','mindmap','board','notebook','experiments'];
+const VIEWTAB_DEFAULT_ORDER=['list','timeline','calendar','mindmap','board','notebook','experiments'];
 function getViewTabOrder(){
   try{
     const raw=localStorage.getItem(VIEWTAB_ORDER_KEY);
@@ -12163,6 +12526,14 @@ function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask,templates,onAddTe
   const[tlDrag,setTlDrag]=useState(null); // {ids,clickedId,startX,orig:{id:date},cur:{id:date},moved,tipX,tipY}
   const[selectedIds,setSelectedIds]=useState(()=>new Set());
   const[showDoneSteps,setShowDoneSteps]=useState(false);
+  const[stepCtxMenu,setStepCtxMenu]=useState(null);
+  useEffect(()=>{
+    if(!stepCtxMenu)return;
+    const close=()=>setStepCtxMenu(null);
+    window.addEventListener('click',close);
+    window.addEventListener('scroll',close,true);
+    return()=>{window.removeEventListener('click',close);window.removeEventListener('scroll',close,true);};
+  },[stepCtxMenu]);
   const[showTplMgr,setShowTplMgr]=useState(false);
   const[showSaveTpl,setShowSaveTpl]=useState(false);
   const[pendingTpl,setPendingTpl]=useState(null); // plantilla esperando fecha de inicio
@@ -12284,6 +12655,22 @@ function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask,templates,onAddTe
   }
   function updateStep(id,patch){ commit(steps.map(s=>s.id===id?{...s,...patch}:s)); }
   function deleteStep(id){ commit(steps.filter(s=>s.id!==id)); }
+  function duplicateStep(id){
+    const idx=steps.findIndex(s=>s.id===id);
+    if(idx<0)return;
+    const orig=steps[idx];
+    const copy={
+      ...orig,
+      id:uid(),
+      name:orig.name+' (copia)',
+      done:false,
+      actLog:{},
+      subtasks:(orig.subtasks||[]).map(t=>({...t,id:uid(),done:false}))
+    };
+    const next=steps.slice();
+    next.splice(idx+1,0,copy);
+    commit(next);
+  }
   // Registrar avance/no-avance de HOY a nivel de todo el proyecto (no por fase). Click de nuevo = deshacer.
   const todayKey=dayKey();
   const projectActToday=(task.actLog||{})[todayKey];
@@ -12520,6 +12907,7 @@ function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask,templates,onAddTe
           const TAB_DEFS={
             list:{title:'Lista',icon:e(DashIcon,{name:'list',size:13})},
             timeline:{title:'Línea de tiempo',icon:e(DashIcon,{name:'clock',size:13})},
+            calendar:{title:'Calendario de fases',icon:e(DashIcon,{name:'calendar',size:13})},
             mindmap:{title:'Mapa mental',icon:e(DashIcon,{name:'network',size:13})},
             board:{title:'Pizarra y notas',icon:e(DashIcon,{name:'image',size:13})},
             notebook:{title:'Libreta',icon:e(DashIcon,{name:'note',size:13})},
@@ -12568,7 +12956,8 @@ function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask,templates,onAddTe
               key:s.id,
               ref:el=>{rowRefs.current[idx]=el;},
               className:'sheet-row'+(s.done?' done':'')+(inFillRange?' fill-range':'')+(isActivePhase?' active-phase-row':''),
-              style:isActivePhase?{background:'color-mix(in srgb, var(--accent2) 7%, transparent)'}:undefined
+              style:isActivePhase?{background:'color-mix(in srgb, var(--accent2) 7%, transparent)'}:undefined,
+              onContextMenu:ev=>{ev.preventDefault();ev.stopPropagation();playUI('click');setStepCtxMenu({x:ev.clientX,y:ev.clientY,stepId:s.id});}
             },
               e('div',{className:'sheet-cell',style:{display:'flex',alignItems:'center',gap:7}},
                 e('button',{
@@ -12670,6 +13059,9 @@ function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask,templates,onAddTe
               })
             )
           )
+        ),
+        view==='calendar'&&e('div',{style:{padding:'0 8px',overflowY:'auto',flex:1}},
+          e(CalendarView,{tasks:[task],project:{color:'var(--accent2)',id:task.projectId},onOpenSteps:null})
         ),
         view==='mindmap'&&e('div',{className:'mm-wrap'},
           steps.length===0&&e('div',{className:'empty',style:{padding:'20px 2px'}},'Sin fases aún. Agrégalas en la vista Lista.'),
@@ -12893,7 +13285,24 @@ function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask,templates,onAddTe
           )
         )
       );
-    })()
+    })(),
+    stepCtxMenu&&e('div',{
+      style:{position:'fixed',top:stepCtxMenu.y,left:stepCtxMenu.x,background:'var(--bg3)',border:'1px solid var(--border3)',borderRadius:'var(--r-md)',padding:'4px',zIndex:700,boxShadow:'0 8px 24px #0009',minWidth:180},
+      onClick:ev=>ev.stopPropagation()
+    },
+      e('div',{
+        style:{padding:'5px 10px',borderRadius:'var(--r-sm)',cursor:'pointer',fontSize:11,color:'var(--text1)',display:'flex',alignItems:'center',gap:6},
+        onMouseEnter:ev=>ev.currentTarget.style.background='var(--bg4)',
+        onMouseLeave:ev=>ev.currentTarget.style.background='',
+        onClick:()=>{playUI('click');duplicateStep(stepCtxMenu.stepId);setStepCtxMenu(null);}
+      },'⧉  Duplicar fase (con sus tareas)'),
+      e('div',{
+        style:{padding:'5px 10px',borderRadius:'var(--r-sm)',cursor:'pointer',fontSize:11,color:'var(--red,#e05555)',display:'flex',alignItems:'center',gap:6},
+        onMouseEnter:ev=>ev.currentTarget.style.background='var(--red-bg,#e0555522)',
+        onMouseLeave:ev=>ev.currentTarget.style.background='',
+        onClick:()=>{playUI('click');deleteStep(stepCtxMenu.stepId);setStepCtxMenu(null);}
+      },'✕  Eliminar fase')
+    )
   );
 }
 function EditableLabel({value,onSave}){
