@@ -7329,7 +7329,18 @@ function QuickNoteItem({note,onDeleteNote,onToggleNoteDone,onSetNoteReminder,onE
               onKeyDown:ev=>{if(ev.key==='Enter')commitText();if(ev.key==='Escape'){setTextVal(note.text);setEditingText(false);}}
             })
           :e('span',{className:'qn-item-text',onClick:openEditor,onDoubleClick:()=>setEditingText(true),title:'Click: fecha y hora · Doble click: renombrar'},note.text),
-        active&&e('span',{className:'qn-item-remind'},e(ClockIcon,{size:9,color:noteReminderDue(note)?'var(--red,#e05555)':((note.remindAt-Date.now())<2*24*60*60*1000?'var(--amber)':'var(--text4)')}),fmtNoteReminder(note.remindAt))
+        active&&e('span',{className:'qn-item-remind'},e(ClockIcon,{size:9,color:(()=>{
+          if(noteReminderDue(note))return'var(--red,#e05555)'; // vencido
+          const diff=note.remindAt-Date.now();
+          const DAY=24*60*60*1000;
+          // rojo = hoy (mismo día calendario, aún no vence)
+          const isToday=new Date(note.remindAt).toDateString()===new Date().toDateString();
+          if(isToday)return'var(--red,#e05555)';
+          // ámbar = 1-2 días antes
+          if(diff<3*DAY)return'var(--amber)';
+          // neutro = 3+ días
+          return'var(--text4)';
+        })()}),fmtNoteReminder(note.remindAt))
       ),
       e('button',{className:'qn-item-del',title:'Eliminar',onClick:()=>onDeleteNote(note.id)},'✕')
     ),
