@@ -7329,18 +7329,21 @@ function QuickNoteItem({note,onDeleteNote,onToggleNoteDone,onSetNoteReminder,onE
               onKeyDown:ev=>{if(ev.key==='Enter')commitText();if(ev.key==='Escape'){setTextVal(note.text);setEditingText(false);}}
             })
           :e('span',{className:'qn-item-text',onClick:openEditor,onDoubleClick:()=>setEditingText(true),title:'Click: fecha y hora · Doble click: renombrar'},note.text),
-        active&&e('span',{className:'qn-item-remind'},e(ClockIcon,{size:9,color:(()=>{
-          if(noteReminderDue(note))return'var(--red,#e05555)'; // vencido
-          const diff=note.remindAt-Date.now();
+        active&&(()=>{
           const DAY=24*60*60*1000;
-          // rojo = hoy (mismo día calendario, aún no vence)
-          const isToday=new Date(note.remindAt).toDateString()===new Date().toDateString();
-          if(isToday)return'var(--red,#e05555)';
-          // ámbar = 1-2 días antes
-          if(diff<3*DAY)return'var(--amber)';
-          // neutro = 3+ días
-          return'var(--text4)';
-        })()}),fmtNoteReminder(note.remindAt))
+          let remColor;
+          if(noteReminderDue(note)) remColor='var(--red,#e05555)';
+          else{
+            const isToday=new Date(note.remindAt).toDateString()===new Date().toDateString();
+            if(isToday) remColor='var(--red,#e05555)';
+            else if(note.remindAt-Date.now()<3*DAY) remColor='var(--amber)';
+            else remColor='var(--text4)';
+          }
+          return e('span',{className:'qn-item-remind',style:{color:remColor}},
+            e(ClockIcon,{size:9,color:remColor}),
+            fmtNoteReminder(note.remindAt)
+          );
+        })()
       ),
       e('button',{className:'qn-item-del',title:'Eliminar',onClick:()=>onDeleteNote(note.id)},'✕')
     ),
