@@ -836,15 +836,24 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .notebook-new-btn{width:100%;display:flex;align-items:center;justify-content:center;gap:6px;padding:7px 9px;border-radius:var(--r-md);border:1px dashed var(--border3);background:transparent;color:var(--text2);font-size:11.5px;font-family:'Inter',sans-serif;cursor:pointer;transition:all .12s}
 .notebook-new-btn:hover{background:var(--bg3);color:var(--text0);border-style:solid;border-color:var(--border4)}
 .notebook-list{flex:1;overflow-y:auto;padding:0 6px 8px}
-.notebook-list-item{padding:8px 9px;border-radius:var(--r-md);cursor:pointer;margin-bottom:2px;transition:background .1s;border:1px solid transparent}
+.notebook-list-item{padding:7px 9px;border-radius:var(--r-md);cursor:pointer;margin-bottom:1px;transition:background .1s;border:1px solid transparent}
 .notebook-list-item:hover{background:var(--bg3)}
 .notebook-list-item.active{background:var(--bg4);border-color:var(--border3)}
 .notebook-list-item-title{font-size:12px;font-weight:500;color:var(--text0);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:4px}
 .notebook-list-item-title.untitled{color:var(--text3);font-weight:400;font-style:italic}
-.notebook-list-item-sub{font-size:10.5px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
-.notebook-list-item-meta{font-size:9.5px;color:var(--text4);margin-top:3px;font-family:'JetBrains Mono',monospace}
+.notebook-list-item-sub{display:none}
+.notebook-list-item-meta{font-size:10px;color:var(--text4);margin-top:3px;font-family:'Inter',monospace;letter-spacing:0}
 .notebook-empty-list{padding:18px 10px;font-size:11px;color:var(--text4);text-align:center;line-height:1.6}
+.nb-list-row{display:flex;align-items:center;gap:5px;margin-top:3px;flex-wrap:wrap}
 .notebook-page{flex:1;display:flex;flex-direction:column;overflow-y:auto;padding:26px 0 40px}
+.notebook-page::-webkit-scrollbar{width:4px}
+.notebook-page::-webkit-scrollbar-track{background:transparent}
+.notebook-page::-webkit-scrollbar-thumb{background:var(--border3);border-radius:4px}
+.notebook-page::-webkit-scrollbar-thumb:hover{background:var(--accent-border)}
+.notebook-list::-webkit-scrollbar{width:3px}
+.notebook-list::-webkit-scrollbar-track{background:transparent}
+.notebook-list::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+.notebook-list::-webkit-scrollbar-thumb:hover{background:var(--border3)}
 .notebook-page>*{max-width:760px;width:100%;margin-left:auto;margin-right:auto;padding-left:36px;padding-right:36px;box-sizing:border-box}
 .notebook-page-empty{flex:1;display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:12px;flex-direction:column;gap:10px}
 .notebook-page-top{display:flex;align-items:center;gap:6px;margin-bottom:18px;flex-shrink:0}
@@ -872,7 +881,9 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .notebook-body-text{width:100%;flex:1;background:transparent;border:none;outline:none;color:var(--text1);font-size:13px;line-height:1.8;font-family:'Inter',sans-serif;resize:none;padding:0;min-height:240px}
 .notebook-body-text::placeholder{color:var(--text4)}
 /* Editor de bloques tipo Notion: puntos / numerados / separador, con drag handle */
-.nb-blocks{flex:1;min-height:240px;padding-bottom:40px}
+.nb-blocks{flex:1;min-height:240px;padding-bottom:0}
+.nb-end-zone{min-height:140px;cursor:text;flex-shrink:0}
+.nb-end-zone:hover::before{content:'Haz click para escribir';display:block;padding:10px 0 0 26px;font-size:11px;color:var(--text4);font-family:'Inter',sans-serif;pointer-events:none}
 .nb-bulkpaste-btn{display:flex;margin:0 0 10px auto;font-size:11px}
 .nb-retro-ok{color:var(--green,#34c386);font-weight:600}
 .nb-retro-no{color:var(--red,#e6675f);font-weight:600}
@@ -1992,8 +2003,28 @@ const SB = {
     this._save(this.K_UID, uid);
   },
 
+  // Las imágenes de pizarra se guardan como base64 DENTRO de cada tarea y son
+  // lo que más pesa (2.5 MB de 3.3 MB totales). Para Supabase no necesitamos
+  // enviarlas en cada push rutinario — ya viven en localStorage y se restauran
+  // desde ahí al cargar la app. Solo las excluimos del payload remoto; si el
+  // usuario abre la app en otro dispositivo no verá las imágenes de pizarra
+  // (feature limitation aceptable para evitar colapsar el Disk IO).
+  stripTaskImages(tasks){
+    if(!tasks||!tasks.length) return tasks;
+    return tasks.map(t=>{
+      if(!t.board||!t.board.images||!t.board.images.length) return t;
+      return {...t, board:{...t.board, images:[]}};
+    });
+  },
+
   async push(data){
     if(!this.configured()) return;
+    // Strip imágenes base64 antes de subir — reducen el payload de ~3.3MB a ~0.8MB.
+    // Las imágenes quedan en localStorage y se restauran al cargar la app desde ahí.
+    const payload = data.tasks ? {...data, tasks: this.stripTaskImages(data.tasks)} : data;
+    const body = JSON.stringify({ user_id: this.uid, data: payload, updated_at: new Date().toISOString() });
+    // Advertencia si el payload sigue siendo grande (útil para debug)
+    if(body.length > 500*1024) console.warn(`[SB] payload grande: ${Math.round(body.length/1024)}KB`);
     const resp = await fetch(`${this.url}/rest/v1/chronos`, {
       method: 'POST',
       headers: {
@@ -2002,7 +2033,7 @@ const SB = {
         'Content-Type': 'application/json',
         'Prefer': 'resolution=merge-duplicates',
       },
-      body: JSON.stringify({ user_id: this.uid, data, updated_at: new Date().toISOString() }),
+      body,
     });
     if(!resp.ok) throw new Error(await resp.text());
   },
@@ -3215,6 +3246,27 @@ function App(){
         startupOverdueRef.current.add(r.id);
       }
     });
+    // Limpieza automática de recordatorios viejos para no saturar Supabase.
+    // Se limpian: (1) completados con más de 7 días, (2) hábitos diarios con
+    // más de 60 días (son los que más proliferan), (3) cualquiera con más de
+    // 180 días sin importar su estado. La lista se compacta silenciosamente.
+    if(reminders.length>50){
+      const cutoff60=now-60*24*3600*1000;
+      const cutoff7=now-7*24*3600*1000;
+      const cutoff180=now-180*24*3600*1000;
+      setReminders(prev=>{
+        const next=prev.filter(r=>{
+          const ts=r.dueAt||r.createdAt||0;
+          if(ts<cutoff180) return false; // muy viejo, siempre fuera
+          if(r.done&&ts<cutoff7) return false; // completado hace más de 7d
+          if(r.habitId&&ts<cutoff60) return false; // hábito diario viejo
+          return true;
+        });
+        if(next.length===prev.length) return prev; // sin cambios, no re-render
+        console.log(`[reminders] compactados: ${prev.length} → ${next.length}`);
+        return next;
+      });
+    }
   },[reminders.length]);// cuando cambia la cantidad (ej. Supabase restaura)
 
   useEffect(()=>{
@@ -3357,7 +3409,24 @@ function App(){
           if(remote.projects?.length)  setProjects(remote.projects);
           if(remote.sessions?.length)  setSessions(remote.sessions);
           if(remote.intenciones)       setIntenciones(remote.intenciones);
-          if(remote.tasks?.length)     setTasks(remote.tasks);
+          if(remote.tasks?.length){
+            // Las imágenes de pizarra no viajan a Supabase (para no colapsar el Disk IO).
+            // Al restaurar datos remotos, re-inyectamos las imágenes desde el localStorage local.
+            setTasks(prev=>{
+              const localById=Object.fromEntries(prev.map(t=>[t.id,t]));
+              return remote.tasks.map(rt=>{
+                const lt=localById[rt.id];
+                if(!lt) return rt;
+                const remoteImgs=rt.board?.images;
+                const localImgs=lt.board?.images;
+                // Si remoto viene sin imágenes pero local las tiene, preservar local
+                if((!remoteImgs||!remoteImgs.length)&&localImgs?.length){
+                  return {...rt,board:{...(rt.board||{}),images:localImgs}};
+                }
+                return rt;
+              });
+            });
+          }
           if(remote.blocks?.length)    setBlocks(remote.blocks);
           if(remote.habits?.length)    setHabits(remote.habits);
           if(remote.systems?.length)   setSystems(remote.systems);
@@ -3573,7 +3642,10 @@ function App(){
       try{
         const url=`${SB.url}/rest/v1/chronos`;
         const liveCheckpoint=buildLiveCheckpoint();
-        const data=liveCheckpoint?{...sbLatestRef.current,liveCheckpoint}:sbLatestRef.current;
+        const rawData=liveCheckpoint?{...sbLatestRef.current,liveCheckpoint}:sbLatestRef.current;
+        // Strip imágenes base64 igual que en push() — el beforeunload también
+        // usa keepalive y no debe mandar los MB de imágenes de pizarra
+        const data=rawData.tasks?{...rawData,tasks:SB.stripTaskImages(rawData.tasks)}:rawData;
         const body=JSON.stringify({ user_id: SB.uid, data, updated_at: new Date().toISOString() });
         fetch(url,{method:'POST',keepalive:true,headers:{'apikey':SB.anon,'Authorization':'Bearer '+SB.anon,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates'},body});
         SB.markSynced();
@@ -11214,7 +11286,7 @@ function nbBuildBlock(type,old){
 // Reescala imágenes pegadas/subidas antes de guardarlas como base64 en el
 // bloque — evita que fotos a resolución completa inflen el estado (y con
 // eso, localStorage, Supabase y el historial de deshacer).
-const NB_IMG_MAX=1400;
+const NB_IMG_MAX=800; // reducido de 1400 — imágenes en notebook no necesitan más resolución en pantalla
 function nbResizeImage(srcDataUrl,cb){
   try{
     const im=new Image();
@@ -11226,7 +11298,7 @@ function nbResizeImage(srcDataUrl,cb){
         cv.width=Math.round(im.width*scale);
         cv.height=Math.round(im.height*scale);
         cv.getContext('2d').drawImage(im,0,0,cv.width,cv.height);
-        const out=cv.toDataURL('image/jpeg',0.82);
+        const out=cv.toDataURL('image/jpeg',0.62); // calidad reducida de 0.82 → 0.62 para notebook
         cb(out.length<srcDataUrl.length?out:srcDataUrl);
       }catch(err){cb(srcDataUrl);}
     };
@@ -11315,6 +11387,9 @@ function NotebookBlockEditor({blocks,legacyText,onChange}){
   const[selectedIds,setSelectedIds]=useState([]); // ids de bloques seleccionados juntos
   const selAnchorRef=useRef(null); // último bloque usado como ancla para extender la selección con Shift+click
   const[multiMenu,setMultiMenu]=useState(null); // {x,y} del menú contextual para la selección múltiple
+  // ── Drag-select con mouse (como Notion: click+drag sobre el editor) ──
+  const dragSelectRef=useRef(null); // {startId, startIdx, active}
+  const blockRowRefs=useRef({}); // ref a cada row DOM para hit-test durante drag
   const[showBulkPaste,setShowBulkPaste]=useState(false);
   const[bulkText,setBulkText]=useState('');
   const[slashQuery,setSlashQuery]=useState('');
@@ -11402,7 +11477,42 @@ function NotebookBlockEditor({blocks,legacyText,onChange}){
     selAnchorRef.current=id;
     setSelectedIds(prev=>prev.includes(id)?prev.filter(x=>x!==id):[...prev,id]);
   }
-  function clearSelection(){ setSelectedIds([]); setMultiMenu(null); selAnchorRef.current=null; }
+  function clearSelection(){ setSelectedIds([]); setMultiMenu(null); selAnchorRef.current=null; dragSelectRef.current=null; }
+  // Inicia drag-select desde el handle de un bloque
+  function beginDragSelect(startId,ev){
+    ev.preventDefault();
+    ev.stopPropagation();
+    const startIdx=items.findIndex(b=>b.id===startId);
+    if(startIdx<0)return;
+    dragSelectRef.current={startId,startIdx,active:true};
+    setSelectedIds([startId]);
+    selAnchorRef.current=startId;
+    function onMouseMove(mev){
+      if(!dragSelectRef.current||!dragSelectRef.current.active)return;
+      // Busca qué bloque está bajo el cursor comparando Y contra los BoundingRect
+      let hitId=null;
+      const entries=Object.entries(blockRowRefs.current);
+      for(const[bid,el]of entries){
+        if(!el)continue;
+        const r=el.getBoundingClientRect();
+        if(mev.clientY>=r.top&&mev.clientY<=r.bottom){hitId=bid;break;}
+      }
+      if(!hitId)return;
+      const ids=items.map(x=>x.id);
+      const aIdx=dragSelectRef.current.startIdx;
+      const bIdx=ids.indexOf(hitId);
+      if(bIdx<0)return;
+      const[lo,hi]=aIdx<=bIdx?[aIdx,bIdx]:[bIdx,aIdx];
+      setSelectedIds(ids.slice(lo,hi+1));
+    }
+    function onMouseUp(){
+      if(dragSelectRef.current)dragSelectRef.current.active=false;
+      window.removeEventListener('mousemove',onMouseMove);
+      window.removeEventListener('mouseup',onMouseUp);
+    }
+    window.addEventListener('mousemove',onMouseMove);
+    window.addEventListener('mouseup',onMouseUp);
+  }
   function applyMultiFormat(mark){
     setItems(prev=>prev.map(b=>{
       if(!selectedIds.includes(b.id))return b;
@@ -11475,12 +11585,130 @@ function NotebookBlockEditor({blocks,legacyText,onChange}){
   function handleInput(id,value){
     const b=items.find(x=>x.id===id);
     if(!b)return;
+    // ── Shortcuts slash directos (sin necesidad de seleccionar del menú) ──
+    // /h1 /h2 /h3 /h4=/h3 /--- /bullet /num /todo /quote /code /img
+    if(b.type==='text'&&value.startsWith('/')){
+      const cmd=value.slice(1).toLowerCase().trim();
+      const directMap={
+        'h1':'h1','titulo1':'h1','t1':'h1',
+        'h2':'h2','titulo2':'h2','t2':'h2',
+        'h3':'h3','titulo3':'h3','t3':'h3','h4':'h3','titulo4':'h3',
+        '---':'divider','---':'divider','separador':'divider','div':'divider',
+        'bullet':'bullet','lista':'bullet','-':'bullet',
+        'num':'numbered','numerado':'numbered','ol':'numbered',
+        'todo':'todo','check':'todo','checklist':'todo','tarea':'todo',
+        'quote':'quote','cita':'quote','>':'quote',
+        'code':'code','codigo':'code','código':'code',
+        'img':'image','imagen':'image','image':'image',
+      };
+      if(directMap[cmd]){
+        convertBlock(id,directMap[cmd]);
+        return;
+      }
+      // Si escribe solo "/" o "/algo" que no matchea — activa el menú slash
+      if(!slashFor||slashFor!==id){
+        openSlash(id,cmd);
+      }else{
+        setSlashQuery(cmd);
+        setSlashSel(0);
+      }
+      patchBlock(id,{text:value});
+      return;
+    }
+    // Si tenía el slash menu abierto y borró el /, ciérralo
+    if(slashFor===id&&!value.startsWith('/')){closeSlash();}
+    // ── Detección automática de tipo al escribir (Markdown shortcuts) ──
+    if(b.type==='text'||b.type==='h1'||b.type==='h2'||b.type==='h3'){
+      if(value==='# '){patchBlock(id,{type:'h1',text:''});focusBlock(id,true);return;}
+      if(value==='## '){patchBlock(id,{type:'h2',text:''});focusBlock(id,true);return;}
+      if(value==='### '){patchBlock(id,{type:'h3',text:''});focusBlock(id,true);return;}
+    }
+    if(b.type==='text'){
+      if(value==='- '||value==='* '){patchBlock(id,{type:'bullet',text:''});focusBlock(id,true);return;}
+      if(/^1[.)]\s$/.test(value)){patchBlock(id,{type:'numbered',text:''});focusBlock(id,true);return;}
+      if(value==='> '){patchBlock(id,{type:'quote',text:''});focusBlock(id,true);return;}
+      if(value==='[] '||value==='[ ] '){patchBlock(id,{type:'todo',text:'',checked:false});focusBlock(id,true);return;}
+      if(value==='--- '||value==='---\n'){patchBlock(id,{type:'divider',text:''});return;}
+    }
     patchBlock(id,{text:value});
+  }
+  // Parsea texto pegado y lo convierte en bloques con formato detectado automáticamente.
+  // Detecta: # h1, ## h2, ### h3, **bold**, *italic*, - bullet, 1. numbered, > quote, ```code, --- divider, [ ] todo
+  function smartParseLines(text){
+    const lines=text.split('\n');
+    const blocks=[];
+    let codeAcc=null;
+    for(let i=0;i<lines.length;i++){
+      const raw=lines[i];
+      const line=raw.trimEnd();
+      // Bloque de código fenced
+      if(line.startsWith('```')){
+        if(codeAcc===null){codeAcc=[];continue;}
+        else{blocks.push({id:uid(),type:'code',text:codeAcc.join('\n')});codeAcc=null;continue;}
+      }
+      if(codeAcc!==null){codeAcc.push(raw);continue;}
+      // Separador
+      if(/^(-{3,}|\*{3,}|_{3,})$/.test(line.trim())){blocks.push({id:uid(),type:'divider',text:''});continue;}
+      // Headings
+      if(line.startsWith('#### ')){blocks.push({id:uid(),type:'h3',text:line.slice(5)});continue;}
+      if(line.startsWith('### ')){blocks.push({id:uid(),type:'h3',text:line.slice(4)});continue;}
+      if(line.startsWith('## ')){blocks.push({id:uid(),type:'h2',text:line.slice(3)});continue;}
+      if(line.startsWith('# ')){blocks.push({id:uid(),type:'h1',text:line.slice(2)});continue;}
+      // Quote
+      if(line.startsWith('> ')){blocks.push({id:uid(),type:'quote',text:line.slice(2)});continue;}
+      // Todo
+      const todoM=line.match(/^[-*]\s+\[([xX ])\]\s+(.*)/);
+      if(todoM){blocks.push({id:uid(),type:'todo',text:todoM[2],checked:todoM[1].toLowerCase()==='x'});continue;}
+      // Bullet
+      if(/^[-*+]\s+/.test(line)){blocks.push({id:uid(),type:'bullet',text:line.replace(/^[-*+]\s+/,'')});continue;}
+      // Numbered
+      const numM=line.match(/^\d+[.)]\s+(.*)/);
+      if(numM){blocks.push({id:uid(),type:'numbered',text:numM[1]});continue;}
+      // Línea vacía — si el bloque anterior no es vacío, insertamos texto vacío como separador visual
+      if(!line.trim()){
+        if(blocks.length>0&&blocks[blocks.length-1].text!=='')blocks.push({id:uid(),type:'text',text:''});
+        continue;
+      }
+      // Texto plano (puede tener inline bold/italic como **x**)
+      blocks.push({id:uid(),type:'text',text:line});
+    }
+    if(codeAcc!==null)blocks.push({id:uid(),type:'code',text:codeAcc.join('\n')});
+    // Limpia bloques vacíos al final
+    while(blocks.length>0&&blocks[blocks.length-1].type==='text'&&!blocks[blocks.length-1].text)blocks.pop();
+    return blocks.length?blocks:[{id:uid(),type:'text',text:text}];
   }
   function handlePaste(id,ev){
     const items_=(ev.clipboardData&&ev.clipboardData.items)||[];
     const imgItem=[...items_].find(it=>it.type&&it.type.startsWith('image/'));
-    if(!imgItem)return;
+    if(!imgItem){
+      // Intenta detectar texto con formato
+      const plain=ev.clipboardData&&ev.clipboardData.getData('text/plain');
+      if(plain&&plain.includes('\n')){
+        // Texto multilínea — parsear como bloques inteligentes
+        ev.preventDefault();
+        const b=items.find(x=>x.id===id);
+        const newBlocks=smartParseLines(plain);
+        if(newBlocks.length>1||(newBlocks.length===1&&newBlocks[0].type!=='text')){
+          setItems(prev=>{
+            const idx=prev.findIndex(x=>x.id===id);
+            if(idx<0)return prev;
+            const arr=[...prev];
+            const cur=arr[idx];
+            // Si el bloque actual está vacío, reemplaza; si tiene contenido, inserta después
+            if(!cur.text||!cur.text.trim()){
+              arr.splice(idx,1,...newBlocks);
+            }else{
+              arr.splice(idx+1,0,...newBlocks);
+            }
+            return arr;
+          });
+          const lastId=newBlocks[newBlocks.length-1].id;
+          requestAnimationFrame(()=>focusBlock(lastId,true));
+          return;
+        }
+      }
+      return;
+    }
     ev.preventDefault();
     const file=imgItem.getAsFile();
     if(!file)return;
@@ -11668,6 +11896,7 @@ function NotebookBlockEditor({blocks,legacyText,onChange}){
       rmeta.divider&&e('div',{className:'nb-retro-divider'}),
       e('div',{
         key:b.id,
+        ref:el=>{blockRowRefs.current[b.id]=el;},
         className:'nb-block-row'+(isOver?(dragOverInfo.pos==='above'?' drag-over-above':' drag-over-below'):'')+(dragId.current===b.id?' dragging':'')+(selectedIds.includes(b.id)?' selected':'')+retroCls,
         style:{position:'relative'},
         onDragOver:ev=>onDragOverRow(b.id,ev),
@@ -11685,7 +11914,8 @@ function NotebookBlockEditor({blocks,legacyText,onChange}){
           onDragStart:ev=>beginDrag(b.id,ev),
           onDragEnd:()=>{dragId.current=null;setDragOverInfo(null);},
           onClick:ev=>{ev.stopPropagation();toggleSelect(b.id,ev);},
-          title:'Arrastra para reordenar · click para seleccionar varias líneas (Shift+click para un rango)'
+          onMouseDown:ev=>{if(ev.button===0&&!ev.shiftKey&&!ev.metaKey&&!ev.ctrlKey){beginDragSelect(b.id,ev);}},
+          title:'Arrastra para reordenar · click o arrastra para seleccionar varias líneas'
         },'⠿'),
 
         b.type==='divider'
@@ -11770,6 +12000,17 @@ function NotebookBlockEditor({blocks,legacyText,onChange}){
       )
       );
     }),
+    // Zona clickeable al fondo del editor — evita tener que presionar Enter para hacer espacio
+    e('div',{
+      className:'nb-end-zone',
+      onClick:()=>{
+        const last=items[items.length-1];
+        if(last&&last.type==='text'&&!last.text.trim()){focusBlock(last.id,true);return;}
+        const newId=uid();
+        setItems(prev=>[...prev,{id:newId,type:'text',text:''}]);
+        requestAnimationFrame(()=>focusBlock(newId,false));
+      }
+    }),
     multiMenu&&e('div',{
       className:'nb-multimenu',
       style:{left:multiMenu.x,top:multiMenu.y}
@@ -11842,9 +12083,7 @@ function TaskNotebookPanel({task,onUpdateTask}){
   }
 
   function fmtWhen(ts){
-    const key=dayKeyFromTs(ts);
-    const label=key===dayKey()?'Hoy':key===dayKeyFromTs(Date.now()-86400000)?'Ayer':new Date(ts).toLocaleDateString('es-CL',{day:'numeric',month:'short'});
-    return label+' · '+new Date(ts).toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'});
+    return new Date(ts).toLocaleDateString('es-CL',{day:'numeric',month:'short',year:'numeric'});
   }
 
   const sorted=[...entries].sort((a,b)=>{
@@ -11878,8 +12117,7 @@ function TaskNotebookPanel({task,onUpdateTask}){
             n.pinned&&e(DashIcon,{name:'pin',size:10}),
             n.title||'Sin título'
           ),
-          n.subtitle&&e('div',{className:'notebook-list-item-sub'},n.subtitle),
-          e('div',{className:'notebook-list-item-meta'},fmtWhen(n.updatedAt))
+          e('div',{className:'notebook-list-item-meta'},fmtWhen(n.createdAt||n.updatedAt))
         ))
       )
     ),
@@ -11982,9 +12220,7 @@ function AccountNotebookPanel({project,pTasks,pSystems,onPatchProject,onUpdateTa
   function togglePin(entry){patchEntry(entry,{pinned:!entry.pinned});}
 
   function fmtWhen2(ts){
-    const key=dayKeyFromTs(ts);
-    const label=key===dayKey()?'Hoy':key===dayKeyFromTs(Date.now()-86400000)?'Ayer':new Date(ts).toLocaleDateString('es-CL',{day:'numeric',month:'short'});
-    return label+' · '+new Date(ts).toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'});
+    return new Date(ts).toLocaleDateString('es-CL',{day:'numeric',month:'short',year:'numeric'});
   }
 
   const filtered=allEntries.filter(n=>filter==='all'?true:filter==='account'?n._scope==='account':n._taskId===filter);
@@ -12026,9 +12262,10 @@ function AccountNotebookPanel({project,pTasks,pSystems,onPatchProject,onUpdateTa
             n.pinned&&e(DashIcon,{name:'pin',size:10}),
             n.title||'Sin título'
           ),
-          e('span',{className:'nb-tag'+(n._scope==='account'?' nb-tag-account':' nb-tag-task'+(n._taskDone?' done':''))},n._tag),
-          n.subtitle&&e('div',{className:'notebook-list-item-sub'},n.subtitle),
-          e('div',{className:'notebook-list-item-meta'},fmtWhen2(n.updatedAt))
+          e('div',{className:'nb-list-row'},
+            e('span',{className:'nb-tag'+(n._scope==='account'?' nb-tag-account':' nb-tag-task'+(n._taskDone?' done':''))},n._tag),
+            e('span',{className:'notebook-list-item-meta'},fmtWhen2(n.createdAt||n.updatedAt))
+          )
         ))
       )
     ),
@@ -12112,7 +12349,7 @@ function TaskBoardPanel({task,onUpdateTask}){
   // ahí a localStorage, a Supabase y a cada snapshot de undo). Se reescalan a
   // un máximo razonable antes de guardarlas: se ven igual en la pizarra y
   // pesan una fracción.
-  const BOARD_IMG_MAX=1400;
+  const BOARD_IMG_MAX=800; // reducido de 1400 — ahorra ~75% de tamaño en Supabase
   function addImage(src){
     const n=pasteCounterRef.current++;
     const off=(n%8)*22;
@@ -12129,7 +12366,7 @@ function TaskBoardPanel({task,onUpdateTask}){
           cv.width=Math.round(im.width*scale);
           cv.height=Math.round(im.height*scale);
           cv.getContext('2d').drawImage(im,0,0,cv.width,cv.height);
-          const out=cv.toDataURL('image/jpeg',0.82);
+          const out=cv.toDataURL('image/jpeg',0.62); // calidad reducida de 0.82 → 0.62 para pizarra
           push(out.length<src.length?out:src);
         }catch(err){push(src);}
       };
