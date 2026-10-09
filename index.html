@@ -1532,6 +1532,65 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .foco-widget{position:fixed;bottom:18px;left:18px;background:var(--bg1);border:1px solid var(--border3);border-radius:var(--r-xl);box-shadow:0 12px 40px #00000080;z-index:450;padding:12px 16px;display:flex;align-items:center;gap:12px}
 .foco-widget-title{font-size:9px;color:var(--text4);text-transform:uppercase;letter-spacing:.6px;margin-bottom:3px}
 .foco-widget-sub{font-size:10.5px;color:var(--text2);line-height:1.5}
+/* ── Gantt global ── */
+.gantt-view{display:flex;flex-direction:column;height:100%;background:var(--bg0);overflow:hidden}
+.gantt-toolbar{display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--border2);flex-shrink:0;background:var(--bg1)}
+.gantt-title{font-size:13px;font-weight:600;color:var(--text0);flex:1}
+.gantt-toolbar-btn{padding:4px 10px;border-radius:var(--r-md);border:1px solid var(--border3);background:var(--bg2);color:var(--text2);font-size:11px;cursor:pointer}
+.gantt-toolbar-btn:hover{background:var(--bg3);color:var(--text0)}
+.gantt-toolbar-btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.gantt-toolbar-btn.primary:hover{background:var(--accentd)}
+.gantt-body{display:flex;flex:1;overflow:hidden}
+.gantt-labels{width:200px;flex-shrink:0;overflow-y:auto;border-right:1px solid var(--border2);scrollbar-width:thin}
+.gantt-labels::-webkit-scrollbar{width:3px}
+.gantt-labels::-webkit-scrollbar-thumb{background:var(--border3);border-radius:3px}
+.gantt-proj-label{padding:6px 10px 4px;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;background:var(--bg1);position:sticky;top:0;z-index:2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gantt-phase-label{display:flex;align-items:center;gap:6px;padding:3px 10px 3px 14px;min-height:28px;cursor:pointer;border-radius:0}
+.gantt-phase-label:hover{background:var(--bg2)}
+.gantt-phase-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.gantt-phase-name{font-size:11px;color:var(--text1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.gantt-phase-name.done{color:var(--text4);text-decoration:line-through}
+.gantt-phase-name.overdue{color:var(--red,#e05555)}
+.gantt-chart{flex:1;overflow:auto;position:relative;scrollbar-width:thin}
+.gantt-chart::-webkit-scrollbar{height:4px;width:4px}
+.gantt-chart::-webkit-scrollbar-thumb{background:var(--border3);border-radius:3px}
+.gantt-header-row{display:flex;position:sticky;top:0;z-index:3;background:var(--bg1);border-bottom:1px solid var(--border2)}
+.gantt-day-cell{flex-shrink:0;text-align:center;font-size:9px;color:var(--text4);padding:4px 0;border-right:1px solid var(--border2);user-select:none}
+.gantt-day-cell.today{color:var(--accent);font-weight:700;background:color-mix(in srgb,var(--accent) 8%,transparent)}
+.gantt-day-cell.weekend{background:var(--bg2)}
+.gantt-month-label{font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;padding:2px 4px;white-space:nowrap}
+.gantt-rows{position:relative}
+.gantt-proj-sep{height:28px;display:flex;align-items:center;padding-left:6px;font-size:9.5px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;background:var(--bg1);border-bottom:1px solid var(--border2)}
+.gantt-row{height:28px;position:relative;display:flex;align-items:center;border-bottom:1px solid var(--border2)}
+.gantt-row:nth-child(even){background:color-mix(in srgb,var(--bg2) 40%,transparent)}
+.gantt-grid-line{position:absolute;top:0;bottom:0;width:1px;background:var(--border2);pointer-events:none}
+.gantt-grid-line.today{background:var(--accent);opacity:.5;width:2px}
+.gantt-grid-line.weekend{background:var(--border2);opacity:.6}
+.gantt-bar{position:absolute;height:16px;border-radius:3px;top:6px;cursor:pointer;transition:filter .1s,opacity .1s;display:flex;align-items:center;padding:0 6px;font-size:9.5px;color:#fff;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.gantt-bar:hover{filter:brightness(1.15)}
+.gantt-bar.done{opacity:.45}
+.gantt-bar.overdue{box-shadow:0 0 0 1.5px var(--red,#e05555),0 1px 3px rgba(0,0,0,.3)}
+.gantt-today-line{position:absolute;top:0;bottom:0;width:2px;background:var(--accent);opacity:.7;pointer-events:none;z-index:2}
+.gantt-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--text4);font-size:13px;gap:8px}
+.gantt-legend{display:flex;flex-wrap:wrap;gap:8px;padding:8px 16px;border-top:1px solid var(--border2);background:var(--bg1);flex-shrink:0}
+.gantt-legend-item{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--text3);cursor:pointer;padding:2px 6px;border-radius:4px}
+.gantt-legend-item:hover{background:var(--bg2)}
+.gantt-legend-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0}
+.gantt-agenda{padding:12px 16px;overflow-y:auto;flex:1}
+.gantt-agenda-section{margin-bottom:16px}
+.gantt-agenda-day{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid var(--border2)}
+.gantt-agenda-day.today-label{color:var(--accent)}
+.gantt-agenda-item{display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:6px;cursor:pointer;margin-bottom:2px}
+.gantt-agenda-item:hover{background:var(--bg2)}
+.gantt-agenda-proj{font-size:9px;color:var(--text4);flex-shrink:0;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gantt-agenda-phase{font-size:11.5px;color:var(--text1);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gantt-agenda-phase.overdue{color:var(--red,#e05555)}
+.gantt-agenda-phase.done{color:var(--text4);text-decoration:line-through}
+.gantt-reajust-btn{font-size:9.5px;padding:2px 6px;border-radius:4px;border:1px solid var(--red,#e05555);color:var(--red,#e05555);background:transparent;cursor:pointer;flex-shrink:0;white-space:nowrap}
+.gantt-reajust-btn:hover{background:color-mix(in srgb,var(--red,#e05555) 12%,transparent)}
+.gantt-toggle-btns{display:flex;background:var(--bg2);border-radius:6px;padding:2px;gap:1px}
+.gantt-toggle-btn{padding:3px 10px;border-radius:5px;border:none;background:transparent;color:var(--text3);font-size:11px;cursor:pointer}
+.gantt-toggle-btn.active{background:var(--bg0);color:var(--text0);box-shadow:0 1px 3px rgba(0,0,0,.2)}
 </style>
 </head>
 <body>
@@ -2756,6 +2815,15 @@ const GlobalSidebar=React.memo(function GlobalSidebar({projects,habits,systems,t
       e('div',{className:'gsb-item'+(view==='finanzas'?' active':''),onClick:()=>{playUI('click');setView('finanzas');}},
         e('svg',{width:14,height:14,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},e('path',{d:'M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6'})),
         e('span',null,'Finanzas')
+      ),
+      e('div',{className:'gsb-item'+(view==='gantt'?' active':''),onClick:()=>{playUI('click');setView('gantt');}},
+        e('svg',{width:14,height:14,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},
+          e('rect',{x:3,y:4,width:7,height:3,rx:1}),
+          e('rect',{x:8,y:10,width:9,height:3,rx:1}),
+          e('rect',{x:5,y:16,width:11,height:3,rx:1}),
+          e('line',{x1:3,y1:21,x2:21,y2:21})
+        ),
+        e('span',null,'Agenda')
       )
     ),
     e('div',{className:'gsb-groupline'},
@@ -3551,6 +3619,12 @@ function App(){
   // por si se cierra la pestaña o se borran los datos del navegador justo
   // después — como crear o editar un recordatorio.
   const forceSync=()=>{ sbUrgentRef.current=true; };
+  // Exponer para que GlobalGanttView pueda reajustar fases sin prop drilling
+  useEffect(()=>{
+    window.__chronosSetTasks=setTasks;
+    window.__chronosForceSync=forceSync;
+    return()=>{delete window.__chronosSetTasks;delete window.__chronosForceSync;};
+  },[]);
 
   // Recurrence engine (trigger: 'onSchedule') — for tasks whose recurrence says
   // "create the next one on its scheduled date, regardless of status", this scans
@@ -4365,6 +4439,13 @@ function App(){
           })
         :view==='finanzas'
         ?e('div',{className:'dashboard-view'},e(FinanzasView,null))
+        :view==='gantt'
+        ?e('div',{className:'dashboard-view',style:{padding:0,overflow:'hidden'}},
+            e(GlobalGanttView,{
+              tasks,projects,
+              onOpenProject:pid=>{setSelProj(pid);setView('dashboard');}
+            })
+          )
         :e(React.Fragment,null,
 
       // LEFT COL
@@ -6392,6 +6473,575 @@ function mfMonthLabel(monthKey){
   const s=d.toLocaleDateString('es-CL',{month:'long',year:'numeric'});
   return s.charAt(0).toUpperCase()+s.slice(1);
 }
+// ── Vista Gantt / Agenda global ──────────────────────────────────────────────
+// ── GanttView: Gantt por proyecto con fases expandibles y subtareas arrastrables ──
+function GanttView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,DAY_W}){
+  const GW=DAY_W||32;
+  const today=dayKey();
+  const toTs=d=>new Date(d+'T00:00:00').getTime();
+  function addDaysG(dateStr,n){
+    const d=new Date(dateStr+'T00:00:00');
+    d.setDate(d.getDate()+n);
+    return d.toISOString().slice(0,10);
+  }
+
+  // Estado expandido por fase
+  const[expanded,setExpanded]=useState({});
+  // Drag de barras de fase (igual que antes, pero más limpio)
+  const[drag,setDrag]=useState(null); // {id,mode,startX,origStart,origEnd,isSub,parentId}
+  // Drag de subtareas
+  const[subDrag,setSubDrag]=useState(null);
+
+  // Fases visibles
+  const visSteps=steps.filter(s=>showDoneSteps||!s.done);
+
+  // Rango de fechas: fases + subtareas con fecha
+  const allDates=[];
+  visSteps.forEach(s=>{
+    if(s.startDate)allDates.push(toTs(s.startDate));
+    if(s.dueDate)allDates.push(toTs(s.dueDate));
+    (s.subtasks||[]).forEach(sub=>{
+      if(sub.startDate)allDates.push(toTs(sub.startDate));
+      if(sub.dueDate)allDates.push(toTs(sub.dueDate));
+    });
+  });
+  allDates.push(toTs(today));
+  const minTs=Math.min(...allDates)-3*86400000;
+  const maxTs=Math.max(...allDates)+7*86400000;
+  const numDays=Math.round((maxTs-minTs)/86400000)+1;
+  const days=Array.from({length:numDays},(_,i)=>new Date(minTs+i*86400000));
+  const dLeft=dateStr=>Math.round((toTs(dateStr)-minTs)/86400000)*GW;
+  const dWidth=(s,e)=>Math.max(GW,Math.round((toTs(e)-toTs(s))/86400000+1)*GW);
+  const todayLeft=Math.round((toTs(today)-minTs)/86400000)*GW;
+
+  // Mes labels
+  const monthLabels=[];
+  let prevMo=null;
+  days.forEach((d,i)=>{
+    const mo=d.getMonth()+'-'+d.getFullYear();
+    if(mo!==prevMo){monthLabels.push({i,label:d.toLocaleDateString('es-CL',{month:'short',year:'2-digit'}).toUpperCase()});prevMo=mo;}
+  });
+
+  // Distribuir subtareas uniformemente dentro del rango de la fase
+  function distribuirSubs(stepId){
+    const s=steps.find(x=>x.id===stepId);
+    if(!s||!s.dueDate)return;
+    const subs=(s.subtasks||[]).filter(x=>!x.done);
+    if(!subs.length)return;
+    const start=s.startDate||s.dueDate;
+    const end=s.dueDate;
+    // Construir lista de días hábiles (lun-vie) dentro del rango
+    const bizDays=[];
+    let cur=new Date(start+'T00:00:00');
+    const endTs=toTs(end);
+    while(cur.getTime()<=endTs){
+      const dow=cur.getDay();
+      if(dow!==0&&dow!==6)bizDays.push(cur.toISOString().slice(0,10));
+      cur=new Date(cur.getTime()+86400000);
+    }
+    if(!bizDays.length){
+      // Si la fase cae íntegra en fines de semana, usar todos los días igual
+      cur=new Date(start+'T00:00:00');
+      while(cur.getTime()<=endTs){bizDays.push(cur.toISOString().slice(0,10));cur=new Date(cur.getTime()+86400000);}
+    }
+    // Repartir subtareas equitativamente entre los días hábiles
+    const daysPerSub=Math.max(1,Math.floor(bizDays.length/subs.length));
+    const newSubs=(s.subtasks||[]).map(sub=>{
+      const idx=subs.indexOf(sub);
+      if(idx<0)return sub;
+      const lo=Math.min(idx*daysPerSub,bizDays.length-1);
+      const hi=Math.min((idx+1)*daysPerSub-1,bizDays.length-1);
+      return{...sub,startDate:bizDays[lo],dueDate:bizDays[hi]};
+    });
+    commit(steps.map(x=>x.id===stepId?{...x,subtasks:newSubs}:x));
+  }
+
+  // Drag de barras de FASE
+  useEffect(()=>{
+    if(!drag)return;
+    function onMove(ev){
+      const dx=Math.round((ev.clientX-drag.startX)/GW);
+      let ns=drag.origStart,ne=drag.origEnd;
+      if(drag.mode==='move'){ns=addDaysG(drag.origStart,dx);ne=addDaysG(drag.origEnd,dx);}
+      else if(drag.mode==='start'){ns=addDaysG(drag.origStart,dx);if(ns>ne)ns=ne;}
+      else{ne=addDaysG(drag.origEnd,dx);if(ne<ns)ne=ns;}
+      setDrag(d=>d?{...d,curStart:ns,curEnd:ne}:d);
+    }
+    function onUp(){
+      setDrag(d=>{
+        if(d&&(d.curStart||d.curEnd)){
+          commit(steps.map(s=>s.id===d.id?{...s,startDate:d.curStart||s.startDate,dueDate:d.curEnd||s.dueDate}:s));
+        }
+        return null;
+      });
+    }
+    window.addEventListener('mousemove',onMove);
+    window.addEventListener('mouseup',onUp);
+    return()=>{window.removeEventListener('mousemove',onMove);window.removeEventListener('mouseup',onUp);};
+  },[drag&&drag.id,drag&&drag.mode,drag&&drag.startX]);
+
+  // Drag de SUBTAREAS
+  useEffect(()=>{
+    if(!subDrag)return;
+    function onMove(ev){
+      const dx=Math.round((ev.clientX-subDrag.startX)/GW);
+      const ns=addDaysG(subDrag.origStart,dx);
+      const ne=addDaysG(subDrag.origEnd,dx);
+      setSubDrag(d=>d?{...d,curStart:ns,curEnd:ne}:d);
+    }
+    function onUp(){
+      setSubDrag(d=>{
+        if(d){
+          commit(steps.map(s=>{
+            if(s.id!==d.parentId)return s;
+            const newSubs=(s.subtasks||[]).map(sub=>
+              sub.id===d.id?{...sub,startDate:d.curStart||sub.startDate,dueDate:d.curEnd||sub.dueDate}:sub
+            );
+            return{...s,subtasks:newSubs};
+          }));
+        }
+        return null;
+      });
+    }
+    window.addEventListener('mousemove',onMove);
+    window.addEventListener('mouseup',onUp);
+    return()=>{window.removeEventListener('mousemove',onMove);window.removeEventListener('mouseup',onUp);};
+  },[subDrag&&subDrag.id,subDrag&&subDrag.startX]);
+
+  const hasDated=visSteps.some(s=>s.dueDate);
+  const LABEL_W=200;
+  const ROW_H=34;
+  const SUB_H=26;
+  const HDR_H=42;
+
+  // Calcular altura total del canvas
+  let canvasH=HDR_H;
+  visSteps.forEach(s=>{
+    canvasH+=ROW_H;
+    if(expanded[s.id]&&s.dueDate){
+      canvasH+=(s.subtasks||[]).filter(sub=>!sub.done||showDoneSteps).length*SUB_H+4;
+    }
+  });
+
+  return e('div',{className:'tl-wrap',style:{userSelect:drag||subDrag?'none':''}},
+    e('div',{className:'tl-toolbar'},
+      e('span',{style:{fontSize:11,color:'var(--text3)'}},'Arrastra las barras para mover · bordes para extender'),
+      doneCount>0&&e('button',{className:'btn',style:{fontSize:10.5,padding:'4px 10px',marginLeft:'auto'},onClick:()=>setShowDoneSteps(v=>!v)},
+        showDoneSteps?'Ocultar completadas':'Ver completadas ('+doneCount+')')
+    ),
+    !hasDated&&e('div',{className:'empty',style:{padding:'20px 8px'}},'Asigna fechas a las fases en la vista Lista para verlas aquí como Gantt.'),
+    hasDated&&e('div',{style:{display:'flex',flex:1,overflow:'hidden',minHeight:0}},
+      // Columna de etiquetas
+      e('div',{style:{width:LABEL_W,flexShrink:0,overflowY:'auto',borderRight:'1px solid var(--border2)',scrollbarWidth:'none'}},
+        e('div',{style:{height:HDR_H,borderBottom:'1px solid var(--border2)',background:'var(--bg1)'}}),
+        visSteps.map(s=>{
+          const hasSubs=(s.subtasks||[]).length>0;
+          const isExp=expanded[s.id];
+          const overdue=!s.done&&s.dueDate&&s.dueDate<today;
+          const subVisible=(s.subtasks||[]).filter(sub=>!sub.done||showDoneSteps);
+          return e(React.Fragment,{key:s.id},
+            e('div',{
+              style:{height:ROW_H,display:'flex',alignItems:'center',gap:6,padding:'0 8px',cursor:'pointer',borderBottom:'1px solid var(--border2)',background:isExp?'var(--bg2)':'',':hover':{background:'var(--bg2)'}},
+              onClick:()=>s.dueDate&&hasSubs&&setExpanded(prev=>({...prev,[s.id]:!prev[s.id]}))
+            },
+              e('span',{style:{fontSize:11,color:'var(--text4)',width:12,flexShrink:0,textAlign:'center'}},
+                s.dueDate&&hasSubs?(isExp?'▼':'▶'):''),
+              e('div',{style:{width:7,height:7,borderRadius:'50%',flexShrink:0,background:overdue?'var(--red,#e05555)':s.done?'var(--text4)':'var(--accent2)'}}),
+              e('span',{style:{fontSize:11.5,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',flex:1,color:s.done?'var(--text4)':overdue?'var(--red,#e05555)':'var(--text0)',textDecoration:s.done?'line-through':''}},s.name),
+              s.dueDate&&hasSubs&&e('button',{
+                title:'Distribuir subtareas automáticamente en el rango de esta fase',
+                style:{fontSize:9,padding:'1px 4px',border:'1px solid var(--border3)',borderRadius:3,background:'var(--bg3)',color:'var(--text3)',cursor:'pointer',flexShrink:0},
+                onClick:ev=>{ev.stopPropagation();distribuirSubs(s.id);}
+              },'⟳')
+            ),
+            isExp&&subVisible.map(sub=>e('div',{key:sub.id,
+              style:{height:SUB_H,display:'flex',alignItems:'center',gap:6,padding:'0 8px 0 28px',borderBottom:'1px solid var(--border2)',background:'var(--bg1)'}},
+              e('div',{style:{width:5,height:5,borderRadius:'50%',flexShrink:0,background:sub.done?'var(--text4)':'var(--border4)'}}),
+              e('span',{style:{fontSize:10.5,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',flex:1,color:sub.done?'var(--text4)':'var(--text1)',textDecoration:sub.done?'line-through':''}},sub.name)
+            ))
+          );
+        })
+      ),
+      // Columna del chart
+      e('div',{style:{flex:1,overflowX:'auto',overflowY:'auto',position:'relative',scrollbarWidth:'thin'}},
+        e('div',{style:{width:numDays*GW,minWidth:'100%',position:'relative',minHeight:canvasH}},
+          // Header: meses + días
+          e('div',{style:{position:'sticky',top:0,zIndex:3,background:'var(--bg1)',borderBottom:'1px solid var(--border2)',height:HDR_H}},
+            e('div',{style:{height:20,display:'flex',borderBottom:'1px solid var(--border2)',width:numDays*GW}},
+              monthLabels.map((m,mi)=>{
+                const nextI=mi+1<monthLabels.length?monthLabels[mi+1].i:numDays;
+                return e('div',{key:m.i,style:{width:(nextI-m.i)*GW,flexShrink:0,fontSize:9,fontWeight:700,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.4px',padding:'3px 4px',borderRight:'1px solid var(--border2)',overflow:'hidden',whiteSpace:'nowrap'}},m.label);
+              })
+            ),
+            e('div',{style:{height:22,display:'flex',width:numDays*GW}},
+              days.map((d,i)=>{
+                const ds=d.toISOString().slice(0,10);
+                const isToday=ds===today;
+                const isWknd=d.getDay()===0||d.getDay()===6;
+                return e('div',{key:i,style:{width:GW,flexShrink:0,textAlign:'center',fontSize:9,color:isToday?'var(--accent)':isWknd?'var(--text4)':'var(--text4)',fontWeight:isToday?700:400,background:isToday?'color-mix(in srgb,var(--accent) 8%,transparent)':isWknd?'var(--bg2)':'',borderRight:'1px solid var(--border2)',paddingTop:4}},d.getDate());
+              })
+            )
+          ),
+          // Línea de hoy
+          e('div',{style:{position:'absolute',top:HDR_H,bottom:0,left:todayLeft,width:2,background:'var(--accent)',opacity:.5,pointerEvents:'none',zIndex:2}}),
+          // Filas
+          (()=>{
+            let top=HDR_H;
+            const els=[];
+            visSteps.forEach(s=>{
+              const rowTop=top;
+              const shownStart=drag&&drag.id===s.id?(drag.curStart||drag.origStart):(s.startDate||s.dueDate);
+              const shownEnd=drag&&drag.id===s.id?(drag.curEnd||drag.origEnd):s.dueDate;
+              const overdue=!s.done&&s.dueDate&&s.dueDate<today;
+              // Fondo fila
+              els.push(e('div',{key:'bg-'+s.id,style:{position:'absolute',top:rowTop,left:0,right:0,height:ROW_H,borderBottom:'1px solid var(--border2)',background:expanded[s.id]?'var(--bg2)':''}}));
+              // Líneas de grid
+              days.forEach((d,i)=>{
+                const isWknd=d.getDay()===0||d.getDay()===6;
+                if(isWknd)els.push(e('div',{key:'grid-'+s.id+'-'+i,style:{position:'absolute',top:rowTop,left:i*GW,width:GW,height:ROW_H,background:'color-mix(in srgb,var(--bg3) 50%,transparent)',pointerEvents:'none'}}));
+              });
+              // Barra de fase (solo si tiene fecha)
+              if(s.dueDate){
+                const bl=dLeft(shownStart);
+                const bw=dWidth(shownStart,shownEnd);
+                const barColor=overdue?'var(--red,#e05555)':s.done?'var(--text4)':'var(--accent2)';
+                els.push(e('div',{
+                  key:'bar-'+s.id,
+                  style:{position:'absolute',top:rowTop+7,left:bl+2,width:bw-4,height:20,borderRadius:4,background:barColor,opacity:s.done?.5:1,cursor:'grab',display:'flex',alignItems:'center',padding:'0 6px',fontSize:10,color:'#fff',fontWeight:500,overflow:'hidden',whiteSpace:'nowrap',textOverflow:'ellipsis',boxShadow:'0 1px 3px rgba(0,0,0,.3)',zIndex:1},
+                  title:s.name+' · '+(s.startDate||s.dueDate)+' → '+s.dueDate,
+                  onMouseDown:ev=>{ev.preventDefault();setDrag({id:s.id,mode:'move',startX:ev.clientX,origStart:s.startDate||s.dueDate,origEnd:s.dueDate,curStart:s.startDate||s.dueDate,curEnd:s.dueDate});}
+                },
+                  e('div',{style:{position:'absolute',left:0,top:0,bottom:0,width:6,cursor:'ew-resize',zIndex:2},onMouseDown:ev=>{ev.preventDefault();ev.stopPropagation();setDrag({id:s.id,mode:'start',startX:ev.clientX,origStart:s.startDate||s.dueDate,origEnd:s.dueDate,curStart:s.startDate||s.dueDate,curEnd:s.dueDate});}}),
+                  s.name,
+                  e('div',{style:{position:'absolute',right:0,top:0,bottom:0,width:6,cursor:'ew-resize',zIndex:2},onMouseDown:ev=>{ev.preventDefault();ev.stopPropagation();setDrag({id:s.id,mode:'end',startX:ev.clientX,origStart:s.startDate||s.dueDate,origEnd:s.dueDate,curStart:s.startDate||s.dueDate,curEnd:s.dueDate});}})
+                ));
+              }
+              top+=ROW_H;
+              // Subtareas expandidas
+              if(expanded[s.id]&&s.dueDate){
+                const subVisible=(s.subtasks||[]).filter(sub=>!sub.done||showDoneSteps);
+                subVisible.forEach(sub=>{
+                  const subTop=top;
+                  const isDraggingSub=subDrag&&subDrag.id===sub.id;
+                  const subStart=isDraggingSub?(subDrag.curStart||subDrag.origStart):(sub.startDate||s.startDate||s.dueDate);
+                  const subEnd=isDraggingSub?(subDrag.curEnd||subDrag.origEnd):(sub.dueDate||subStart);
+                  els.push(e('div',{key:'sbg-'+sub.id,style:{position:'absolute',top:subTop,left:0,right:0,height:SUB_H,borderBottom:'1px solid var(--border2)',background:'var(--bg1)'}}));
+                  const bl=dLeft(subStart);
+                  const bw=dWidth(subStart,subEnd);
+                  els.push(e('div',{
+                    key:'sbar-'+sub.id,
+                    style:{position:'absolute',top:subTop+5,left:bl+2,width:bw-4,height:16,borderRadius:3,background:sub.done?'var(--text4)':'color-mix(in srgb,var(--accent2) 60%,var(--bg3))',opacity:sub.done?.4:1,cursor:'grab',display:'flex',alignItems:'center',padding:'0 5px',fontSize:9.5,color:sub.done?'var(--text3)':'var(--text0)',overflow:'hidden',whiteSpace:'nowrap',textOverflow:'ellipsis',border:'1px solid color-mix(in srgb,var(--accent2) 30%,transparent)',zIndex:1},
+                    title:sub.name+(sub.dueDate?' · '+subStart+' → '+subEnd:''),
+                    onMouseDown:ev=>{
+                      if(!sub.startDate&&!sub.dueDate)return; // sin fecha, no arrastrable
+                      ev.preventDefault();
+                      setSubDrag({id:sub.id,parentId:s.id,startX:ev.clientX,origStart:subStart,origEnd:subEnd,curStart:subStart,curEnd:subEnd});
+                    }
+                  },sub.name));
+                  top+=SUB_H;
+                });
+                top+=4;
+              }
+            });
+            return els;
+          })()
+        )
+      )
+    )
+  );
+}
+
+const PROJ_COLORS=['#7c6af7','#f59e0b','#10b981','#ef4444','#3b82f6','#ec4899','#8b5cf6','#f97316','#06b6d4','#84cc16'];
+function GlobalGanttView({tasks,projects,onOpenProject}){
+  const[ganttMode,setGanttMode]=useState('gantt'); // 'gantt' | 'agenda'
+  const[showDone,setShowDone]=useState(false);
+  const today=dayKey();
+  const toTs=d=>new Date(d+'T00:00:00').getTime();
+  const DAY_W=28; // px por día en el Gantt
+
+  // Mapear color por proyecto
+  const projColorMap=useMemo(()=>{
+    const m={};
+    projects.forEach((p,i)=>{m[p.id]=PROJ_COLORS[i%PROJ_COLORS.length];});
+    return m;
+  },[projects]);
+
+  // Recopilar todas las fases con fecha de todos los proyectos activos
+  const allPhases=useMemo(()=>{
+    const rows=[];
+    const activeProjs=projects.filter(p=>p.status!=='archived');
+    activeProjs.forEach(proj=>{
+      const projTasks=tasks.filter(t=>t.projectId===proj.id&&t.status!=='archived');
+      projTasks.forEach(task=>{
+        (task.steps||[]).forEach(step=>{
+          if(!step.dueDate)return;
+          if(!showDone&&step.done)return;
+          rows.push({
+            id:step.id,
+            projId:proj.id,
+            projName:proj.name||'Sin nombre',
+            taskId:task.id,
+            taskName:task.name||'',
+            name:step.name||'Sin nombre',
+            start:step.startDate||step.dueDate,
+            end:step.dueDate,
+            done:!!step.done,
+            overdue:!step.done&&step.dueDate<today,
+            color:projColorMap[proj.id]||PROJ_COLORS[0]
+          });
+        });
+      });
+    });
+    // Ordenar: por fecha de inicio, luego por proyecto
+    rows.sort((a,b)=>a.start<b.start?-1:a.start>b.start?1:a.projId.localeCompare(b.projId));
+    return rows;
+  },[tasks,projects,showDone,projColorMap,today]);
+
+  // Reajustar fases vencidas de un proyecto: moverlas a partir de hoy
+  function reajustarProj(projId){
+    // busca las fases vencidas de este proyecto, las mueve empezando desde hoy
+    // manteniendo la duración original y el orden
+    const phases=allPhases.filter(p=>p.projId===projId&&p.overdue).sort((a,b)=>a.start<b.start?-1:1);
+    if(!phases.length)return;
+    // calcula cursor desde hoy
+    let cursor=new Date(today+'T00:00:00');
+    // Actualizar en tasks
+    // necesitamos acceder a las tasks directamente — usamos window.__chronosSetTasks si existe
+    if(typeof window.__chronosSetTasks==='function'){
+      window.__chronosSetTasks(prev=>prev.map(task=>{
+        if(task.projectId!==projId)return task;
+        const newSteps=(task.steps||[]).map(step=>{
+          const ph=phases.find(p=>p.id===step.id);
+          if(!ph)return step;
+          const dur=Math.max(0,Math.round((toTs(ph.end)-toTs(ph.start))/86400000));
+          const newStart=cursor.toISOString().slice(0,10);
+          cursor=new Date(cursor.getTime()+(dur+1)*86400000);
+          const newEnd=cursor.toISOString().slice(0,10);
+          cursor=new Date(cursor.getTime()+86400000);
+          return{...step,startDate:newStart,dueDate:newEnd};
+        });
+        return{...task,steps:newSteps};
+      }));
+      if(typeof window.__chronosForceSync==='function')window.__chronosForceSync();
+    }
+  }
+
+  // ── MODO AGENDA ──────────────────────────────────────────────────────────
+  if(ganttMode==='agenda'){
+    // Agrupar por fecha (usando dueDate como referencia)
+    const groups={};
+    allPhases.forEach(ph=>{
+      const k=ph.end;
+      if(!groups[k])groups[k]=[];
+      groups[k].push(ph);
+    });
+    const sortedDays=Object.keys(groups).sort();
+    // También agrupar "vencidas" aparte
+    const overdue=allPhases.filter(p=>p.overdue);
+    return e('div',{className:'gantt-view'},
+      e('div',{className:'gantt-toolbar'},
+        e('div',{className:'gantt-title'},'Agenda'),
+        e('div',{className:'gantt-toggle-btns'},
+          e('button',{className:'gantt-toggle-btn'+(ganttMode==='agenda'?' active':''),onClick:()=>setGanttMode('agenda')},'Agenda'),
+          e('button',{className:'gantt-toggle-btn'+(ganttMode==='gantt'?' active':''),onClick:()=>setGanttMode('gantt')},'Gantt')
+        ),
+        e('button',{className:'gantt-toolbar-btn'+(showDone?' primary':''),onClick:()=>setShowDone(v=>!v)},showDone?'✓ Mostrando completadas':'Ver completadas')
+      ),
+      allPhases.length===0
+        ?e('div',{className:'gantt-empty'},
+            e('span',{style:{fontSize:28}},'📅'),
+            e('span',null,'No hay fases con fechas en proyectos activos'),
+            e('span',{style:{fontSize:11,color:'var(--text4)'}},'Agrega fechas a las fases dentro de cada proyecto')
+          )
+        :e('div',{className:'gantt-agenda'},
+          overdue.length>0&&e('div',{className:'gantt-agenda-section'},
+            e('div',{className:'gantt-agenda-day',style:{color:'var(--red,#e05555)'}},'⚠ VENCIDAS'),
+            overdue.map(ph=>e('div',{key:ph.id,className:'gantt-agenda-item',onClick:()=>onOpenProject(ph.projId)},
+              e('div',{className:'gantt-phase-dot',style:{background:ph.color}}),
+              e('div',{className:'gantt-agenda-proj'},ph.projName),
+              e('div',{className:'gantt-agenda-phase overdue'},ph.name),
+              e('span',{style:{fontSize:9.5,color:'var(--text4)',flexShrink:0}},ph.end),
+              e('button',{className:'gantt-reajust-btn',onClick:ev=>{ev.stopPropagation();reajustarProj(ph.projId);}},
+                '→ Reajustar')
+            ))
+          ),
+          sortedDays.filter(k=>k>=today).map(k=>{
+            const isToday=k===today;
+            const isTomorrow=k===new Date(toTs(today)+86400000).toISOString().slice(0,10);
+            const dayPhs=groups[k];
+            const label=isToday?'HOY':isTomorrow?'MAÑANA':new Date(k+'T12:00:00').toLocaleDateString('es-CL',{weekday:'short',day:'numeric',month:'short'}).toUpperCase();
+            return e('div',{key:k,className:'gantt-agenda-section'},
+              e('div',{className:'gantt-agenda-day'+(isToday?' today-label':'')},label),
+              dayPhs.map(ph=>e('div',{key:ph.id,className:'gantt-agenda-item',onClick:()=>onOpenProject(ph.projId)},
+                e('div',{className:'gantt-phase-dot',style:{background:ph.color}}),
+                e('div',{className:'gantt-agenda-proj'},ph.projName),
+                e('div',{className:'gantt-agenda-phase'+(ph.done?' done':'')},ph.name)
+              ))
+            );
+          })
+        )
+    );
+  }
+
+  // ── MODO GANTT ────────────────────────────────────────────────────────────
+  if(allPhases.length===0){
+    return e('div',{className:'gantt-view'},
+      e('div',{className:'gantt-toolbar'},
+        e('div',{className:'gantt-title'},'Gantt de proyectos'),
+        e('div',{className:'gantt-toggle-btns'},
+          e('button',{className:'gantt-toggle-btn active'},'Agenda'),
+          e('button',{className:'gantt-toggle-btn',onClick:()=>setGanttMode('gantt')},'Gantt')
+        )
+      ),
+      e('div',{className:'gantt-empty'},
+        e('span',{style:{fontSize:28}},'📊'),
+        e('span',null,'No hay fases con fechas en proyectos activos'),
+        e('span',{style:{fontSize:11,color:'var(--text4)'}},'Agrega fechas a las fases dentro de cada proyecto para verlas aquí')
+      )
+    );
+  }
+
+  // Rango de fechas
+  const allTs=allPhases.flatMap(p=>[toTs(p.start),toTs(p.end)]).concat([toTs(today)]);
+  const minTs=Math.min(...allTs)-2*86400000;
+  const maxTs=Math.max(...allTs)+7*86400000;
+  const numDays=Math.round((maxTs-minTs)/86400000)+1;
+  const days=Array.from({length:numDays},(_,i)=>new Date(minTs+i*86400000));
+  const dayLeft=dateStr=>Math.round((toTs(dateStr)-minTs)/86400000)*DAY_W;
+  const dayWidth=dateStr1=>Math.max(DAY_W,Math.round((toTs(dateStr1)-toTs(days[0].toISOString().slice(0,10)))/86400000+1)*DAY_W);
+  const barLeft=ph=>dayLeft(ph.start);
+  const barWidth=ph=>Math.max(DAY_W,Math.round((toTs(ph.end)-toTs(ph.start))/86400000+1)*DAY_W);
+  const todayLeft=Math.round((toTs(today)-minTs)/86400000)*DAY_W;
+
+  // Agrupar fases por proyecto para las etiquetas
+  const projGroups=[];
+  const seen=new Set();
+  allPhases.forEach(ph=>{
+    if(!seen.has(ph.projId)){seen.add(ph.projId);projGroups.push({projId:ph.projId,projName:ph.projName});}
+  });
+
+  // Mes labels: primer día de cada mes en el rango
+  const monthLabels=[];
+  let prevMonth=null;
+  days.forEach((d,i)=>{
+    const mo=d.getMonth()+'-'+d.getFullYear();
+    if(mo!==prevMonth){
+      monthLabels.push({i,label:d.toLocaleDateString('es-CL',{month:'short',year:'2-digit'}).toUpperCase()});
+      prevMonth=mo;
+    }
+  });
+
+  const totalW=numDays*DAY_W;
+
+  return e('div',{className:'gantt-view'},
+    e('div',{className:'gantt-toolbar'},
+      e('div',{className:'gantt-title'},'Gantt de proyectos'),
+      e('div',{className:'gantt-toggle-btns'},
+        e('button',{className:'gantt-toggle-btn'+(ganttMode==='agenda'?' active':''),onClick:()=>setGanttMode('agenda')},'Agenda'),
+        e('button',{className:'gantt-toggle-btn'+(ganttMode==='gantt'?' active':''),onClick:()=>setGanttMode('gantt')},'Gantt')
+      ),
+      e('button',{className:'gantt-toolbar-btn'+(showDone?' primary':''),onClick:()=>setShowDone(v=>!v)},showDone?'✓ Completadas':'Ver completadas')
+    ),
+    e('div',{className:'gantt-body'},
+      // Labels col
+      e('div',{className:'gantt-labels'},
+        // spacer para alinear con header de meses
+        e('div',{style:{height:40,borderBottom:'1px solid var(--border2)',background:'var(--bg1)'}}),
+        projGroups.map(pg=>{
+          const phs=allPhases.filter(p=>p.projId===pg.projId);
+          const hasOverdue=phs.some(p=>p.overdue);
+          return e(React.Fragment,{key:pg.projId},
+            e('div',{className:'gantt-proj-label',style:{color:projColorMap[pg.projId]||'var(--text3)'}},
+              pg.projName+(hasOverdue?' ⚠':'')
+            ),
+            phs.map(ph=>e('div',{
+              key:ph.id,
+              className:'gantt-phase-label',
+              title:ph.name+' · '+ph.start+' → '+ph.end,
+              onClick:()=>onOpenProject(ph.projId)
+            },
+              e('div',{className:'gantt-phase-dot',style:{background:ph.color}}),
+              e('div',{className:'gantt-phase-name'+(ph.done?' done':ph.overdue?' overdue':'')},ph.name)
+            ))
+          );
+        })
+      ),
+      // Chart col
+      e('div',{className:'gantt-chart'},
+        e('div',{style:{width:totalW,minWidth:'100%',position:'relative'}},
+          // Header: meses + días
+          e('div',{className:'gantt-header-row',style:{width:totalW}},
+            // Fila de meses
+            e('div',{style:{position:'absolute',top:0,left:0,right:0,height:20,display:'flex',borderBottom:'1px solid var(--border2)'}},
+              monthLabels.map((m,idx)=>{
+                const nextI=idx+1<monthLabels.length?monthLabels[idx+1].i:numDays;
+                const w=(nextI-m.i)*DAY_W;
+                return e('div',{key:m.i,className:'gantt-month-label',style:{width:w,flexShrink:0,borderRight:'1px solid var(--border2)'}},m.label);
+              })
+            ),
+            // Fila de días
+            e('div',{style:{position:'absolute',top:20,left:0,right:0,height:20,display:'flex'}}),
+            days.map((d,i)=>{
+              const ds=d.toISOString().slice(0,10);
+              const isToday=ds===today;
+              const isWknd=d.getDay()===0||d.getDay()===6;
+              return e('div',{
+                key:i,
+                className:'gantt-day-cell'+(isToday?' today':isWknd?' weekend':''),
+                style:{width:DAY_W,marginTop:20}
+              },d.getDate());
+            })
+          ),
+          // Rows
+          e('div',{className:'gantt-rows',style:{width:totalW,position:'relative'}},
+            // Grid lines
+            days.map((d,i)=>{
+              const ds=d.toISOString().slice(0,10);
+              const isToday=ds===today;
+              const isWknd=d.getDay()===0||d.getDay()===6;
+              return e('div',{
+                key:'g'+i,
+                className:'gantt-grid-line'+(isToday?' today':isWknd?' weekend':''),
+                style:{left:i*DAY_W}
+              });
+            }),
+            // Project groups + bars
+            projGroups.map(pg=>{
+              const phs=allPhases.filter(p=>p.projId===pg.projId);
+              return e(React.Fragment,{key:pg.projId},
+                e('div',{className:'gantt-proj-sep',style:{width:totalW}},pg.projName),
+                phs.map(ph=>e('div',{key:ph.id,className:'gantt-row',style:{width:totalW}},
+                  e('div',{
+                    className:'gantt-bar'+(ph.done?' done':ph.overdue?' overdue':''),
+                    style:{left:barLeft(ph),width:barWidth(ph),background:ph.color},
+                    title:ph.name+'\n'+ph.start+' → '+ph.end+(ph.overdue?'\n⚠ Vencida':'')+(ph.done?'\n✓ Completada':''),
+                    onClick:()=>onOpenProject(ph.projId)
+                  },ph.name)
+                ))
+              );
+            })
+          )
+        )
+      )
+    ),
+    // Leyenda de proyectos
+    e('div',{className:'gantt-legend'},
+      projGroups.map(pg=>e('div',{
+        key:pg.projId,
+        className:'gantt-legend-item',
+        onClick:()=>onOpenProject(pg.projId)
+      },
+        e('div',{className:'gantt-legend-dot',style:{background:projColorMap[pg.projId]}}),
+        pg.projName
+      )),
+      allPhases.some(p=>p.overdue)&&e('div',{
+        className:'gantt-legend-item',
+        style:{marginLeft:'auto',color:'var(--red,#e05555)',cursor:'default'}
+      },'⚠ Fases vencidas')
+    )
+  );
+}
+
 let mfCache=null; // último snapshot cargado — evita 6 peticiones nuevas cada vez que se vuelve a esta vista
 function FinanzasView(){
   const[data,setData]=useState(mfCache);
@@ -11487,9 +12137,9 @@ function NotebookBlockEditor({blocks,legacyText,onChange}){
     dragSelectRef.current={startId,startIdx,active:true};
     setSelectedIds([startId]);
     selAnchorRef.current=startId;
+    document.body.style.userSelect='none';
     function onMouseMove(mev){
       if(!dragSelectRef.current||!dragSelectRef.current.active)return;
-      // Busca qué bloque está bajo el cursor comparando Y contra los BoundingRect
       let hitId=null;
       const entries=Object.entries(blockRowRefs.current);
       for(const[bid,el]of entries){
@@ -11507,6 +12157,66 @@ function NotebookBlockEditor({blocks,legacyText,onChange}){
     }
     function onMouseUp(){
       if(dragSelectRef.current)dragSelectRef.current.active=false;
+      document.body.style.userSelect='';
+      window.removeEventListener('mousemove',onMouseMove);
+      window.removeEventListener('mouseup',onMouseUp);
+    }
+    window.addEventListener('mousemove',onMouseMove);
+    window.addEventListener('mouseup',onMouseUp);
+  }
+  // Inicia drag-select desde el cuerpo del bloque (detección por movimiento vertical)
+  const pendingRowDrag=useRef(null); // {startId,startX,startY,startIdx}
+  function onRowMouseDown(startId,ev){
+    if(ev.button!==0||ev.shiftKey||ev.metaKey||ev.ctrlKey)return;
+    // No consumir el evento todavía — esperamos a ver si hay movimiento vertical
+    const startIdx=items.findIndex(b=>b.id===startId);
+    if(startIdx<0)return;
+    pendingRowDrag.current={startId,startX:ev.clientX,startY:ev.clientY,startIdx};
+    function onMouseMove(mev){
+      if(!pendingRowDrag.current)return;
+      const dy=Math.abs(mev.clientY-pendingRowDrag.current.startY);
+      const dx=Math.abs(mev.clientX-pendingRowDrag.current.startX);
+      if(dy>5&&dy>dx){
+        // Movimiento principalmente vertical → modo selección de bloques
+        const p=pendingRowDrag.current;
+        pendingRowDrag.current=null;
+        window.removeEventListener('mousemove',onMouseMove);
+        window.removeEventListener('mouseup',onMouseUp);
+        // Activar drag-select manualmente
+        const syntheticEv={preventDefault:()=>{},stopPropagation:()=>{}};
+        dragSelectRef.current={startId:p.startId,startIdx:p.startIdx,active:true};
+        setSelectedIds([p.startId]);
+        selAnchorRef.current=p.startId;
+        document.body.style.userSelect='none';
+        function onDragMove(dmev){
+          if(!dragSelectRef.current||!dragSelectRef.current.active)return;
+          let hitId=null;
+          const entries=Object.entries(blockRowRefs.current);
+          for(const[bid,el]of entries){
+            if(!el)continue;
+            const r=el.getBoundingClientRect();
+            if(dmev.clientY>=r.top&&dmev.clientY<=r.bottom){hitId=bid;break;}
+          }
+          if(!hitId)return;
+          const ids=items.map(x=>x.id);
+          const aIdx=dragSelectRef.current.startIdx;
+          const bIdx=ids.indexOf(hitId);
+          if(bIdx<0)return;
+          const[lo,hi]=aIdx<=bIdx?[aIdx,bIdx]:[bIdx,aIdx];
+          setSelectedIds(ids.slice(lo,hi+1));
+        }
+        function onDragUp(){
+          if(dragSelectRef.current)dragSelectRef.current.active=false;
+          document.body.style.userSelect='';
+          window.removeEventListener('mousemove',onDragMove);
+          window.removeEventListener('mouseup',onDragUp);
+        }
+        window.addEventListener('mousemove',onDragMove);
+        window.addEventListener('mouseup',onDragUp);
+      }
+    }
+    function onMouseUp(){
+      pendingRowDrag.current=null;
       window.removeEventListener('mousemove',onMouseMove);
       window.removeEventListener('mouseup',onMouseUp);
     }
@@ -11899,6 +12609,7 @@ function NotebookBlockEditor({blocks,legacyText,onChange}){
         ref:el=>{blockRowRefs.current[b.id]=el;},
         className:'nb-block-row'+(isOver?(dragOverInfo.pos==='above'?' drag-over-above':' drag-over-below'):'')+(dragId.current===b.id?' dragging':'')+(selectedIds.includes(b.id)?' selected':'')+retroCls,
         style:{position:'relative'},
+        onMouseDown:ev=>onRowMouseDown(b.id,ev),
         onDragOver:ev=>onDragOverRow(b.id,ev),
         onDrop:ev=>onDropRow(b.id,ev),
         onDragLeave:()=>setDragOverInfo(cur=>(cur&&cur.id===b.id)?null:cur),
@@ -13267,50 +13978,7 @@ function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask,templates,onAddTe
             )
           )
         ),
-        view==='timeline'&&e('div',{className:'tl-wrap'},
-          e('div',{className:'tl-toolbar'},
-            e('button',{className:'btn',style:{fontSize:10.5,padding:'4px 10px'},onClick:selectAllDated,disabled:tl.dated.length===0},'Seleccionar todas'),
-            selectedIds.size>0&&e('button',{className:'btn',style:{fontSize:10.5,padding:'4px 10px'},onClick:clearSelection},'Deseleccionar ('+selectedIds.size+')'),
-            selectedIds.size>1&&e('span',{className:'tl-hint'},'Arrastra cualquiera de las '+selectedIds.size+' seleccionadas para moverlas juntas'),
-            doneCount>0&&e('button',{className:'btn',style:{fontSize:10.5,padding:'4px 10px',marginLeft:'auto'},onClick:()=>setShowDoneSteps(v=>!v)},showDoneSteps?'Ocultar completadas ('+doneCount+')':'Ver completadas ('+doneCount+')')
-          ),
-          tl.dated.length<total-(showDoneSteps?0:doneCount)&&e('div',{className:'tl-note'},(total-tl.dated.length-(showDoneSteps?0:doneCount))+' fase(s) sin fecha — asígnales una en la vista Lista para verlas aquí'),
-          tl.rows.length===0&&e('div',{className:'empty',style:{padding:'20px 2px'}},'Sin fases con fecha aún.'),
-          tl.rows.length>0&&e('div',{className:'tl-scroll'},
-            e('div',{className:'tl-canvas',style:{width:tl.numDays*DAY_W,height:38+tl.laneCount*40+14}},
-              e('div',{className:'tl-days'},tl.days.map((d,i)=>{
-                const key=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-                const isToday=key===tl.today;
-                const wd=WEEK_DAYS.find(w=>w.k===DOW_KEYS[d.getDay()]);
-                return e('div',{key:i,className:'tl-day'+(isToday?' today':''),style:{left:i*DAY_W,width:DAY_W}},
-                  e('span',{className:'tl-day-dow'},wd?wd.l:''),
-                  e('span',{className:'tl-day-num'},d.getDate())
-                );
-              })),
-              e('div',{className:'tl-today-line',style:{left:tl.dayIdx(tl.today)*DAY_W}}),
-              tl.rows.map(s=>{
-                const isDragging=tlDrag&&tlDrag.ids.includes(s.id);
-                const shownStart=isDragging?tlDrag.cur[s.id].start:(s.startDate||s.dueDate);
-                const shownEnd=isDragging?tlDrag.cur[s.id].end:s.dueDate;
-                const isSelected=selectedIds.has(s.id);
-                const left=tl.dayIdx(shownStart)*DAY_W+4;
-                const width=Math.max((tl.dayIdx(shownEnd)-tl.dayIdx(shownStart)+1)*DAY_W-8,DAY_W-8);
-                return e('div',{
-                  key:s.id,
-                  className:'tl-bar'+(s.done?' done':'')+(isDragging?' dragging':'')+(isSelected?' selected':''),
-                  style:{left,width,top:38+s._lane*40+6},
-                  onMouseDown:ev=>beginTimelineDrag(s.id,'move',ev),
-                  title:'Click para seleccionar · arrastra el centro para mover, los bordes para extender/achicar'
-                },
-                  e('div',{className:'tl-bar-handle left',onMouseDown:ev=>beginTimelineDrag(s.id,'start',ev)}),
-                  e('button',{className:'tl-pill-check',onMouseDown:ev=>ev.stopPropagation(),onClick:ev=>{ev.stopPropagation();updateStep(s.id,{done:!s.done});}},s.done?'✓':''),
-                  e('span',{className:'tl-pill-label'},s.name),
-                  e('div',{className:'tl-bar-handle right',onMouseDown:ev=>beginTimelineDrag(s.id,'end',ev)})
-                );
-              })
-            )
-          )
-        ),
+        view==='timeline'&&e(GanttView,{steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,DAY_W}),
         view==='calendar'&&e('div',{style:{padding:'0 8px',overflowY:'auto',flex:1}},
           e(CalendarView,{tasks:[task],project:{color:'var(--accent2)',id:task.projectId},onOpenSteps:null})
         ),
