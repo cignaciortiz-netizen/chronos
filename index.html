@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Chronos — Personal OS</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://apis.google.com/js/api.js"></script>
 <script src="https://accounts.google.com/gsi/client"></script>
@@ -2825,15 +2826,6 @@ const GlobalSidebar=React.memo(function GlobalSidebar({projects,habits,systems,t
         e('svg',{width:14,height:14,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},e('path',{d:'M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6'})),
         e('span',null,'Finanzas')
       ),
-      e('div',{className:'gsb-item'+(view==='gantt'?' active':''),onClick:()=>{playUI('click');setView('gantt');}},
-        e('svg',{width:14,height:14,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},
-          e('rect',{x:3,y:4,width:7,height:3,rx:1}),
-          e('rect',{x:8,y:10,width:9,height:3,rx:1}),
-          e('rect',{x:5,y:16,width:11,height:3,rx:1}),
-          e('line',{x1:3,y1:21,x2:21,y2:21})
-        ),
-        e('span',null,'Agenda')
-      )
     ),
     e('div',{className:'gsb-groupline'},
       e('span',null,'PROYECTOS'),
@@ -6858,18 +6850,11 @@ function GanttView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
               return e('div',{key:sub.id,
                 onContextMenu:ev=>{ev.preventDefault();setCtxMenu({subId:sub.id,parentId:s.id,x:ev.clientX,y:ev.clientY});},
                 style:{height:SUB_H,display:'flex',alignItems:'center',gap:6,padding:'0 8px 0 28px',borderBottom:'1px solid var(--border2)',background:'var(--bg1)',position:'relative'}},
-                // Círculo de estado — clic avanza, click derecho = menú completo
+                // Círculo de estado — clic abre picker
                 e('div',{
-                  onClick:ev=>{
-                    ev.stopPropagation();
-                    const order=['todo','doing','done'];
-                    const cur=sub.status||'todo';
-                    const next=order[(order.indexOf(cur)+1)%order.length];
-                    setSubStatus(s.id,sub.id,next);
-                  },
-                  onContextMenu:ev=>{ev.preventDefault();ev.stopPropagation();setCtxMenu({subId:sub.id,parentId:s.id,x:ev.clientX,y:ev.clientY});},
-                  title:sst.label+' · clic para avanzar · click derecho para más opciones',
-                  style:{width:11,height:11,borderRadius:'50%',background:sst.k==='done'?sst.color:sst.bg,border:'2px solid '+sst.color,cursor:'pointer',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',transition:'all .15s'}
+                  onClick:ev=>{ev.stopPropagation();setStatusPicker(isPickerOpen?null:{subId:sub.id,parentId:s.id});},
+                  title:sst.label+' · clic para cambiar estado',
+                  style:{width:13,height:13,borderRadius:'50%',background:sst.k==='done'?sst.color:sst.bg,border:'2px solid '+sst.color,cursor:'pointer',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',transition:'all .15s'}
                 },sst.k==='done'&&e('div',{style:{width:5,height:5,borderRadius:'50%',background:'#fff'}})),
                 e('span',{style:{fontSize:10.5,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',flex:1,color:sst.k==='done'?'var(--text4)':'var(--text1)',textDecoration:sst.k==='done'?'line-through':''}},sub.name),
                 // Dropdown picker
@@ -6879,13 +6864,15 @@ function GanttView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
                 },
                   customStatuses.map(st=>{
                     const stCol=subStatusColor(st.colorId);
+                    const isCur=(sub.status||'todo')===st.k;
                     return e('button',{
                       key:st.k,
-                      onClick:()=>setSubStatus(s.id,sub.id,st.k),
-                      style:{display:'flex',alignItems:'center',gap:7,width:'100%',textAlign:'left',padding:'5px 8px',borderRadius:5,border:'none',background:sub.status===st.k?'var(--bg4)':'transparent',cursor:'pointer',fontFamily:'Inter,sans-serif',fontSize:11,color:stCol.color}
+                      onClick:()=>{setSubStatus(s.id,sub.id,st.k);setStatusPicker(null);},
+                      style:{display:'flex',alignItems:'center',gap:7,width:'100%',textAlign:'left',padding:'5px 8px',borderRadius:5,border:'none',background:isCur?'var(--bg4)':'transparent',cursor:'pointer',fontFamily:'Inter,sans-serif',fontSize:11,color:stCol.color}
                     },
                       e('div',{style:{width:7,height:7,borderRadius:'50%',background:stCol.color,flexShrink:0}}),
-                      st.label
+                      st.label,
+                      isCur&&e('span',{style:{marginLeft:'auto',fontSize:10,opacity:.5}},'✓')
                     );
                   })
                 )
@@ -7315,7 +7302,12 @@ function FinanzasView(){
   const[formState,setFormState]=useState(null); // {type,initial}
   const[selMonth,setSelMonth]=useState(mfNowMonth());
   const[showAllBudgets,setShowAllBudgets]=useState(false);
-  const[showImportNote,setShowImportNote]=useState(false);
+  const[trendHover,setTrendHover]=useState(null); // {idx,cx,cy} — coordenadas viewport (fixed)
+  const[showImport,setShowImport]=useState(false);
+  const[importRows,setImportRows]=useState(null); // filas parseadas
+  const[importStatus,setImportStatus]=useState(null); // {ok,err,dupes,added}
+  const[importing,setImporting]=useState(false);
+  const importFileRef=useRef(null);
 
   useEffect(()=>{
     if(refreshTick===0&&mfCache)return; // ya tenemos datos de una visita anterior — se muestran al toque, sin red
@@ -7326,6 +7318,83 @@ function FinanzasView(){
   },[refreshTick]);
 
   function refresh(){setRefreshTick(t=>t+1);}
+
+  // ── Importar Excel de MisFinanzas ──────────────────────────────────────
+  function parseExcelFile(file){
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      try{
+        const wb=XLSX.read(ev.target.result,{type:'array',cellDates:true});
+        const ws=wb.Sheets[wb.SheetNames[0]];
+        const raw=XLSX.utils.sheet_to_json(ws,{defval:''});
+        if(!raw.length){setImportRows([]);return;}
+        // Detectar columnas flexiblemente (MisFinanzas exporta en español)
+        const k0=Object.keys(raw[0]);
+        function findCol(...names){return k0.find(k=>names.some(n=>k.toLowerCase().replace(/[áéíóúñ]/g,c=>({á:'a',é:'e',í:'i',ó:'o',ú:'u',ñ:'n'}[c]||c)).includes(n)))||null;}
+        const colFecha=findCol('fecha','date');
+        const colMonto=findCol('monto','amount','importe','valor');
+        const colCat=findCol('categoria','categoria','cat','rubro');
+        const colCuenta=findCol('cuenta','account');
+        const colDesc=findCol('descripcion','descripcion','desc','concepto','detalle','glosa');
+        function parseDate(v){
+          if(!v)return null;
+          if(v instanceof Date){const y=v.getFullYear(),m=String(v.getMonth()+1).padStart(2,'0'),d=String(v.getDate()).padStart(2,'0');return`${y}-${m}-${d}`;}
+          const s=String(v).trim();
+          // DD-MM-YYYY o DD/MM/YYYY
+          const m1=s.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})$/);
+          if(m1)return`${m1[3]}-${m1[2].padStart(2,'0')}-${m1[1].padStart(2,'0')}`;
+          // YYYY-MM-DD
+          const m2=s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+          if(m2)return`${m2[1]}-${m2[2]}-${m2[3]}`;
+          return null;
+        }
+        const rows=raw.map((r,i)=>{
+          const fecha=parseDate(colFecha?r[colFecha]:null);
+          const monto=colMonto?Number(String(r[colMonto]).replace(/[.$\s]/g,'').replace(',','.')):0;
+          return{
+            _idx:i,
+            date:fecha,
+            amount:isNaN(monto)?0:monto,
+            cat:colCat?String(r[colCat]||'').trim():'',
+            acc:'',  // se asigna manualmente si la col no existe
+            desc:colDesc?String(r[colDesc]||'').trim():'',
+            _raw:r
+          };
+        }).filter(r=>r.date&&r.amount!==0);
+        setImportRows(rows);
+        setImportStatus(null);
+      }catch(e){setImportStatus({err:'No se pudo leer el archivo: '+e.message});}
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  async function doImport(){
+    if(!importRows||!importRows.length)return;
+    setImporting(true);setImportStatus(null);
+    const existingKeys=new Set((data?.transactions||[]).map(t=>t.date+'|'+(t.amount||0)+'|'+(t.desc||'').slice(0,20)));
+    const toInsert=importRows.filter(r=>!existingKeys.has(r.date+'|'+r.amount+'|'+(r.desc||'').slice(0,20)));
+    const dupes=importRows.length-toInsert.length;
+    let added=0,err=null;
+    for(const r of toInsert){
+      try{
+        await mfUpsert('transacciones',{
+          id:uid(),
+          user_id:MF_SB.uid,
+          fecha:r.date,
+          monto:r.amount,
+          categoria:r.cat||null,
+          cuenta:r.acc||null,
+          descripcion:r.desc||null,
+          is_transfer:false
+        });
+        added++;
+      }catch(e){err=e.message;break;}
+    }
+    setImporting(false);
+    setImportStatus({ok:true,added,dupes,err});
+    if(added>0)refresh();
+  }
+  // ──────────────────────────────────────────────────────────────────────
 
   async function handleSave(type,form){
     const toSB={tx:mfTxToSB,acc:mfAccToSB,budget:mfBudgetToSB,goal:mfGoalToSB,debt:mfDebtToSB}[type];
@@ -7428,15 +7497,56 @@ function FinanzasView(){
     e('div',{className:'mf-card'},
       e('div',{className:'mf-card-hdr'},e('span',{className:'mf-card-title'},'📊 Tendencia 6 meses')),
       e('div',{className:'mf-trend'},
-        trend.map(m=>e('div',{key:m.key,className:'mf-trend-col'},
-          e('div',{className:'mf-trend-bars'},
-            e('div',{className:'mf-trend-bar',title:'Ingresos: '+mfClp(m.inc),style:{height:Math.max(2,Math.round(m.inc/trendMax*100))+'%',background:'var(--green)'}}),
-            e('div',{className:'mf-trend-bar',title:'Gastos: '+mfClp(m.exp),style:{height:Math.max(2,Math.round(m.exp/trendMax*100))+'%',background:'var(--red)'}})
-          ),
-          e('div',{className:'mf-trend-lbl'},m.label)
-        ))
+        trend.map((m,idx)=>{
+          const isHov=trendHover&&trendHover.idx===idx;
+          return e('div',{
+            key:m.key,
+            className:'mf-trend-col',
+            onMouseMove:ev=>setTrendHover({idx,cx:ev.clientX,cy:ev.clientY}),
+            onMouseLeave:()=>setTrendHover(null),
+            style:{cursor:'default'}
+          },
+            e('div',{className:'mf-trend-bars'},
+              e('div',{className:'mf-trend-bar',style:{height:Math.max(2,Math.round(m.inc/trendMax*100))+'%',background:'var(--green)',opacity:isHov?1:.75,transform:isHov?'scaleX(1.08)':'scaleX(1)',transition:'opacity .1s,transform .1s'}}),
+              e('div',{className:'mf-trend-bar',style:{height:Math.max(2,Math.round(m.exp/trendMax*100))+'%',background:'var(--red)',opacity:isHov?1:.75,transform:isHov?'scaleX(1.08)':'scaleX(1)',transition:'opacity .1s,transform .1s'}})
+            ),
+            e('div',{className:'mf-trend-lbl',style:{fontWeight:isHov?700:'normal',color:isHov?'var(--text1)':'var(--text3)',transition:'color .1s'}},m.label)
+          );
+        })
       )
     ),
+    trendHover!==null&&(()=>{
+      const m=trend[trendHover.idx];
+      const net2=m.inc-m.exp;
+      const TT_W=172,TT_H=96;
+      const vw=window.innerWidth,vh=window.innerHeight;
+      let left=trendHover.cx+14;
+      let top=trendHover.cy-TT_H/2;
+      if(left+TT_W>vw-8)left=trendHover.cx-TT_W-14;
+      if(top<8)top=8;
+      if(top+TT_H>vh-8)top=vh-TT_H-8;
+      return e('div',{
+        style:{position:'fixed',left,top,zIndex:9999,pointerEvents:'none',
+          background:'var(--bg2)',border:'1px solid var(--border3)',borderRadius:10,
+          padding:'10px 13px',fontSize:11.5,boxShadow:'0 8px 24px rgba(0,0,0,.5)',minWidth:TT_W}
+      },
+        e('div',{style:{fontWeight:700,color:'var(--text1)',marginBottom:7,fontSize:12.5}},'Mes '+m.label),
+        e('div',{style:{display:'flex',alignItems:'center',gap:7,marginBottom:4}},
+          e('span',{style:{width:8,height:8,borderRadius:'50%',background:'var(--green)',flexShrink:0}}),
+          e('span',{style:{color:'var(--text3)',flex:1,fontSize:11}},'Ingresos'),
+          e('span',{style:{color:'var(--green)',fontWeight:600,fontFamily:"'JetBrains Mono',monospace",fontSize:11.5}},mfClp(m.inc))
+        ),
+        e('div',{style:{display:'flex',alignItems:'center',gap:7,marginBottom:4}},
+          e('span',{style:{width:8,height:8,borderRadius:'50%',background:'var(--red)',flexShrink:0}}),
+          e('span',{style:{color:'var(--text3)',flex:1,fontSize:11}},'Gastos'),
+          e('span',{style:{color:'var(--red)',fontWeight:600,fontFamily:"'JetBrains Mono',monospace",fontSize:11.5}},mfClp(m.exp))
+        ),
+        e('div',{style:{borderTop:'1px solid var(--border2)',marginTop:6,paddingTop:6,display:'flex',alignItems:'center',gap:7}},
+          e('span',{style:{color:'var(--text3)',flex:1,fontSize:11}},'Neto'),
+          e('span',{style:{color:net2>=0?'var(--green)':'var(--amber)',fontWeight:700,fontFamily:"'JetBrains Mono',monospace",fontSize:11.5}},mfClp(net2))
+        )
+      );
+    })(),
 
     e('div',{className:'mf-2col'},
       e('div',{className:'mf-card'},
@@ -7506,12 +7616,57 @@ function FinanzasView(){
       e('div',{className:'mf-card-hdr'},
         e('span',{className:'mf-card-title'},'Transacciones recientes'),
         e('div',{style:{display:'flex',gap:6}},
-          e('button',{className:'ghost-btn',onClick:()=>setShowImportNote(v=>!v),title:'Importar cartola bancaria'},'⤓ Importar'),
+          e('button',{className:'ghost-btn',onClick:()=>{setShowImport(v=>!v);setImportRows(null);setImportStatus(null);},title:'Importar Excel de MisFinanzas'},'⤓ Importar Excel'),
           e('button',{className:'ghost-btn',onClick:()=>setFormState({type:'tx',initial:{date:selMonth+'-'+String(new Date().getDate()).padStart(2,'0')}})},'＋ Nueva')
         )
       ),
-      showImportNote&&e('div',{style:{fontSize:11.5,color:'var(--text2)',background:'var(--bg3)',borderRadius:8,padding:'8px 10px',marginBottom:8}},
-        'La importación de cartolas bancarias (Excel/BCI, detección de duplicados) sigue viviendo en tu app MisFinanzas — es un flujo grande y delicado con tu plata real, así que preferí no reconstruirlo a la carrera acá. Impórtalo ahí como siempre; apenas guardes, aparece acá también porque es la misma base de datos. Si quieres, puedo agregar más adelante un "pegar texto" para cargar varias transacciones sueltas de una vez.'
+      showImport&&e('div',{style:{background:'var(--bg3)',border:'1px solid var(--border2)',borderRadius:10,padding:'12px 14px',marginBottom:10}},
+        e('div',{style:{fontSize:12,fontWeight:600,color:'var(--text1)',marginBottom:8}},'Importar Excel de MisFinanzas'),
+        e('div',{style:{fontSize:11.5,color:'var(--text3)',marginBottom:10}},'Sube el Excel que exportas desde MisFinanzas. Se detectan duplicados automáticamente y solo se agregan filas nuevas.'),
+        e('input',{
+          ref:importFileRef,
+          type:'file',
+          accept:'.xlsx,.xls,.csv',
+          style:{display:'none'},
+          onChange:ev=>{const f=ev.target.files[0];if(f)parseExcelFile(f);}
+        }),
+        !importRows&&e('button',{
+          className:'btn',
+          style:{fontSize:12},
+          onClick:()=>importFileRef.current&&importFileRef.current.click()
+        },'📂 Seleccionar archivo Excel'),
+        importRows&&e(React.Fragment,null,
+          e('div',{style:{fontSize:11.5,color:'var(--text2)',marginBottom:8}},
+            importRows.length+' transacciones encontradas en el archivo'
+          ),
+          importRows.length>0&&e('div',{style:{maxHeight:180,overflowY:'auto',marginBottom:10,borderRadius:6,border:'1px solid var(--border2)'}},
+            e('table',{style:{width:'100%',borderCollapse:'collapse',fontSize:11}},
+              e('thead',null,e('tr',{style:{background:'var(--bg2)'}},
+                ['Fecha','Monto','Descripción','Categoría'].map(h=>e('th',{key:h,style:{padding:'5px 8px',textAlign:'left',color:'var(--text3)',fontWeight:600,fontSize:10,letterSpacing:'.03em',borderBottom:'1px solid var(--border2)'}},h))
+              )),
+              e('tbody',null,importRows.slice(0,50).map((r,i)=>
+                e('tr',{key:i,style:{borderBottom:'1px solid var(--border3)'}},
+                  e('td',{style:{padding:'4px 8px',color:'var(--text3)',fontSize:10.5}},r.date),
+                  e('td',{style:{padding:'4px 8px',color:r.amount<0?'var(--red)':'var(--green)',fontSize:10.5,textAlign:'right'}},mfClp(r.amount)),
+                  e('td',{style:{padding:'4px 8px',color:'var(--text1)',fontSize:10.5,maxWidth:160,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}},r.desc||'—'),
+                  e('td',{style:{padding:'4px 8px',color:'var(--text3)',fontSize:10.5}},r.cat||'—')
+                )
+              ))
+            )
+          ),
+          importStatus&&importStatus.ok&&e('div',{style:{fontSize:11.5,color:'var(--green)',marginBottom:8,padding:'6px 10px',background:'rgba(52,195,134,.08)',borderRadius:6}},
+            '✓ '+importStatus.added+' transacciones importadas'+(importStatus.dupes?' · '+importStatus.dupes+' duplicadas omitidas':'')+(importStatus.err?' · Error parcial: '+importStatus.err:'')
+          ),
+          importStatus&&importStatus.err&&!importStatus.ok&&e('div',{style:{fontSize:11.5,color:'var(--red)',marginBottom:8}},importStatus.err),
+          e('div',{style:{display:'flex',gap:8,alignItems:'center'}},
+            e('button',{
+              className:'btn',style:{fontSize:12,background:'var(--accent)'},
+              onClick:doImport,disabled:importing||!importRows.length
+            },importing?'Importando…':'⤓ Importar '+importRows.length+' transacciones'),
+            e('button',{className:'ghost-btn',style:{fontSize:12},onClick:()=>importFileRef.current&&importFileRef.current.click()},'Cambiar archivo'),
+            e('button',{className:'ghost-btn',style:{fontSize:12},onClick:()=>{setImportRows(null);setImportStatus(null);}},'✕ Cancelar')
+          )
+        )
       ),
       transactions.length===0&&e('div',{className:'empty'},'Sin transacciones registradas.'),
       transactions.slice(0,15).map(t=>e('div',{key:t.id,className:'bar-row',style:{cursor:'pointer'},onClick:()=>setFormState({type:'tx',initial:t})},
@@ -13809,6 +13964,7 @@ function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask,templates,onAddTe
   const mmCanvasRef=useRef(null);
   const mmScrollRef=useRef(null); // el contenedor con scroll real (.mm-canvas-scroll) — distinto de mmCanvasRef, que es solo el contenido
   const[mmDragPreview,setMmDragPreview]=useState(null); // {id,x,y}
+  const[mmStatusPicker,setMmStatusPicker]=useState(null); // {subId,parentId}
   const MM_CARD_W=238,MM_GAP_X=56,MM_GAP_Y=48,MM_ROW_H=170;
   useEffect(()=>{
     if(view!=='mindmap')return;
@@ -14203,8 +14359,14 @@ function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask,templates,onAddTe
           steps.length===0&&e('div',{className:'empty',style:{padding:'16px 2px'}},'Sin fases aún. Agrega la primera abajo.'),
           steps.length>0&&!showDoneSteps&&steps.every(s=>s.done)&&e('div',{className:'empty',style:{padding:'16px 2px'}},'Todas las fases están completadas. Usa "Ver completados" para revisarlas.'),
           (()=>{ // fase activa = la primera fase sin completar, en el orden de la lista
+            const sortByDeadline=(arr)=>[...arr].sort((a,b)=>{
+              if(!a.dueDate&&!b.dueDate)return 0;
+              if(!a.dueDate)return 1;
+              if(!b.dueDate)return -1;
+              return a.dueDate<b.dueDate?-1:a.dueDate>b.dueDate?1:0;
+            });
             const activeStep=steps.find(s=>!s.done);
-            return steps.filter(s=>showDoneSteps||!s.done).map(s=>{
+            return sortByDeadline(steps.filter(s=>showDoneSteps||!s.done)).map(s=>{
             const idx=steps.indexOf(s);
             const inFillRange=dragFill&&idx>=fillLo&&idx<=fillHi;
             const today=dayKey();
@@ -14271,14 +14433,20 @@ function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask,templates,onAddTe
         view==='mindmap'&&e('div',{className:'mm-wrap'},
           steps.length===0&&e('div',{className:'empty',style:{padding:'20px 2px'}},'Sin fases aún. Agrégalas en la vista Lista.'),
           steps.length>0&&(()=>{
-            const positions=steps.map((s,idx)=>mmGetPos(s.id,idx));
+            const mmSteps=[...steps].sort((a,b)=>{
+              if(!a.dueDate&&!b.dueDate)return 0;
+              if(!a.dueDate)return 1;
+              if(!b.dueDate)return -1;
+              return a.dueDate<b.dueDate?-1:a.dueDate>b.dueDate?1:0;
+            });
+            const positions=mmSteps.map((s,idx)=>mmGetPos(s.id,idx));
             const maxX=Math.max(...positions.map(p=>p.x))+MM_CARD_W+40;
             const maxY=Math.max(...positions.map(p=>p.y))+MM_ROW_H+40;
             const canvasH=Math.max(maxY,420);
             return e('div',{className:'mm-canvas-scroll',ref:mmScrollRef},
               e('div',{className:'mm-canvas',ref:mmCanvasRef,style:{minHeight:canvasH,width:'100%'}},
                 e('svg',{className:'mm-svg',style:{width:Math.max(maxX,mmCanvasW),height:canvasH}},
-                  steps.slice(0,-1).map((s,idx)=>{
+                  mmSteps.slice(0,-1).map((s,idx)=>{
                     const a=positions[idx],b=positions[idx+1];
                     const sameRow=Math.abs(a.y-b.y)<24;
                     const CARD_BOTTOM=112;
@@ -14301,7 +14469,7 @@ function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask,templates,onAddTe
                     });
                   })
                 ),
-                steps.map((s,idx)=>{
+                mmSteps.map((s,idx)=>{
                   const subs=s.subtasks||[];
                   const subDone=subs.filter(x=>x.done).length;
                   const pct2=subs.length?Math.round(subDone/subs.length*100):0;
@@ -14309,7 +14477,7 @@ function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask,templates,onAddTe
                   const isAdding=mmAddingId===s.id;
                   const pos=positions[idx];
                   const isDragging=mmDragPreview&&mmDragPreview.id===s.id;
-                  const isActivePhase=!s.done&&!steps.slice(0,idx).some(x=>!x.done); // primera fase sin completar
+                  const isActivePhase=!s.done&&!mmSteps.slice(0,idx).some(x=>!x.done); // primera fase sin completar
                   return e('div',{
                     key:s.id,
                     className:'mm-node',
@@ -14347,17 +14515,33 @@ function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask,templates,onAddTe
                           }
                         },
                           e('span',{className:'mm-sub-handle'},'⋮⋮'),
-                          e('div',{
-                            onClick:ev=>{
-                              ev.stopPropagation();
-                              const sst=subStatusInfo(sub.status||'todo');
-                              const order=['todo','doing','done'];
-                              const next=order[(order.indexOf(sst.k)+1)%order.length];
-                              updateSubtask(s.id,sub.id,{status:next,done:next==='done'});
-                            },
-                            title:(subStatusInfo(sub.status||'todo').label)+' · clic para avanzar',
-                            style:(()=>{const sst=subStatusInfo(sub.status||'todo');return{width:12,height:12,borderRadius:'50%',background:sst.k==='done'?sst.color:sst.bg,border:'2px solid '+sst.color,cursor:'pointer',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',transition:'all .15s'};})()
-                          },(subStatusInfo(sub.status||'todo').k)==='done'&&e('div',{style:{width:5,height:5,borderRadius:'50%',background:'#fff'}})),
+                          (()=>{
+                            const mmStatuses=loadSubStatuses();
+                            const sst=subStatusInfo(sub.status||'todo',mmStatuses);
+                            const isMmPickerOpen=mmStatusPicker&&mmStatusPicker.subId===sub.id&&mmStatusPicker.parentId===s.id;
+                            return e('div',{style:{position:'relative',flexShrink:0}},
+                              e('div',{
+                                onClick:ev=>{ev.stopPropagation();setMmStatusPicker(isMmPickerOpen?null:{subId:sub.id,parentId:s.id});},
+                                title:sst.label+' · clic para cambiar estado',
+                                style:{width:12,height:12,borderRadius:'50%',background:sst.k==='done'?sst.color:sst.bg,border:'2px solid '+sst.color,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',transition:'all .15s'}
+                              },sst.k==='done'&&e('div',{style:{width:4,height:4,borderRadius:'50%',background:'#fff'}})),
+                              isMmPickerOpen&&e('div',{
+                                style:{position:'absolute',top:16,left:0,zIndex:999,background:'var(--bg2)',border:'1px solid var(--bd)',borderRadius:8,boxShadow:'0 4px 16px rgba(0,0,0,.35)',padding:4,minWidth:130}
+                              },mmStatuses.map(st=>{
+                                const stCol=subStatusColor(st.colorId);
+                                const isCur=(sub.status||'todo')===st.k;
+                                return e('button',{
+                                  key:st.k,
+                                  onClick:ev=>{ev.stopPropagation();updateSubtask(s.id,sub.id,{status:st.k,done:st.k==='done'});setMmStatusPicker(null);},
+                                  style:{display:'flex',alignItems:'center',gap:7,width:'100%',textAlign:'left',padding:'5px 8px',borderRadius:5,border:'none',background:isCur?'var(--bg4)':'transparent',cursor:'pointer',fontFamily:'Inter,sans-serif',fontSize:11,color:stCol.color}
+                                },
+                                  e('div',{style:{width:7,height:7,borderRadius:'50%',background:stCol.color,flexShrink:0}}),
+                                  st.label,
+                                  isCur&&e('span',{style:{marginLeft:'auto',fontSize:10,opacity:.5}},'✓')
+                                );
+                              }))
+                            );
+                          })(),
                           e('input',{className:'mm-sub-name-input'+(sub.done?' done':''),value:sub.name,onChange:ev=>updateSubtask(s.id,sub.id,{name:ev.target.value})}),
                           e('button',{className:'mm-sub-del',onClick:()=>deleteSubtask(s.id,sub.id),title:'Eliminar actividad'},'✕')
                         )),
