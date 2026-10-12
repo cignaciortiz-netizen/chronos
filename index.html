@@ -707,7 +707,7 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .mm-sub-row{display:flex;align-items:center;gap:6px;padding:3px 0;border-radius:5px;cursor:grab}
 .mm-sub-row:hover{background:var(--bg3)}
 .mm-sub-handle{color:var(--text3);font-size:11px;flex-shrink:0;cursor:grab}
-.mm-sub-check{flex-shrink:0;cursor:pointer;accent-color:var(--accent)}
+.mm-sub-check{flex-shrink:0;cursor:pointer;accent-color:var(--accent);display:none}
 .mm-sub-name-input{flex:1;min-width:0;background:transparent;border:none;color:var(--text0);font-size:12.5px;font-family:'Inter',sans-serif;padding:2px 0}
 .mm-sub-name-input:focus{outline:none}
 .mm-sub-name-input.done{text-decoration:line-through;color:var(--text2)}
@@ -6858,12 +6858,19 @@ function GanttView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
               return e('div',{key:sub.id,
                 onContextMenu:ev=>{ev.preventDefault();setCtxMenu({subId:sub.id,parentId:s.id,x:ev.clientX,y:ev.clientY});},
                 style:{height:SUB_H,display:'flex',alignItems:'center',gap:6,padding:'0 8px 0 28px',borderBottom:'1px solid var(--border2)',background:'var(--bg1)',position:'relative'}},
-                // Status badge clicable
+                // Círculo de estado — clic avanza, click derecho = menú completo
                 e('div',{
-                  onClick:ev=>{ev.stopPropagation();setStatusPicker(isPickerOpen?null:{subId:sub.id,parentId:s.id});},
-                  title:'Estado: '+sst.label+' · clic para cambiar',
-                  style:{fontSize:9,padding:'1px 5px',borderRadius:3,border:'1px solid color-mix(in srgb,'+sst.color+' 40%,transparent)',background:sst.bg,color:sst.color,cursor:'pointer',flexShrink:0,whiteSpace:'nowrap',userSelect:'none'}
-                },sst.label),
+                  onClick:ev=>{
+                    ev.stopPropagation();
+                    const order=['todo','doing','done'];
+                    const cur=sub.status||'todo';
+                    const next=order[(order.indexOf(cur)+1)%order.length];
+                    setSubStatus(s.id,sub.id,next);
+                  },
+                  onContextMenu:ev=>{ev.preventDefault();ev.stopPropagation();setCtxMenu({subId:sub.id,parentId:s.id,x:ev.clientX,y:ev.clientY});},
+                  title:sst.label+' · clic para avanzar · click derecho para más opciones',
+                  style:{width:11,height:11,borderRadius:'50%',background:sst.k==='done'?sst.color:sst.bg,border:'2px solid '+sst.color,cursor:'pointer',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',transition:'all .15s'}
+                },sst.k==='done'&&e('div',{style:{width:5,height:5,borderRadius:'50%',background:'#fff'}})),
                 e('span',{style:{fontSize:10.5,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',flex:1,color:sst.k==='done'?'var(--text4)':'var(--text1)',textDecoration:sst.k==='done'?'line-through':''}},sub.name),
                 // Dropdown picker
                 isPickerOpen&&e('div',{
@@ -14222,20 +14229,23 @@ function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask,templates,onAddTe
                 },'⚙'),
                 (s.subtasks||[]).length>0&&e('span',{style:{fontSize:9.5,color:'var(--text4)',flexShrink:0},title:'Tareas dentro de esta fase — visibles en Mapa mental'},(s.subtasks||[]).length+' tareas')
               ),
-              e('div',{className:'sheet-cell sheet-cell-date',style:{position:'relative'}},
+              e('div',{className:'sheet-cell sheet-cell-date'},
                 e('input',{
-                  className:'sheet-input sheet-input-date sheet-date-hidden',type:'date',
+                  type:'date',
                   value:s.dueDate||'',
-                  title:'Deadline de la fase — clic para cambiar',
+                  title:'Deadline de la fase',
                   onChange:ev=>{
                     const v=ev.target.value||null;
                     if(v&&s.startDate&&v<s.startDate) updateStep(s.id,{dueDate:v,startDate:v});
                     else updateStep(s.id,{dueDate:v});
                   },
-                  style:{position:'absolute',inset:0,opacity:0,cursor:'pointer',width:'100%',height:'100%'}
-                }),
-                e('span',{style:{fontSize:11.5,color:s.dueDate?(()=>{const d=s.dueDate,t=dayKey();return d<t?'var(--red,#e05555)':d===t?'var(--amber,#dba14a)':'var(--text2)'})():'var(--text4)',pointerEvents:'none'}},
-                  s.dueDate?fmtDMY(s.dueDate):'—')
+                  style:{
+                    background:'transparent',border:'none',outline:'none',
+                    fontSize:11.5,fontFamily:'Inter,sans-serif',cursor:'pointer',
+                    color:s.dueDate?(()=>{const d=s.dueDate,t=dayKey();return d<t?'var(--red,#e05555)':d===t?'var(--amber,#dba14a)':'var(--text2)'})():'var(--text4)',
+                    colorScheme:'dark',width:'100%',padding:0
+                  }
+                })
               ),
               e('div',{className:'sheet-cell sheet-cell-status sheet-row-actions',style:{display:'flex',alignItems:'center',gap:4}},
                 e('button',{className:'rem-del sheet-del-btn',onClick:()=>deleteStep(s.id),title:'Eliminar fase'},'✕')
@@ -14337,7 +14347,17 @@ function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask,templates,onAddTe
                           }
                         },
                           e('span',{className:'mm-sub-handle'},'⋮⋮'),
-                          e('input',{className:'mm-sub-check',type:'checkbox',checked:sub.done,onChange:()=>updateSubtask(s.id,sub.id,{done:!sub.done})}),
+                          e('div',{
+                            onClick:ev=>{
+                              ev.stopPropagation();
+                              const sst=subStatusInfo(sub.status||'todo');
+                              const order=['todo','doing','done'];
+                              const next=order[(order.indexOf(sst.k)+1)%order.length];
+                              updateSubtask(s.id,sub.id,{status:next,done:next==='done'});
+                            },
+                            title:(subStatusInfo(sub.status||'todo').label)+' · clic para avanzar',
+                            style:(()=>{const sst=subStatusInfo(sub.status||'todo');return{width:12,height:12,borderRadius:'50%',background:sst.k==='done'?sst.color:sst.bg,border:'2px solid '+sst.color,cursor:'pointer',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',transition:'all .15s'};})()
+                          },(subStatusInfo(sub.status||'todo').k)==='done'&&e('div',{style:{width:5,height:5,borderRadius:'50%',background:'#fff'}})),
                           e('input',{className:'mm-sub-name-input'+(sub.done?' done':''),value:sub.name,onChange:ev=>updateSubtask(s.id,sub.id,{name:ev.target.value})}),
                           e('button',{className:'mm-sub-del',onClick:()=>deleteSubtask(s.id,sub.id),title:'Eliminar actividad'},'✕')
                         )),
