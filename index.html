@@ -5483,7 +5483,6 @@ function RemindersFloatPanel({reminders,setReminders,habits,setHabits,projects,s
     (t.steps||[]).some(s=>stepNeedsAction(s,selectedDay,!!(t.actLog&&t.actLog[selectedDay])))
   ));
 
-  const isToday=selectedDay===dayKey();
   const dayLabel=isToday?'Hoy':dateFromDayKey(selectedDay).toLocaleDateString('es-CL',{weekday:'short',day:'numeric',month:'short'});
   const activeProjs=projects.filter(p=>p.status!=='archived');
   const selProj=activeProjs.find(p=>p.id===qProjId);
