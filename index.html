@@ -6514,14 +6514,14 @@ function mfMonthLabel(monthKey){
 // ── Status de subtareas — paleta en tonos del tema ──
 // Paleta de colores disponibles para los status (tonos del tema)
 const SUB_STATUS_COLORS=[
-  {id:'gray',   color:'#9899a6',              bg:'color-mix(in srgb,#9899a6 28%,var(--bg3))',              label:'Gris'},
-  {id:'blue',   color:'var(--blue,#56a8e6)',  bg:'color-mix(in srgb,var(--blue,#56a8e6) 28%,var(--bg3))', label:'Azul'},
-  {id:'amber',  color:'var(--amber,#dba14a)', bg:'color-mix(in srgb,var(--amber,#dba14a) 28%,var(--bg3))',label:'Ámbar'},
-  {id:'red',    color:'var(--red,#e05555)',   bg:'color-mix(in srgb,var(--red,#e05555) 28%,var(--bg3))',   label:'Rojo'},
-  {id:'green',  color:'var(--green,#34c386)', bg:'color-mix(in srgb,var(--green,#34c386) 28%,var(--bg3))',label:'Verde'},
-  {id:'purple', color:'#9b7cf7',              bg:'color-mix(in srgb,#9b7cf7 28%,var(--bg3))',              label:'Violeta'},
-  {id:'pink',   color:'#e879a8',              bg:'color-mix(in srgb,#e879a8 28%,var(--bg3))',              label:'Rosa'},
-  {id:'teal',   color:'#2dd4b0',              bg:'color-mix(in srgb,#2dd4b0 28%,var(--bg3))',              label:'Teal'},
+  {id:'gray',   color:'#9899a6', bg:'rgba(152,153,166,0.22)', label:'Gris'},
+  {id:'blue',   color:'#56a8e6', bg:'rgba(86,168,230,0.22)',  label:'Azul'},
+  {id:'amber',  color:'#dba14a', bg:'rgba(219,161,74,0.22)',  label:'Ámbar'},
+  {id:'red',    color:'#e05555', bg:'rgba(224,85,85,0.22)',   label:'Rojo'},
+  {id:'green',  color:'#34c386', bg:'rgba(52,195,134,0.22)',  label:'Verde'},
+  {id:'purple', color:'#9b7cf7', bg:'rgba(155,124,247,0.22)', label:'Violeta'},
+  {id:'pink',   color:'#e879a8', bg:'rgba(232,121,168,0.22)', label:'Rosa'},
+  {id:'teal',   color:'#2dd4b0', bg:'rgba(45,212,176,0.22)',  label:'Teal'},
 ];
 const DEFAULT_SUB_STATUSES=[
   {k:'todo',    label:'Por hacer',   colorId:'gray'},
@@ -6956,7 +6956,7 @@ function GanttView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
                   const sst2=subStatusInfo(sub.status||'todo',customStatuses);
                   els.push(e('div',{
                     key:'sbar-'+sub.id,
-                    style:{position:'absolute',top:subTop+5,left:bl+2,width:bw-4,height:16,borderRadius:3,background:sst2.bg,opacity:sst2.k==='done'?.5:1,cursor:'grab',display:'flex',alignItems:'center',padding:'0 14px',fontSize:9.5,color:sst2.color,overflow:'hidden',whiteSpace:'nowrap',textOverflow:'ellipsis',border:'1px solid color-mix(in srgb,'+sst2.color+' 35%,transparent)',zIndex:1,userSelect:'none',fontWeight:500},
+                    style:{position:'absolute',top:subTop+5,left:bl+2,width:bw-4,height:16,borderRadius:3,background:sst2.bg,opacity:sst2.k==='done'?.5:1,cursor:'grab',display:'flex',alignItems:'center',padding:'0 14px',fontSize:9.5,color:sst2.color,overflow:'hidden',whiteSpace:'nowrap',textOverflow:'ellipsis',border:'1px solid '+sst2.color+'55',zIndex:1,userSelect:'none',fontWeight:500},
                     title:sub.name+' ['+sst2.label+'] · '+subStart+' → '+subEnd+' · Click derecho para cambiar estado',
                     onContextMenu:ev=>{ev.preventDefault();ev.stopPropagation();setCtxMenu({subId:sub.id,parentId:s.id,x:ev.clientX,y:ev.clientY});},
                     onMouseDown:ev=>{
