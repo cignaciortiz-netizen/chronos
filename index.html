@@ -217,7 +217,16 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .rem-item-title{font-size:11px;color:var(--text0);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rem-item-meta{font-size:9.5px;color:var(--text3);margin-top:1px;display:flex;align-items:center;gap:4px}
 .rem-item-meta.over{color:var(--red,#e05555)}
+.rem-item-meta.soon{color:var(--amber,#dba14a)}
+/* Estados de semáforo */
+.rem-item.rem-neutral{opacity:.45}
+.rem-item.rem-neutral .rem-item-title{color:var(--text2)}
+.rem-item.rem-soon .rem-item-title{color:var(--text0)}
+.rem-item.rem-soon .rem-item-stripe{background:var(--amber,#dba14a)!important}
+.rem-item.rem-overdue .rem-item-title{color:var(--red,#e05555)}
+.rem-item.rem-overdue .rem-item-stripe{background:var(--red,#e05555)!important}
 .rem-overdue-dot{width:6px;height:6px;border-radius:50%;background:var(--red,#e05555);flex-shrink:0;animation:remPulse 1.2s infinite}
+.rem-soon-dot{width:6px;height:6px;border-radius:50%;background:var(--amber,#dba14a);flex-shrink:0;animation:remPulse 1.6s infinite}
 @keyframes remPulse{0%,100%{opacity:1}50%{opacity:.3}}
 .rem-check{width:16px;height:16px;border-radius:4px;border:1px solid var(--border3);background:transparent;flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .1s}
 .rem-check:hover{border-color:var(--green,#3ab87a)}
@@ -2962,6 +2971,7 @@ function App(){
   const[view,setView]=useState('home');
   const[projects,setProjects]=useState(()=>load('chr4_proj',INIT_PROJECTS));
   const[tasks,setTasks]=useState(()=>load('chr4_tasks',INIT_TASKS));
+  const[subStatuses,setSubStatuses]=useState(()=>loadSubStatuses());
   const[sessions,setSessions]=useState(()=>load('chr4_sess',INIT_SESSIONS));
   const[blocks,setBlocks]=useState(()=>load('chr4_blocks',INIT_BLOCKS));
   const[ctxs,setCtxs]=useState(()=>load('chr4_ctxs',INIT_CTXS));
@@ -3467,7 +3477,7 @@ function App(){
         // local recién cargado desde localStorage con datos remotos más
         // viejos. Primero subimos lo local para no perder el cambio.
         if(SB.isDirty()){
-          await SB.push({projects,sessions,intenciones,tasks,blocks,habits,reminders,ctxs,systems,panelLabels,panelVisibility,panelSortModes,templates,sysTemplates});
+          await SB.push({projects,sessions,intenciones,tasks,blocks,habits,reminders,ctxs,systems,panelLabels,panelVisibility,panelSortModes,templates,sysTemplates,subStatuses});
           SB.markSynced();
           // NO hacemos return: leemos igual para restaurar recordatorios
           // y cualquier dato que no esté en localStorage por actualizar el app.
@@ -3515,6 +3525,7 @@ function App(){
           if(remote.ctxs?.length)      setCtxs(remote.ctxs);
           if(remote.templates?.length) setTemplates(remote.templates);
           if(remote.sysTemplates?.length) setSysTemplates(remote.sysTemplates);
+          if(remote.subStatuses?.length){ setSubStatuses(remote.subStatuses); saveSubStatuses(remote.subStatuses); }
           // Recuperación de sesión: si quedó un checkpoint (guardado cada 3 min
           // mientras corría una sesión) y esa sesión nunca se cerró con doStop
           // — porque se cerró la página o se apagó el PC — la convertimos en
@@ -3575,7 +3586,7 @@ function App(){
     sbSyncRef.current=setTimeout(async()=>{
       setSbSyncing(true);
       try{
-        await SB.push({projects,intenciones,tasks,blocks,habits,reminders,ctxs,systems,panelLabels,panelVisibility,panelSortModes,templates,sysTemplates});
+        await SB.push({projects,intenciones,tasks,blocks,habits,reminders,ctxs,systems,panelLabels,panelVisibility,panelSortModes,templates,sysTemplates,subStatuses});
         SB.markSynced();
         sbFailStreakRef.current=0;
       }catch(e){
@@ -3585,7 +3596,7 @@ function App(){
       setSbSyncing(false);
     },backoff);
     return()=>clearTimeout(sbSyncRef.current);
-  },[projects,intenciones,tasks,blocks,habits,reminders,ctxs,systems,panelLabels,panelVisibility,panelSortModes,templates,sysTemplates,sbStatus]);
+  },[projects,intenciones,tasks,blocks,habits,reminders,ctxs,systems,panelLabels,panelVisibility,panelSortModes,templates,sysTemplates,subStatuses,sbStatus]);
 
   // Sesiones — efecto aparte, con su propio debounce y su propio backoff.
   // Solo se dispara cuando el historial de sesiones realmente cambia
@@ -3626,6 +3637,17 @@ function App(){
     return()=>{delete window.__chronosSetTasks;delete window.__chronosForceSync;};
   },[]);
 
+  // Escuchar cambios de etiquetas de status (guardadas desde GanttView vía SubStatusEditor)
+  // para actualizar el estado React y disparar sync con Supabase.
+  useEffect(()=>{
+    function onStatusesChanged(ev){
+      setSubStatuses(ev.detail);
+      forceSync();
+    }
+    window.addEventListener('chr4-statuses-changed',onStatusesChanged);
+    return()=>window.removeEventListener('chr4-statuses-changed',onStatusesChanged);
+  },[]);
+
   // Recurrence engine (trigger: 'onSchedule') — for tasks whose recurrence says
   // "create the next one on its scheduled date, regardless of status", this scans
   // once on load and every 30s, and spawns the next occurrence once per day per
@@ -3638,13 +3660,7 @@ function App(){
         let changed=false;
         const spawned=[];
         const next=prev.map(t=>{
-          if(!t.recurrence||t.recurrence.type==='none'||t.recurrence.trigger!=='onSchedule')return t;
-          if(!t.dueDate||t.dueDate>today)return t;
-          if(t.recurrence.lastSpawnDate===today)return t;
-          const s=spawnNextTaskOccurrence(t);
-          changed=true;
-          if(s)spawned.push(s);
-          return{...t,recurrence:{...t.recurrence,lastSpawnDate:today}};
+          return t; // recurrencia de tareas eliminada
         });
         didChange=changed;
         if(!changed)return prev;
@@ -4316,10 +4332,7 @@ function App(){
                 if(!t)return ts;
                 const nextStatus={pending:'inprog',inprog:'done',done:'pending'}[t.status]||'pending';
                 let out=ts.map(x=>x.id===id?{...x,status:nextStatus}:x);
-                if(nextStatus==='done'&&t.recurrence&&t.recurrence.trigger==='onComplete'){
-                  const spawned=spawnNextTaskOccurrence({...t,status:nextStatus});
-                  if(spawned)out=[...out,spawned];
-                }
+                /* recurrencia de tareas eliminada */
                 // Sistema "encendido": al terminar el proyecto de este sistema, se
                 // crea automáticamente el siguiente ciclo con la misma plantilla.
                 if(nextStatus==='done'&&t.sysTemplateId){
@@ -5431,11 +5444,30 @@ function RemindersFloatPanel({reminders,setReminders,habits,setHabits,projects,s
 
   function fmtTime(ts){return new Date(ts).toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'});}
 
+  // ── Tick en tiempo real para semáforo ──
+  const[nowTs,setNowTs]=useState(()=>Date.now());
+  useEffect(()=>{
+    const iv=setInterval(()=>setNowTs(Date.now()),30000); // actualiza cada 30s
+    return()=>clearInterval(iv);
+  },[]);
+  const isToday=selectedDay===dayKey();
+  // Calcula el estado semáforo de un recordatorio: 'overdue' | 'soon' | 'today' | 'neutral'
+  function remStatus(r){
+    if(r.done) return 'done';
+    if(!r.dueAt) return isToday?'today':'neutral';
+    const dayOfRem=dayKeyFromTs(r.dueAt);
+    const remIsToday=dayOfRem===dayKey();
+    if(!remIsToday) return 'neutral'; // otro día → gris
+    if(r.dueAt<=nowTs) return 'overdue'; // hora pasada → rojo
+    if(r.dueAt-nowTs<=2*60*60*1000) return 'soon'; // ≤2h → ámbar
+    return 'today'; // más de 2h → normal
+  }
+
   // ── Filtro: solo el día seleccionado ──
   const dayReminders=reminders.filter(r=>dayKeyFromTs(r.dueAt)===selectedDay);
   const pending=dayReminders.filter(r=>!r.done).sort((a,b)=>(a.dueAt||0)-(b.dueAt||0));
   const done=dayReminders.filter(r=>r.done);
-  const overdueCount=pending.filter(r=>r.overdue).length;
+  const overdueCount=pending.filter(r=>remStatus(r)==='overdue').length;
 
   // Hábitos que tocan el día seleccionado y que aún no generaron su recordatorio de hoy
   const selDateObj=dateFromDayKey(selectedDay);
@@ -5517,13 +5549,16 @@ function RemindersFloatPanel({reminders,setReminders,habits,setHabits,projects,s
 
       pending.map(r=>{
         const proj=projects.find(p=>p.id===r.projId);
-        return e('div',{key:r.id,className:'rem-item'},
+        const st=remStatus(r); // 'overdue' | 'soon' | 'today' | 'neutral'
+        const stClass=st==='overdue'?'rem-overdue':st==='soon'?'rem-soon':st==='neutral'?'rem-neutral':'';
+        const stripeColor=st==='overdue'?'var(--red,#e05555)':st==='soon'?'var(--amber,#dba14a)':proj?.color||'var(--text4)';
+        return e('div',{key:r.id,className:'rem-item'+(stClass?' '+stClass:'')},
           e('div',{className:'rem-check',onClick:()=>toggleDone(r.id)},
             e('svg',{width:9,height:9,viewBox:'0 0 24 24',fill:'none',stroke:'var(--green,#3ab87a)',strokeWidth:3,strokeLinecap:'round',style:{display:'block',opacity:0}},
               e('polyline',{points:'20 6 9 17 4 12'})
             )
           ),
-          e('div',{className:'rem-item-stripe',style:{background:proj?.color||'var(--text4)'}}),
+          e('div',{className:'rem-item-stripe',style:{background:stripeColor}}),
           e('div',{className:'rem-item-body'},
             e('div',{className:'rem-item-title',onDoubleClick:()=>openDateEditor(r),title:'Doble click para cambiar fecha y hora',style:{cursor:'pointer'}},r.title),
             editingDateId===r.id
@@ -5533,9 +5568,14 @@ function RemindersFloatPanel({reminders,setReminders,habits,setHabits,projects,s
                   e('button',{className:'btn btn-primary',style:{fontSize:10,padding:'3px 8px'},onClick:saveDateEditor},'OK'),
                   e('button',{className:'ghost-btn',style:{fontSize:10},onClick:()=>setEditingDateId(null)},'Cancelar')
                 )
-              :e('div',{className:'rem-item-meta'+(r.overdue?' over':'')},
+              :e('div',{className:'rem-item-meta'+(st==='overdue'?' over':st==='soon'?' soon':'')},
+                  st==='overdue'&&e('span',{className:'rem-overdue-dot'}),
+                  st==='soon'&&e('span',{className:'rem-soon-dot'}),
                   proj&&e('span',null,proj.name+' · '),
                   e('span',null,fmtTime(r.dueAt)),
+                  st==='soon'&&e('span',{style:{fontWeight:600}},
+                    ' · en '+Math.ceil((r.dueAt-nowTs)/60000)+'min'
+                  ),
                   r.habitId&&e(BellIcon,{active:false,size:9,color:'var(--text4)'})
                 )
           ),
@@ -6061,9 +6101,7 @@ function TaskRow({t,onCycleTaskStatus,onDeleteTask,isActive,onPlay,onFinish,onOp
         e('span',{className:'task-name'},t.name),
         taskPct!=null&&e(MiniProgressRing,{pct:taskPct,color:color||'var(--accent2)',title:taskPct+'% completado (según subtareas de cada paso)'})
       ),
-      t.recurrence&&t.recurrence.type!=='none'&&e('span',{className:'task-rec-badge',title:recurrenceLabel(t.recurrence)},
-        e(RepeatIcon,{size:9,color:'currentColor'}),recurrenceLabel(t.recurrence)
-      )
+      null /* recurrencia de tareas eliminada */
     ),
     onSetPriority&&e('div',{style:{position:'relative',flexShrink:0}},
       e('div',{
@@ -6474,6 +6512,129 @@ function mfMonthLabel(monthKey){
   return s.charAt(0).toUpperCase()+s.slice(1);
 }
 // ── Vista Gantt / Agenda global ──────────────────────────────────────────────
+// ── Status de subtareas — paleta en tonos del tema ──
+// Paleta de colores disponibles para los status (tonos del tema)
+const SUB_STATUS_COLORS=[
+  {id:'gray',   color:'var(--text4)',         bg:'var(--bg3)',                                              label:'Gris'},
+  {id:'blue',   color:'var(--blue,#56a8e6)',  bg:'color-mix(in srgb,var(--blue,#56a8e6) 18%,var(--bg3))', label:'Azul'},
+  {id:'amber',  color:'var(--amber,#dba14a)', bg:'color-mix(in srgb,var(--amber,#dba14a) 18%,var(--bg3))',label:'Ámbar'},
+  {id:'red',    color:'var(--red,#e05555)',   bg:'color-mix(in srgb,var(--red,#e05555) 18%,var(--bg3))',   label:'Rojo'},
+  {id:'green',  color:'var(--green,#34c386)', bg:'color-mix(in srgb,var(--green,#34c386) 18%,var(--bg3))',label:'Verde'},
+  {id:'purple', color:'#9b7cf7',              bg:'color-mix(in srgb,#9b7cf7 18%,var(--bg3))',              label:'Violeta'},
+  {id:'pink',   color:'#e879a8',              bg:'color-mix(in srgb,#e879a8 18%,var(--bg3))',              label:'Rosa'},
+  {id:'teal',   color:'#2dd4b0',              bg:'color-mix(in srgb,#2dd4b0 18%,var(--bg3))',              label:'Teal'},
+];
+const DEFAULT_SUB_STATUSES=[
+  {k:'todo',    label:'Por hacer',   colorId:'gray'},
+  {k:'doing',   label:'En curso',    colorId:'blue'},
+  {k:'review',  label:'En revisión', colorId:'amber'},
+  {k:'blocked', label:'Bloqueada',   colorId:'red'},
+  {k:'done',    label:'Lista',       colorId:'green'},
+];
+function loadSubStatuses(){
+  try{const s=localStorage.getItem('chr4_sub_statuses');if(s)return JSON.parse(s);}catch(e){}
+  return DEFAULT_SUB_STATUSES;
+}
+function saveSubStatuses(arr){
+  try{localStorage.setItem('chr4_sub_statuses',JSON.stringify(arr));}catch(e){}
+  // Notifica al componente raíz para que sincronice con Supabase
+  try{window.dispatchEvent(new CustomEvent('chr4-statuses-changed',{detail:arr}));}catch(e){}
+}
+function subStatusColor(colorId){return SUB_STATUS_COLORS.find(c=>c.id===colorId)||SUB_STATUS_COLORS[0];}
+function subStatusInfo(k,statuses){
+  const arr=statuses||loadSubStatuses();
+  return arr.find(s=>s.k===k)||arr[0]||DEFAULT_SUB_STATUSES[0];
+}
+
+// ── Modal editor de etiquetas de status ──
+function SubStatusEditor({onClose}){
+  const[statuses,setStatuses]=useState(()=>loadSubStatuses());
+  const[editIdx,setEditIdx]=useState(null);
+  const[draft,setDraft]=useState('');
+
+  function startEdit(i){setEditIdx(i);setDraft(statuses[i].label);}
+  function commitEdit(){
+    if(editIdx===null)return;
+    const next=statuses.map((s,i)=>i===editIdx?{...s,label:draft.trim()||s.label}:s);
+    setStatuses(next);saveSubStatuses(next);setEditIdx(null);
+  }
+  function setColor(i,colorId){
+    const next=statuses.map((s,idx)=>idx===i?{...s,colorId}:s);
+    setStatuses(next);saveSubStatuses(next);
+  }
+  function addStatus(){
+    const next=[...statuses,{k:'s'+Date.now(),label:'Nuevo estado',colorId:'gray'}];
+    setStatuses(next);saveSubStatuses(next);
+    startEdit(next.length-1);
+  }
+  function removeStatus(i){
+    if(statuses.length<=1)return;
+    const next=statuses.filter((_,idx)=>idx!==i);
+    setStatuses(next);saveSubStatuses(next);
+    if(editIdx===i)setEditIdx(null);
+  }
+  function reset(){
+    setStatuses(DEFAULT_SUB_STATUSES);saveSubStatuses(DEFAULT_SUB_STATUSES);setEditIdx(null);
+  }
+
+  return e('div',{className:'overlay',onClick:ev=>{if(ev.target===ev.currentTarget)onClose();}},
+    e('div',{className:'modal',style:{width:380}},
+      e('div',{className:'modal-head'},
+        e('div',{className:'modal-title'},'Etiquetas de estado'),
+        e('button',{className:'modal-x',onClick:onClose},'✕')
+      ),
+      e('div',{className:'modal-body',style:{gap:6}},
+        e('div',{style:{fontSize:11,color:'var(--text3)',marginBottom:4}},'Personaliza el nombre y color de cada estado. Se usan en todas las subtareas del Gantt.'),
+        statuses.map((st,i)=>{
+          const col=subStatusColor(st.colorId);
+          const isEditing=editIdx===i;
+          return e('div',{key:st.k,style:{display:'flex',alignItems:'center',gap:7,padding:'6px 8px',borderRadius:'var(--r-md)',background:'var(--bg2)',border:'1px solid var(--border2)'}},
+            // Dot del color actual
+            e('div',{style:{width:10,height:10,borderRadius:'50%',background:col.color,flexShrink:0}}),
+            // Nombre (editable)
+            isEditing
+              ?e('input',{
+                  className:'finput',autoFocus:true,value:draft,
+                  style:{flex:1,fontSize:11,padding:'2px 6px'},
+                  onChange:ev=>setDraft(ev.target.value),
+                  onKeyDown:ev=>{if(ev.key==='Enter')commitEdit();if(ev.key==='Escape'){setEditIdx(null);}},
+                  onBlur:commitEdit
+                })
+              :e('span',{
+                  style:{flex:1,fontSize:11,color:'var(--text0)',cursor:'pointer'},
+                  onClick:()=>startEdit(i),
+                  title:'Click para renombrar'
+                },st.label),
+            // Selector de color
+            e('div',{style:{display:'flex',gap:3,flexShrink:0}},
+              SUB_STATUS_COLORS.map(c=>e('div',{
+                key:c.id,
+                title:c.label,
+                onClick:()=>setColor(i,c.id),
+                style:{width:12,height:12,borderRadius:'50%',background:c.color,cursor:'pointer',outline:st.colorId===c.id?'2px solid var(--text0)':'2px solid transparent',outlineOffset:1}
+              }))
+            ),
+            // Eliminar
+            e('button',{
+              onClick:()=>removeStatus(i),
+              title:'Eliminar este estado',
+              style:{background:'none',border:'none',color:'var(--text4)',cursor:'pointer',fontSize:13,lineHeight:1,padding:'0 2px'},
+              disabled:statuses.length<=1
+            },'✕')
+          );
+        }),
+        e('div',{style:{display:'flex',gap:8,marginTop:4}},
+          e('button',{className:'btn',style:{fontSize:11,padding:'5px 12px'},onClick:addStatus},'+ Agregar estado'),
+          e('button',{className:'btn',style:{fontSize:11,padding:'5px 12px',color:'var(--text3)'},onClick:reset},'Restaurar por defecto')
+        )
+      ),
+      e('div',{className:'modal-foot'},
+        e('button',{className:'btn btn-primary',onClick:onClose},'Listo')
+      )
+    )
+  );
+}
+
 // ── GanttView: Gantt por proyecto con fases expandibles y subtareas arrastrables ──
 function GanttView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,DAY_W}){
   const GW=DAY_W||32;
@@ -6487,10 +6648,32 @@ function GanttView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
 
   // Estado expandido por fase
   const[expanded,setExpanded]=useState({});
-  // Drag de barras de fase (igual que antes, pero más limpio)
-  const[drag,setDrag]=useState(null); // {id,mode,startX,origStart,origEnd,isSub,parentId}
+  // Drag de barras de fase
+  const[drag,setDrag]=useState(null);
   // Drag de subtareas
   const[subDrag,setSubDrag]=useState(null);
+  // Status picker abierto: {subId,parentId}
+  const[statusPicker,setStatusPicker]=useState(null);
+  // Etiquetas de status personalizadas
+  const[customStatuses,setCustomStatuses]=useState(()=>loadSubStatuses());
+  const[showStatusEditor,setShowStatusEditor]=useState(false);
+
+  function setSubStatus(parentId,subId,statusKey){
+    commit(steps.map(s=>{
+      if(s.id!==parentId)return s;
+      return{...s,subtasks:(s.subtasks||[]).map(sub=>
+        sub.id===subId?{...sub,status:statusKey,done:statusKey==='done'}:sub
+      )};
+    }));
+    setStatusPicker(null);
+  }
+  // Cerrar picker al click fuera
+  useEffect(()=>{
+    if(!statusPicker)return;
+    const h=()=>setStatusPicker(null);
+    setTimeout(()=>document.addEventListener('mousedown',h),0);
+    return()=>document.removeEventListener('mousedown',h);
+  },[statusPicker]);
 
   // Fases visibles
   const visSteps=steps.filter(s=>showDoneSteps||!s.done);
@@ -6585,8 +6768,10 @@ function GanttView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
     if(!subDrag)return;
     function onMove(ev){
       const dx=Math.round((ev.clientX-subDrag.startX)/GW);
-      const ns=addDaysG(subDrag.origStart,dx);
-      const ne=addDaysG(subDrag.origEnd,dx);
+      let ns=subDrag.origStart,ne=subDrag.origEnd;
+      if(subDrag.mode==='move'){ns=addDaysG(subDrag.origStart,dx);ne=addDaysG(subDrag.origEnd,dx);}
+      else if(subDrag.mode==='start'){ns=addDaysG(subDrag.origStart,dx);if(ns>ne)ns=ne;}
+      else{ne=addDaysG(subDrag.origEnd,dx);if(ne<ns)ne=ns;}
       setSubDrag(d=>d?{...d,curStart:ns,curEnd:ne}:d);
     }
     function onUp(){
@@ -6626,7 +6811,8 @@ function GanttView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
   return e('div',{className:'tl-wrap',style:{userSelect:drag||subDrag?'none':''}},
     e('div',{className:'tl-toolbar'},
       e('span',{style:{fontSize:11,color:'var(--text3)'}},'Arrastra las barras para mover · bordes para extender'),
-      doneCount>0&&e('button',{className:'btn',style:{fontSize:10.5,padding:'4px 10px',marginLeft:'auto'},onClick:()=>setShowDoneSteps(v=>!v)},
+      e('button',{className:'btn',style:{fontSize:10.5,padding:'4px 10px',marginLeft:'auto'},onClick:()=>setShowStatusEditor(true)},'⚙ Etiquetas'),
+      doneCount>0&&e('button',{className:'btn',style:{fontSize:10.5,padding:'4px 10px'},onClick:()=>setShowDoneSteps(v=>!v)},
         showDoneSteps?'Ocultar completadas':'Ver completadas ('+doneCount+')')
     ),
     !hasDated&&e('div',{className:'empty',style:{padding:'20px 8px'}},'Asigna fechas a las fases en la vista Lista para verlas aquí como Gantt.'),
@@ -6654,11 +6840,37 @@ function GanttView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
                 onClick:ev=>{ev.stopPropagation();distribuirSubs(s.id);}
               },'⟳')
             ),
-            isExp&&subVisible.map(sub=>e('div',{key:sub.id,
-              style:{height:SUB_H,display:'flex',alignItems:'center',gap:6,padding:'0 8px 0 28px',borderBottom:'1px solid var(--border2)',background:'var(--bg1)'}},
-              e('div',{style:{width:5,height:5,borderRadius:'50%',flexShrink:0,background:sub.done?'var(--text4)':'var(--border4)'}}),
-              e('span',{style:{fontSize:10.5,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',flex:1,color:sub.done?'var(--text4)':'var(--text1)',textDecoration:sub.done?'line-through':''}},sub.name)
-            ))
+            isExp&&subVisible.map(sub=>{
+              const sst=subStatusInfo(sub.status||'todo',customStatuses);
+              const isPickerOpen=statusPicker&&statusPicker.subId===sub.id;
+              return e('div',{key:sub.id,
+                style:{height:SUB_H,display:'flex',alignItems:'center',gap:6,padding:'0 8px 0 28px',borderBottom:'1px solid var(--border2)',background:'var(--bg1)',position:'relative'}},
+                // Status badge clicable
+                e('div',{
+                  onClick:ev=>{ev.stopPropagation();setStatusPicker(isPickerOpen?null:{subId:sub.id,parentId:s.id});},
+                  title:'Estado: '+sst.label+' · clic para cambiar',
+                  style:{fontSize:9,padding:'1px 5px',borderRadius:3,border:'1px solid color-mix(in srgb,'+sst.color+' 40%,transparent)',background:sst.bg,color:sst.color,cursor:'pointer',flexShrink:0,whiteSpace:'nowrap',userSelect:'none'}
+                },sst.label),
+                e('span',{style:{fontSize:10.5,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',flex:1,color:sst.k==='done'?'var(--text4)':'var(--text1)',textDecoration:sst.k==='done'?'line-through':''}},sub.name),
+                // Dropdown picker
+                isPickerOpen&&e('div',{
+                  style:{position:'absolute',left:26,top:'100%',zIndex:20,background:'var(--bg2)',border:'1px solid var(--border2)',borderRadius:'var(--r-md)',boxShadow:'0 8px 24px #0007',padding:4,minWidth:130},
+                  onClick:ev=>ev.stopPropagation()
+                },
+                  customStatuses.map(st=>{
+                    const stCol=subStatusColor(st.colorId);
+                    return e('button',{
+                      key:st.k,
+                      onClick:()=>setSubStatus(s.id,sub.id,st.k),
+                      style:{display:'flex',alignItems:'center',gap:7,width:'100%',textAlign:'left',padding:'5px 8px',borderRadius:5,border:'none',background:sub.status===st.k?'var(--bg4)':'transparent',cursor:'pointer',fontFamily:'Inter,sans-serif',fontSize:11,color:stCol.color}
+                    },
+                      e('div',{style:{width:7,height:7,borderRadius:'50%',background:stCol.color,flexShrink:0}}),
+                      st.label
+                    );
+                  })
+                )
+              );
+            })
           );
         })
       ),
@@ -6728,16 +6940,22 @@ function GanttView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
                   els.push(e('div',{key:'sbg-'+sub.id,style:{position:'absolute',top:subTop,left:0,right:0,height:SUB_H,borderBottom:'1px solid var(--border2)',background:'var(--bg1)'}}));
                   const bl=dLeft(subStart);
                   const bw=dWidth(subStart,subEnd);
+                  const sst2=subStatusInfo(sub.status||'todo',customStatuses);
                   els.push(e('div',{
                     key:'sbar-'+sub.id,
-                    style:{position:'absolute',top:subTop+5,left:bl+2,width:bw-4,height:16,borderRadius:3,background:sub.done?'var(--text4)':'color-mix(in srgb,var(--accent2) 60%,var(--bg3))',opacity:sub.done?.4:1,cursor:'grab',display:'flex',alignItems:'center',padding:'0 5px',fontSize:9.5,color:sub.done?'var(--text3)':'var(--text0)',overflow:'hidden',whiteSpace:'nowrap',textOverflow:'ellipsis',border:'1px solid color-mix(in srgb,var(--accent2) 30%,transparent)',zIndex:1},
-                    title:sub.name+(sub.dueDate?' · '+subStart+' → '+subEnd:''),
+                    style:{position:'absolute',top:subTop+5,left:bl+2,width:bw-4,height:16,borderRadius:3,background:sst2.bg,opacity:sst2.k==='done'?.5:1,cursor:'grab',display:'flex',alignItems:'center',padding:'0 14px',fontSize:9.5,color:sst2.color,overflow:'hidden',whiteSpace:'nowrap',textOverflow:'ellipsis',border:'1px solid color-mix(in srgb,'+sst2.color+' 35%,transparent)',zIndex:1,userSelect:'none',fontWeight:500},
+                    title:sub.name+' ['+sst2.label+'] · '+subStart+' → '+subEnd,
                     onMouseDown:ev=>{
-                      if(!sub.startDate&&!sub.dueDate)return; // sin fecha, no arrastrable
                       ev.preventDefault();
-                      setSubDrag({id:sub.id,parentId:s.id,startX:ev.clientX,origStart:subStart,origEnd:subEnd,curStart:subStart,curEnd:subEnd});
+                      setSubDrag({id:sub.id,parentId:s.id,mode:'move',startX:ev.clientX,origStart:subStart,origEnd:subEnd,curStart:subStart,curEnd:subEnd});
                     }
-                  },sub.name));
+                  },
+                    e('div',{style:{position:'absolute',left:0,top:0,bottom:0,width:10,cursor:'ew-resize',zIndex:2},
+                      onMouseDown:ev=>{ev.preventDefault();ev.stopPropagation();setSubDrag({id:sub.id,parentId:s.id,mode:'start',startX:ev.clientX,origStart:subStart,origEnd:subEnd,curStart:subStart,curEnd:subEnd});}}),
+                    sub.name,
+                    e('div',{style:{position:'absolute',right:0,top:0,bottom:0,width:10,cursor:'ew-resize',zIndex:2},
+                      onMouseDown:ev=>{ev.preventDefault();ev.stopPropagation();setSubDrag({id:sub.id,parentId:s.id,mode:'end',startX:ev.clientX,origStart:subStart,origEnd:subEnd,curStart:subStart,curEnd:subEnd});}})
+                  ));
                   top+=SUB_H;
                 });
                 top+=4;
@@ -6747,7 +6965,8 @@ function GanttView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
           })()
         )
       )
-    )
+    ),
+    showStatusEditor&&e(SubStatusEditor,{onClose:()=>{setShowStatusEditor(false);setCustomStatuses(loadSubStatuses());}})
   );
 }
 
@@ -11616,13 +11835,7 @@ function NewTaskModal({onClose,onSave,noun,templates,onAddTemplate,onUpdateTempl
         e('div',{className:'fg'},e('label',{className:'flabel'},'Nombre de '+(noun||'la tarea')),
           e('input',{className:'finput',value:name,autoFocus:true,placeholder:'ej. Definición base app clickup',onChange:ev=>setName(ev.target.value),onKeyDown:ev=>{if(ev.key==='Enter')save();}})
         ),
-        e('div',{className:'fg'},e('label',{className:'flabel'},'Repetición'),
-          e('button',{className:'rec-trigger',onClick:()=>setShowRec(true)},
-            e(RepeatIcon,{size:13,color:recurrence?'var(--accent2)':'var(--text3)'}),
-            e('span',null,recurrenceLabel(recurrence)),
-            recurrence&&e('span',{className:'rec-clear',onClick:ev=>{ev.stopPropagation();setRecurrence(null);}},'✕')
-          )
-        ),
+        /* campo repetición de tarea eliminado */
         e('div',{className:'fg'},
           e('label',{className:'flabel'},'Estructura inicial'),
           e('div',{style:{display:'flex',gap:6,flexWrap:'wrap'}},
@@ -11675,12 +11888,6 @@ function NewTaskModal({onClose,onSave,noun,templates,onAddTemplate,onUpdateTempl
         e('button',{className:'btn btn-primary',onClick:save},'Crear')
       )
     ),
-    showRec&&e(RecurrenceModal,{
-      value:recurrence,
-      anchorDate:dayKey(),
-      onClose:()=>setShowRec(false),
-      onSave:next=>{setRecurrence(next);setShowRec(false);}
-    }),
     showTplMgr&&e(TemplateManagerModal,{
       templates,
       onClose:()=>setShowTplMgr(false),
