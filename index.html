@@ -6542,7 +6542,9 @@ function saveSubStatuses(arr){
 function subStatusColor(colorId){return SUB_STATUS_COLORS.find(c=>c.id===colorId)||SUB_STATUS_COLORS[0];}
 function subStatusInfo(k,statuses){
   const arr=statuses||loadSubStatuses();
-  return arr.find(s=>s.k===k)||arr[0]||DEFAULT_SUB_STATUSES[0];
+  const st=arr.find(s=>s.k===k)||arr[0]||DEFAULT_SUB_STATUSES[0];
+  const col=subStatusColor(st.colorId);
+  return{...st,color:col.color,bg:col.bg};
 }
 
 // ── Modal editor de etiquetas de status ──
