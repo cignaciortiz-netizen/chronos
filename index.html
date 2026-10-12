@@ -628,7 +628,7 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .steps-done-btn{font-size:10px;background:transparent;border:1px solid var(--border2);border-radius:6px;color:var(--text2);padding:6px 10px;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;transition:all .1s;flex-shrink:0}
 .steps-done-btn:hover{border-color:var(--border4);color:var(--text0)}
 .steps-done-btn.on{background:var(--green-bg,#3ab87a14);border-color:var(--green,#3ab87a);color:var(--green,#3ab87a)}
-.sheet-row .rem-del{opacity:.3}
+.sheet-row .rem-del{opacity:0;transition:opacity .15s}
 .sheet-row:hover .rem-del{opacity:1}
 @media (max-width:560px){
   .sheet-row{grid-template-columns:minmax(0,1fr) 92px 84px}
@@ -6823,7 +6823,7 @@ function GanttView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
   return e('div',{className:'tl-wrap',style:{userSelect:drag||subDrag?'none':''}},
     e('div',{className:'tl-toolbar'},
       e('span',{style:{fontSize:11,color:'var(--text3)'}},'Arrastra las barras para mover · bordes para extender'),
-      e('button',{className:'btn',style:{fontSize:10.5,padding:'4px 10px',marginLeft:'auto'},onClick:()=>setShowStatusEditor(true)},'⚙ Etiquetas'),
+      e('button',{className:'btn',style:{fontSize:10.5,padding:'4px 10px',marginLeft:'auto'},onClick:()=>setShowStatusEditor(true)},'Estados'),
       doneCount>0&&e('button',{className:'btn',style:{fontSize:10.5,padding:'4px 10px'},onClick:()=>setShowDoneSteps(v=>!v)},
         showDoneSteps?'Ocultar completadas':'Ver completadas ('+doneCount+')')
     ),
@@ -13734,6 +13734,7 @@ function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask,templates,onAddTe
   const[selectedIds,setSelectedIds]=useState(()=>new Set());
   const[showDoneSteps,setShowDoneSteps]=useState(false);
   const[stepCtxMenu,setStepCtxMenu]=useState(null);
+  const[showMoreTabs,setShowMoreTabs]=useState(false);
   useEffect(()=>{
     if(!stepCtxMenu)return;
     const close=()=>setStepCtxMenu(null);
@@ -13877,6 +13878,36 @@ function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask,templates,onAddTe
     const next=steps.slice();
     next.splice(idx+1,0,copy);
     commit(next);
+  }
+  function distribuirSubs(stepId){
+    const s=steps.find(x=>x.id===stepId);
+    if(!s||!s.dueDate)return;
+    const subs=(s.subtasks||[]).filter(x=>!x.done);
+    if(!subs.length)return;
+    const start=s.startDate||s.dueDate;
+    const end=s.dueDate;
+    const toTs=d=>new Date(d+'T00:00:00').getTime();
+    const bizDays=[];
+    let cur=new Date(start+'T00:00:00');
+    const endTs=toTs(end);
+    while(cur.getTime()<=endTs){
+      const dow=cur.getDay();
+      if(dow!==0&&dow!==6)bizDays.push(cur.toISOString().slice(0,10));
+      cur=new Date(cur.getTime()+86400000);
+    }
+    if(!bizDays.length){
+      cur=new Date(start+'T00:00:00');
+      while(cur.getTime()<=endTs){bizDays.push(cur.toISOString().slice(0,10));cur=new Date(cur.getTime()+86400000);}
+    }
+    const daysPerSub=Math.max(1,Math.floor(bizDays.length/subs.length));
+    const newSubs=(s.subtasks||[]).map(sub=>{
+      const idx=subs.indexOf(sub);
+      if(idx<0)return sub;
+      const lo=Math.min(idx*daysPerSub,bizDays.length-1);
+      const hi=Math.min((idx+1)*daysPerSub-1,bizDays.length-1);
+      return{...sub,startDate:bizDays[lo],dueDate:bizDays[hi]};
+    });
+    commit(steps.map(x=>x.id===stepId?{...x,subtasks:newSubs}:x));
   }
   // Registrar avance/no-avance de HOY a nivel de todo el proyecto (no por fase). Click de nuevo = deshacer.
   const todayKey=dayKey();
@@ -14114,40 +14145,52 @@ function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask,templates,onAddTe
           const TAB_DEFS={
             list:{title:'Lista',icon:e(DashIcon,{name:'list',size:13})},
             timeline:{title:'Línea de tiempo',icon:e(DashIcon,{name:'clock',size:13})},
-            calendar:{title:'Calendario de fases',icon:e(DashIcon,{name:'calendar',size:13})},
+            calendar:{title:'Calendario',icon:e(DashIcon,{name:'calendar',size:13})},
             mindmap:{title:'Mapa mental',icon:e(DashIcon,{name:'network',size:13})},
-            board:{title:'Pizarra y notas',icon:e(DashIcon,{name:'image',size:13})},
+            board:{title:'Pizarra',icon:e(DashIcon,{name:'image',size:13})},
             notebook:{title:'Libreta',icon:e(DashIcon,{name:'note',size:13})},
-            experiments:{title:'Experimentos de este lanzamiento',icon:e(SysMiniIcon,{name:'flask',size:13})}
+            experiments:{title:'Experimentos',icon:e(SysMiniIcon,{name:'flask',size:13})}
           };
-          return tabOrder.filter(k=>k!=='experiments'||(pSystems||[]).length>0).map(k=>{
-            const def=TAB_DEFS[k];
-            if(!def)return null;
-            return e('button',{
-              key:k,
-              className:'vtab vtab-icon'+(view===k?' active':'')+(dragTab===k?' dragging':'')+(dragOverTab===k&&dragTab&&dragTab!==k?' drag-over':''),
-              onClick:()=>setView(k),
-              title:def.title+' — arrastra para reordenar (el de más a la izquierda es la vista por defecto)',
-              draggable:true,
-              onDragStart:ev=>{setDragTab(k);ev.dataTransfer.effectAllowed='move';},
-              onDragEnd:()=>{setDragTab(null);setDragOverTab(null);},
-              onDragOver:ev=>{ev.preventDefault();if(dragTab&&dragTab!==k)setDragOverTab(k);},
-              onDragLeave:()=>{setDragOverTab(cur=>cur===k?null:cur);},
-              onDrop:ev=>{ev.preventDefault();if(dragTab)moveTab(dragTab,k);setDragTab(null);setDragOverTab(null);}
-            },def.icon);
-          });
+          const PRIMARY=['list','timeline'];
+          const allKeys=tabOrder.filter(k=>k!=='experiments'||(pSystems||[]).length>0);
+          // Si la vista activa no está en los primarios, se muestra también
+          const visibleKeys=[...new Set([...PRIMARY,view])].filter(k=>allKeys.includes(k));
+          const hiddenKeys=allKeys.filter(k=>!visibleKeys.includes(k));
+          return[
+            ...visibleKeys.map(k=>{
+              const def=TAB_DEFS[k];if(!def)return null;
+              return e('button',{key:k,className:'vtab vtab-icon'+(view===k?' active':''),onClick:()=>setView(k),title:def.title},def.icon);
+            }),
+            hiddenKeys.length>0&&e('div',{key:'more',style:{position:'relative'}},
+              e('button',{
+                className:'vtab vtab-icon',
+                title:'Más vistas',
+                onClick:ev=>{ev.stopPropagation();setShowMoreTabs(v=>!v);}
+              },'···'),
+              showMoreTabs&&e('div',{
+                style:{position:'absolute',top:'100%',left:0,zIndex:300,background:'var(--bg2)',border:'1px solid var(--border2)',borderRadius:'var(--r-md)',padding:4,boxShadow:'0 8px 24px #0009',minWidth:140},
+                onMouseLeave:()=>setShowMoreTabs(false)
+              },
+                hiddenKeys.map(k=>{
+                  const def=TAB_DEFS[k];if(!def)return null;
+                  return e('button',{
+                    key:k,
+                    onClick:()=>{setView(k);setShowMoreTabs(false);},
+                    style:{display:'flex',alignItems:'center',gap:8,width:'100%',padding:'6px 10px',border:'none',borderRadius:5,background:view===k?'var(--bg4)':'transparent',color:view===k?'var(--text0)':'var(--text2)',fontSize:11,cursor:'pointer',fontFamily:'Inter,sans-serif'}
+                  },def.icon,e('span',null,def.title));
+                })
+              )
+            )
+          ];
         })(),
-        steps.some(s=>s.startDate&&s.dueDate)&&e('button',{className:'rec-trigger-btn',title:'Cambiar la fecha de inicio y recalcular todas las fases, sin perder nada',onClick:()=>setShowRecalc(true)},e(DashIcon,{name:'refresh',size:12}))
+        steps.some(s=>s.startDate&&s.dueDate)&&e('button',{className:'rec-trigger-btn',title:'Cambiar fecha de inicio y recalcular todas las fases',onClick:()=>setShowRecalc(true)},e(DashIcon,{name:'refresh',size:12}))
       ),
 
       e('div',{className:'modal-body',style:{flex:1,minHeight:0}},
         view==='list'&&e('div',{className:'sheet',style:dragFill?{userSelect:'none'}:undefined},
           e('div',{className:'sheet-row sheet-hdr'},
             e('div',{className:'sheet-cell'},'Fase'),
-            e('div',{className:'sheet-cell sheet-cell-date',style:{display:'flex',gap:6}},
-              e('span',{style:{flex:1}},'Inicio'),
-              e('span',{style:{flex:1}},'Término')
-            ),
+            e('div',{className:'sheet-cell sheet-cell-date'},'Deadline'),
             e('div',{className:'sheet-cell sheet-cell-status'},'')
           ),
           steps.length===0&&e('div',{className:'empty',style:{padding:'16px 2px'}},'Sin fases aún. Agrega la primera abajo.'),
@@ -14179,34 +14222,23 @@ function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask,templates,onAddTe
                 },'⚙'),
                 (s.subtasks||[]).length>0&&e('span',{style:{fontSize:9.5,color:'var(--text4)',flexShrink:0},title:'Tareas dentro de esta fase — visibles en Mapa mental'},(s.subtasks||[]).length+' tareas')
               ),
-              e('div',{className:'sheet-cell sheet-cell-date',style:{display:'flex',gap:6}},
+              e('div',{className:'sheet-cell sheet-cell-date',style:{position:'relative'}},
                 e('input',{
-                  className:'sheet-input sheet-input-date',type:'date',style:{flex:1},
-                  value:s.startDate||'',
-                  title:'Fecha de inicio de la fase',
+                  className:'sheet-input sheet-input-date sheet-date-hidden',type:'date',
+                  value:s.dueDate||'',
+                  title:'Deadline de la fase — clic para cambiar',
                   onChange:ev=>{
                     const v=ev.target.value||null;
-                    // el inicio nunca queda después del término
-                    if(v&&s.dueDate&&v>s.dueDate) updateStep(s.id,{startDate:v,dueDate:v});
-                    else updateStep(s.id,{startDate:v});
-                  }
+                    if(v&&s.startDate&&v<s.startDate) updateStep(s.id,{dueDate:v,startDate:v});
+                    else updateStep(s.id,{dueDate:v});
+                  },
+                  style:{position:'absolute',inset:0,opacity:0,cursor:'pointer',width:'100%',height:'100%'}
                 }),
-                e('div',{className:'sheet-date-cell',style:{flex:1}},
-                  e('input',{
-                    className:'sheet-input sheet-input-date',type:'date',
-                    value:s.dueDate||'',
-                    title:'Fecha de término de la fase',
-                    onChange:ev=>{
-                      const v=ev.target.value||null;
-                      if(v&&s.startDate&&v<s.startDate) updateStep(s.id,{dueDate:v,startDate:v});
-                      else updateStep(s.id,{dueDate:v});
-                    }
-                  }),
-                  s.dueDate&&e('div',{className:'sheet-fill-handle',title:'Arrastra para rellenar días consecutivos',onMouseDown:ev=>beginFillDrag(idx,ev)})
-                )
+                e('span',{style:{fontSize:11.5,color:s.dueDate?(()=>{const d=s.dueDate,t=dayKey();return d<t?'var(--red,#e05555)':d===t?'var(--amber,#dba14a)':'var(--text2)'})():'var(--text4)',pointerEvents:'none'}},
+                  s.dueDate?fmtDMY(s.dueDate):'—')
               ),
-              e('div',{className:'sheet-cell sheet-cell-status',style:{display:'flex',alignItems:'center',gap:6}},
-                e('button',{className:'rem-del',onClick:()=>deleteStep(s.id),title:'Eliminar fase'},'✕')
+              e('div',{className:'sheet-cell sheet-cell-status sheet-row-actions',style:{display:'flex',alignItems:'center',gap:4}},
+                e('button',{className:'rem-del sheet-del-btn',onClick:()=>deleteStep(s.id),title:'Eliminar fase'},'✕')
               )
             );
           });})(),
@@ -14214,9 +14246,8 @@ function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask,templates,onAddTe
             e('div',{className:'sheet-cell'},
               e('input',{className:'sheet-input sheet-input-name',placeholder:'+ Agregar fase...',value:newName,onChange:ev=>setNewName(ev.target.value),onKeyDown:ev=>{if(ev.key==='Enter')addStep();}})
             ),
-            e('div',{className:'sheet-cell sheet-cell-date',style:{display:'flex',gap:6}},
-              e('input',{className:'sheet-input sheet-input-date',type:'date',style:{flex:1},value:newStartDate,onChange:ev=>setNewStartDate(ev.target.value),title:'Inicio (opcional)'}),
-              e('input',{className:'sheet-input sheet-input-date',type:'date',style:{flex:1},value:newDate,onChange:ev=>setNewDate(ev.target.value),title:'Término (opcional, se autosugiere)'})
+            e('div',{className:'sheet-cell sheet-cell-date'},
+              e('input',{className:'sheet-input sheet-input-date',type:'date',style:{width:'100%'},value:newDate,onChange:ev=>setNewDate(ev.target.value),title:'Deadline (opcional)'})
             ),
             e('div',{className:'sheet-cell sheet-cell-status'},
               e('button',{className:'btn btn-primary',style:{fontSize:11,padding:'5px 14px',width:'100%'},onClick:addStep},'Agregar')
@@ -14460,6 +14491,17 @@ function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask,templates,onAddTe
         onMouseLeave:ev=>ev.currentTarget.style.background='',
         onClick:()=>{playUI('click');duplicateStep(stepCtxMenu.stepId);setStepCtxMenu(null);}
       },'⧉  Duplicar fase (con sus tareas)'),
+      e('div',{
+        style:{padding:'5px 10px',borderRadius:'var(--r-sm)',cursor:'pointer',fontSize:11,color:'var(--text2)',display:'flex',alignItems:'center',gap:6},
+        onMouseEnter:ev=>ev.currentTarget.style.background='var(--bg4)',
+        onMouseLeave:ev=>ev.currentTarget.style.background='',
+        onClick:()=>{
+          const s=steps.find(x=>x.id===stepCtxMenu.stepId);
+          if(s)distribuirSubs(s.id);
+          setStepCtxMenu(null);
+        }
+      },'⟳  Distribuir subtareas en el rango'),
+      e('div',{style:{height:1,background:'var(--border2)',margin:'4px 0'}}),
       e('div',{
         style:{padding:'5px 10px',borderRadius:'var(--r-sm)',cursor:'pointer',fontSize:11,color:'var(--red,#e05555)',display:'flex',alignItems:'center',gap:6},
         onMouseEnter:ev=>ev.currentTarget.style.background='var(--red-bg,#e0555522)',
