@@ -6653,6 +6653,8 @@ function GanttView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
   const[subDrag,setSubDrag]=useState(null);
   // Status picker abierto: {subId,parentId}
   const[statusPicker,setStatusPicker]=useState(null);
+  // Context menu: {subId,parentId,x,y}
+  const[ctxMenu,setCtxMenu]=useState(null);
   // Etiquetas de status personalizadas
   const[customStatuses,setCustomStatuses]=useState(()=>loadSubStatuses());
   const[showStatusEditor,setShowStatusEditor]=useState(false);
@@ -6673,6 +6675,15 @@ function GanttView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
     setTimeout(()=>document.addEventListener('mousedown',h),0);
     return()=>document.removeEventListener('mousedown',h);
   },[statusPicker]);
+
+  // Cerrar context menu al click fuera o al presionar Escape
+  useEffect(()=>{
+    if(!ctxMenu)return;
+    const h=()=>setCtxMenu(null);
+    const hk=ev=>{if(ev.key==='Escape')setCtxMenu(null);};
+    setTimeout(()=>{document.addEventListener('mousedown',h);document.addEventListener('keydown',hk);},0);
+    return()=>{document.removeEventListener('mousedown',h);document.removeEventListener('keydown',hk);};
+  },[ctxMenu]);
 
   // Fases visibles
   const visSteps=steps.filter(s=>showDoneSteps||!s.done);
@@ -6843,6 +6854,7 @@ function GanttView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
               const sst=subStatusInfo(sub.status||'todo',customStatuses);
               const isPickerOpen=statusPicker&&statusPicker.subId===sub.id;
               return e('div',{key:sub.id,
+                onContextMenu:ev=>{ev.preventDefault();setCtxMenu({subId:sub.id,parentId:s.id,x:ev.clientX,y:ev.clientY});},
                 style:{height:SUB_H,display:'flex',alignItems:'center',gap:6,padding:'0 8px 0 28px',borderBottom:'1px solid var(--border2)',background:'var(--bg1)',position:'relative'}},
                 // Status badge clicable
                 e('div',{
@@ -6943,7 +6955,8 @@ function GanttView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
                   els.push(e('div',{
                     key:'sbar-'+sub.id,
                     style:{position:'absolute',top:subTop+5,left:bl+2,width:bw-4,height:16,borderRadius:3,background:sst2.bg,opacity:sst2.k==='done'?.5:1,cursor:'grab',display:'flex',alignItems:'center',padding:'0 14px',fontSize:9.5,color:sst2.color,overflow:'hidden',whiteSpace:'nowrap',textOverflow:'ellipsis',border:'1px solid color-mix(in srgb,'+sst2.color+' 35%,transparent)',zIndex:1,userSelect:'none',fontWeight:500},
-                    title:sub.name+' ['+sst2.label+'] · '+subStart+' → '+subEnd,
+                    title:sub.name+' ['+sst2.label+'] · '+subStart+' → '+subEnd+' · Click derecho para cambiar estado',
+                    onContextMenu:ev=>{ev.preventDefault();ev.stopPropagation();setCtxMenu({subId:sub.id,parentId:s.id,x:ev.clientX,y:ev.clientY});},
                     onMouseDown:ev=>{
                       ev.preventDefault();
                       setSubDrag({id:sub.id,parentId:s.id,mode:'move',startX:ev.clientX,origStart:subStart,origEnd:subEnd,curStart:subStart,curEnd:subEnd});
@@ -6964,6 +6977,30 @@ function GanttView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
           })()
         )
       )
+    ),
+    // Context menu de click derecho sobre subtarea
+    ctxMenu&&e('div',{
+      onMouseDown:ev=>ev.stopPropagation(),
+      style:{position:'fixed',left:ctxMenu.x,top:ctxMenu.y,zIndex:9999,background:'var(--bg2)',border:'1px solid var(--border2)',borderRadius:'var(--r-md)',boxShadow:'0 12px 32px #0009',padding:6,minWidth:160}
+    },
+      e('div',{style:{fontSize:10,color:'var(--text3)',padding:'2px 8px 6px',fontWeight:600,textTransform:'uppercase',letterSpacing:'.5px'}},'Estado de subtarea'),
+      customStatuses.map(st=>{
+        const stCol=subStatusColor(st.colorId);
+        const isCurrent=ctxMenu&&(()=>{
+          const parentStep=visSteps.find(s=>s.id===ctxMenu.parentId);
+          const sub=parentStep&&(parentStep.subtasks||[]).find(x=>x.id===ctxMenu.subId);
+          return sub&&(sub.status||'todo')===st.k;
+        })();
+        return e('button',{
+          key:st.k,
+          onClick:()=>{setSubStatus(ctxMenu.parentId,ctxMenu.subId,st.k);setCtxMenu(null);},
+          style:{display:'flex',alignItems:'center',gap:8,width:'100%',textAlign:'left',padding:'6px 10px',borderRadius:5,border:'none',background:isCurrent?'var(--bg4)':'transparent',cursor:'pointer',fontFamily:'Inter,sans-serif',fontSize:12,color:stCol.color}
+        },
+          e('div',{style:{width:8,height:8,borderRadius:'50%',background:stCol.color,flexShrink:0}}),
+          st.label,
+          isCurrent&&e('span',{style:{marginLeft:'auto',fontSize:10,opacity:.6}},'✓')
+        );
+      })
     ),
     showStatusEditor&&e(SubStatusEditor,{onClose:()=>{setShowStatusEditor(false);setCustomStatuses(loadSubStatuses());}})
   );
