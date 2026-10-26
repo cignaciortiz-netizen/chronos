@@ -607,7 +607,7 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .task-progress-row{display:flex;align-items:center;gap:6px}
 .task-progress-lbl{font-size:9px;color:var(--text4);flex-shrink:0;font-family:'JetBrains Mono',monospace}
 .sheet{border:1px solid var(--border2);border-radius:10px;overflow:hidden;background:var(--bg2,#141414)}
-.sheet-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(108px,132px) minmax(96px,116px);border-bottom:1px solid var(--border)}
+.sheet-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(108px,132px) minmax(148px,172px);border-bottom:1px solid var(--border)}
 .sheet-row:last-child{border-bottom:none}
 .sheet-row.sheet-hdr{background:transparent;border-bottom:1px solid var(--border3)}
 .sheet-row.sheet-hdr .sheet-cell{font-size:9.5px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;font-weight:600;padding:9px 12px;border-right:none}
@@ -617,6 +617,23 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .sheet-row.sheet-add-row{background:transparent;border-top:1px dashed var(--border3)}
 .sheet-cell{padding:2px 4px;display:flex;align-items:center;min-width:0}
 .sheet-cell-date{justify-content:flex-start;padding-left:8px}
+/* combo gantt scroll sin scrollbar */
+.combo-gantt-scroll{scrollbar-width:none;-ms-overflow-style:none;-webkit-overflow-scrolling:touch;scroll-behavior:smooth}
+.combo-gantt-scroll::-webkit-scrollbar{display:none}
+/* combo row actions — toolbar flotante, no ocupa columna */
+.combo-row-wrap{position:relative}
+.combo-row{cursor:default}
+.combo-row:hover .combo-ctx-chip{opacity:1!important}
+.combo-row:hover .combo-expand-btn{opacity:1!important}
+.combo-row-wrap:hover .combo-sub-del{opacity:.4!important}
+.combo-sub-del:hover{opacity:1!important;color:var(--red,#e05555)!important}
+.combo-row-indicators{display:flex;align-items:center;gap:3px;flex-shrink:0;margin-right:6px}
+.combo-row-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.combo-ctx-menu{position:fixed;z-index:9999;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r-md);box-shadow:0 8px 28px rgba(0,0,0,.6);padding:4px;min-width:160px;font-family:Inter,sans-serif}
+.combo-ctx-item{display:flex;align-items:center;gap:9px;width:100%;padding:7px 10px;border:none;background:none;cursor:pointer;font-size:12px;color:var(--text1);border-radius:6px;text-align:left;transition:background .12s}
+.combo-ctx-item:hover{background:var(--bg4)}
+.combo-ctx-item.danger{color:var(--red,#e05555)}
+.combo-ctx-sep{height:1px;background:var(--border);margin:3px 4px}
 .sheet-cell-status{justify-content:flex-end;gap:6px;padding-right:10px}
 .sheet-input{background:transparent;border:1px solid transparent;border-radius:5px;padding:8px 10px;font-size:12.5px;color:var(--text0);font-family:'Inter',sans-serif;min-width:0;width:100%}
 .sheet-input:hover{border-color:var(--border2)}
@@ -631,8 +648,17 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .steps-done-btn.on{background:var(--green-bg,#3ab87a14);border-color:var(--green,#3ab87a);color:var(--green,#3ab87a)}
 .sheet-row .rem-del{opacity:0;transition:opacity .15s}
 .sheet-row:hover .rem-del{opacity:1}
+.sheet-row:hover .phase-note-btn{opacity:1!important}
+.phase-note-btn.has-note{opacity:1!important}
+.sheet-row:hover .phase-assignee-btn{opacity:1!important}
+/* ComboView */
+.combo-phase-row{cursor:default;transition:background .12s}
+.combo-phase-row:hover{background:var(--bg3)}
+.combo-phase-row:hover .combo-note-btn{opacity:1!important}
+.combo-phase-row:hover .combo-av-add{opacity:1!important}
+.combo-note-btn{opacity:0;transition:opacity .15s}
 @media (max-width:560px){
-  .sheet-row{grid-template-columns:minmax(0,1fr) 92px 84px}
+  .sheet-row{grid-template-columns:minmax(0,1fr) 92px 120px}
   .sheet-row.sheet-hdr .sheet-cell{padding:8px 6px;font-size:9px}
   .sheet-input{padding:8px 6px;font-size:12px}
   .steps-done-btn{padding:6px 7px;font-size:9.5px}
@@ -2282,6 +2308,42 @@ const THEMES=[
     '--text0':'#f2f3f4','--text1':'#C2C4C8','--text2':'#9a9ea3','--text3':'#65686c','--text4':'#484C51',
     '--accent':'#00FF43','--accent2':'#5cffa0','--accentd':'#00cc36','--accent-bg':'#00FF4314','--accent-border':'#00FF433a',
   }},
+  {id:'aurora',label:'Aurora',desc:'Púrpura profundo con acento rosado. Atmósfera nórdica.',vars:{
+    '--bg0':'#130f1e','--bg1':'#181326','--bg2':'#1f1830','--bg3':'#271e3b','--bg4':'#312647','--bg5':'#3d3056',
+    '--border':'#c97aff14','--border2':'#c97aff22','--border3':'#c97aff32',
+    '--text0':'#f4eeff','--text1':'#d0bef5','--text2':'#9a7ec8','--text3':'#65528a','--text4':'#45385e',
+    '--accent':'#b06ce0','--accent2':'#d190f7','--accentd':'#8a4db8','--accent-bg':'#b06ce014','--accent-border':'#b06ce03a',
+  }},
+  {id:'dusk',label:'Dusk',desc:'Rosado oscuro terroso. Cálido y elegante.',vars:{
+    '--bg0':'#1a1218','--bg1':'#201620','--bg2':'#271b28','--bg3':'#302132','--bg4':'#3b283c','--bg5':'#48324a',
+    '--border':'#e87aaa14','--border2':'#e87aaa22','--border3':'#e87aaa32',
+    '--text0':'#f5eaf2','--text1':'#d4bccf','--text2':'#a07e9a','--text3':'#6e5268','--text4':'#4a3648',
+    '--accent':'#d4608e','--accent2':'#f083ae','--accentd':'#aa4070','--accent-bg':'#d4608e14','--accent-border':'#d4608e3a',
+  }},
+  {id:'ocean',label:'Ocean',desc:'Azul profundo con acento turquesa frío.',vars:{
+    '--bg0':'#0d1520','--bg1':'#111c2a','--bg2':'#162334','--bg3':'#1c2c40','--bg4':'#23364e','--bg5':'#2c415d',
+    '--border':'#2ae8d814','--border2':'#2ae8d822','--border3':'#2ae8d832',
+    '--text0':'#e8f5fb','--text1':'#b8d8e8','--text2':'#70a8c0','--text3':'#457088','--text4':'#2c4e64',
+    '--accent':'#1ab8d0','--accent2':'#3ddaee','--accentd':'#1292a8','--accent-bg':'#1ab8d014','--accent-border':'#1ab8d03a',
+  }},
+  {id:'copper',label:'Copper',desc:'Verde musgo con acento cobre oxidado.',vars:{
+    '--bg0':'#111812','--bg1':'#161f17','--bg2':'#1c261d','--bg3':'#232f24','--bg4':'#2b3a2c','--bg5':'#354636',
+    '--border':'#c8783814','--border2':'#c8783822','--border3':'#c8783832',
+    '--text0':'#eef5ee','--text1':'#bdd5be','--text2':'#7ea882','--text3':'#527258','--text4':'#374e3b',
+    '--accent':'#c07838','--accent2':'#e09a58','--accentd':'#9a5c28','--accent-bg':'#c0783814','--accent-border':'#c078383a',
+  }},
+  {id:'volcanic',label:'Volcanic',desc:'Gris basáltico con acento rojo volcán.',vars:{
+    '--bg0':'#130f0e','--bg1':'#1a1412','--bg2':'#221918','--bg3':'#2c201f','--bg4':'#372826','--bg5':'#44312f',
+    '--border':'#ff4a3214','--border2':'#ff4a3222','--border3':'#ff4a3232',
+    '--text0':'#f5f0ef','--text1':'#d4c5c3','--text2':'#a08580','--text3':'#6e5a57','--text4':'#4a3c39',
+    '--accent':'#e03c28','--accent2':'#ff6550','--accentd':'#b82818','--accent-bg':'#e03c2814','--accent-border':'#e03c283a',
+  }},
+  {id:'polar',label:'Polar',desc:'Blanco frío con acento índigo. El único tema claro.',vars:{
+    '--bg0':'#f4f5f8','--bg1':'#eceef3','--bg2':'#e2e5ec','--bg3':'#d6dae4','--bg4':'#c8cdd9','--bg5':'#b8bece',
+    '--border':'#4060c014','--border2':'#4060c022','--border3':'#4060c032',
+    '--text0':'#1a1d2e','--text1':'#3a3f58','--text2':'#6068a0','--text3':'#8890c0','--text4':'#aab0d0',
+    '--accent':'#4455dd','--accent2':'#5566f5','--accentd':'#2233bb','--accent-bg':'#4455dd14','--accent-border':'#4455dd3a',
+  }},
 ];
 
 
@@ -2756,7 +2818,7 @@ const GlobalSidebar=React.memo(function GlobalSidebar({projects,habits,systems,t
   const todayK=dayKey();
   const activeProjects=projects.filter(p=>p.status!=='archived');
   const[ctxMenu,setCtxMenu]=useState(null); // {x,y,proj}
-  const[sortByAlert,setSortByAlert]=useState(()=>{try{return localStorage.getItem('chr4_sbsort')==='alert';}catch{return false;}});
+  const[sortByAlert,setSortByAlert]=useState(()=>{try{const v=localStorage.getItem('chr4_sbsort');return v===null?true:v==='alert';}catch{return true;}});
   useEffect(()=>{try{localStorage.setItem('chr4_sbsort',sortByAlert?'alert':'manual');}catch{};},[sortByAlert]);
   useEffect(()=>{
     if(!ctxMenu)return;
@@ -2836,7 +2898,7 @@ const GlobalSidebar=React.memo(function GlobalSidebar({projects,habits,systems,t
       e('span',null,'PROYECTOS'),
       !collapsed&&e('button',{
         className:'ghost-btn',
-        title:sortByAlert?'Orden manual (arrastra para reordenar)':'Ordenar: pendientes primero',
+        title:sortByAlert?'Orden manual (arrastra para reordenar)':'Ordenar por urgencia: alertas → urgente → importante → normal',
         style:{fontSize:9,padding:'1px 4px',color:sortByAlert?'var(--red,#e05555)':'var(--text4)',marginRight:2},
         onClick:ev=>{ev.stopPropagation();setSortByAlert(v=>!v);}
       },sortByAlert?'● Alertas':'⇅'),
@@ -2847,7 +2909,17 @@ const GlobalSidebar=React.memo(function GlobalSidebar({projects,habits,systems,t
     e('div',{className:'gsb-projlist'},
       activeProjects.length===0&&!collapsed&&e('div',{className:'empty',style:{padding:'4px 10px'}},'Sin proyectos aún.'),
       (sortByAlert
-        ? activeProjects.slice().sort((a,b)=>(projAlert(b)?1:0)-(projAlert(a)?1:0))
+        ? activeProjects.slice().sort((a,b)=>{
+            // Rango combinado: alerta activa primero, luego prioridad declarada
+            const PRI={urgent:0,important:1,low:3};
+            const alertA=projAlert(a)?-1:0;
+            const alertB=projAlert(b)?-1:0;
+            const priA=PRI[a.priority]!=null?PRI[a.priority]:2;
+            const priB=PRI[b.priority]!=null?PRI[b.priority]:2;
+            const rankA=alertA+priA;
+            const rankB=alertB+priB;
+            return rankA-rankB;
+          })
         : activeProjects
       ).map(p=>e('div',{
         key:p.id,
@@ -3299,6 +3371,9 @@ function App(){
   },[projects,soundCfg]);
 
   const remindersFirstRun=useRef(true);
+  // Flag para evitar que el auto-push suba datos vacíos mientras el pull
+  // inicial aún no terminó (race condition al borrar localStorage).
+  const sbPullDoneRef=useRef(false);
   // Marca los recordatorios YA vencidos al abrir la app para que no
   // disparen audio — solo queremos audio para los que vencen MIENTRAS
   // la app está abierta, no para los del pasado que el usuario ya sabe.
@@ -3543,7 +3618,8 @@ function App(){
           }
         }
         SB.markSynced();
-      }catch(e){ console.warn('[SB] pull error',e); }
+        sbPullDoneRef.current=true;
+      }catch(e){ console.warn('[SB] pull error',e); sbPullDoneRef.current=true; }
     })();
   },[sbStatus]);
 
@@ -3561,6 +3637,10 @@ function App(){
   // sola petición en vez de una por cada micro-cambio.
   useEffect(()=>{
     if(sbStatus!=='connected') return;
+    // No subir nada mientras el pull inicial no haya terminado — evita el
+    // race condition donde datos vacíos (localStorage borrado) sobreescriben
+    // los datos remotos si el push llega después del pull.
+    if(!sbPullDoneRef.current) return;
     // Se marca "sucio" apenas cambia cualquier dato sincronizable, antes de
     // que termine de subirse — así, si la página se recarga en ese
     // intervalo, sabemos que hubo un cambio que quizás no llegó a subirse.
@@ -3603,6 +3683,7 @@ function App(){
   const sbSessFailStreakRef=useRef(0);
   useEffect(()=>{
     if(sbStatus!=='connected') return;
+    if(!sbPullDoneRef.current) return;
     SB.markDirty();
     clearTimeout(sbSessSyncRef.current);
     const backoff=Math.min(60000,3000*Math.pow(2,sbSessFailStreakRef.current));
@@ -4472,12 +4553,21 @@ function App(){
               const active=projects.filter(p=>p.status!=='archived');
               const groups={};
               active.forEach(p=>{const g=p.category||'Personal';if(!groups[g])groups[g]=[];groups[g].push(p);});
-              const PRI_RANK={urgent:0,important:1,low:2};
+              const PRI_RANK={urgent:0,important:1,low:3};
+              const hasAlertFn=p=>{
+                const hd=habits.some(h=>h.projectId===p.id&&habitOccursOn(h,dateFromDayKey(todayKey_))&&!(h.log||[]).includes(todayKey_)&&!(h.skipLog||[]).includes(todayKey_));
+                const sd=systems.some(s=>s.projectId===p.id&&s.status!=='paused'&&s.nextRun&&s.nextRun<=Date.now());
+                const td=tasks.some(t=>t.projectId===p.id&&t.status!=='done'&&((t.dueDate&&t.dueDate<=todayKey_)||(t.steps||[]).some(s=>stepNeedsAction(s,todayKey_,!!(t.actLog&&t.actLog[todayKey_])))));
+                const nd=(notes[p.id]||[]).some(noteReminderDue);
+                return hd||sd||td||nd;
+              };
               Object.keys(groups).forEach(g=>{
                 groups[g].sort((a,b)=>{
-                  const ra=PRI_RANK[a.priority]!=null?PRI_RANK[a.priority]:3;
-                  const rb=PRI_RANK[b.priority]!=null?PRI_RANK[b.priority]:3;
-                  return ra-rb;
+                  const alertA=hasAlertFn(a)?-1:0;
+                  const alertB=hasAlertFn(b)?-1:0;
+                  const ra=PRI_RANK[a.priority]!=null?PRI_RANK[a.priority]:2;
+                  const rb=PRI_RANK[b.priority]!=null?PRI_RANK[b.priority]:2;
+                  return (alertA+ra)-(alertB+rb);
                 });
               });
               const ORDER=['Profesional','Música','Creativo','Estudio','Personal','Administración'];
@@ -6633,6 +6723,651 @@ function SubStatusEditor({onClose}){
   );
 }
 
+// ── ChronosDatePicker: custom calendar popup ──
+function ChronosDatePicker({value,onChange,placeholder,style}){
+  const[open,setOpen]=useState(false);
+  const[popStyle,setPopStyle]=useState({});
+  const triggerRef=useRef(null);
+  const popRef=useRef(null);
+  const todayStr=dayKey();
+  const[nav,setNav]=useState(()=>{
+    if(value){const d=new Date(value+'T00:00:00');return{y:d.getFullYear(),m:d.getMonth()};}
+    const t=new Date();return{y:t.getFullYear(),m:t.getMonth()};
+  });
+
+  useEffect(()=>{
+    if(value){const d=new Date(value+'T00:00:00');setNav({y:d.getFullYear(),m:d.getMonth()});}
+  },[value]);
+
+  // position popup to never overflow viewport
+  useEffect(()=>{
+    if(!open||!triggerRef.current)return;
+    const POP_W=236,POP_H=290;
+    const r=triggerRef.current.getBoundingClientRect();
+    const vw=window.innerWidth,vh=window.innerHeight;
+    // horizontal: prefer right-aligned to trigger, clamp to viewport
+    let left=r.left;
+    if(left+POP_W>vw-8)left=Math.max(8,vw-POP_W-8);
+    // vertical: prefer below, flip above if not enough room
+    let top=r.bottom+6;
+    let above=false;
+    if(top+POP_H>vh-8){top=r.top-POP_H-6;above=true;}
+    setPopStyle({position:'fixed',left,top,zIndex:9999,width:POP_W});
+    // close on outside click
+    function h(ev){
+      if(triggerRef.current&&triggerRef.current.contains(ev.target))return;
+      if(popRef.current&&popRef.current.contains(ev.target))return;
+      setOpen(false);
+    }
+    document.addEventListener('mousedown',h);
+    return()=>document.removeEventListener('mousedown',h);
+  },[open]);
+
+  const MONTHS=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const DAYS_SHORT=['lu','ma','mi','ju','vi','sá','do'];
+
+  function prevM(){setNav(n=>n.m===0?{y:n.y-1,m:11}:{y:n.y,m:n.m-1});}
+  function nextM(){setNav(n=>n.m===11?{y:n.y+1,m:0}:{y:n.y,m:n.m+1});}
+
+  function buildGrid(){
+    const startDow=(new Date(nav.y,nav.m,1).getDay()+6)%7;
+    const daysInMonth=new Date(nav.y,nav.m+1,0).getDate();
+    const cells=[];
+    for(let i=0;i<startDow;i++)cells.push(null);
+    for(let d=1;d<=daysInMonth;d++)cells.push(d);
+    while(cells.length%7!==0)cells.push(null);
+    return cells;
+  }
+
+  function selectDay(d){
+    const ds=`${nav.y}-${String(nav.m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    onChange(ds);setOpen(false);
+  }
+
+  function fmt(v){
+    if(!v)return null;
+    const[y,mo,d]=v.split('-');
+    return `${d}-${mo}-${y}`;
+  }
+
+  const displayVal=fmt(value);
+  const cells=buildGrid();
+
+  let labelColor='var(--text2)';
+  if(value){
+    if(value<todayStr)labelColor='var(--red,#e05555)';
+    else if(value===todayStr)labelColor='var(--amber,#dba14a)';
+  }else{
+    labelColor='var(--text4)';
+  }
+
+  const ChevL=e('svg',{width:14,height:14,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2.2,strokeLinecap:'round',strokeLinejoin:'round'},e('polyline',{points:'15 18 9 12 15 6'}));
+  const ChevR=e('svg',{width:14,height:14,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2.2,strokeLinecap:'round',strokeLinejoin:'round'},e('polyline',{points:'9 18 15 12 9 6'}));
+
+  return e('div',{ref:triggerRef,style:{position:'relative',...style}},
+    // trigger
+    e('button',{
+      onClick:()=>setOpen(v=>!v),
+      style:{
+        display:'flex',alignItems:'center',gap:0,background:'transparent',border:'none',
+        cursor:'pointer',padding:0,fontFamily:'Inter,sans-serif',
+        color:displayVal?labelColor:'var(--text4)',whiteSpace:'nowrap',width:'100%',
+        justifyContent:'flex-end',minWidth:0
+      }
+    },
+      e('span',{style:{fontFamily:'JetBrains Mono,monospace',fontSize:10.5,letterSpacing:'.01em',overflow:'hidden',textOverflow:'ellipsis'}},
+        displayVal||placeholder||'dd-mm-aaaa')
+    ),
+
+    // portal-style fixed popup
+    open&&e('div',{ref:popRef,
+      onMouseDown:ev=>ev.stopPropagation(),
+      style:{
+        ...popStyle,
+        background:'var(--bg2)',border:'1px solid var(--border3)',
+        borderRadius:'var(--r-lg)',boxShadow:'0 16px 48px rgba(0,0,0,.65)',
+        padding:'14px 14px 10px',userSelect:'none'
+      }
+    },
+      // month nav
+      e('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:10}},
+        e('button',{onClick:prevM,style:{width:26,height:26,border:'none',background:'none',cursor:'pointer',color:'var(--text3)',display:'flex',alignItems:'center',justifyContent:'center',borderRadius:6},
+          onMouseEnter:ev=>ev.currentTarget.style.background='var(--bg4)',
+          onMouseLeave:ev=>ev.currentTarget.style.background='none'},ChevL),
+        e('span',{
+          style:{fontSize:12,fontWeight:600,color:'var(--text0)',fontFamily:'Inter,sans-serif',letterSpacing:'.02em',cursor:'default'},
+        },MONTHS[nav.m]+' de '+nav.y),
+        e('button',{onClick:nextM,style:{width:26,height:26,border:'none',background:'none',cursor:'pointer',color:'var(--text3)',display:'flex',alignItems:'center',justifyContent:'center',borderRadius:6},
+          onMouseEnter:ev=>ev.currentTarget.style.background='var(--bg4)',
+          onMouseLeave:ev=>ev.currentTarget.style.background='none'},ChevR)
+      ),
+      // day-of-week header
+      e('div',{style:{display:'grid',gridTemplateColumns:'repeat(7,1fr)',marginBottom:3}},
+        DAYS_SHORT.map(d=>e('div',{key:d,style:{textAlign:'center',fontSize:9,fontWeight:600,color:'var(--text4)',fontFamily:'Inter,sans-serif',textTransform:'uppercase',letterSpacing:'.04em',padding:'1px 0 4px'}},d))
+      ),
+      // day cells
+      e('div',{style:{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:1}},
+        cells.map((d,i)=>{
+          if(!d)return e('div',{key:'e'+i,style:{height:28}});
+          const ds=`${nav.y}-${String(nav.m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+          const isSel=ds===value;
+          const isT=ds===todayStr;
+          const isPast=ds<todayStr;
+          const isWknd=new Date(nav.y,nav.m,d).getDay()===0||new Date(nav.y,nav.m,d).getDay()===6;
+          return e('button',{key:d,onClick:()=>selectDay(d),
+            style:{
+              height:28,width:'100%',border:'none',borderRadius:6,cursor:'pointer',
+              fontFamily:'JetBrains Mono,monospace',fontSize:11,fontWeight:isT?700:400,
+              background:isSel?'var(--accent)':isT?'var(--accent-bg)':'transparent',
+              color:isSel?'#15161b':isT?'var(--accent2)':isPast?'var(--text4)':isWknd?'var(--text3)':'var(--text1)',
+              outline:isT&&!isSel?'1px solid var(--accent-border)':'none',
+              outlineOffset:-1,
+              transition:'background .08s'
+            },
+            onMouseEnter:ev=>{if(!isSel)ev.currentTarget.style.background='var(--bg4)';},
+            onMouseLeave:ev=>{if(!isSel)ev.currentTarget.style.background=isT?'var(--accent-bg)':'transparent';}
+          },d);
+        })
+      ),
+      // footer
+      e('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:8,paddingTop:8,borderTop:'1px solid var(--border2)'}},
+        value
+          ?e('button',{onClick:()=>{onChange(null);setOpen(false);},
+              style:{fontSize:10,padding:'3px 8px',border:'1px solid var(--border3)',borderRadius:5,background:'transparent',color:'var(--text3)',cursor:'pointer',fontFamily:'Inter,sans-serif'},
+              onMouseEnter:ev=>{ev.currentTarget.style.color='var(--red)';ev.currentTarget.style.borderColor='var(--red)';},
+              onMouseLeave:ev=>{ev.currentTarget.style.color='var(--text3)';ev.currentTarget.style.borderColor='var(--border3)';}
+            },'Borrar')
+          :e('span',null),
+        e('button',{onClick:()=>{onChange(todayStr);setOpen(false);},
+          style:{fontSize:10,padding:'3px 9px',border:'none',borderRadius:5,background:'var(--accent-bg)',color:'var(--accent2)',cursor:'pointer',fontFamily:'Inter,sans-serif',fontWeight:500},
+          onMouseEnter:ev=>ev.currentTarget.style.background='var(--accent-border)',
+          onMouseLeave:ev=>ev.currentTarget.style.background='var(--accent-bg)'
+        },'Hoy')
+      )
+    )
+  );
+}
+
+// ── ComboView: Lista (izq fija) + Gantt (der scroll) ──
+function ComboView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,DAY_W,
+  phaseStatusPicker,setPhaseStatusPicker,updateStep,deleteStep,addStep,
+  newName,setNewName,newDate,setNewDate}){
+  const today=dayKey();
+  const toTs=d=>new Date(d+'T00:00:00').getTime();
+  const sortByDeadline=arr=>[...arr].sort((a,b)=>{if(!a.dueDate&&!b.dueDate)return 0;if(!a.dueDate)return 1;if(!b.dueDate)return -1;return a.dueDate<b.dueDate?-1:a.dueDate>b.dueDate?1:0;});
+  const visSteps=sortByDeadline(steps.filter(s=>showDoneSteps||!s.done));
+  const[phaseNoteOpen,setPhaseNoteOpen]=useState(null);
+  const[phaseNotePos,setPhaseNotePos]=useState({top:0,left:0});
+  const[phaseAssigneeOpen,setPhaseAssigneeOpen]=useState(null);
+  const[phaseAssigneePos,setPhaseAssigneePos]=useState({top:0,left:0});
+  const[stepRowCtx,setStepRowCtx]=useState(null);
+  const[expandedRows,setExpandedRows]=useState(()=>new Set());
+  const[newSubText,setNewSubText]=useState({}); // {stepId: string}
+  function toggleExpand(id){setExpandedRows(s=>{const n=new Set(s);n.has(id)?n.delete(id):n.add(id);return n;});}
+  function addSubtask(stepId){
+    const txt=(newSubText[stepId]||'').trim();
+    if(!txt)return;
+    const updated=steps.map(s=>s.id===stepId?{...s,subtasks:[...(s.subtasks||[]),{id:uid(),name:txt,done:false}]}:s);
+    commit(updated);
+    setNewSubText(p=>({...p,[stepId]:''}));
+  }
+  function toggleSubDone(stepId,subId){
+    commit(steps.map(s=>s.id===stepId?{...s,subtasks:(s.subtasks||[]).map(sub=>sub.id===subId?{...sub,done:!sub.done}:sub)}:s));
+  }
+  function deleteSubtask(stepId,subId){
+    commit(steps.map(s=>s.id===stepId?{...s,subtasks:(s.subtasks||[]).filter(sub=>sub.id!==subId)}:s));
+  }
+  useEffect(()=>{
+    if(!phaseNoteOpen)return;
+    const close=(ev)=>{if(!ev.target.closest('[data-pnote]'))setPhaseNoteOpen(null);};
+    setTimeout(()=>window.addEventListener('mousedown',close),0);
+    return()=>window.removeEventListener('mousedown',close);
+  },[phaseNoteOpen]);
+  useEffect(()=>{
+    if(!phaseAssigneeOpen)return;
+    const close=(ev)=>{if(!ev.target.closest('[data-passignee]'))setPhaseAssigneeOpen(null);};
+    setTimeout(()=>window.addEventListener('mousedown',close),0);
+    return()=>window.removeEventListener('mousedown',close);
+  },[phaseAssigneeOpen]);
+  useEffect(()=>{
+    if(!stepRowCtx)return;
+    const close=()=>setStepRowCtx(null);
+    setTimeout(()=>{window.addEventListener('mousedown',close);window.addEventListener('scroll',close,true);},0);
+    return()=>{window.removeEventListener('mousedown',close);window.removeEventListener('scroll',close,true);};
+  },[stepRowCtx]);
+
+  // ── Gantt date range ──
+  const DAY_MS=86400000;
+  const GW=DAY_W||28;
+  const allDates=[toTs(today)];
+  visSteps.forEach(s=>{if(s.startDate)allDates.push(toTs(s.startDate));if(s.dueDate)allDates.push(toTs(s.dueDate));});
+  const minTs=Math.min(...allDates)-3*DAY_MS;
+  const maxTs=Math.max(...allDates)+10*DAY_MS;
+  const numDays=Math.round((maxTs-minTs)/DAY_MS)+1;
+  const days=Array.from({length:numDays},(_,i)=>new Date(minTs+i*DAY_MS));
+  const dLeft=ds=>Math.round((toTs(ds)-minTs)/DAY_MS)*GW;
+  const dWidth=(s2,e2)=>Math.max(GW,Math.round((toTs(e2)-toTs(s2))/DAY_MS+1)*GW);
+  const todayPx=Math.round((toTs(today)-minTs)/DAY_MS)*GW+GW/2;
+  const totalW=numDays*GW;
+
+  // month groups
+  const monthGroups=[];
+  let cm=null,cs=0,cc=0;
+  days.forEach((d,i)=>{const mk=d.getFullYear()+'-'+d.getMonth();if(mk!==cm){if(cm!==null)monthGroups.push({label:days[cs].toLocaleDateString('es',{month:'short',year:'2-digit'}),start:cs,count:cc});cm=mk;cs=i;cc=1;}else cc++;});
+  if(cm!==null)monthGroups.push({label:days[cs].toLocaleDateString('es',{month:'short',year:'2-digit'}),start:cs,count:cc});
+
+  // bar color = label color (fallback to status color)
+  const LC_COLORS=['#7a6faa','#5a9e78','#c9a35c','#b85c5c','#4e7fa8','#b07a5a','#8a9e72','#a07890'];
+  function labelColor(lbl){if(!lbl)return null;let h=0;for(let i=0;i<lbl.length;i++)h=(h*31+lbl.charCodeAt(i))>>>0;return LC_COLORS[h%LC_COLORS.length];}
+  function stepStatus(s){if(s.done)return'done';if(s.dueDate&&s.dueDate<today)return'overdue';if(s.startDate&&s.startDate<=today)return'progress';return'todo';}
+  const STATUS_COLOR={done:'#5a9e78',overdue:'#b85c5c',progress:'#c9a35c',todo:'#7a6faa'};
+  function barColor(s){
+    if(labelColor(s.label))return labelColor(s.label);
+    const pssts=loadSubStatuses();
+    const psi=subStatusInfo(s.status||'todo',pssts);
+    return psi.color||STATUS_COLOR[stepStatus(s)];
+  }
+
+  const scrollRef=useRef(null);
+  useEffect(()=>{if(scrollRef.current)scrollRef.current.scrollLeft=Math.max(0,todayPx-160);},[]);
+
+  // pan con click+drag en el área vacía del gantt
+  const panRef=useRef(null);
+  function onGanttPanStart(ev){
+    if(drag)return; // no paner si hay drag de barra
+    panRef.current={startX:ev.clientX,scrollLeft:scrollRef.current?scrollRef.current.scrollLeft:0};
+  }
+  function onGanttPanMove(ev){
+    if(!panRef.current||drag)return;
+    const dx=ev.clientX-panRef.current.startX;
+    if(scrollRef.current)scrollRef.current.scrollLeft=panRef.current.scrollLeft-dx;
+  }
+  function onGanttPanEnd(){panRef.current=null;}
+
+  // ── drag de barras (igual que GanttView) ──
+  const[drag,setDrag]=useState(null);
+  function addDaysC(dateStr,n){const d=new Date(dateStr+'T00:00:00');d.setDate(d.getDate()+n);return d.toISOString().slice(0,10);}
+  function onGanttMouseMove(ev){
+    if(!drag)return;
+    const dx=ev.clientX-drag.startX;
+    const daysDelta=Math.round(dx/GW);
+    if(drag.mode==='move'){
+      const newStart=addDaysC(drag.origStart,daysDelta);
+      const dur=drag.origEnd&&drag.origStart?(toTs(drag.origEnd)-toTs(drag.origStart))/DAY_MS:0;
+      const newEnd=addDaysC(newStart,dur);
+      setDrag(d=>({...d,curStart:newStart,curEnd:newEnd}));
+    } else if(drag.mode==='start'){
+      const newStart=addDaysC(drag.origStart,daysDelta);
+      if(drag.origEnd&&newStart>drag.origEnd)return;
+      setDrag(d=>({...d,curStart:newStart}));
+    } else if(drag.mode==='end'){
+      const newEnd=addDaysC(drag.origEnd,daysDelta);
+      if(drag.origStart&&newEnd<drag.origStart)return;
+      setDrag(d=>({...d,curEnd:newEnd}));
+    }
+  }
+  function onGanttMouseUp(){
+    if(!drag)return;
+    const upd={};
+    if(drag.curStart)upd.startDate=drag.curStart;
+    if(drag.curEnd)upd.dueDate=drag.curEnd;
+    if(Object.keys(upd).length)updateStep(drag.id,upd);
+    setDrag(null);
+  }
+
+  const ROW_H=44;
+  const HDR_H=38;
+  const BDR='1px solid var(--border)';
+  const activeStep=steps.find(s=>!s.done);
+
+  return e('div',{style:{display:'flex',flexDirection:'column',flex:1,minHeight:0,overflow:'hidden'}},
+
+    // ── main split ──
+    e('div',{style:{display:'flex',flex:1,minHeight:0,overflow:'hidden'}},
+
+      // ══ LEFT: columna limpia ══
+      // ancho: 38px(dot) + nombre(flex) + 112px(fecha) + 28px(del) = ~380px mínimo, sin límite superior
+      e('div',{style:{width:'clamp(320px,38%,520px)',flexShrink:0,display:'flex',flexDirection:'column',borderRight:BDR,overflow:'hidden'}},
+
+        // header — dot(28) | Fase(flex) | Deadline(120)
+        e('div',{style:{height:HDR_H,flexShrink:0,display:'flex',alignItems:'center',borderBottom:BDR,padding:'0 14px 0 14px',gap:0,boxSizing:'border-box'}},
+          e('div',{style:{width:28,flexShrink:0}}),
+          e('span',{style:{flex:1,fontSize:9.5,fontWeight:700,textTransform:'uppercase',letterSpacing:'.05em',color:'var(--text4)',fontFamily:'Inter,sans-serif'}},'Fase'),
+          e('span',{style:{width:120,flexShrink:0,fontSize:9.5,fontWeight:700,textTransform:'uppercase',letterSpacing:'.05em',color:'var(--text4)',fontFamily:'Inter,sans-serif',textAlign:'right'}}, 'Deadline')
+        ),
+
+        // rows
+        e('div',{style:{overflowY:'auto',flex:1}},
+          visSteps.length===0&&e('div',{style:{padding:'20px 12px',color:'var(--text4)',fontSize:12,fontFamily:'Inter,sans-serif'}},'Sin fases. Agrégalas abajo.'),
+          visSteps.map(s=>{
+            const isActive=!!activeStep&&activeStep.id===s.id;
+            const psStatuses=loadSubStatuses();
+            const psSt=subStatusInfo(s.status||'todo',psStatuses);
+            const isOpen=phaseStatusPicker===s.id;
+            const isExpanded=expandedRows.has(s.id);
+            const subs=s.subtasks||[];
+            const dateColor=s.dueDate?(()=>{const d=s.dueDate,t=dayKey();return d<t?'var(--red,#e05555)':d===t?'var(--amber,#dba14a)':'var(--text2)'})():'var(--text4)';
+            return e('div',{
+              key:s.id,
+              className:'combo-row-wrap',
+              style:{borderBottom:BDR,background:isActive?'color-mix(in srgb, var(--accent2) 6%, transparent)':s.done?'rgba(255,255,255,.01)':'transparent'}
+            },
+            // ── fila principal ──
+            e('div',{
+              className:'combo-row',
+              onContextMenu:ev=>{
+                ev.preventDefault();ev.stopPropagation();
+                const vw=window.innerWidth,vh=window.innerHeight;
+                const MW=168,MH=110;
+                let left=ev.clientX,top=ev.clientY;
+                if(left+MW>vw-8)left=vw-MW-8;
+                if(top+MH>vh-8)top=vh-MH-8;
+                setStepRowCtx({id:s.id,top,left});
+              },
+              style:{
+                height:ROW_H,display:'flex',alignItems:'center',gap:0,
+                padding:'0 6px 0 14px',boxSizing:'border-box',
+                opacity:s.done?.6:1
+              }
+            },
+              // dot estado
+              e('div',{style:{width:28,flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',position:'relative'}},
+                e('button',{
+                  title:'Estado · clic para cambiar',
+                  onMouseDown:ev=>{ev.stopPropagation();ev.preventDefault();setPhaseStatusPicker(isOpen?null:s.id);},
+                  style:{width:14,height:14,borderRadius:'50%',border:'2px solid '+psSt.color,cursor:'pointer',padding:0,
+                    background:psSt.k==='done'?psSt.color:'transparent',
+                    display:'flex',alignItems:'center',justifyContent:'center',transition:'all .15s',flexShrink:0}
+                },
+                  psSt.k==='done'&&e('svg',{width:7,height:7,viewBox:'0 0 7 7',fill:'none'},
+                    e('polyline',{points:'1,3.5 2.8,5.5 6,1.5',stroke:'#fff',strokeWidth:1.4,strokeLinecap:'round',strokeLinejoin:'round'}))
+                ),
+                isOpen&&e('div',{onMouseDown:ev=>ev.stopPropagation(),
+                  style:{position:'absolute',left:0,top:'calc(100% + 5px)',zIndex:700,background:'var(--bg2)',border:'1px solid var(--border2)',borderRadius:'var(--r-md)',boxShadow:'0 8px 24px #0009',padding:4,minWidth:145}},
+                  psStatuses.map(st=>{const sc=subStatusColor(st.colorId);const isCur=(s.status||'todo')===st.k;
+                    return e('button',{key:st.k,onMouseDown:ev=>{ev.stopPropagation();updateStep(s.id,{status:st.k,done:st.k==='done'});setPhaseStatusPicker(null);},
+                      style:{display:'flex',alignItems:'center',gap:8,width:'100%',textAlign:'left',padding:'6px 9px',borderRadius:5,border:'none',background:isCur?'var(--bg4)':'transparent',cursor:'pointer',fontFamily:'Inter,sans-serif',fontSize:11,color:sc.color}},
+                      e('div',{style:{width:8,height:8,borderRadius:'50%',background:sc.color,flexShrink:0}}),st.label,
+                      isCur&&e('span',{style:{marginLeft:'auto',fontSize:10,opacity:.5}},'✓'));
+                  })
+                )
+              ),
+              // nombre (flex) + indicadores pasivos
+              e('div',{style:{flex:1,minWidth:0,display:'flex',alignItems:'center',gap:5,overflow:'hidden'}},
+                e('input',{
+                  value:s.name,
+                  onChange:ev=>updateStep(s.id,{name:ev.target.value}),
+                  style:{
+                    flex:1,minWidth:0,background:'transparent',border:'none',outline:'none',
+                    fontSize:12.5,fontFamily:'Inter,sans-serif',color:s.done?'var(--text3)':'var(--text1)',
+                    textDecoration:s.done?'line-through':'none',padding:0,
+                    overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'
+                  }
+                }),
+                // zona de click derecho + indicadores pasivos
+                e('div',{
+                  title:'Click derecho para opciones',
+                  onContextMenu:ev=>{
+                    ev.preventDefault();ev.stopPropagation();
+                    const vw=window.innerWidth,vh=window.innerHeight;
+                    const MW=168,MH=110;
+                    let left=ev.clientX,top=ev.clientY;
+                    if(left+MW>vw-8)left=vw-MW-8;
+                    if(top+MH>vh-8)top=vh-MH-8;
+                    setStepRowCtx({id:s.id,top,left});
+                  },
+                  className:'combo-ctx-chip',
+                  style:{display:'flex',alignItems:'center',gap:3,flexShrink:0,padding:'2px 5px',borderRadius:5,cursor:'context-menu',
+                    border:'1px solid var(--border)',background:'var(--bg3)',
+                    opacity:(s.note||s.assignee)?1:0,transition:'opacity .12s'}
+                },
+                  e('span',{style:{fontSize:9,color:'var(--text4)',lineHeight:1,userSelect:'none',fontFamily:'Inter,sans-serif'}},'···'),
+                  s.note&&e('span',{title:'Tiene nota',style:{fontSize:9,color:'var(--accent2)',lineHeight:1,fontFamily:'Inter,sans-serif',userSelect:'none'}},'✎'),
+                  s.assignee&&e('span',{title:'Delegado a '+s.assignee,style:{fontSize:9,color:'var(--text3)',lineHeight:1,fontFamily:'Inter,sans-serif',userSelect:'none'}},'◎')
+                )
+              ),
+              // fecha
+              e(ChronosDatePicker,{
+                value:s.dueDate||'',
+                onChange:v=>{if(v&&s.startDate&&v<s.startDate)updateStep(s.id,{dueDate:v,startDate:v});else updateStep(s.id,{dueDate:v||null});},
+                style:{width:120,flexShrink:0}
+              }),
+              // botón expandir subtareas
+              e('button',{
+                title:isExpanded?'Ocultar tareas':'Ver tareas'+(subs.length?' ('+subs.length+')':''),
+                onClick:ev=>{ev.stopPropagation();toggleExpand(s.id);},
+                className:'combo-expand-btn'+(isExpanded?' open':'')+(subs.length?' has-subs':''),
+                style:{width:22,height:22,flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',
+                  border:'none',background:'none',cursor:'pointer',borderRadius:4,padding:0,marginLeft:4,
+                  color:subs.length?'var(--accent2)':'var(--text4)',opacity:subs.length?1:0,transition:'opacity .15s,transform .15s'}
+              },
+                subs.length>0
+                  ?e('span',{style:{fontSize:10,fontFamily:'Inter,sans-serif',fontWeight:700,lineHeight:1,
+                      transform:isExpanded?'rotate(90deg)':'rotate(0deg)',display:'inline-block',transition:'transform .15s'}},'›')
+                  :e('span',{style:{fontSize:10,color:'var(--text4)',lineHeight:1}},'+')
+              )
+            ),
+            // ── bloque subtareas desplegable ──
+            isExpanded&&e('div',{style:{paddingLeft:42,paddingRight:14,paddingBottom:8,paddingTop:2}},
+              subs.map(sub=>e('div',{key:sub.id,
+                style:{display:'flex',alignItems:'center',gap:6,padding:'3px 0',minHeight:24}},
+                e('button',{
+                  onClick:()=>toggleSubDone(s.id,sub.id),
+                  title:sub.done?'Reabrir':'Marcar hecha',
+                  style:{width:12,height:12,borderRadius:'50%',border:'1.5px solid '+(sub.done?'var(--accent2)':'var(--border3)'),
+                    background:sub.done?'var(--accent2)':'transparent',flexShrink:0,padding:0,cursor:'pointer',
+                    display:'flex',alignItems:'center',justifyContent:'center',transition:'all .12s'}
+                },
+                  sub.done&&e('svg',{width:7,height:7,viewBox:'0 0 7 7',fill:'none'},
+                    e('polyline',{points:'1,3.5 2.8,5.5 6,1.5',stroke:'#fff',strokeWidth:1.5,strokeLinecap:'round',strokeLinejoin:'round'}))
+                ),
+                e('span',{
+                  style:{flex:1,fontSize:11.5,fontFamily:'Inter,sans-serif',
+                    color:sub.done?'var(--text4)':'var(--text1)',
+                    textDecoration:sub.done?'line-through':'none',lineHeight:1.3}
+                },sub.name),
+                e('button',{
+                  onClick:()=>deleteSubtask(s.id,sub.id),
+                  title:'Eliminar tarea',
+                  style:{width:16,height:16,border:'none',background:'none',cursor:'pointer',
+                    color:'var(--text4)',fontSize:12,padding:0,opacity:0,lineHeight:1,
+                    flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',
+                    borderRadius:3,transition:'opacity .12s'},
+                  className:'combo-sub-del'
+                },'×')
+              )),
+              // input nueva tarea
+              e('div',{style:{display:'flex',alignItems:'center',gap:6,marginTop:4}},
+                e('div',{style:{width:12,height:12,flexShrink:0}}),
+                e('input',{
+                  placeholder:'Nueva tarea…',
+                  value:newSubText[s.id]||'',
+                  onChange:ev=>setNewSubText(p=>({...p,[s.id]:ev.target.value})),
+                  onKeyDown:ev=>{
+                    if(ev.key==='Enter'){ev.preventDefault();addSubtask(s.id);}
+                    if(ev.key==='Escape')setExpandedRows(r=>{const n=new Set(r);n.delete(s.id);return n;});
+                  },
+                  style:{flex:1,background:'transparent',border:'none',borderBottom:'1px solid var(--border2)',
+                    outline:'none',fontSize:11.5,fontFamily:'Inter,sans-serif',color:'var(--text2)',
+                    padding:'2px 0',lineHeight:1.4}
+                })
+              )
+            )
+            );
+          }),
+
+          // fila agregar
+          e('div',{style:{display:'flex',alignItems:'center',padding:'6px 14px',gap:8,borderTop:BDR}},
+            e('div',{style:{width:28,flexShrink:0}}),
+            e('input',{
+              placeholder:'+ Agregar fase...',value:newName,
+              onChange:ev=>setNewName(ev.target.value),
+              onKeyDown:ev=>{if(ev.key==='Enter')addStep();},
+              style:{flex:1,background:'transparent',border:'none',outline:'none',fontSize:12,fontFamily:'Inter,sans-serif',color:'var(--text3)',padding:0}
+            }),
+            e(ChronosDatePicker,{value:newDate,onChange:v=>setNewDate(v||''),style:{width:120,flexShrink:0}}),
+            e('button',{className:'btn btn-primary',style:{fontSize:10,padding:'4px 10px',whiteSpace:'nowrap',flexShrink:0,marginLeft:8},onClick:addStep},'+ Agregar')
+          ),
+
+          // toggle completadas
+          doneCount>0&&e('div',{style:{padding:'5px 12px',borderTop:BDR}},
+            e('button',{onClick:()=>setShowDoneSteps(v=>!v),
+              style:{fontSize:10,padding:'2px 8px',border:'1px solid var(--border3)',borderRadius:10,background:'none',color:'var(--text4)',cursor:'pointer',fontFamily:'Inter,sans-serif'}},
+              showDoneSteps?'Ocultar completadas ('+doneCount+')':'Mostrar completadas ('+doneCount+')')
+          )
+        )
+      ),
+
+      // ── Menú contextual de fila ──
+      stepRowCtx&&e('div',{
+        className:'combo-ctx-menu',
+        style:{top:stepRowCtx.top,left:stepRowCtx.left},
+        onMouseDown:ev=>ev.stopPropagation()
+      },
+        e('button',{className:'combo-ctx-item',onClick:()=>{
+          const s=steps.find(x=>x.id===stepRowCtx.id);if(!s)return;
+          const PW=244,PH=140,vw=window.innerWidth,vh=window.innerHeight;
+          let left=stepRowCtx.left,top=stepRowCtx.top+28;
+          if(left+PW>vw-8)left=vw-PW-8;if(top+PH>vh-8)top=stepRowCtx.top-PH-4;
+          setPhaseNotePos({top,left});setPhaseNoteOpen(stepRowCtx.id);setStepRowCtx(null);
+        }},
+          e('span',{style:{fontSize:13,lineHeight:1}},'✎'),
+          e('span',{},(()=>{const s=steps.find(x=>x.id===stepRowCtx.id);return s&&s.note?'Editar nota':'Agregar nota';})())
+        ),
+        e('button',{className:'combo-ctx-item',onClick:()=>{
+          const PW=204,PH=90,vw=window.innerWidth,vh=window.innerHeight;
+          let left=stepRowCtx.left,top=stepRowCtx.top+28;
+          if(left+PW>vw-8)left=vw-PW-8;if(top+PH>vh-8)top=stepRowCtx.top-PH-4;
+          setPhaseAssigneePos({top,left});setPhaseAssigneeOpen(stepRowCtx.id);setStepRowCtx(null);
+        }},
+          e('span',{style:{fontSize:13,lineHeight:1}},'◎'),
+          e('span',{},(()=>{const s=steps.find(x=>x.id===stepRowCtx.id);return s&&s.assignee?'Cambiar asignado':'Asignar fase';})())
+        ),
+        e('div',{className:'combo-ctx-sep'}),
+        e('button',{className:'combo-ctx-item danger',onClick:()=>{deleteStep(stepRowCtx.id);setStepRowCtx(null);}},
+          e('span',{style:{fontSize:13,lineHeight:1}},'🗑'),
+          e('span',{},'Eliminar fase')
+        )
+      ),
+
+      // ── Popup nota (fixed, fuera del row) ──
+      phaseNoteOpen&&e('div',{
+        'data-pnote':true,onMouseDown:ev=>ev.stopPropagation(),onClick:ev=>ev.stopPropagation(),
+        style:{position:'fixed',zIndex:9999,top:phaseNotePos.top,left:phaseNotePos.left,background:'var(--bg2)',border:'1px solid var(--border2)',borderRadius:'var(--r-md)',boxShadow:'0 8px 28px #0009',padding:10,width:244}
+      },
+        e('textarea',{autoFocus:true,placeholder:'Nota rápida…',
+          value:(steps.find(x=>x.id===phaseNoteOpen)||{}).note||'',
+          onChange:ev=>updateStep(phaseNoteOpen,{note:ev.target.value||null}),
+          onKeyDown:ev=>{if(ev.key==='Escape')setPhaseNoteOpen(null);},
+          rows:3,style:{width:'100%',background:'var(--bg1)',border:'1px solid var(--border3)',borderRadius:6,padding:'7px 9px',fontSize:11.5,color:'var(--text0)',fontFamily:'Inter,sans-serif',resize:'vertical',outline:'none',boxSizing:'border-box',lineHeight:1.5}}),
+        e('div',{style:{display:'flex',justifyContent:'flex-end',marginTop:6,gap:6}},
+          (steps.find(x=>x.id===phaseNoteOpen)||{}).note&&e('button',{
+            onClick:()=>{updateStep(phaseNoteOpen,{note:null});setPhaseNoteOpen(null);},
+            style:{fontSize:10,padding:'3px 8px',border:'1px solid var(--border3)',borderRadius:5,background:'transparent',color:'var(--text3)',cursor:'pointer',fontFamily:'Inter,sans-serif'}
+          },'Borrar'),
+          e('button',{onClick:()=>setPhaseNoteOpen(null),style:{fontSize:10,padding:'3px 8px',border:'none',borderRadius:5,background:'var(--accent2)',color:'#1a0a02',cursor:'pointer',fontFamily:'Inter,sans-serif',fontWeight:600}},'Listo')
+        )
+      ),
+
+      // ── Popup asignado (fixed, fuera del row) ──
+      phaseAssigneeOpen&&e('div',{
+        'data-passignee':true,onMouseDown:ev=>ev.stopPropagation(),onClick:ev=>ev.stopPropagation(),
+        style:{position:'fixed',zIndex:9999,top:phaseAssigneePos.top,left:phaseAssigneePos.left,background:'var(--bg2)',border:'1px solid var(--border2)',borderRadius:'var(--r-md)',boxShadow:'0 8px 28px #0009',padding:10,width:204}
+      },
+        e('p',{style:{fontSize:10,color:'var(--text3)',margin:'0 0 6px',fontFamily:'Inter,sans-serif'}},'Delegado a'),
+        e('input',{autoFocus:true,placeholder:'Nombre…',
+          value:(steps.find(x=>x.id===phaseAssigneeOpen)||{}).assignee||'',
+          onChange:ev=>updateStep(phaseAssigneeOpen,{assignee:ev.target.value||null}),
+          onKeyDown:ev=>{if(ev.key==='Enter'||ev.key==='Escape')setPhaseAssigneeOpen(null);},
+          style:{width:'100%',background:'var(--bg1)',border:'1px solid var(--border3)',borderRadius:6,padding:'6px 9px',fontSize:12,color:'var(--text0)',fontFamily:'Inter,sans-serif',outline:'none',boxSizing:'border-box'}}),
+        (steps.find(x=>x.id===phaseAssigneeOpen)||{}).assignee&&e('button',{
+          onClick:()=>{updateStep(phaseAssigneeOpen,{assignee:null});setPhaseAssigneeOpen(null);},
+          style:{marginTop:6,fontSize:10,padding:'3px 8px',border:'1px solid var(--border3)',borderRadius:5,background:'transparent',color:'var(--text3)',cursor:'pointer',fontFamily:'Inter,sans-serif',width:'100%'}
+        },'Quitar')
+      ),
+
+      // ══ RIGHT: Gantt ══
+      e('div',{ref:scrollRef,className:'combo-gantt-scroll',style:{flex:1,overflowX:'auto',overflowY:'hidden',display:'flex',flexDirection:'column'}},
+        e('div',{style:{width:totalW,display:'flex',flexDirection:'column',minHeight:'100%',position:'relative'}},
+
+          // header (sticky)
+          e('div',{style:{height:HDR_H,flexShrink:0,position:'sticky',top:0,background:'var(--bg1)',zIndex:10,borderBottom:BDR}},
+            // month row
+            e('div',{style:{display:'flex',height:18,borderBottom:'1px solid var(--border3)'}},
+              monthGroups.map((mg,i)=>e('div',{key:i,style:{width:mg.count*GW,flexShrink:0,borderRight:'1px solid var(--border3)',display:'flex',alignItems:'center',paddingLeft:5,boxSizing:'border-box',overflow:'hidden'}},
+                e('span',{style:{fontSize:9.5,fontFamily:'Inter,sans-serif',fontWeight:700,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.04em',whiteSpace:'nowrap'}},mg.label)))
+            ),
+            // day numbers
+            e('div',{style:{display:'flex',height:18,position:'relative'}},
+              days.map((d,i)=>{
+                const isT=d.toISOString().slice(0,10)===today;
+                const isWknd=d.getDay()===0||d.getDay()===6;
+                return e('div',{key:i,style:{width:GW,flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',boxSizing:'border-box',borderRight:d.getDay()===1?'1px solid var(--border3)':'none',background:isT?'rgba(201,163,92,.12)':isWknd?'var(--bg2)':'transparent'}},
+                  e('span',{style:{fontSize:8.5,fontFamily:'Inter,sans-serif',color:isT?'#c9a35c':isWknd?'var(--text5,var(--text4))':'var(--text4)',fontWeight:isT?700:400}},d.getDate()));
+              }),
+              e('div',{style:{position:'absolute',left:todayPx,top:0,bottom:0,width:1.5,background:'#c9a35c',opacity:.6,pointerEvents:'none'}})
+            )
+          ),
+
+          // gantt rows + today line
+          e('div',{
+            style:{flex:1,position:'relative',cursor:drag?'grabbing':panRef.current?'grabbing':'grab'},
+            onMouseDown:ev=>{if(!drag)onGanttPanStart(ev);},
+            onMouseMove:ev=>{onGanttMouseMove(ev);if(!drag)onGanttPanMove(ev);},
+            onMouseUp:ev=>{onGanttMouseUp();onGanttPanEnd();},
+            onMouseLeave:ev=>{onGanttMouseUp();onGanttPanEnd();}
+          },
+            // fondo fin de semana
+            days.map((d,i)=>{const isWknd=d.getDay()===0||d.getDay()===6;return isWknd&&e('div',{key:'wk'+i,style:{position:'absolute',left:i*GW,top:0,bottom:0,width:GW,background:'var(--bg2)',opacity:.7,pointerEvents:'none',zIndex:0}});}),
+            // vertical grid (mondays)
+            days.map((d,i)=>d.getDay()===1&&e('div',{key:'g'+i,style:{position:'absolute',left:i*GW,top:0,bottom:0,width:1,background:'var(--border)',opacity:.4,pointerEvents:'none',zIndex:1}})),
+            // today line
+            e('div',{style:{position:'absolute',left:todayPx,top:0,bottom:0,width:1.5,background:'#c9a35c',opacity:.45,pointerEvents:'none',zIndex:3}}),
+
+            visSteps.map((s,ri)=>{
+              const bc=barColor(s);
+              const isDragging=drag&&drag.id===s.id;
+              const dispStart=isDragging?(drag.curStart||drag.origStart):(s.startDate||s.dueDate);
+              const dispEnd=isDragging?(drag.curEnd||drag.origEnd):(s.dueDate||s.startDate);
+              const hasBar=!!(dispStart&&dispEnd);
+              const bL=hasBar?dLeft(dispStart):0;
+              const bW=hasBar?dWidth(dispStart,dispEnd):0;
+              const isActive=!!activeStep&&activeStep.id===s.id;
+              return e('div',{key:s.id,style:{
+                height:ROW_H,borderBottom:BDR,position:'relative',boxSizing:'border-box',
+                background:isActive?'color-mix(in srgb, var(--accent2) 5%, transparent)':ri%2===1?'rgba(255,255,255,.015)':'transparent'
+              }},
+                hasBar&&e('div',{
+                  title:dispStart+' → '+dispEnd,
+                  onMouseDown:ev=>{if(ev.detail===2)return;ev.preventDefault();setDrag({id:s.id,mode:'move',startX:ev.clientX,origStart:s.startDate||s.dueDate,origEnd:s.dueDate||s.startDate,curStart:s.startDate||s.dueDate,curEnd:s.dueDate||s.startDate});},
+                  style:{position:'absolute',left:bL,width:bW,top:'50%',transform:'translateY(-50%)',height:22,borderRadius:5,
+                    background:bc,opacity:s.done?.45:1,zIndex:isDragging?5:2,
+                    display:'flex',alignItems:'center',paddingLeft:8,overflow:'visible',boxSizing:'border-box',
+                    cursor:isDragging?'grabbing':'grab',
+                    boxShadow:isDragging?'0 4px 16px rgba(0,0,0,.5)':'none',
+                    userSelect:'none'}
+                },
+                  // handle izquierdo (resize start)
+                  e('div',{
+                    style:{position:'absolute',left:0,top:0,bottom:0,width:7,cursor:'ew-resize',zIndex:3,borderRadius:'5px 0 0 5px'},
+                    onMouseDown:ev=>{ev.preventDefault();ev.stopPropagation();setDrag({id:s.id,mode:'start',startX:ev.clientX,origStart:s.startDate||s.dueDate,origEnd:s.dueDate||s.startDate,curStart:s.startDate||s.dueDate,curEnd:s.dueDate||s.startDate});}
+                  }),
+                  e('span',{style:{fontSize:10,fontFamily:'Inter,sans-serif',fontWeight:500,color:'#fff',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',lineHeight:1,textShadow:'0 1px 3px rgba(0,0,0,.5)',flex:1,pointerEvents:'none'}},s.name),
+                  // handle derecho (resize end)
+                  e('div',{
+                    style:{position:'absolute',right:0,top:0,bottom:0,width:7,cursor:'ew-resize',zIndex:3,borderRadius:'0 5px 5px 0'},
+                    onMouseDown:ev=>{ev.preventDefault();ev.stopPropagation();setDrag({id:s.id,mode:'end',startX:ev.clientX,origStart:s.startDate||s.dueDate,origEnd:s.dueDate||s.startDate,curStart:s.startDate||s.dueDate,curEnd:s.dueDate||s.startDate});}
+                  })
+                )
+              );
+            })
+          )
+        )
+      )
+    )
+  );
+}
+
 // ── GanttView: Gantt por proyecto con fases expandibles y subtareas arrastrables ──
 function GanttView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,DAY_W}){
   const GW=DAY_W||32;
@@ -6657,6 +7392,15 @@ function GanttView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
   // Etiquetas de status personalizadas
   const[customStatuses,setCustomStatuses]=useState(()=>loadSubStatuses());
   const[showStatusEditor,setShowStatusEditor]=useState(false);
+  // Edición inline de nombre de fase
+  const[editingName,setEditingName]=useState(null); // {id,value}
+  function startEditName(s,ev){ev.stopPropagation();setEditingName({id:s.id,value:s.name});}
+  function commitEditName(){
+    if(!editingName)return;
+    const val=editingName.value.trim();
+    if(val)commit(steps.map(s=>s.id===editingName.id?{...s,name:val}:s));
+    setEditingName(null);
+  }
 
   function setSubStatus(parentId,subId,statusKey){
     commit(steps.map(s=>{
@@ -6842,7 +7586,21 @@ function GanttView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
               e('span',{style:{fontSize:11,color:'var(--text4)',width:12,flexShrink:0,textAlign:'center'}},
                 s.dueDate&&hasSubs?(isExp?'▼':'▶'):''),
               e('div',{style:{width:7,height:7,borderRadius:'50%',flexShrink:0,background:overdue?'var(--red,#e05555)':s.done?'var(--text4)':'var(--accent2)'}}),
-              e('span',{style:{fontSize:11.5,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',flex:1,color:s.done?'var(--text4)':overdue?'var(--red,#e05555)':'var(--text0)',textDecoration:s.done?'line-through':''}},s.name),
+              editingName&&editingName.id===s.id
+                ?e('input',{
+                    autoFocus:true,
+                    value:editingName.value,
+                    onChange:ev=>setEditingName(prev=>({...prev,value:ev.target.value})),
+                    onBlur:commitEditName,
+                    onKeyDown:ev=>{if(ev.key==='Enter')commitEditName();if(ev.key==='Escape')setEditingName(null);},
+                    onClick:ev=>ev.stopPropagation(),
+                    style:{flex:1,fontSize:11.5,background:'var(--bg3)',border:'1px solid var(--accent)',borderRadius:3,padding:'1px 4px',color:'var(--text0)',fontFamily:'Inter,sans-serif',outline:'none',minWidth:0}
+                  })
+                :e('span',{
+                    title:'Doble clic para editar nombre',
+                    onDoubleClick:ev=>startEditName(s,ev),
+                    style:{fontSize:11.5,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',flex:1,color:s.done?'var(--text4)':overdue?'var(--red,#e05555)':'var(--text0)',textDecoration:s.done?'line-through':'',cursor:'text'}
+                  },s.name),
               s.dueDate&&hasSubs&&e('button',{
                 title:'Distribuir subtareas automáticamente en el rango de esta fase',
                 style:{fontSize:9,padding:'1px 4px',border:'1px solid var(--border3)',borderRadius:3,background:'var(--bg3)',color:'var(--text3)',cursor:'pointer',flexShrink:0},
@@ -6932,11 +7690,23 @@ function GanttView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
                 els.push(e('div',{
                   key:'bar-'+s.id,
                   style:{position:'absolute',top:rowTop+7,left:bl+2,width:bw-4,height:20,borderRadius:4,background:barColor,opacity:s.done?.5:1,cursor:'grab',display:'flex',alignItems:'center',padding:'0 6px',fontSize:10,color:'#fff',fontWeight:500,overflow:'hidden',whiteSpace:'nowrap',textOverflow:'ellipsis',boxShadow:'0 1px 3px rgba(0,0,0,.3)',zIndex:1},
-                  title:s.name+' · '+(s.startDate||s.dueDate)+' → '+s.dueDate,
-                  onMouseDown:ev=>{ev.preventDefault();setDrag({id:s.id,mode:'move',startX:ev.clientX,origStart:s.startDate||s.dueDate,origEnd:s.dueDate,curStart:s.startDate||s.dueDate,curEnd:s.dueDate});}
+                  title:s.name+' · '+(s.startDate||s.dueDate)+' → '+s.dueDate+' · Doble clic para editar nombre',
+                  onDoubleClick:ev=>{ev.preventDefault();startEditName(s,ev);},
+                  onMouseDown:ev=>{if(ev.detail===2)return;ev.preventDefault();setDrag({id:s.id,mode:'move',startX:ev.clientX,origStart:s.startDate||s.dueDate,origEnd:s.dueDate,curStart:s.startDate||s.dueDate,curEnd:s.dueDate});}
                 },
                   e('div',{style:{position:'absolute',left:0,top:0,bottom:0,width:6,cursor:'ew-resize',zIndex:2},onMouseDown:ev=>{ev.preventDefault();ev.stopPropagation();setDrag({id:s.id,mode:'start',startX:ev.clientX,origStart:s.startDate||s.dueDate,origEnd:s.dueDate,curStart:s.startDate||s.dueDate,curEnd:s.dueDate});}}),
-                  s.name,
+                  editingName&&editingName.id===s.id
+                    ?e('input',{
+                        autoFocus:true,
+                        value:editingName.value,
+                        onChange:ev=>setEditingName(prev=>({...prev,value:ev.target.value})),
+                        onBlur:commitEditName,
+                        onKeyDown:ev=>{if(ev.key==='Enter')commitEditName();if(ev.key==='Escape')setEditingName(null);},
+                        onClick:ev=>ev.stopPropagation(),
+                        onMouseDown:ev=>ev.stopPropagation(),
+                        style:{flex:1,background:'transparent',border:'none',borderBottom:'1px solid #fff',color:'#fff',fontFamily:'Inter,sans-serif',fontSize:10,fontWeight:500,outline:'none',padding:'0 2px',width:'calc(100% - 14px)',minWidth:0}
+                      })
+                    :s.name,
                   e('div',{style:{position:'absolute',right:0,top:0,bottom:0,width:6,cursor:'ew-resize',zIndex:2},onMouseDown:ev=>{ev.preventDefault();ev.stopPropagation();setDrag({id:s.id,mode:'end',startX:ev.clientX,origStart:s.startDate||s.dueDate,origEnd:s.dueDate,curStart:s.startDate||s.dueDate,curEnd:s.dueDate});}})
                 ));
               }
@@ -8235,6 +9005,10 @@ const DASH_ICON_PATHS={
   x:e=>[e('line',{x1:5,y1:5,x2:19,y2:19}),e('line',{x1:19,y1:5,x2:5,y2:19})],
   undo:e=>[e('path',{d:'M3 10h11a5 5 0 015 5v0a5 5 0 01-5 5H9'}),e('polyline',{points:'8 5 3 10 8 15'})],
   pin:e=>[e('path',{d:'M12 2l1.5 5.5L19 9l-4 4 1 6-4-3-4 3 1-6-4-4 5.5-1.5z'})],
+  // lápiz compacto para notas rápidas
+  pencilSm:e=>[e('path',{d:'M16 3.5a2.12 2.12 0 013 3L7.5 18 3 19l1-4.5L16 3.5z'}),e('line',{x1:14,y1:5.5,x2:18.5,y2:10})],
+  // personita para asignar
+  personSm:e=>[e('circle',{cx:12,cy:7.5,r:3.5}),e('path',{d:'M4.5 20c0-4.14 3.36-7.5 7.5-7.5s7.5 3.36 7.5 7.5'})],
 };
 function DashIcon({name,size=13,color='currentColor',fill='none'}){
   const draw=DASH_ICON_PATHS[name]||DASH_ICON_PATHS.target;
@@ -13845,17 +14619,21 @@ function TaskExperimentsPanel({task,onUpdateTask,pSystems}){
 // Este orden se guarda a nivel de plataforma: aplica por igual a proyectos y cuentas.
 // El primer elemento del orden es siempre la vista por defecto al abrir cualquier proyecto/cuenta.
 const VIEWTAB_ORDER_KEY='chronos_viewtab_order_v1';
-const VIEWTAB_DEFAULT_ORDER=['list','timeline','calendar','mindmap','board','notebook','experiments'];
+const VIEWTAB_DEFAULT_ORDER=['list','combo','timeline','calendar','mindmap','board','notebook','experiments'];
 function getViewTabOrder(){
   try{
     const raw=localStorage.getItem(VIEWTAB_ORDER_KEY);
     if(!raw)return VIEWTAB_DEFAULT_ORDER.slice();
     const parsed=JSON.parse(raw);
     if(!Array.isArray(parsed))return VIEWTAB_DEFAULT_ORDER.slice();
-    // aseguremos que cualquier vista nueva que no esté en el orden guardado se añada al final
-    const merged=parsed.filter(k=>VIEWTAB_DEFAULT_ORDER.includes(k));
-    VIEWTAB_DEFAULT_ORDER.forEach(k=>{if(!merged.includes(k))merged.push(k);});
-    return merged;
+    // Reconstruir desde DEFAULT para que vistas nuevas aparezcan en posición correcta;
+    // respetar el orden guardado entre las vistas que ya conocíamos
+    const known=parsed.filter(k=>VIEWTAB_DEFAULT_ORDER.includes(k));
+    // Si el orden guardado no tiene 'combo' (versión anterior), reconstruir desde DEFAULT
+    if(!known.includes('combo'))return VIEWTAB_DEFAULT_ORDER.slice();
+    // Si ya tiene 'combo', mantener el orden guardado + añadir cualquier novedad al final
+    VIEWTAB_DEFAULT_ORDER.forEach(k=>{if(!known.includes(k))known.push(k);});
+    return known;
   }catch(err){return VIEWTAB_DEFAULT_ORDER.slice();}
 }
 function setViewTabOrder(order){
@@ -13901,7 +14679,30 @@ function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask,templates,onAddTe
   const[selectedIds,setSelectedIds]=useState(()=>new Set());
   const[showDoneSteps,setShowDoneSteps]=useState(false);
   const[stepCtxMenu,setStepCtxMenu]=useState(null);
+  const[phaseStatusPicker,setPhaseStatusPicker]=useState(null); // stepId cuyo picker está abierto
+  const[phaseNoteOpen,setPhaseNoteOpen]=useState(null);
+  const[phaseNotePos,setPhaseNotePos]=useState({top:0,left:0});
+  const[phaseAssigneeOpen,setPhaseAssigneeOpen]=useState(null);
+  const[phaseAssigneePos,setPhaseAssigneePos]=useState({top:0,left:0});
   const[showMoreTabs,setShowMoreTabs]=useState(false);
+  useEffect(()=>{
+    if(!phaseNoteOpen)return;
+    const close=(ev)=>{if(!ev.target.closest('.phase-note-btn')&&!ev.target.closest('[data-pnote]'))setPhaseNoteOpen(null);};
+    setTimeout(()=>{window.addEventListener('mousedown',close);},0);
+    return()=>window.removeEventListener('mousedown',close);
+  },[phaseNoteOpen]);
+  useEffect(()=>{
+    if(!phaseAssigneeOpen)return;
+    const close=(ev)=>{if(!ev.target.closest('[data-passignee]'))setPhaseAssigneeOpen(null);};
+    setTimeout(()=>{window.addEventListener('mousedown',close);},0);
+    return()=>window.removeEventListener('mousedown',close);
+  },[phaseAssigneeOpen]);
+  useEffect(()=>{
+    if(!phaseStatusPicker)return;
+    const close=()=>setPhaseStatusPicker(null);
+    setTimeout(()=>{window.addEventListener('mousedown',close);},0);
+    return()=>window.removeEventListener('mousedown',close);
+  },[phaseStatusPicker]);
   useEffect(()=>{
     if(!stepCtxMenu)return;
     const close=()=>setStepCtxMenu(null);
@@ -14312,44 +15113,19 @@ function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask,templates,onAddTe
         (()=>{
           const TAB_DEFS={
             list:{title:'Lista',icon:e(DashIcon,{name:'list',size:13})},
+            combo:{title:'Lista + Timeline',icon:e(DashIcon,{name:'layers',size:13})},
             timeline:{title:'Línea de tiempo',icon:e(DashIcon,{name:'clock',size:13})},
-            calendar:{title:'Calendario',icon:e(DashIcon,{name:'calendar',size:13})},
+            calendar:{title:'Calendario',icon:e(DashIcon,{name:'calendarGrid',size:13})},
             mindmap:{title:'Mapa mental',icon:e(DashIcon,{name:'network',size:13})},
             board:{title:'Pizarra',icon:e(DashIcon,{name:'image',size:13})},
             notebook:{title:'Libreta',icon:e(DashIcon,{name:'note',size:13})},
             experiments:{title:'Experimentos',icon:e(SysMiniIcon,{name:'flask',size:13})}
           };
-          const PRIMARY=['list','timeline'];
-          const allKeys=tabOrder.filter(k=>k!=='experiments'||(pSystems||[]).length>0);
-          // Si la vista activa no está en los primarios, se muestra también
-          const visibleKeys=[...new Set([...PRIMARY,view])].filter(k=>allKeys.includes(k));
-          const hiddenKeys=allKeys.filter(k=>!visibleKeys.includes(k));
-          return[
-            ...visibleKeys.map(k=>{
-              const def=TAB_DEFS[k];if(!def)return null;
-              return e('button',{key:k,className:'vtab vtab-icon'+(view===k?' active':''),onClick:()=>setView(k),title:def.title},def.icon);
-            }),
-            hiddenKeys.length>0&&e('div',{key:'more',style:{position:'relative'}},
-              e('button',{
-                className:'vtab vtab-icon',
-                title:'Más vistas',
-                onClick:ev=>{ev.stopPropagation();setShowMoreTabs(v=>!v);}
-              },'···'),
-              showMoreTabs&&e('div',{
-                style:{position:'absolute',top:'100%',left:0,zIndex:300,background:'var(--bg2)',border:'1px solid var(--border2)',borderRadius:'var(--r-md)',padding:4,boxShadow:'0 8px 24px #0009',minWidth:140},
-                onMouseLeave:()=>setShowMoreTabs(false)
-              },
-                hiddenKeys.map(k=>{
-                  const def=TAB_DEFS[k];if(!def)return null;
-                  return e('button',{
-                    key:k,
-                    onClick:()=>{setView(k);setShowMoreTabs(false);},
-                    style:{display:'flex',alignItems:'center',gap:8,width:'100%',padding:'6px 10px',border:'none',borderRadius:5,background:view===k?'var(--bg4)':'transparent',color:view===k?'var(--text0)':'var(--text2)',fontSize:11,cursor:'pointer',fontFamily:'Inter,sans-serif'}
-                  },def.icon,e('span',null,def.title));
-                })
-              )
-            )
-          ];
+          const allKeys=tabOrder.filter(k=>TAB_DEFS[k]&&(k!=='experiments'||(pSystems||[]).length>0));
+          return allKeys.map(k=>{
+            const def=TAB_DEFS[k];if(!def)return null;
+            return e('button',{key:k,className:'vtab vtab-icon'+(view===k?' active':''),onClick:()=>setView(k),title:def.title},def.icon);
+          });
         })(),
         steps.some(s=>s.startDate&&s.dueDate)&&e('button',{className:'rec-trigger-btn',title:'Cambiar fecha de inicio y recalcular todas las fases',onClick:()=>setShowRecalc(true)},e(DashIcon,{name:'refresh',size:12}))
       ),
@@ -14359,7 +15135,7 @@ function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask,templates,onAddTe
           e('div',{className:'sheet-row sheet-hdr'},
             e('div',{className:'sheet-cell'},'Fase'),
             e('div',{className:'sheet-cell sheet-cell-date'},'Deadline'),
-            e('div',{className:'sheet-cell sheet-cell-status'},'')
+            e('div',{className:'sheet-cell sheet-cell-status',style:{fontSize:9.5,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.05em',fontWeight:600}},'Estado')
           ),
           steps.length===0&&e('div',{className:'empty',style:{padding:'16px 2px'}},'Sin fases aún. Agrega la primera abajo.'),
           steps.length>0&&!showDoneSteps&&steps.every(s=>s.done)&&e('div',{className:'empty',style:{padding:'16px 2px'}},'Todas las fases están completadas. Usa "Ver completados" para revisarlas.'),
@@ -14394,7 +15170,80 @@ function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask,templates,onAddTe
                   title:'Evento de automatización — se marca desde el Mapa de Sistemas',
                   style:{fontSize:11,color:'var(--accent2)',flexShrink:0}
                 },'⚙'),
-                (s.subtasks||[]).length>0&&e('span',{style:{fontSize:9.5,color:'var(--text4)',flexShrink:0},title:'Tareas dentro de esta fase — visibles en Mapa mental'},(s.subtasks||[]).length+' tareas')
+                (s.subtasks||[]).length>0&&e('span',{style:{fontSize:9.5,color:'var(--text4)',flexShrink:0},title:'Tareas dentro de esta fase — visibles en Mapa mental'},(s.subtasks||[]).length+' tareas'),
+                // Nota rápida
+                e('div',{style:{position:'relative',flexShrink:0}},
+                  e('button',{
+                    className:'phase-note-btn'+(s.note?' has-note':''),
+                    title:s.note?'Nota: '+s.note:'Agregar nota rápida',
+                    onClick:ev=>{ev.stopPropagation();setPhaseNoteOpen(phaseNoteOpen===s.id?null:s.id);},
+                    style:{background:'none',border:'none',cursor:'pointer',padding:'2px 3px',borderRadius:4,fontSize:12,opacity:s.note?1:0,color:s.note?'var(--accent2)':'var(--text4)',transition:'opacity .15s,color .15s',lineHeight:1}
+                  },'✎'),
+                  phaseNoteOpen===s.id&&e('div',{
+                    'data-pnote':true,
+                    onMouseDown:ev=>ev.stopPropagation(),
+                    onClick:ev=>ev.stopPropagation(),
+                    style:{position:'absolute',left:0,top:'calc(100% + 6px)',zIndex:650,background:'var(--bg2)',border:'1px solid var(--border2)',borderRadius:'var(--r-md)',boxShadow:'0 8px 28px #0009',padding:10,width:240}
+                  },
+                    e('textarea',{
+                      autoFocus:true,
+                      placeholder:'Nota rápida…',
+                      value:s.note||'',
+                      onChange:ev=>updateStep(s.id,{note:ev.target.value||null}),
+                      onKeyDown:ev=>{if(ev.key==='Escape')setPhaseNoteOpen(null);},
+                      rows:3,
+                      style:{width:'100%',background:'var(--bg1)',border:'1px solid var(--border3)',borderRadius:6,padding:'7px 9px',fontSize:11.5,color:'var(--text0)',fontFamily:'Inter,sans-serif',resize:'vertical',outline:'none',boxSizing:'border-box',lineHeight:1.5}
+                    }),
+                    e('div',{style:{display:'flex',justifyContent:'flex-end',marginTop:6,gap:6}},
+                      s.note&&e('button',{
+                        onClick:()=>{updateStep(s.id,{note:null});setPhaseNoteOpen(null);},
+                        style:{fontSize:10,padding:'3px 8px',border:'1px solid var(--border3)',borderRadius:5,background:'transparent',color:'var(--text3)',cursor:'pointer',fontFamily:'Inter,sans-serif'}
+                      },'Borrar'),
+                      e('button',{
+                        onClick:()=>setPhaseNoteOpen(null),
+                        style:{fontSize:10,padding:'3px 8px',border:'none',borderRadius:5,background:'var(--accent2)',color:'#1a0a02',cursor:'pointer',fontFamily:'Inter,sans-serif',fontWeight:600}
+                      },'Listo')
+                    )
+                  )
+                ),
+                // Delegado
+                e('div',{'data-passignee':true,style:{position:'relative',flexShrink:0}},
+                  s.assignee
+                    ?e('button',{
+                        title:'Delegado a '+s.assignee+' · clic para editar',
+                        onClick:ev=>{ev.stopPropagation();setPhaseAssigneeOpen(phaseAssigneeOpen===s.id?null:s.id);},
+                        style:{display:'flex',alignItems:'center',gap:4,padding:'2px 7px 2px 5px',border:'1px solid var(--border3)',borderRadius:10,background:'var(--bg3)',cursor:'pointer',fontFamily:'Inter,sans-serif',fontSize:10,color:'var(--text2)',transition:'all .15s',whiteSpace:'nowrap',maxWidth:100,overflow:'hidden',textOverflow:'ellipsis'}
+                      },
+                        e('span',{style:{fontSize:11,flexShrink:0}},'👤'),
+                        e('span',{style:{overflow:'hidden',textOverflow:'ellipsis'}},s.assignee)
+                      )
+                    :e('button',{
+                        className:'phase-assignee-btn',
+                        title:'Delegar fase',
+                        onClick:ev=>{ev.stopPropagation();setPhaseAssigneeOpen(phaseAssigneeOpen===s.id?null:s.id);},
+                        style:{background:'none',border:'none',cursor:'pointer',padding:'2px 3px',borderRadius:4,fontSize:12,opacity:0,color:'var(--text4)',transition:'opacity .15s',lineHeight:1}
+                      },'👤'),
+                  phaseAssigneeOpen===s.id&&e('div',{
+                    'data-passignee':true,
+                    onMouseDown:ev=>ev.stopPropagation(),
+                    onClick:ev=>ev.stopPropagation(),
+                    style:{position:'absolute',left:0,top:'calc(100% + 6px)',zIndex:651,background:'var(--bg2)',border:'1px solid var(--border2)',borderRadius:'var(--r-md)',boxShadow:'0 8px 28px #0009',padding:10,width:200}
+                  },
+                    e('p',{style:{fontSize:10,color:'var(--text3)',margin:'0 0 6px',fontFamily:'Inter,sans-serif'}},'Delegado a'),
+                    e('input',{
+                      autoFocus:true,
+                      placeholder:'Nombre de persona…',
+                      value:s.assignee||'',
+                      onChange:ev=>updateStep(s.id,{assignee:ev.target.value||null}),
+                      onKeyDown:ev=>{if(ev.key==='Enter'||ev.key==='Escape')setPhaseAssigneeOpen(null);},
+                      style:{width:'100%',background:'var(--bg1)',border:'1px solid var(--border3)',borderRadius:6,padding:'6px 9px',fontSize:12,color:'var(--text0)',fontFamily:'Inter,sans-serif',outline:'none',boxSizing:'border-box'}
+                    }),
+                    s.assignee&&e('button',{
+                      onClick:()=>{updateStep(s.id,{assignee:null});setPhaseAssigneeOpen(null);},
+                      style:{marginTop:6,fontSize:10,padding:'3px 8px',border:'1px solid var(--border3)',borderRadius:5,background:'transparent',color:'var(--text3)',cursor:'pointer',fontFamily:'Inter,sans-serif',width:'100%'}
+                    },'Quitar delegado')
+                  )
+                )
               ),
               e('div',{className:'sheet-cell sheet-cell-date'},
                 e('input',{
@@ -14414,8 +15263,41 @@ function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask,templates,onAddTe
                   }
                 })
               ),
-              e('div',{className:'sheet-cell sheet-cell-status sheet-row-actions',style:{display:'flex',alignItems:'center',gap:4}},
-                e('button',{className:'rem-del sheet-del-btn',onClick:()=>deleteStep(s.id),title:'Eliminar fase'},'✕')
+              e('div',{className:'sheet-cell sheet-cell-status',style:{display:'flex',alignItems:'center',gap:5,position:'relative'}},
+                (()=>{
+                  const psStatuses=loadSubStatuses();
+                  const psSt=subStatusInfo(s.status||'todo',psStatuses);
+                  const isPickerOpen=phaseStatusPicker===s.id;
+                  return e('div',{style:{position:'relative',flexShrink:0}},
+                    e('button',{
+                      title:'Estado de fase · clic para cambiar',
+                      onMouseDown:ev=>{ev.stopPropagation();ev.preventDefault();setPhaseStatusPicker(isPickerOpen?null:s.id);},
+                      style:{display:'flex',alignItems:'center',gap:5,padding:'3px 7px 3px 5px',border:'1px solid '+psSt.color,borderRadius:10,background:psSt.k==='done'?psSt.color:psSt.bg,cursor:'pointer',fontFamily:'Inter,sans-serif',fontSize:10,fontWeight:600,color:psSt.k==='done'?'#fff':psSt.color,transition:'all .15s',whiteSpace:'nowrap'}
+                    },
+                      e('div',{style:{width:6,height:6,borderRadius:'50%',background:psSt.k==='done'?'#fff':psSt.color,flexShrink:0}}),
+                      psSt.label
+                    ),
+                    isPickerOpen&&e('div',{
+                      onMouseDown:ev=>ev.stopPropagation(),
+                      style:{position:'absolute',right:0,top:'calc(100% + 4px)',zIndex:600,background:'var(--bg2)',border:'1px solid var(--border2)',borderRadius:'var(--r-md)',boxShadow:'0 8px 24px #0009',padding:4,minWidth:130}
+                    },
+                      psStatuses.map(st=>{
+                        const stCol=subStatusColor(st.colorId);
+                        const isCur=(s.status||'todo')===st.k;
+                        return e('button',{
+                          key:st.k,
+                          onMouseDown:ev=>{ev.stopPropagation();updateStep(s.id,{status:st.k,done:st.k==='done'});setPhaseStatusPicker(null);},
+                          style:{display:'flex',alignItems:'center',gap:7,width:'100%',textAlign:'left',padding:'5px 8px',borderRadius:5,border:'none',background:isCur?'var(--bg4)':'transparent',cursor:'pointer',fontFamily:'Inter,sans-serif',fontSize:11,color:stCol.color}
+                        },
+                          e('div',{style:{width:7,height:7,borderRadius:'50%',background:stCol.color,flexShrink:0}}),
+                          st.label,
+                          isCur&&e('span',{style:{marginLeft:'auto',fontSize:10,opacity:.5}},'✓')
+                        );
+                      })
+                    )
+                  );
+                })(),
+                e('button',{className:'rem-del sheet-del-btn',onClick:()=>deleteStep(s.id),title:'Eliminar fase',style:{marginLeft:'auto',flexShrink:0}},'✕')
               )
             );
           });})(),
@@ -14431,6 +15313,9 @@ function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask,templates,onAddTe
             )
           )
         ),
+        view==='combo'&&e(ComboView,{steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,DAY_W,
+          phaseStatusPicker,setPhaseStatusPicker,updateStep,deleteStep,addStep,
+          newName,setNewName,newDate,setNewDate}),
         view==='timeline'&&e(GanttView,{steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,DAY_W}),
         view==='calendar'&&e('div',{style:{padding:'0 8px',overflowY:'auto',flex:1}},
           e(CalendarView,{tasks:[task],project:{color:'var(--accent2)',id:task.projectId},onOpenSteps:null})
