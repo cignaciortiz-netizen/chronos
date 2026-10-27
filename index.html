@@ -11969,13 +11969,9 @@ function ProjectDashboard(props){
 
   const TABS=[
     {k:'resumen',label:'Resumen',icon:'home'},
-    {k:'tareas',label:'Tareas',icon:'check'},
     {k:'sistemas',label:'Sistemas',icon:'map'},
-    {k:'habitos',label:'Hábitos',icon:'habit'},
-    {k:'notas',label:'Notas',icon:'image'},
-    {k:'libreta',label:'Libreta de cuenta',icon:'note'},
-    {k:'tiempo',label:'Tiempo',icon:'clock'},
-    {k:'ajustes',label:'Ajustes',icon:'gear'},
+    {k:'libreta',label:'Libreta',icon:'note'},
+    // ocultos: tareas, habitos, notas, tiempo, ajustes
   ];
 
   return e('div',{className:'dashboard-view'},
@@ -12056,7 +12052,7 @@ function ProjectDashboard(props){
             e(EditableLabel,{value:labels.tareas,onSave:v=>renameLabel('tareas',v)}),
             e('button',{className:'ghost-btn',onClick:openAddTask,title:'Añadir '+taskNoun},'＋'),
             e(SortMenuButton,{value:sortModes.tareas,onChange:m=>setSortMode('tareas',m),title:'Ordenar tareas'}),
-            e('button',{className:'dash-panel-link',title:'Ver todas',onClick:()=>setTab('tareas')},e(DashIcon,{name:'chevR',size:13}))
+            null
           ),
           e('div',{className:'dash-panel-body'},
             pendingTasks.length===0&&e('div',{className:'empty'},'Sin tareas pendientes.'),
@@ -12069,7 +12065,7 @@ function ProjectDashboard(props){
             e(EditableLabel,{value:labels.habitos,onSave:v=>renameLabel('habitos',v)}),
             e('button',{className:'ghost-btn',onClick:()=>setHabitForm('new'),title:'Nuevo hábito'},'\uFF0B'),
             e(SortMenuButton,{value:sortModes.habitos,onChange:m=>setSortMode('habitos',m),title:'Ordenar hábitos'}),
-            e('button',{className:'dash-panel-link',title:'Ver todos',onClick:()=>setTab('habitos')},e(DashIcon,{name:'chevR',size:13}))
+            null
           ),
           e('div',{className:'dash-panel-body'},
             pHabits.length===0&&e('div',{className:'empty'},'Sin hábitos aún.'),
@@ -14619,7 +14615,7 @@ function TaskExperimentsPanel({task,onUpdateTask,pSystems}){
 // Este orden se guarda a nivel de plataforma: aplica por igual a proyectos y cuentas.
 // El primer elemento del orden es siempre la vista por defecto al abrir cualquier proyecto/cuenta.
 const VIEWTAB_ORDER_KEY='chronos_viewtab_order_v1';
-const VIEWTAB_DEFAULT_ORDER=['list','combo','timeline','calendar','mindmap','board','notebook','experiments'];
+const VIEWTAB_DEFAULT_ORDER=['combo','mindmap','board','notebook'];
 function getViewTabOrder(){
   try{
     const raw=localStorage.getItem(VIEWTAB_ORDER_KEY);
@@ -14629,11 +14625,11 @@ function getViewTabOrder(){
     // Reconstruir desde DEFAULT para que vistas nuevas aparezcan en posición correcta;
     // respetar el orden guardado entre las vistas que ya conocíamos
     const known=parsed.filter(k=>VIEWTAB_DEFAULT_ORDER.includes(k));
-    // Si el orden guardado no tiene 'combo' (versión anterior), reconstruir desde DEFAULT
-    if(!known.includes('combo'))return VIEWTAB_DEFAULT_ORDER.slice();
-    // Si ya tiene 'combo', mantener el orden guardado + añadir cualquier novedad al final
-    VIEWTAB_DEFAULT_ORDER.forEach(k=>{if(!known.includes(k))known.push(k);});
-    return known;
+    // Filtrar vistas eliminadas y reconstruir desde DEFAULT
+    const valid=known.filter(k=>VIEWTAB_DEFAULT_ORDER.includes(k));
+    if(!valid.length)return VIEWTAB_DEFAULT_ORDER.slice();
+    VIEWTAB_DEFAULT_ORDER.forEach(k=>{if(!valid.includes(k))valid.push(k);});
+    return valid;
   }catch(err){return VIEWTAB_DEFAULT_ORDER.slice();}
 }
 function setViewTabOrder(order){
@@ -14659,7 +14655,7 @@ function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask,templates,onAddTe
   const rowRefs=useRef({});
   const[dragFill,setDragFill]=useState(null); // {startIndex,startDate,endIndex,tipDate,tipX,tipY}
   const[tabOrder,setTabOrder]=useState(()=>getViewTabOrder()); // orden de los botones de vista, aplica a nivel de plataforma
-  const[view,setView]=useState(()=>getViewTabOrder()[0]); // 'list' | 'timeline' | 'mindmap' | 'board' | 'experiments' — la vista por defecto es siempre la primera del orden guardado
+  const[view,setView]=useState(()=>getViewTabOrder()[0]); // 'combo' | 'mindmap' | 'board' | 'notebook' — la vista por defecto es siempre la primera del orden guardado
   const[dragTab,setDragTab]=useState(null); // key del botón que se está arrastrando
   const[dragOverTab,setDragOverTab]=useState(null); // key del botón sobre el que se pasa el drag
   function moveTab(fromKey,toKey){
@@ -15044,36 +15040,6 @@ function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask,templates,onAddTe
   const fillLo=dragFill?Math.min(dragFill.startIndex,dragFill.endIndex):null;
   const fillHi=dragFill?Math.max(dragFill.startIndex,dragFill.endIndex):null;
 
-  // Timeline geometry, only computed when needed
-  let tl=null;
-  if(view==='timeline'){
-    const toTs=d=>new Date(d+'T00:00:00').getTime();
-    const today=dayKey();
-    // Las fases ya completadas se archivan de la línea de tiempo (no suman
-    // desorden); "Ver completados" en la barra superior las vuelve a mostrar.
-    const dated=steps.filter(s=>s.dueDate&&(showDoneSteps||!s.done));
-    const allTs=dated.flatMap(s=>[toTs(s.startDate||s.dueDate),toTs(s.dueDate)]).concat([toTs(today)]);
-    const minTs=Math.min(...allTs)-2*86400000;
-    const maxTs=Math.max(...allTs)+5*86400000;
-    const numDays=Math.round((maxTs-minTs)/86400000)+1;
-    const dayIdx=dateStr=>Math.round((toTs(dateStr)-minTs)/86400000);
-    const days=Array.from({length:numDays},(_,i)=>new Date(minTs+i*86400000));
-    // Empaquetado en carriles: las fases que NO se superponen en el tiempo van
-    // "de corrido" en el mismo carril (una al lado de la otra); solo se abre
-    // un carril nuevo hacia abajo cuando dos fases sí se cruzan en fechas.
-    const sorted=dated.slice().sort((a,b)=>toTs(a.startDate||a.dueDate)-toTs(b.startDate||b.dueDate));
-    const laneEnds=[];
-    const rows=sorted.map(s=>{
-      const startTs=toTs(s.startDate||s.dueDate),endTs=toTs(s.dueDate);
-      let lane=laneEnds.findIndex(endTsLane=>startTs>endTsLane);
-      if(lane===-1){lane=laneEnds.length;laneEnds.push(endTs);}
-      else laneEnds[lane]=endTs;
-      return{...s,_lane:lane};
-    });
-    const laneCount=Math.max(1,laneEnds.length);
-    tl={today,dated,minTs,numDays,dayIdx,days,rows,laneCount};
-  }
-
   return e('div',{className:'overlay',onClick:ev=>{if(ev.target===ev.currentTarget)onClose();}},
     e('div',{className:'modal',style:{width:'min(1440px,96vw)',maxWidth:'96vw',height:'92vh',maxHeight:'92vh'}},
       e('div',{className:'modal-head'},
@@ -15112,16 +15078,12 @@ function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask,templates,onAddTe
       e('div',{className:'view-tabs'},
         (()=>{
           const TAB_DEFS={
-            list:{title:'Lista',icon:e(DashIcon,{name:'list',size:13})},
             combo:{title:'Lista + Timeline',icon:e(DashIcon,{name:'layers',size:13})},
-            timeline:{title:'Línea de tiempo',icon:e(DashIcon,{name:'clock',size:13})},
-            calendar:{title:'Calendario',icon:e(DashIcon,{name:'calendarGrid',size:13})},
             mindmap:{title:'Mapa mental',icon:e(DashIcon,{name:'network',size:13})},
             board:{title:'Pizarra',icon:e(DashIcon,{name:'image',size:13})},
-            notebook:{title:'Libreta',icon:e(DashIcon,{name:'note',size:13})},
-            experiments:{title:'Experimentos',icon:e(SysMiniIcon,{name:'flask',size:13})}
+            notebook:{title:'Libreta',icon:e(DashIcon,{name:'note',size:13})}
           };
-          const allKeys=tabOrder.filter(k=>TAB_DEFS[k]&&(k!=='experiments'||(pSystems||[]).length>0));
+          const allKeys=tabOrder.filter(k=>TAB_DEFS[k]);
           return allKeys.map(k=>{
             const def=TAB_DEFS[k];if(!def)return null;
             return e('button',{key:k,className:'vtab vtab-icon'+(view===k?' active':''),onClick:()=>setView(k),title:def.title},def.icon);
@@ -15131,195 +15093,9 @@ function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask,templates,onAddTe
       ),
 
       e('div',{className:'modal-body',style:{flex:1,minHeight:0}},
-        view==='list'&&e('div',{className:'sheet',style:dragFill?{userSelect:'none'}:undefined},
-          e('div',{className:'sheet-row sheet-hdr'},
-            e('div',{className:'sheet-cell'},'Fase'),
-            e('div',{className:'sheet-cell sheet-cell-date'},'Deadline'),
-            e('div',{className:'sheet-cell sheet-cell-status',style:{fontSize:9.5,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.05em',fontWeight:600}},'Estado')
-          ),
-          steps.length===0&&e('div',{className:'empty',style:{padding:'16px 2px'}},'Sin fases aún. Agrega la primera abajo.'),
-          steps.length>0&&!showDoneSteps&&steps.every(s=>s.done)&&e('div',{className:'empty',style:{padding:'16px 2px'}},'Todas las fases están completadas. Usa "Ver completados" para revisarlas.'),
-          (()=>{ // fase activa = la primera fase sin completar, en el orden de la lista
-            const sortByDeadline=(arr)=>[...arr].sort((a,b)=>{
-              if(!a.dueDate&&!b.dueDate)return 0;
-              if(!a.dueDate)return 1;
-              if(!b.dueDate)return -1;
-              return a.dueDate<b.dueDate?-1:a.dueDate>b.dueDate?1:0;
-            });
-            const activeStep=steps.find(s=>!s.done);
-            return sortByDeadline(steps.filter(s=>showDoneSteps||!s.done)).map(s=>{
-            const idx=steps.indexOf(s);
-            const inFillRange=dragFill&&idx>=fillLo&&idx<=fillHi;
-            const today=dayKey();
-            const isActivePhase=!!activeStep&&activeStep.id===s.id;
-            return e('div',{
-              key:s.id,
-              ref:el=>{rowRefs.current[idx]=el;},
-              className:'sheet-row'+(s.done?' done':'')+(inFillRange?' fill-range':'')+(isActivePhase?' active-phase-row':''),
-              style:isActivePhase?{background:'color-mix(in srgb, var(--accent2) 7%, transparent)'}:undefined,
-              onContextMenu:ev=>{ev.preventDefault();ev.stopPropagation();playUI('click');setStepCtxMenu({x:ev.clientX,y:ev.clientY,stepId:s.id});}
-            },
-              e('div',{className:'sheet-cell',style:{display:'flex',alignItems:'center',gap:7}},
-                e('button',{
-                  className:'step-done-toggle'+(s.done?' on':''),
-                  title:s.done?'Fase completada · clic para reabrir':'Marcar fase completa',
-                  onClick:()=>updateStep(s.id,{done:!s.done})
-                },s.done?'✓':''),
-                e('input',{className:'sheet-input sheet-input-name',value:s.name,onChange:ev=>updateStep(s.id,{name:ev.target.value})}),
-                s.automation&&e('span',{
-                  title:'Evento de automatización — se marca desde el Mapa de Sistemas',
-                  style:{fontSize:11,color:'var(--accent2)',flexShrink:0}
-                },'⚙'),
-                (s.subtasks||[]).length>0&&e('span',{style:{fontSize:9.5,color:'var(--text4)',flexShrink:0},title:'Tareas dentro de esta fase — visibles en Mapa mental'},(s.subtasks||[]).length+' tareas'),
-                // Nota rápida
-                e('div',{style:{position:'relative',flexShrink:0}},
-                  e('button',{
-                    className:'phase-note-btn'+(s.note?' has-note':''),
-                    title:s.note?'Nota: '+s.note:'Agregar nota rápida',
-                    onClick:ev=>{ev.stopPropagation();setPhaseNoteOpen(phaseNoteOpen===s.id?null:s.id);},
-                    style:{background:'none',border:'none',cursor:'pointer',padding:'2px 3px',borderRadius:4,fontSize:12,opacity:s.note?1:0,color:s.note?'var(--accent2)':'var(--text4)',transition:'opacity .15s,color .15s',lineHeight:1}
-                  },'✎'),
-                  phaseNoteOpen===s.id&&e('div',{
-                    'data-pnote':true,
-                    onMouseDown:ev=>ev.stopPropagation(),
-                    onClick:ev=>ev.stopPropagation(),
-                    style:{position:'absolute',left:0,top:'calc(100% + 6px)',zIndex:650,background:'var(--bg2)',border:'1px solid var(--border2)',borderRadius:'var(--r-md)',boxShadow:'0 8px 28px #0009',padding:10,width:240}
-                  },
-                    e('textarea',{
-                      autoFocus:true,
-                      placeholder:'Nota rápida…',
-                      value:s.note||'',
-                      onChange:ev=>updateStep(s.id,{note:ev.target.value||null}),
-                      onKeyDown:ev=>{if(ev.key==='Escape')setPhaseNoteOpen(null);},
-                      rows:3,
-                      style:{width:'100%',background:'var(--bg1)',border:'1px solid var(--border3)',borderRadius:6,padding:'7px 9px',fontSize:11.5,color:'var(--text0)',fontFamily:'Inter,sans-serif',resize:'vertical',outline:'none',boxSizing:'border-box',lineHeight:1.5}
-                    }),
-                    e('div',{style:{display:'flex',justifyContent:'flex-end',marginTop:6,gap:6}},
-                      s.note&&e('button',{
-                        onClick:()=>{updateStep(s.id,{note:null});setPhaseNoteOpen(null);},
-                        style:{fontSize:10,padding:'3px 8px',border:'1px solid var(--border3)',borderRadius:5,background:'transparent',color:'var(--text3)',cursor:'pointer',fontFamily:'Inter,sans-serif'}
-                      },'Borrar'),
-                      e('button',{
-                        onClick:()=>setPhaseNoteOpen(null),
-                        style:{fontSize:10,padding:'3px 8px',border:'none',borderRadius:5,background:'var(--accent2)',color:'#1a0a02',cursor:'pointer',fontFamily:'Inter,sans-serif',fontWeight:600}
-                      },'Listo')
-                    )
-                  )
-                ),
-                // Delegado
-                e('div',{'data-passignee':true,style:{position:'relative',flexShrink:0}},
-                  s.assignee
-                    ?e('button',{
-                        title:'Delegado a '+s.assignee+' · clic para editar',
-                        onClick:ev=>{ev.stopPropagation();setPhaseAssigneeOpen(phaseAssigneeOpen===s.id?null:s.id);},
-                        style:{display:'flex',alignItems:'center',gap:4,padding:'2px 7px 2px 5px',border:'1px solid var(--border3)',borderRadius:10,background:'var(--bg3)',cursor:'pointer',fontFamily:'Inter,sans-serif',fontSize:10,color:'var(--text2)',transition:'all .15s',whiteSpace:'nowrap',maxWidth:100,overflow:'hidden',textOverflow:'ellipsis'}
-                      },
-                        e('span',{style:{fontSize:11,flexShrink:0}},'👤'),
-                        e('span',{style:{overflow:'hidden',textOverflow:'ellipsis'}},s.assignee)
-                      )
-                    :e('button',{
-                        className:'phase-assignee-btn',
-                        title:'Delegar fase',
-                        onClick:ev=>{ev.stopPropagation();setPhaseAssigneeOpen(phaseAssigneeOpen===s.id?null:s.id);},
-                        style:{background:'none',border:'none',cursor:'pointer',padding:'2px 3px',borderRadius:4,fontSize:12,opacity:0,color:'var(--text4)',transition:'opacity .15s',lineHeight:1}
-                      },'👤'),
-                  phaseAssigneeOpen===s.id&&e('div',{
-                    'data-passignee':true,
-                    onMouseDown:ev=>ev.stopPropagation(),
-                    onClick:ev=>ev.stopPropagation(),
-                    style:{position:'absolute',left:0,top:'calc(100% + 6px)',zIndex:651,background:'var(--bg2)',border:'1px solid var(--border2)',borderRadius:'var(--r-md)',boxShadow:'0 8px 28px #0009',padding:10,width:200}
-                  },
-                    e('p',{style:{fontSize:10,color:'var(--text3)',margin:'0 0 6px',fontFamily:'Inter,sans-serif'}},'Delegado a'),
-                    e('input',{
-                      autoFocus:true,
-                      placeholder:'Nombre de persona…',
-                      value:s.assignee||'',
-                      onChange:ev=>updateStep(s.id,{assignee:ev.target.value||null}),
-                      onKeyDown:ev=>{if(ev.key==='Enter'||ev.key==='Escape')setPhaseAssigneeOpen(null);},
-                      style:{width:'100%',background:'var(--bg1)',border:'1px solid var(--border3)',borderRadius:6,padding:'6px 9px',fontSize:12,color:'var(--text0)',fontFamily:'Inter,sans-serif',outline:'none',boxSizing:'border-box'}
-                    }),
-                    s.assignee&&e('button',{
-                      onClick:()=>{updateStep(s.id,{assignee:null});setPhaseAssigneeOpen(null);},
-                      style:{marginTop:6,fontSize:10,padding:'3px 8px',border:'1px solid var(--border3)',borderRadius:5,background:'transparent',color:'var(--text3)',cursor:'pointer',fontFamily:'Inter,sans-serif',width:'100%'}
-                    },'Quitar delegado')
-                  )
-                )
-              ),
-              e('div',{className:'sheet-cell sheet-cell-date'},
-                e('input',{
-                  type:'date',
-                  value:s.dueDate||'',
-                  title:'Deadline de la fase',
-                  onChange:ev=>{
-                    const v=ev.target.value||null;
-                    if(v&&s.startDate&&v<s.startDate) updateStep(s.id,{dueDate:v,startDate:v});
-                    else updateStep(s.id,{dueDate:v});
-                  },
-                  style:{
-                    background:'transparent',border:'none',outline:'none',
-                    fontSize:11.5,fontFamily:'Inter,sans-serif',cursor:'pointer',
-                    color:s.dueDate?(()=>{const d=s.dueDate,t=dayKey();return d<t?'var(--red,#e05555)':d===t?'var(--amber,#dba14a)':'var(--text2)'})():'var(--text4)',
-                    colorScheme:'dark',width:'100%',padding:0
-                  }
-                })
-              ),
-              e('div',{className:'sheet-cell sheet-cell-status',style:{display:'flex',alignItems:'center',gap:5,position:'relative'}},
-                (()=>{
-                  const psStatuses=loadSubStatuses();
-                  const psSt=subStatusInfo(s.status||'todo',psStatuses);
-                  const isPickerOpen=phaseStatusPicker===s.id;
-                  return e('div',{style:{position:'relative',flexShrink:0}},
-                    e('button',{
-                      title:'Estado de fase · clic para cambiar',
-                      onMouseDown:ev=>{ev.stopPropagation();ev.preventDefault();setPhaseStatusPicker(isPickerOpen?null:s.id);},
-                      style:{display:'flex',alignItems:'center',gap:5,padding:'3px 7px 3px 5px',border:'1px solid '+psSt.color,borderRadius:10,background:psSt.k==='done'?psSt.color:psSt.bg,cursor:'pointer',fontFamily:'Inter,sans-serif',fontSize:10,fontWeight:600,color:psSt.k==='done'?'#fff':psSt.color,transition:'all .15s',whiteSpace:'nowrap'}
-                    },
-                      e('div',{style:{width:6,height:6,borderRadius:'50%',background:psSt.k==='done'?'#fff':psSt.color,flexShrink:0}}),
-                      psSt.label
-                    ),
-                    isPickerOpen&&e('div',{
-                      onMouseDown:ev=>ev.stopPropagation(),
-                      style:{position:'absolute',right:0,top:'calc(100% + 4px)',zIndex:600,background:'var(--bg2)',border:'1px solid var(--border2)',borderRadius:'var(--r-md)',boxShadow:'0 8px 24px #0009',padding:4,minWidth:130}
-                    },
-                      psStatuses.map(st=>{
-                        const stCol=subStatusColor(st.colorId);
-                        const isCur=(s.status||'todo')===st.k;
-                        return e('button',{
-                          key:st.k,
-                          onMouseDown:ev=>{ev.stopPropagation();updateStep(s.id,{status:st.k,done:st.k==='done'});setPhaseStatusPicker(null);},
-                          style:{display:'flex',alignItems:'center',gap:7,width:'100%',textAlign:'left',padding:'5px 8px',borderRadius:5,border:'none',background:isCur?'var(--bg4)':'transparent',cursor:'pointer',fontFamily:'Inter,sans-serif',fontSize:11,color:stCol.color}
-                        },
-                          e('div',{style:{width:7,height:7,borderRadius:'50%',background:stCol.color,flexShrink:0}}),
-                          st.label,
-                          isCur&&e('span',{style:{marginLeft:'auto',fontSize:10,opacity:.5}},'✓')
-                        );
-                      })
-                    )
-                  );
-                })(),
-                e('button',{className:'rem-del sheet-del-btn',onClick:()=>deleteStep(s.id),title:'Eliminar fase',style:{marginLeft:'auto',flexShrink:0}},'✕')
-              )
-            );
-          });})(),
-          e('div',{className:'sheet-row sheet-add-row'},
-            e('div',{className:'sheet-cell'},
-              e('input',{className:'sheet-input sheet-input-name',placeholder:'+ Agregar fase...',value:newName,onChange:ev=>setNewName(ev.target.value),onKeyDown:ev=>{if(ev.key==='Enter')addStep();}})
-            ),
-            e('div',{className:'sheet-cell sheet-cell-date'},
-              e('input',{className:'sheet-input sheet-input-date',type:'date',style:{width:'100%'},value:newDate,onChange:ev=>setNewDate(ev.target.value),title:'Deadline (opcional)'})
-            ),
-            e('div',{className:'sheet-cell sheet-cell-status'},
-              e('button',{className:'btn btn-primary',style:{fontSize:11,padding:'5px 14px',width:'100%'},onClick:addStep},'Agregar')
-            )
-          )
-        ),
         view==='combo'&&e(ComboView,{steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,DAY_W,
           phaseStatusPicker,setPhaseStatusPicker,updateStep,deleteStep,addStep,
           newName,setNewName,newDate,setNewDate}),
-        view==='timeline'&&e(GanttView,{steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,DAY_W}),
-        view==='calendar'&&e('div',{style:{padding:'0 8px',overflowY:'auto',flex:1}},
-          e(CalendarView,{tasks:[task],project:{color:'var(--accent2)',id:task.projectId},onOpenSteps:null})
-        ),
         view==='mindmap'&&e('div',{className:'mm-wrap'},
           steps.length===0&&e('div',{className:'empty',style:{padding:'20px 2px'}},'Sin fases aún. Agrégalas en la vista Lista.'),
           steps.length>0&&(()=>{
@@ -15453,8 +15229,7 @@ function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask,templates,onAddTe
           })()
         ),
         view==='board'&&e(TaskBoardPanel,{task,onUpdateTask}),
-        view==='notebook'&&e(TaskNotebookPanel,{task,onUpdateTask}),
-        view==='experiments'&&e(TaskExperimentsPanel,{task,onUpdateTask,pSystems})
+        view==='notebook'&&e(TaskNotebookPanel,{task,onUpdateTask})
       ),
       e('div',{className:'modal-foot'},
         e('button',{className:'btn',onClick:onClose},'Cerrar')
