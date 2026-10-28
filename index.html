@@ -8087,7 +8087,16 @@ function GanttView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
                   title:sst.label+' · clic para cambiar estado',
                   style:{width:13,height:13,borderRadius:'50%',background:sst.k==='done'?sst.color:sst.bg,border:'2px solid '+sst.color,cursor:'pointer',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',transition:'all .15s'}
                 },sst.k==='done'&&e('div',{style:{width:5,height:5,borderRadius:'50%',background:'#fff'}})),
-                e('span',{style:{fontSize:10.5,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',flex:1,color:sst.k==='done'?'var(--text4)':'var(--text1)',textDecoration:sst.k==='done'?'line-through':''}},cleanMd(sub.name)),
+                e('input',{
+                  value:sub.name,
+                  onChange:ev=>{ev.stopPropagation();updateSubName(s.id,sub.id,ev.target.value);},
+                  onClick:ev=>ev.stopPropagation(),
+                  style:{flex:1,minWidth:0,background:'transparent',border:'none',outline:'none',
+                    fontSize:10.5,fontFamily:'Inter,sans-serif',
+                    color:sst.k==='done'?'var(--text4)':'var(--text1)',
+                    textDecoration:sst.k==='done'?'line-through':'none',
+                    overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',padding:0,cursor:'text'}
+                }),
                 // Fecha subtarea
                 e('input',{
                   type:'date',
@@ -8165,9 +8174,25 @@ function GanttView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
             const els=[];
             visSteps.forEach(s=>{
               const rowTop=top;
-              const shownStart=drag&&drag.id===s.id?(drag.curStart||drag.origStart):(s.startDate||s.dueDate);
-              const shownEnd=drag&&drag.id===s.id?(drag.curEnd||drag.origEnd):s.dueDate;
-              const overdue=!s.done&&s.dueDate&&s.dueDate<today;
+              // Rango de subtareas: mínimo startDate|dueDate y máximo dueDate entre todas las subs con fecha
+              const subDates=(s.subtasks||[]).flatMap(sub=>[sub.startDate,sub.dueDate].filter(Boolean));
+              const subMinDate=subDates.length?subDates.reduce((a,b)=>a<b?a:b):null;
+              const subMaxDate=subDates.length?subDates.reduce((a,b)=>a>b?a:b):null;
+              // Start/end efectivos: si la fase no tiene fechas propias, se toman de subtareas
+              const effStart=s.startDate||(s.dueDate?null:subMinDate)||s.dueDate||subMinDate;
+              const effEnd=s.dueDate||subMaxDate;
+              // Si la fase tiene fechas propias pero subtareas salen del rango, extendemos
+              const autoStart=effStart&&subMinDate&&subMinDate<effStart?subMinDate:effStart;
+              const autoEnd=effEnd&&subMaxDate&&subMaxDate>effEnd?subMaxDate:effEnd;
+              const shownStart=drag&&drag.id===s.id?(drag.curStart||drag.origStart):(autoStart||autoEnd);
+              const shownEnd=drag&&drag.id===s.id?(drag.curEnd||drag.origEnd):autoEnd;
+              const overdue=!s.done&&autoEnd&&autoEnd<today;
+              // Indicador de ajuste automático por subtareas (cuando las subs extienden el rango original)
+              const autoExtended=subDates.length>0&&(
+                (s.startDate&&subMinDate&&subMinDate<s.startDate)||
+                (s.dueDate&&subMaxDate&&subMaxDate>s.dueDate)||
+                (!s.dueDate&&subMaxDate)
+              );
               // Fondo fila
               els.push(e('div',{key:'bg-'+s.id,style:{position:'absolute',top:rowTop,left:0,right:0,height:ROW_H,borderBottom:'1px solid var(--border2)',background:expanded[s.id]?'var(--bg2)':''}}));
               // Líneas de grid
@@ -8175,19 +8200,20 @@ function GanttView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
                 const isWknd=d.getDay()===0||d.getDay()===6;
                 if(isWknd)els.push(e('div',{key:'grid-'+s.id+'-'+i,style:{position:'absolute',top:rowTop,left:i*GW,width:GW,height:ROW_H,background:'color-mix(in srgb,var(--bg3) 50%,transparent)',pointerEvents:'none'}}));
               });
-              // Barra de fase (solo si tiene fecha)
-              if(s.dueDate){
+              // Barra de fase (si tiene fecha propia o subtareas con fecha)
+              if(autoEnd){
                 const bl=dLeft(shownStart);
                 const bw=dWidth(shownStart,shownEnd);
-                const barColor=overdue?'var(--red,#e05555)':s.done?'var(--text4)':'var(--accent2)';
+                const barColor=overdue?'var(--red,#e05555)':s.done?'var(--text4)':autoExtended?'color-mix(in srgb,var(--accent2) 80%,#56a8e6)':'var(--accent2)';
+                const titleHint=autoExtended?' · ↔ ajustado por subtareas':''
                 els.push(e('div',{
                   key:'bar-'+s.id,
-                  style:{position:'absolute',top:rowTop+7,left:bl+2,width:bw-4,height:20,borderRadius:4,background:barColor,opacity:s.done?.5:1,cursor:'grab',display:'flex',alignItems:'center',padding:'0 6px',fontSize:10,color:'#fff',fontWeight:500,overflow:'hidden',whiteSpace:'nowrap',textOverflow:'ellipsis',boxShadow:'0 1px 3px rgba(0,0,0,.3)',zIndex:1},
-                  title:s.name+' · '+(s.startDate||s.dueDate)+' → '+s.dueDate+' · Doble clic para editar nombre',
+                  style:{position:'absolute',top:rowTop+7,left:bl+2,width:bw-4,height:20,borderRadius:4,background:barColor,opacity:s.done?.5:1,cursor:'grab',display:'flex',alignItems:'center',padding:'0 6px',fontSize:10,color:'#fff',fontWeight:500,overflow:'hidden',whiteSpace:'nowrap',textOverflow:'ellipsis',boxShadow:autoExtended?'0 0 0 1.5px rgba(86,168,230,.6),0 1px 3px rgba(0,0,0,.3)':'0 1px 3px rgba(0,0,0,.3)',zIndex:1},
+                  title:s.name+' · '+(autoStart||autoEnd)+' → '+autoEnd+titleHint+' · Doble clic para editar nombre',
                   onDoubleClick:ev=>{ev.preventDefault();startEditName(s,ev);},
-                  onMouseDown:ev=>{if(ev.detail===2)return;ev.preventDefault();setDrag({id:s.id,mode:'move',startX:ev.clientX,origStart:s.startDate||s.dueDate,origEnd:s.dueDate,curStart:s.startDate||s.dueDate,curEnd:s.dueDate});}
+                  onMouseDown:ev=>{if(ev.detail===2)return;ev.preventDefault();setDrag({id:s.id,mode:'move',startX:ev.clientX,origStart:autoStart||autoEnd,origEnd:autoEnd,curStart:autoStart||autoEnd,curEnd:autoEnd});}
                 },
-                  e('div',{style:{position:'absolute',left:0,top:0,bottom:0,width:6,cursor:'ew-resize',zIndex:2},onMouseDown:ev=>{ev.preventDefault();ev.stopPropagation();setDrag({id:s.id,mode:'start',startX:ev.clientX,origStart:s.startDate||s.dueDate,origEnd:s.dueDate,curStart:s.startDate||s.dueDate,curEnd:s.dueDate});}}),
+                  e('div',{style:{position:'absolute',left:0,top:0,bottom:0,width:6,cursor:'ew-resize',zIndex:2},onMouseDown:ev=>{ev.preventDefault();ev.stopPropagation();setDrag({id:s.id,mode:'start',startX:ev.clientX,origStart:autoStart||autoEnd,origEnd:autoEnd,curStart:autoStart||autoEnd,curEnd:autoEnd});}}),
                   editingName&&editingName.id===s.id
                     ?e('input',{
                         autoFocus:true,
@@ -8200,7 +8226,8 @@ function GanttView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
                         style:{flex:1,background:'transparent',border:'none',borderBottom:'1px solid #fff',color:'#fff',fontFamily:'Inter,sans-serif',fontSize:10,fontWeight:500,outline:'none',padding:'0 2px',width:'calc(100% - 14px)',minWidth:0}
                       })
                     :cleanMd(s.name),
-                  e('div',{style:{position:'absolute',right:0,top:0,bottom:0,width:6,cursor:'ew-resize',zIndex:2},onMouseDown:ev=>{ev.preventDefault();ev.stopPropagation();setDrag({id:s.id,mode:'end',startX:ev.clientX,origStart:s.startDate||s.dueDate,origEnd:s.dueDate,curStart:s.startDate||s.dueDate,curEnd:s.dueDate});}})
+                  autoExtended&&e('span',{style:{marginLeft:'auto',fontSize:8,opacity:.7,flexShrink:0},'title':'Extendido por subtareas'},'↔'),
+                  e('div',{style:{position:'absolute',right:0,top:0,bottom:0,width:6,cursor:'ew-resize',zIndex:2},onMouseDown:ev=>{ev.preventDefault();ev.stopPropagation();setDrag({id:s.id,mode:'end',startX:ev.clientX,origStart:autoStart||autoEnd,origEnd:autoEnd,curStart:autoStart||autoEnd,curEnd:autoEnd});}})
                 ));
               }
               top+=ROW_H;
