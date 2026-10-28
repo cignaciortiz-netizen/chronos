@@ -7095,6 +7095,7 @@ function ComboView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
   const[expandedRows,setExpandedRows]=useState(()=>new Set());
   const[newSubText,setNewSubText]=useState({}); // {stepId: string}
   const[showPasteSteps,setShowPasteSteps]=useState(false);
+  const[showDoneSubsFor,setShowDoneSubsFor]=useState(()=>new Set()); // stepIds con subtareas completadas visibles
   const[pasteRaw,setPasteRaw]=useState('');
 
   // ── parse checklist → fases con subtareas ──
@@ -7154,12 +7155,13 @@ function ComboView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
     return()=>{window.removeEventListener('mousedown',close);window.removeEventListener('scroll',close,true);};
   },[stepRowCtx]);
 
-  // ── Gantt rows (fases + subtareas expandidas) ──
+  // ── Gantt rows (fases + subtareas expandidas, misma visibilidad que el panel izq) ──
   const ganttRows=[];
   visSteps.forEach(s=>{
     ganttRows.push({type:'phase',step:s});
     if(expandedRows.has(s.id)){
-      (s.subtasks||[]).forEach(sub=>ganttRows.push({type:'sub',step:s,sub}));
+      const showDone=showDoneSubsFor.has(s.id);
+      (s.subtasks||[]).filter(sub=>showDone||!sub.done).forEach(sub=>ganttRows.push({type:'sub',step:s,sub}));
     }
   });
 
@@ -7379,9 +7381,13 @@ function ComboView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
               )
             ),
             // ── bloque subtareas desplegable ──
-            isExpanded&&e('div',{style:{paddingLeft:42,paddingRight:14,paddingBottom:6,paddingTop:0}},
-              subs.map(sub=>e('div',{key:sub.id,
-                style:{display:'flex',alignItems:'center',gap:6,height:26,boxSizing:'border-box',borderBottom:'1px solid var(--border3)'}},
+            isExpanded&&(()=>{
+              const showDoneSubs=showDoneSubsFor.has(s.id);
+              const visSubs=showDoneSubs?subs:subs.filter(sub=>!sub.done);
+              const doneCnt=subs.filter(sub=>sub.done).length;
+              return e('div',{style:{paddingLeft:42,paddingRight:14,paddingBottom:6,paddingTop:0}},
+              visSubs.map(sub=>e('div',{key:sub.id,
+                style:{display:'flex',alignItems:'center',gap:6,height:26,boxSizing:'border-box',borderBottom:'1px solid var(--border3)',opacity:sub.done?.45:1}},
                 e('button',{
                   onClick:()=>toggleSubDone(s.id,sub.id),
                   title:sub.done?'Reabrir':'Marcar hecha',
@@ -7395,24 +7401,14 @@ function ComboView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
                 e('span',{
                   style:{flex:1,fontSize:11.5,fontFamily:'Inter,sans-serif',
                     color:sub.done?'var(--text4)':'var(--text1)',
-                    textDecoration:sub.done?'line-through':'none',lineHeight:1.3}
+                    textDecoration:sub.done?'line-through':'none',lineHeight:1.3,
+                    overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}
                 },cleanMd(sub.name)),
-                e('input',{
-                  type:'date',
+                e(ChronosDatePicker,{
                   value:sub.dueDate||'',
-                  title:sub.dueDate?'Fecha: '+sub.dueDate:'Agregar fecha',
-                  onChange:ev=>updateSubDate(s.id,sub.id,ev.target.value),
-                  onClick:ev=>ev.stopPropagation(),
-                  style:{
-                    width:sub.dueDate?82:18,height:18,fontSize:9,flexShrink:0,
-                    border:'1px solid '+(sub.dueDate?'var(--border2)':'transparent'),
-                    borderRadius:3,outline:'none',cursor:'pointer',
-                    background:sub.dueDate?'var(--bg3)':'transparent',
-                    color:sub.dueDate?(sub.dueDate<today?'var(--red,#e05555)':'var(--text3)'):'transparent',
-                    padding:sub.dueDate?'0 2px':'0',
-                    fontFamily:'Inter,sans-serif',colorScheme:'dark',
-                    transition:'width .15s',overflow:'hidden',
-                  }
+                  onChange:v=>updateSubDate(s.id,sub.id,v||null),
+                  placeholder:'—',
+                  style:{width:sub.dueDate?82:28,flexShrink:0}
                 }),
                 e('button',{
                   onClick:()=>deleteSubtask(s.id,sub.id),
@@ -7424,6 +7420,13 @@ function ComboView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
                   className:'combo-sub-del'
                 },'×')
               )),
+              doneCnt>0&&e('button',{
+                onClick:()=>setShowDoneSubsFor(prev=>{const n=new Set(prev);n.has(s.id)?n.delete(s.id):n.add(s.id);return n;}),
+                style:{display:'block',marginTop:4,fontSize:9.5,padding:'1px 7px',border:'1px solid var(--border3)',
+                  borderRadius:10,background:'none',color:'var(--text4)',cursor:'pointer',
+                  fontFamily:'Inter,sans-serif',transition:'all .12s'}
+              },showDoneSubs?'Ocultar hechas ('+doneCnt+')':'+ '+doneCnt+' completada'+(doneCnt!==1?'s':''))
+            );})(),
               // input nueva tarea
               e('div',{style:{display:'flex',alignItems:'center',gap:6,marginTop:4}},
                 e('div',{style:{width:12,height:12,flexShrink:0}}),
