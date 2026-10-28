@@ -9971,10 +9971,11 @@ function EditorialCalendar({project}){
   const[form,setForm]=React.useState({title:'',tipo:'WhatsApp',status:'borrador',body:'',tags:''});
   const[saving,setSaving]=React.useState(false);
   const[recurForm,setRecurForm]=React.useState({freq:'weekly',dayOfWeek:'3',weeks:4});
-  const BANCO_KEY=`ec_banco_${project.id}`;
-  const loadBanco=()=>{try{return JSON.parse(localStorage.getItem(BANCO_KEY)||'[]');}catch(e){return [];}};
-  const[banco,setBanco]=React.useState(()=>loadBanco());
-  function saveBanco(arr){setBanco(arr);try{localStorage.setItem(BANCO_KEY,JSON.stringify(arr));}catch(e){}}
+  const getBancoKey=()=>`ec_banco_${project&&project.id?project.id:'default'}`;
+  const loadBanco=()=>{try{return JSON.parse(localStorage.getItem(getBancoKey())||'[]');}catch(e){return [];}};
+  const[banco,setBanco]=React.useState([]);
+  React.useEffect(()=>{setBanco(loadBanco());},[project&&project.id]);
+  function saveBanco(arr){setBanco(arr);try{localStorage.setItem(getBancoKey(),JSON.stringify(arr));}catch(e){}}
   const[distribMsg,setDistribMsg]=React.useState('');
 
   // ── fetch from Supabase ──
