@@ -12667,6 +12667,7 @@ function ProjectDashboard(props){
   const[channelItems,setChannelItems]=useState([]);
   const[channelLoading,setChannelLoading]=useState(false);
   const[channelInfo,setChannelInfo]=useState(null); // {id,name,color,tipo}
+  const[regenId,setRegenId]=useState(null); // id del item regenerando
   // Cargar canal y entradas al montar (solo si Supabase configurado)
   useEffect(()=>{
     if(!SB.configured())return;
@@ -12689,6 +12690,56 @@ function ProjectDashboard(props){
       }).catch(()=>setChannelLoading(false));
     }).catch(()=>{});
   },[project.id]);
+
+  // ── Regenerar una pregunta del canal ──
+  const regenQuestion=async(item)=>{
+    if(regenId||!SB.configured())return;
+    setRegenId(item.id);
+    const themes=['poderes mágicos','criaturas míticas','lugares fantásticos','reliquias o artefactos','traiciones y lealtades','profecías y destinos','rituales y magia antigua','reinos y facciones'];
+    const tema=themes[Math.floor(Math.random()*themes.length)];
+    const prompt=`Genera UNA sola pregunta de encuesta para WhatsApp del proyecto musical "Tristán Wolf" sobre el tema: ${tema}.
+
+Formato EXACTO (sin texto adicional):
+TÍTULO: [emoji] [pregunta corta y emocionante]
+A) [opción 1]
+B) [opción 2]
+C) [opción 3]
+
+Estilo: fantasía épica, mundo de Islantos, inmersivo. La pregunta debe ser diferente a: "${item.title}"`;
+    try{
+      const r=await fetch('https://api.anthropic.com/v1/messages',{
+        method:'POST',
+        headers:{'x-api-key':localStorage.getItem('anthropic_key')||'','anthropic-version':'2023-06-01','content-type':'application/json','anthropic-dangerous-direct-browser-access':'true'},
+        body:JSON.stringify({model:'claude-haiku-4-5',max_tokens:300,messages:[{role:'user',content:prompt}]})
+      });
+      if(!r.ok)throw new Error('API error');
+      const data=await r.json();
+      const txt=(data.content&&data.content[0]&&data.content[0].text)||'';
+      const titleMatch=txt.match(/TÍTULO:\s*(.+)/);
+      const bodyLines=txt.replace(/TÍTULO:.+\n?/,'').trim();
+      if(titleMatch&&bodyLines){
+        const newTitle=titleMatch[1].trim();
+        await fetch(`${SB.url}/rest/v1/contenido_editorial?id=eq.${item.id}`,{
+          method:'PATCH',
+          headers:{'apikey':SB.anon,'Authorization':'Bearer '+SB.anon,'content-type':'application/json','Prefer':'return=minimal'},
+          body:JSON.stringify({title:newTitle,body:bodyLines,status:'borrador'})
+        });
+        setChannelItems(prev=>prev.map(x=>x.id===item.id?{...x,title:newTitle,body:bodyLines,status:'borrador'}:x));
+      }
+    }catch(e){console.error('regen',e);}
+    setRegenId(null);
+  };
+
+  const markChannelItem=async(item,newStatus)=>{
+    if(!SB.configured())return;
+    await fetch(`${SB.url}/rest/v1/contenido_editorial?id=eq.${item.id}`,{
+      method:'PATCH',
+      headers:{'apikey':SB.anon,'Authorization':'Bearer '+SB.anon,'content-type':'application/json','Prefer':'return=minimal'},
+      body:JSON.stringify({status:newStatus})
+    });
+    setChannelItems(prev=>prev.map(x=>x.id===item.id?{...x,status:newStatus}:x));
+  };
+
   const[showHeadMenu,setShowHeadMenu]=useState(false);
   const[showPasteModal,setShowPasteModal]=useState(false);
   const headMenuRef=useRef(null);
@@ -13026,14 +13077,24 @@ function ProjectDashboard(props){
                         const d=new Date(item.fecha+'T12:00:00');
                         const dlbl=dow[d.getDay()]+' '+d.getDate()+'/'+String(d.getMonth()+1).padStart(2,'0');
                         const isToday=item.fecha===dayKey();
-                        return e('div',{key:item.id,style:{display:'flex',alignItems:'center',gap:5,minWidth:0}},
-                          e('span',{style:{fontSize:9,fontFamily:'Inter,sans-serif',color:isToday?'var(--accent2)':'var(--text4)',flexShrink:0,width:50}},(isToday?'● ':'')+dlbl),
-                          e('span',{style:{fontSize:9.5,fontFamily:'Inter,sans-serif',color:item.status==='publicado'?'var(--text4)':'var(--text1)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',flex:1,textDecoration:item.status==='publicado'?'line-through':'none'}},item.title),
-                          e('span',{style:{fontSize:8,padding:'1px 4px',borderRadius:3,flexShrink:0,
-                            background:item.status==='publicado'?'var(--bg3)':item.status==='listo'?'rgba(52,195,134,.2)':'var(--bg3)',
-                            color:item.status==='publicado'?'var(--text4)':item.status==='listo'?'#34c386':'var(--text3)',
-                            fontFamily:'Inter,sans-serif'}},
-                            item.status==='publicado'?'✓':item.status==='listo'?'listo':'draft')
+                        const isRegen=regenId===item.id;
+                        const isDone=item.status==='listo'||item.status==='publicado';
+                        return e('div',{key:item.id,style:{display:'flex',alignItems:'center',gap:5,minWidth:0,padding:'2px 0',borderBottom:'1px solid var(--border1)'}},
+                          e('span',{style:{fontSize:9,fontFamily:'Inter,sans-serif',color:isToday?'var(--accent2)':'var(--text4)',flexShrink:0,width:46,lineHeight:1.2}},(isToday?'●\n':'')+dlbl),
+                          e('span',{style:{fontSize:9.5,fontFamily:'Inter,sans-serif',color:isDone?'var(--text4)':'var(--text1)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',flex:1,textDecoration:isDone?'line-through':'none',cursor:'default'},title:item.body||''},item.title),
+                          // Botón regenerar
+                          !isDone&&e('button',{
+                            onClick:()=>regenQuestion(item),
+                            disabled:!!regenId,
+                            title:'Generar otra pregunta',
+                            style:{flexShrink:0,background:'none',border:'none',cursor:regenId?'wait':'pointer',fontSize:11,padding:'0 2px',color:isRegen?'var(--accent2)':'var(--text3)',opacity:regenId&&!isRegen?.4:1,transition:'color .2s'}
+                          },isRegen?'⟳':'↻'),
+                          // Botón aprobar / desaprobar
+                          e('button',{
+                            onClick:()=>markChannelItem(item,isDone?'borrador':'listo'),
+                            title:isDone?'Marcar como borrador':'Marcar como listo',
+                            style:{flexShrink:0,background:'none',border:'none',cursor:'pointer',fontSize:11,padding:'0 2px',color:isDone?'#34c386':'var(--text3)',transition:'color .2s'}
+                          },isDone?'✓':'○')
                         );
                       })
               )
