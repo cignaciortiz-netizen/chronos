@@ -12663,6 +12663,32 @@ function ProjectDashboard(props){
   const[showDoneTasks,setShowDoneTasks]=useState(false);
   const[habitCtxMenu,setHabitCtxMenu]=useState(null); // {x,y,habit}
   const[newNoteText,setNewNoteText]=useState('');
+  // ── Canal de automatizaciones ──
+  const[channelItems,setChannelItems]=useState([]);
+  const[channelLoading,setChannelLoading]=useState(false);
+  const[channelInfo,setChannelInfo]=useState(null); // {id,name,color,tipo}
+  // Cargar canal y entradas al montar (solo si Supabase configurado)
+  useEffect(()=>{
+    if(!SB.configured())return;
+    // Buscar canal asociado a este proyecto por user_id
+    fetch(`${SB.url}/rest/v1/channels?user_id=eq.${SB.uid}&active=eq.true&select=*`,{
+      headers:{'apikey':SB.anon,'Authorization':'Bearer '+SB.anon}
+    }).then(r=>r.ok?r.json():[]).then(chs=>{
+      if(!chs.length)return;
+      // Tomar el primero activo (Tristán Wolf · WA)
+      const ch=chs[0];
+      setChannelInfo(ch);
+      setChannelLoading(true);
+      // Cargar próximas 6 entradas de este canal
+      const today=dayKey();
+      fetch(`${SB.url}/rest/v1/contenido_editorial?channel_id=eq.${ch.id}&fecha=gte.${today}&order=fecha.asc&limit=6`,{
+        headers:{'apikey':SB.anon,'Authorization':'Bearer '+SB.anon}
+      }).then(r=>r.ok?r.json():[]).then(items=>{
+        setChannelItems(Array.isArray(items)?items:[]);
+        setChannelLoading(false);
+      }).catch(()=>setChannelLoading(false));
+    }).catch(()=>{});
+  },[project.id]);
   const[showHeadMenu,setShowHeadMenu]=useState(false);
   const[showPasteModal,setShowPasteModal]=useState(false);
   const headMenuRef=useRef(null);
@@ -12984,13 +13010,41 @@ function ProjectDashboard(props){
             e('div',{className:'dash-hero-sub'},'de '+fmtS(dailyGoal)+' objetivo · '+todaySessions.length+' sesión'+(todaySessions.length===1?'':'es')+' hoy')
           ),
           e('div',{className:'dash-hero-sep'}),
-          e('div',{className:'dash-hero-session'},
-            e('span',{className:'dash-hero-session-dot'+(isRunningHere?' on':'')}),
-            e('div',null,
-              e('div',{className:'dash-hero-session-lbl'},isRunningHere?'Sesión en curso':'Sin sesión activa'),
-              isRunningHere&&e('div',{className:'dash-hero-session-sub'},(activeSess&&(tasks.find(t=>t.id===activeSess.taskId)||{}).name)||'Sin tarea')
-            )
-          )
+          channelInfo
+            // ── Panel Automatizaciones ──
+            ?e('div',{style:{flex:1,minWidth:0,display:'flex',flexDirection:'column',gap:4,overflow:'hidden'}},
+                e('div',{style:{display:'flex',alignItems:'center',gap:6,marginBottom:2}},
+                  e('span',{style:{fontSize:9,fontWeight:700,textTransform:'uppercase',letterSpacing:'.06em',color:'var(--text3)',fontFamily:'Inter,sans-serif'}},'⚡ Automatizaciones'),
+                  e('span',{style:{fontSize:9,color:channelInfo.color||'#25D366',fontWeight:600,fontFamily:'Inter,sans-serif',background:(channelInfo.color||'#25D366')+'22',padding:'1px 5px',borderRadius:3}},channelInfo.name)
+                ),
+                channelLoading
+                  ?e('div',{style:{fontSize:10,color:'var(--text4)',fontFamily:'Inter,sans-serif'}},'Cargando…')
+                  :channelItems.length===0
+                    ?e('div',{style:{fontSize:10,color:'var(--text4)',fontFamily:'Inter,sans-serif',fontStyle:'italic'}},'Sin entradas programadas')
+                    :channelItems.slice(0,4).map(item=>{
+                        const dow=['dom','lun','mar','mié','jue','vie','sáb'];
+                        const d=new Date(item.fecha+'T12:00:00');
+                        const dlbl=dow[d.getDay()]+' '+d.getDate()+'/'+String(d.getMonth()+1).padStart(2,'0');
+                        const isToday=item.fecha===dayKey();
+                        return e('div',{key:item.id,style:{display:'flex',alignItems:'center',gap:5,minWidth:0}},
+                          e('span',{style:{fontSize:9,fontFamily:'Inter,sans-serif',color:isToday?'var(--accent2)':'var(--text4)',flexShrink:0,width:50}},(isToday?'● ':'')+dlbl),
+                          e('span',{style:{fontSize:9.5,fontFamily:'Inter,sans-serif',color:item.status==='publicado'?'var(--text4)':'var(--text1)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',flex:1,textDecoration:item.status==='publicado'?'line-through':'none'}},item.title),
+                          e('span',{style:{fontSize:8,padding:'1px 4px',borderRadius:3,flexShrink:0,
+                            background:item.status==='publicado'?'var(--bg3)':item.status==='listo'?'rgba(52,195,134,.2)':'var(--bg3)',
+                            color:item.status==='publicado'?'var(--text4)':item.status==='listo'?'#34c386':'var(--text3)',
+                            fontFamily:'Inter,sans-serif'}},
+                            item.status==='publicado'?'✓':item.status==='listo'?'listo':'draft')
+                        );
+                      })
+              )
+            // ── Estado sesión (comportamiento original) ──
+            :e('div',{className:'dash-hero-session'},
+                e('span',{className:'dash-hero-session-dot'+(isRunningHere?' on':'')}),
+                e('div',null,
+                  e('div',{className:'dash-hero-session-lbl'},isRunningHere?'Sesión en curso':'Sin sesión activa'),
+                  isRunningHere&&e('div',{className:'dash-hero-session-sub'},(activeSess&&(tasks.find(t=>t.id===activeSess.taskId)||{}).name)||'Sin tarea')
+                )
+              )
         ),
         e(StatCard,{icon:'check',color:'#2fb87a',label:'Tareas',value:pendingTasks.length,sub:pendingTasks.length?'pendientes':'Sin pendientes',custom:statCfg.tareas,onChangeCustom:(icon,color)=>setStatCustom('tareas',icon,color),onResetCustom:statCfg.tareas?()=>resetStatCustom('tareas'):null}),
         e(StatCard,{icon:'habit',color:'#2fb87a',label:'Hábitos',value:`${pHabits.filter(h=>(h.log||[]).includes(selectedDay)).length} / ${pHabits.length||0}`,sub:pHabits.length?Math.round(pHabits.filter(h=>(h.log||[]).includes(selectedDay)).length/pHabits.length*100)+'% completados':'Sin hábitos',progress:{value:pHabits.filter(h=>(h.log||[]).includes(selectedDay)).length,max:pHabits.length||1},custom:statCfg.habitos,onChangeCustom:(icon,color)=>setStatCustom('habitos',icon,color),onResetCustom:statCfg.habitos?()=>resetStatCustom('habitos'):null})
