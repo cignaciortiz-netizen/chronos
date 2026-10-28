@@ -7425,8 +7425,7 @@ function ComboView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
                 style:{display:'block',marginTop:4,fontSize:9.5,padding:'1px 7px',border:'1px solid var(--border3)',
                   borderRadius:10,background:'none',color:'var(--text4)',cursor:'pointer',
                   fontFamily:'Inter,sans-serif',transition:'all .12s'}
-              },showDoneSubs?'Ocultar hechas ('+doneCnt+')':'+ '+doneCnt+' completada'+(doneCnt!==1?'s':''))
-            );})(),
+              },showDoneSubs?'Ocultar hechas ('+doneCnt+')':'+ '+doneCnt+' completada'+(doneCnt!==1?'s':'')),
               // input nueva tarea
               e('div',{style:{display:'flex',alignItems:'center',gap:6,marginTop:4}},
                 e('div',{style:{width:12,height:12,flexShrink:0}}),
@@ -7443,7 +7442,7 @@ function ComboView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
                     padding:'2px 0',lineHeight:1.4}
                 })
               )
-            )
+            );})()
             );
           }),
 
