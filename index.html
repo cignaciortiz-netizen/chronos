@@ -2255,6 +2255,7 @@ const uid=()=>Math.random().toString(36).slice(2,9);
 const nowTs=()=>Math.floor(Date.now()/1000);
 function nowSCL(){return new Date(new Date().toLocaleString('en-US',{timeZone:'America/Santiago'}));}
 function sclToMin(){const d=nowSCL();return d.getHours()*60+d.getMinutes();}
+function cleanMd(t){return(t||'').replace(/^\s*[>]+\s*/,'').replace(/\*\*(.+?)\*\*/g,'$1').replace(/\*(.+?)\*/g,'$1').replace(/^-{2,}\s*$/,'').replace(/_{2,}/g,'').replace(/`(.+?)`/g,'$1').trim();}
 function dayKey(){const d=nowSCL();return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
 function sclShort(){const d=nowSCL();return d.toLocaleDateString('es-CL',{weekday:'short',day:'numeric',month:'short',timeZone:'America/Santiago'});}
 function sclOffset(){try{const p=new Intl.DateTimeFormat('en',{timeZone:'America/Santiago',timeZoneName:'short'}).formatToParts(new Date());return(p.find(x=>x.type==='timeZoneName')||{}).value||'CLT';}catch{return'CLT';}}
@@ -7683,6 +7684,14 @@ function GanttView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
     }));
     setStatusPicker(null);
   }
+  function setSubDate(parentId,subId,dateVal){
+    commit(steps.map(s=>{
+      if(s.id!==parentId)return s;
+      return{...s,subtasks:(s.subtasks||[]).map(sub=>
+        sub.id===subId?{...sub,dueDate:dateVal||null}:sub
+      )};
+    }));
+  }
   // Cerrar picker al click fuera
   useEffect(()=>{
     if(!statusPicker)return;
@@ -7872,7 +7881,7 @@ function GanttView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
                     title:'Doble clic para editar nombre',
                     onDoubleClick:ev=>startEditName(s,ev),
                     style:{fontSize:11.5,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',flex:1,color:s.done?'var(--text4)':overdue?'var(--red,#e05555)':'var(--text0)',textDecoration:s.done?'line-through':'',cursor:'text'}
-                  },s.name),
+                  },cleanMd(s.name)),
               s.dueDate&&hasSubs&&e('button',{
                 title:'Distribuir subtareas automáticamente en el rango de esta fase',
                 style:{fontSize:9,padding:'1px 4px',border:'1px solid var(--border3)',borderRadius:3,background:'var(--bg3)',color:'var(--text3)',cursor:'pointer',flexShrink:0},
@@ -7891,7 +7900,32 @@ function GanttView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
                   title:sst.label+' · clic para cambiar estado',
                   style:{width:13,height:13,borderRadius:'50%',background:sst.k==='done'?sst.color:sst.bg,border:'2px solid '+sst.color,cursor:'pointer',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',transition:'all .15s'}
                 },sst.k==='done'&&e('div',{style:{width:5,height:5,borderRadius:'50%',background:'#fff'}})),
-                e('span',{style:{fontSize:10.5,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',flex:1,color:sst.k==='done'?'var(--text4)':'var(--text1)',textDecoration:sst.k==='done'?'line-through':''}},sub.name),
+                e('span',{style:{fontSize:10.5,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',flex:1,color:sst.k==='done'?'var(--text4)':'var(--text1)',textDecoration:sst.k==='done'?'line-through':''}},cleanMd(sub.name)),
+                // Fecha subtarea
+                e('input',{
+                  type:'date',
+                  value:sub.dueDate||'',
+                  onChange:ev=>{ev.stopPropagation();setSubDate(s.id,sub.id,ev.target.value);},
+                  onClick:ev=>ev.stopPropagation(),
+                  title:sub.dueDate?'Fecha: '+sub.dueDate:'Sin fecha',
+                  style:{
+                    width:sub.dueDate?76:22,
+                    height:18,
+                    fontSize:9,
+                    border:'1px solid '+(sub.dueDate?'var(--border2)':'transparent'),
+                    borderRadius:3,
+                    background:sub.dueDate?'var(--bg3)':'transparent',
+                    color:sub.dueDate?(sub.dueDate<today?'var(--red,#e05555)':'var(--text3)'):'var(--text4)',
+                    cursor:'pointer',
+                    padding:sub.dueDate?'0 2px':'0',
+                    flexShrink:0,
+                    outline:'none',
+                    fontFamily:'Inter,sans-serif',
+                    transition:'width .15s,border .15s',
+                    overflow:'hidden',
+                    colorScheme:'dark',
+                  }
+                }),
                 // Dropdown picker
                 isPickerOpen&&e('div',{
                   style:{position:'absolute',left:26,top:'100%',zIndex:20,background:'var(--bg2)',border:'1px solid var(--border2)',borderRadius:'var(--r-md)',boxShadow:'0 8px 24px #0007',padding:4,minWidth:130},
@@ -7978,7 +8012,7 @@ function GanttView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
                         onMouseDown:ev=>ev.stopPropagation(),
                         style:{flex:1,background:'transparent',border:'none',borderBottom:'1px solid #fff',color:'#fff',fontFamily:'Inter,sans-serif',fontSize:10,fontWeight:500,outline:'none',padding:'0 2px',width:'calc(100% - 14px)',minWidth:0}
                       })
-                    :s.name,
+                    :cleanMd(s.name),
                   e('div',{style:{position:'absolute',right:0,top:0,bottom:0,width:6,cursor:'ew-resize',zIndex:2},onMouseDown:ev=>{ev.preventDefault();ev.stopPropagation();setDrag({id:s.id,mode:'end',startX:ev.clientX,origStart:s.startDate||s.dueDate,origEnd:s.dueDate,curStart:s.startDate||s.dueDate,curEnd:s.dueDate});}})
                 ));
               }
@@ -7997,8 +8031,8 @@ function GanttView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
                   const sst2=subStatusInfo(sub.status||'todo',customStatuses);
                   els.push(e('div',{
                     key:'sbar-'+sub.id,
-                    style:{position:'absolute',top:subTop+5,left:bl+2,width:bw-4,height:16,borderRadius:3,background:sst2.bg,opacity:sst2.k==='done'?.5:1,cursor:'grab',display:'flex',alignItems:'center',padding:'0 14px',fontSize:9.5,color:sst2.color,overflow:'hidden',whiteSpace:'nowrap',textOverflow:'ellipsis',border:'1px solid '+sst2.color+'55',zIndex:1,userSelect:'none',fontWeight:500},
-                    title:sub.name+' ['+sst2.label+'] · '+subStart+' → '+subEnd+' · Click derecho para cambiar estado',
+                    style:{position:'absolute',top:subTop+5,left:bl+2,width:bw-4,height:16,borderRadius:3,background:'transparent',opacity:sst2.k==='done'?.45:1,cursor:'grab',display:'flex',alignItems:'center',padding:'0 14px',fontSize:9.5,color:sst2.color,overflow:'hidden',whiteSpace:'nowrap',textOverflow:'ellipsis',border:'1.5px solid '+sst2.color,zIndex:1,userSelect:'none',fontWeight:500,boxShadow:'inset 0 0 0 1000px color-mix(in srgb,'+sst2.color+' 10%,transparent)'},
+                    title:cleanMd(sub.name)+' ['+sst2.label+'] · '+subStart+' → '+subEnd+' · Click derecho para cambiar estado',
                     onContextMenu:ev=>{ev.preventDefault();ev.stopPropagation();setCtxMenu({subId:sub.id,parentId:s.id,x:ev.clientX,y:ev.clientY});},
                     onMouseDown:ev=>{
                       ev.preventDefault();
@@ -8007,7 +8041,7 @@ function GanttView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
                   },
                     e('div',{style:{position:'absolute',left:0,top:0,bottom:0,width:10,cursor:'ew-resize',zIndex:2},
                       onMouseDown:ev=>{ev.preventDefault();ev.stopPropagation();setSubDrag({id:sub.id,parentId:s.id,mode:'start',startX:ev.clientX,origStart:subStart,origEnd:subEnd,curStart:subStart,curEnd:subEnd});}}),
-                    sub.name,
+                    cleanMd(sub.name),
                     e('div',{style:{position:'absolute',right:0,top:0,bottom:0,width:10,cursor:'ew-resize',zIndex:2},
                       onMouseDown:ev=>{ev.preventDefault();ev.stopPropagation();setSubDrag({id:sub.id,parentId:s.id,mode:'end',startX:ev.clientX,origStart:subStart,origEnd:subEnd,curStart:subStart,curEnd:subEnd});}})
                   ));
