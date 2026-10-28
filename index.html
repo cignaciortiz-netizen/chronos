@@ -3903,7 +3903,8 @@ function App(){
   useEffect(()=>{
     window.__chronosSetTasks=setTasks;
     window.__chronosForceSync=forceSync;
-    return()=>{delete window.__chronosSetTasks;delete window.__chronosForceSync;};
+    window.__chronosAddReminder=(rem)=>{setReminders(prev=>[rem,...prev]);forceSync();};
+    return()=>{delete window.__chronosSetTasks;delete window.__chronosForceSync;delete window.__chronosAddReminder;};
   },[]);
 
   // Escuchar cambios de etiquetas de status (guardadas desde GanttView vía SubStatusEditor)
@@ -7082,7 +7083,7 @@ function ChronosDatePicker({value,onChange,placeholder,style}){
 // ── ComboView: Lista (izq fija) + Gantt (der scroll) ──
 function ComboView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,DAY_W,
   phaseStatusPicker,setPhaseStatusPicker,updateStep,deleteStep,addStep,
-  newName,setNewName,newDate,setNewDate}){
+  newName,setNewName,newDate,setNewDate,projId}){
   const today=dayKey();
   const toTs=d=>new Date(d+'T00:00:00').getTime();
   const sortByDeadline=arr=>[...arr].sort((a,b)=>{if(!a.dueDate&&!b.dueDate)return 0;if(!a.dueDate)return 1;if(!b.dueDate)return -1;return a.dueDate<b.dueDate?-1:a.dueDate>b.dueDate?1:0;});
@@ -7097,6 +7098,31 @@ function ComboView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
   const[showPasteSteps,setShowPasteSteps]=useState(false);
   const[showDoneSubsFor,setShowDoneSubsFor]=useState(()=>new Set()); // stepIds con subtareas completadas visibles
   const[pasteRaw,setPasteRaw]=useState('');
+  // ── picker de recordatorio de fase ──
+  const[phaseRemPicker,setPhaseRemPicker]=useState(null); // {stepId, pos:{top,left}}
+  const[remPickDate,setRemPickDate]=useState(()=>new Date().toISOString().slice(0,10));
+  const[remPickTime,setRemPickTime]=useState('09:00');
+  const phaseRemRef=useRef(null);
+  useEffect(()=>{
+    if(!phaseRemPicker)return;
+    function h(ev){if(phaseRemRef.current&&!phaseRemRef.current.contains(ev.target))setPhaseRemPicker(null);}
+    setTimeout(()=>document.addEventListener('mousedown',h),0);
+    return()=>document.removeEventListener('mousedown',h);
+  },[phaseRemPicker]);
+  function openPhaseRemPicker(stepId,pos){
+    setRemPickDate(new Date().toISOString().slice(0,10));
+    setRemPickTime('09:00');
+    setPhaseRemPicker({stepId,pos});
+  }
+  function savePhaseReminder(){
+    if(!phaseRemPicker||!remPickDate)return;
+    const s=steps.find(x=>x.id===phaseRemPicker.stepId);
+    if(!s)return;
+    const dueAt=new Date(remPickDate+'T'+(remPickTime||'09:00')+':00').getTime();
+    const rem={id:uid(),title:s.name,projId:projId||null,stepId:s.id,dueAt,done:false,overdue:dueAt<=Date.now(),createdAt:Date.now()};
+    if(typeof window.__chronosAddReminder==='function')window.__chronosAddReminder(rem);
+    setPhaseRemPicker(null);
+  }
 
   // ── parse checklist → fases con subtareas ──
   function parsePasteSteps(raw){
@@ -7518,6 +7544,16 @@ function ComboView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
           e('span',{style:{fontSize:13,lineHeight:1}},'◎'),
           e('span',{},(()=>{const s=steps.find(x=>x.id===stepRowCtx.id);return s&&s.assignee?'Cambiar asignado':'Asignar fase';})())
         ),
+        e('button',{className:'combo-ctx-item',onClick:()=>{
+          const vw=window.innerWidth,vh=window.innerHeight;
+          const PW=230,PH=200;
+          let left=stepRowCtx.left,top=stepRowCtx.top+28;
+          if(left+PW>vw-8)left=vw-PW-8;if(top+PH>vh-8)top=stepRowCtx.top-PH-4;
+          openPhaseRemPicker(stepRowCtx.id,{top,left});setStepRowCtx(null);
+        }},
+          e('span',{style:{fontSize:13,lineHeight:1}},'🔔'),
+          e('span',{},'Agregar recordatorio')
+        ),
         e('div',{className:'combo-ctx-sep'}),
         e('button',{className:'combo-ctx-item danger',onClick:()=>{deleteStep(stepRowCtx.id);setStepRowCtx(null);}},
           e('span',{style:{fontSize:13,lineHeight:1}},'🗑'),
@@ -7542,6 +7578,55 @@ function ComboView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
           },'Borrar'),
           e('button',{onClick:()=>setPhaseNoteOpen(null),style:{fontSize:10,padding:'3px 8px',border:'none',borderRadius:5,background:'var(--accent2)',color:'#1a0a02',cursor:'pointer',fontFamily:'Inter,sans-serif',fontWeight:600}},'Listo')
         )
+      ),
+
+      // ── Picker recordatorio de fase ──
+      phaseRemPicker&&ReactDOM.createPortal(
+        e('div',{ref:phaseRemRef,onMouseDown:ev=>ev.stopPropagation(),
+          style:{position:'fixed',zIndex:9999,top:phaseRemPicker.pos.top,left:phaseRemPicker.pos.left,
+            background:'var(--bg2)',border:'1px solid var(--border2)',borderRadius:'var(--r-md)',
+            boxShadow:'0 8px 28px #0009',padding:12,width:226}},
+          e('div',{style:{fontSize:10,fontWeight:700,textTransform:'uppercase',letterSpacing:'.06em',color:'var(--text3)',marginBottom:8,fontFamily:'Inter,sans-serif'}},
+            '🔔 Recordatorio · '+(steps.find(x=>x.id===phaseRemPicker.stepId)||{}).name?.slice(0,28)),
+          e('div',{style:{display:'flex',gap:5,marginBottom:8}},
+            ['Hoy','Mañana','Próx. semana'].map((lbl,i)=>{
+              const d=new Date();d.setDate(d.getDate()+[0,1,7][i]);
+              const dStr=d.toISOString().slice(0,10);
+              return e('button',{key:lbl,
+                onClick:()=>setRemPickDate(dStr),
+                style:{flex:1,padding:'4px 0',fontSize:10,fontFamily:'Inter,sans-serif',
+                  borderRadius:6,border:'1px solid var(--border2)',cursor:'pointer',
+                  background:remPickDate===dStr?'var(--accent2)':'var(--bg3)',
+                  color:remPickDate===dStr?'#1a0a02':'var(--text1)',fontWeight:remPickDate===dStr?700:400}
+              },lbl);
+            })
+          ),
+          e('div',{style:{display:'flex',gap:6,marginBottom:8}},
+            e('input',{type:'date',value:remPickDate,onChange:ev=>setRemPickDate(ev.target.value),
+              style:{flex:1,background:'var(--bg1)',border:'1px solid var(--border3)',borderRadius:6,
+                padding:'4px 7px',fontSize:11,color:'var(--text0)',fontFamily:'Inter,sans-serif',outline:'none'}}),
+            e('input',{type:'time',value:remPickTime,onChange:ev=>setRemPickTime(ev.target.value),
+              style:{width:80,background:'var(--bg1)',border:'1px solid var(--border3)',borderRadius:6,
+                padding:'4px 7px',fontSize:11,color:'var(--text0)',fontFamily:'Inter,sans-serif',outline:'none'}})
+          ),
+          e('div',{style:{display:'flex',gap:5,marginBottom:10}},
+            ['09:00','12:00','18:00','21:00'].map(t=>e('button',{key:t,onClick:()=>setRemPickTime(t),
+              style:{flex:1,padding:'4px 0',fontSize:10,fontFamily:'Inter,sans-serif',
+                borderRadius:6,border:'1px solid var(--border2)',cursor:'pointer',
+                background:remPickTime===t?'var(--accent2)':'var(--bg3)',
+                color:remPickTime===t?'#1a0a02':'var(--text1)',fontWeight:remPickTime===t?700:400}
+            },t))
+          ),
+          e('div',{style:{display:'flex',justifyContent:'flex-end',gap:6}},
+            e('button',{onClick:()=>setPhaseRemPicker(null),
+              style:{fontSize:11,padding:'4px 10px',border:'1px solid var(--border3)',borderRadius:6,
+                background:'transparent',color:'var(--text2)',cursor:'pointer',fontFamily:'Inter,sans-serif'}},'Cancelar'),
+            e('button',{onClick:savePhaseReminder,
+              style:{fontSize:11,padding:'4px 12px',border:'none',borderRadius:6,
+                background:'var(--accent2)',color:'#1a0a02',cursor:'pointer',fontFamily:'Inter,sans-serif',fontWeight:700}},'Guardar')
+          )
+        ),
+        document.body
       ),
 
       // ── Popup asignado (fixed, fuera del row) ──
@@ -15936,7 +16021,7 @@ function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask,templates,onAddTe
       e('div',{className:'modal-body',style:{flex:1,minHeight:0}},
         view==='combo'&&e(ComboView,{steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,DAY_W,
           phaseStatusPicker,setPhaseStatusPicker,updateStep,deleteStep,addStep,
-          newName,setNewName,newDate,setNewDate}),
+          newName,setNewName,newDate,setNewDate,projId:task.id}),
         view==='mindmap'&&e('div',{className:'mm-wrap'},
           steps.length===0&&e('div',{className:'empty',style:{padding:'20px 2px'}},'Sin fases aún. Agrégalas en la vista Lista.'),
           steps.length>0&&(()=>{
