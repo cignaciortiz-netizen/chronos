@@ -10132,12 +10132,12 @@ function EditorialCalendar({project}){
   function distribuir(){
     const piezas=banco.filter(p=>p&&(p.title||'').trim());
     if(piezas.length===0){setDistribMsg('No hay piezas en el banco.');setTimeout(()=>setDistribMsg(''),2500);return;}
-    // tarjetas del mes actual ordenadas por fecha, que no tengan body
+    // tarjetas del mes actual ordenadas por fecha (todas, con o sin body)
     const mesStr=`${yr}-${String(mo+1).padStart(2,'0')}`;
     const targets=items
-      .filter(it=>it.fecha&&it.fecha.startsWith(mesStr)&&!(it.body||'').trim())
+      .filter(it=>it.fecha&&it.fecha.startsWith(mesStr))
       .sort((a,b)=>a.fecha<b.fecha?-1:1);
-    if(targets.length===0){setDistribMsg('No hay tarjetas vacías en este mes.');setTimeout(()=>setDistribMsg(''),2500);return;}
+    if(targets.length===0){setDistribMsg('No hay tarjetas en este mes.');setTimeout(()=>setDistribMsg(''),2500);return;}
     const n=Math.min(piezas.length,targets.length);
     const updates=[];
     for(let i=0;i<n;i++){
