@@ -12799,83 +12799,6 @@ function ProjectDashboard(props){
   const[showDoneTasks,setShowDoneTasks]=useState(false);
   const[habitCtxMenu,setHabitCtxMenu]=useState(null); // {x,y,habit}
   const[newNoteText,setNewNoteText]=useState('');
-  // ── Canal de automatizaciones ──
-  const[channelItems,setChannelItems]=useState([]);
-  const[channelLoading,setChannelLoading]=useState(false);
-  const[channelInfo,setChannelInfo]=useState(null); // {id,name,color,tipo}
-  const[regenId,setRegenId]=useState(null); // id del item regenerando
-  // Cargar canal y entradas al montar (solo si Supabase configurado)
-  useEffect(()=>{
-    if(!SB.configured())return;
-    // Buscar canal asociado a este proyecto por user_id
-    fetch(`${SB.url}/rest/v1/channels?user_id=eq.${SB.uid}&active=eq.true&select=*`,{
-      headers:{'apikey':SB.anon,'Authorization':'Bearer '+SB.anon}
-    }).then(r=>r.ok?r.json():[]).then(chs=>{
-      if(!chs.length)return;
-      // Tomar el primero activo (Tristán Wolf · WA)
-      const ch=chs[0];
-      setChannelInfo(ch);
-      setChannelLoading(true);
-      // Cargar próximas 6 entradas de este canal
-      const today=dayKey();
-      fetch(`${SB.url}/rest/v1/contenido_editorial?channel_id=eq.${ch.id}&fecha=gte.${today}&order=fecha.asc&limit=6`,{
-        headers:{'apikey':SB.anon,'Authorization':'Bearer '+SB.anon}
-      }).then(r=>r.ok?r.json():[]).then(items=>{
-        setChannelItems(Array.isArray(items)?items:[]);
-        setChannelLoading(false);
-      }).catch(()=>setChannelLoading(false));
-    }).catch(()=>{});
-  },[project.id]);
-
-  // ── Regenerar una pregunta del canal ──
-  const regenQuestion=async(item)=>{
-    if(regenId||!SB.configured())return;
-    setRegenId(item.id);
-    const themes=['poderes mágicos','criaturas míticas','lugares fantásticos','reliquias o artefactos','traiciones y lealtades','profecías y destinos','rituales y magia antigua','reinos y facciones'];
-    const tema=themes[Math.floor(Math.random()*themes.length)];
-    const prompt=`Genera UNA sola pregunta de encuesta para WhatsApp del proyecto musical "Tristán Wolf" sobre el tema: ${tema}.
-
-Formato EXACTO (sin texto adicional):
-TÍTULO: [emoji] [pregunta corta y emocionante]
-A) [opción 1]
-B) [opción 2]
-C) [opción 3]
-
-Estilo: fantasía épica, mundo de Islantos, inmersivo. La pregunta debe ser diferente a: "${item.title}"`;
-    try{
-      const r=await fetch('https://api.anthropic.com/v1/messages',{
-        method:'POST',
-        headers:{'x-api-key':localStorage.getItem('anthropic_key')||'','anthropic-version':'2023-06-01','content-type':'application/json','anthropic-dangerous-direct-browser-access':'true'},
-        body:JSON.stringify({model:'claude-haiku-4-5',max_tokens:300,messages:[{role:'user',content:prompt}]})
-      });
-      if(!r.ok)throw new Error('API error');
-      const data=await r.json();
-      const txt=(data.content&&data.content[0]&&data.content[0].text)||'';
-      const titleMatch=txt.match(/TÍTULO:\s*(.+)/);
-      const bodyLines=txt.replace(/TÍTULO:.+\n?/,'').trim();
-      if(titleMatch&&bodyLines){
-        const newTitle=titleMatch[1].trim();
-        await fetch(`${SB.url}/rest/v1/contenido_editorial?id=eq.${item.id}`,{
-          method:'PATCH',
-          headers:{'apikey':SB.anon,'Authorization':'Bearer '+SB.anon,'content-type':'application/json','Prefer':'return=minimal'},
-          body:JSON.stringify({title:newTitle,body:bodyLines,status:'borrador'})
-        });
-        setChannelItems(prev=>prev.map(x=>x.id===item.id?{...x,title:newTitle,body:bodyLines,status:'borrador'}:x));
-      }
-    }catch(e){console.error('regen',e);}
-    setRegenId(null);
-  };
-
-  const markChannelItem=async(item,newStatus)=>{
-    if(!SB.configured())return;
-    await fetch(`${SB.url}/rest/v1/contenido_editorial?id=eq.${item.id}`,{
-      method:'PATCH',
-      headers:{'apikey':SB.anon,'Authorization':'Bearer '+SB.anon,'content-type':'application/json','Prefer':'return=minimal'},
-      body:JSON.stringify({status:newStatus})
-    });
-    setChannelItems(prev=>prev.map(x=>x.id===item.id?{...x,status:newStatus}:x));
-  };
-
   const[showHeadMenu,setShowHeadMenu]=useState(false);
   const[showPasteModal,setShowPasteModal]=useState(false);
   const headMenuRef=useRef(null);
@@ -13197,51 +13120,13 @@ Estilo: fantasía épica, mundo de Islantos, inmersivo. La pregunta debe ser dif
             e('div',{className:'dash-hero-sub'},'de '+fmtS(dailyGoal)+' objetivo · '+todaySessions.length+' sesión'+(todaySessions.length===1?'':'es')+' hoy')
           ),
           e('div',{className:'dash-hero-sep'}),
-          channelInfo
-            // ── Panel Automatizaciones ──
-            ?e('div',{style:{flex:1,minWidth:0,display:'flex',flexDirection:'column',gap:4,overflow:'hidden'}},
-                e('div',{style:{display:'flex',alignItems:'center',gap:6,marginBottom:2}},
-                  e('span',{style:{fontSize:9,fontWeight:700,textTransform:'uppercase',letterSpacing:'.06em',color:'var(--text3)',fontFamily:'Inter,sans-serif'}},'⚡ Automatizaciones'),
-                  e('span',{style:{fontSize:9,color:channelInfo.color||'#25D366',fontWeight:600,fontFamily:'Inter,sans-serif',background:(channelInfo.color||'#25D366')+'22',padding:'1px 5px',borderRadius:3}},channelInfo.name)
-                ),
-                channelLoading
-                  ?e('div',{style:{fontSize:10,color:'var(--text4)',fontFamily:'Inter,sans-serif'}},'Cargando…')
-                  :channelItems.length===0
-                    ?e('div',{style:{fontSize:10,color:'var(--text4)',fontFamily:'Inter,sans-serif',fontStyle:'italic'}},'Sin entradas programadas')
-                    :channelItems.slice(0,4).map(item=>{
-                        const dow=['dom','lun','mar','mié','jue','vie','sáb'];
-                        const d=new Date(item.fecha+'T12:00:00');
-                        const dlbl=dow[d.getDay()]+' '+d.getDate()+'/'+String(d.getMonth()+1).padStart(2,'0');
-                        const isToday=item.fecha===dayKey();
-                        const isRegen=regenId===item.id;
-                        const isDone=item.status==='listo'||item.status==='publicado';
-                        return e('div',{key:item.id,style:{display:'flex',alignItems:'center',gap:5,minWidth:0,padding:'2px 0',borderBottom:'1px solid var(--border1)'}},
-                          e('span',{style:{fontSize:9,fontFamily:'Inter,sans-serif',color:isToday?'var(--accent2)':'var(--text4)',flexShrink:0,width:46,lineHeight:1.2}},(isToday?'●\n':'')+dlbl),
-                          e('span',{style:{fontSize:9.5,fontFamily:'Inter,sans-serif',color:isDone?'var(--text4)':'var(--text1)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',flex:1,textDecoration:isDone?'line-through':'none',cursor:'default'},title:item.body||''},item.title),
-                          // Botón regenerar
-                          !isDone&&e('button',{
-                            onClick:()=>regenQuestion(item),
-                            disabled:!!regenId,
-                            title:'Generar otra pregunta',
-                            style:{flexShrink:0,background:'none',border:'none',cursor:regenId?'wait':'pointer',fontSize:11,padding:'0 2px',color:isRegen?'var(--accent2)':'var(--text3)',opacity:regenId&&!isRegen?.4:1,transition:'color .2s'}
-                          },isRegen?'⟳':'↻'),
-                          // Botón aprobar / desaprobar
-                          e('button',{
-                            onClick:()=>markChannelItem(item,isDone?'borrador':'listo'),
-                            title:isDone?'Marcar como borrador':'Marcar como listo',
-                            style:{flexShrink:0,background:'none',border:'none',cursor:'pointer',fontSize:11,padding:'0 2px',color:isDone?'#34c386':'var(--text3)',transition:'color .2s'}
-                          },isDone?'✓':'○')
-                        );
-                      })
-              )
-            // ── Estado sesión (comportamiento original) ──
-            :e('div',{className:'dash-hero-session'},
-                e('span',{className:'dash-hero-session-dot'+(isRunningHere?' on':'')}),
-                e('div',null,
-                  e('div',{className:'dash-hero-session-lbl'},isRunningHere?'Sesión en curso':'Sin sesión activa'),
-                  isRunningHere&&e('div',{className:'dash-hero-session-sub'},(activeSess&&(tasks.find(t=>t.id===activeSess.taskId)||{}).name)||'Sin tarea')
-                )
-              )
+          e('div',{className:'dash-hero-session'},
+            e('span',{className:'dash-hero-session-dot'+(isRunningHere?' on':'')}),
+            e('div',null,
+              e('div',{className:'dash-hero-session-lbl'},isRunningHere?'Sesión en curso':'Sin sesión activa'),
+              isRunningHere&&e('div',{className:'dash-hero-session-sub'},(activeSess&&(tasks.find(t=>t.id===activeSess.taskId)||{}).name)||'Sin tarea')
+            )
+          )
         ),
         e(StatCard,{icon:'check',color:'#2fb87a',label:'Tareas',value:pendingTasks.length,sub:pendingTasks.length?'pendientes':'Sin pendientes',custom:statCfg.tareas,onChangeCustom:(icon,color)=>setStatCustom('tareas',icon,color),onResetCustom:statCfg.tareas?()=>resetStatCustom('tareas'):null}),
         e(StatCard,{icon:'habit',color:'#2fb87a',label:'Hábitos',value:`${pHabits.filter(h=>(h.log||[]).includes(selectedDay)).length} / ${pHabits.length||0}`,sub:pHabits.length?Math.round(pHabits.filter(h=>(h.log||[]).includes(selectedDay)).length/pHabits.length*100)+'% completados':'Sin hábitos',progress:{value:pHabits.filter(h=>(h.log||[]).includes(selectedDay)).length,max:pHabits.length||1},custom:statCfg.habitos,onChangeCustom:(icon,color)=>setStatCustom('habitos',icon,color),onResetCustom:statCfg.habitos?()=>resetStatCustom('habitos'):null})
