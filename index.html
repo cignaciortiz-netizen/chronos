@@ -9963,7 +9963,7 @@ function EditorialCalendar({project}){
   const[panelCard,setPanelCard]=React.useState(null);
   const[filterTipo,setFilterTipo]=React.useState('Todos');
   const[dragItem,setDragItem]=React.useState(null);
-  // panel mode: 'view' | 'new' | 'recur'
+  // panel mode: 'view' | 'new' | 'recur' | 'banco'
   const[panelMode,setPanelMode]=React.useState('view');
   const[editBody,setEditBody]=React.useState('');
   React.useEffect(()=>{setEditBody(panelCard?panelCard.body||'':'');},[panelCard&&panelCard.id]);
@@ -9971,6 +9971,11 @@ function EditorialCalendar({project}){
   const[form,setForm]=React.useState({title:'',tipo:'WhatsApp',status:'borrador',body:'',tags:''});
   const[saving,setSaving]=React.useState(false);
   const[recurForm,setRecurForm]=React.useState({freq:'weekly',dayOfWeek:'3',weeks:4});
+  const BANCO_KEY=`ec_banco_${project.id}`;
+  const loadBanco=()=>{try{return JSON.parse(localStorage.getItem(BANCO_KEY)||'[]');}catch(e){return [];}};
+  const[banco,setBanco]=React.useState(()=>loadBanco());
+  function saveBanco(arr){setBanco(arr);try{localStorage.setItem(BANCO_KEY,JSON.stringify(arr));}catch(e){}}
+  const[distribMsg,setDistribMsg]=React.useState('');
 
   // ── fetch from Supabase ──
   function fetchItems(){
@@ -10123,6 +10128,41 @@ function EditorialCalendar({project}){
     }
   }
 
+  // ── distribuir banco al mes ──
+  function distribuir(){
+    const piezas=banco.filter(p=>p&&(p.title||'').trim());
+    if(piezas.length===0){setDistribMsg('No hay piezas en el banco.');setTimeout(()=>setDistribMsg(''),2500);return;}
+    // tarjetas del mes actual ordenadas por fecha, que no tengan body
+    const mesStr=`${yr}-${String(mo+1).padStart(2,'0')}`;
+    const targets=items
+      .filter(it=>it.fecha&&it.fecha.startsWith(mesStr)&&!(it.body||'').trim())
+      .sort((a,b)=>a.fecha<b.fecha?-1:1);
+    if(targets.length===0){setDistribMsg('No hay tarjetas vacías en este mes.');setTimeout(()=>setDistribMsg(''),2500);return;}
+    const n=Math.min(piezas.length,targets.length);
+    const updates=[];
+    for(let i=0;i<n;i++){
+      const pieza=piezas[i];
+      const target=targets[i];
+      const newBody=(pieza.body||'').trim()||pieza.title.trim();
+      updates.push({id:target.id,body:newBody,title:pieza.title.trim()||target.title});
+    }
+    setItems(prev=>prev.map(it=>{
+      const u=updates.find(x=>x.id===it.id);
+      return u?{...it,body:u.body,title:u.title}:it;
+    }));
+    if(SB.configured()){
+      updates.forEach(u=>{
+        fetch(`${SB.url}/rest/v1/contenido_editorial?id=eq.${u.id}`,{
+          method:'PATCH',
+          headers:{'apikey':SB.anon,'Authorization':'Bearer '+SB.anon,'Content-Type':'application/json','Prefer':'return=minimal'},
+          body:JSON.stringify({body:u.body,title:u.title,updated_at:new Date().toISOString()})
+        }).catch(()=>{});
+      });
+    }
+    setDistribMsg(`✓ ${n} pieza${n>1?'s':''} distribuida${n>1?'s':''} al mes.`);
+    setTimeout(()=>setDistribMsg(''),3000);
+  }
+
   // ── delete ──
   function deleteItem(item){
     setItems(prev=>prev.filter(it=>it.id!==item.id));
@@ -10201,6 +10241,11 @@ function EditorialCalendar({project}){
         e('button',{className:'ec-nav-btn',onClick:nextMo},'›'),
         e('button',{className:'ec-today-btn',onClick:goToday},'Hoy')
       ),
+      e('button',{
+        className:'ec-add-btn',
+        style:{background:'var(--bg3)',color:'var(--text2)',border:'1px solid var(--border2)',marginRight:4},
+        onClick:()=>{setPanelCard(null);setPanelMode('banco');}
+      },'📦 Banco'),
       e('button',{className:'ec-add-btn',onClick:()=>{setModalDate(cellDateStr(todayD.getDate(),todayD.getMonth(),todayD.getFullYear()));setForm({title:'',tipo:'WhatsApp',status:'borrador',body:'',tags:''});setPanelCard(null);setPanelMode('new');}},
         '＋ Nueva entrada'
       )
@@ -10219,11 +10264,6 @@ function EditorialCalendar({project}){
     ),
     // layout con panel
     e('div',{className:'ec-layout'},
-      // overlay para cerrar panel en móvil al tocar fuera
-      panelVisible&&e('div',{
-        style:{position:'absolute',inset:0,zIndex:19,background:'transparent'},
-        onClick:()=>setPanelCard(null)
-      }),
       e('div',{className:'ec-grid-wrap'},
         e('div',{className:'ec-weekdays'},
           ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'].map(d=>e('div',{key:d,className:'ec-weekday'},d))
@@ -10340,6 +10380,59 @@ function EditorialCalendar({project}){
           e('div',{className:'ec-panel-ftr'},
             e('button',{className:'ec-panel-btn',onClick:()=>setPanelMode('view')},'Cancelar'),
             e('button',{className:'ec-panel-btn ec-panel-btn-primary',onClick:saveItem,disabled:saving||!form.title.trim()},saving?'Guardando…':'Guardar')
+          )
+        ),
+
+        // ── MODO BANCO DE CONTENIDO ──
+        panelMode==='banco'&&e(React.Fragment,null,
+          e('div',{className:'ec-panel-hdr'},
+            e('div',{style:{display:'flex',flexDirection:'column',gap:3,flex:1,minWidth:0}},
+              e('span',{style:{fontSize:10,color:'var(--accent)',fontWeight:600,letterSpacing:'.05em',textTransform:'uppercase'}},'📦 Banco de contenido'),
+              e('span',{style:{fontSize:11,color:'var(--text3)'}},'Prepara piezas y distribúyelas al mes')
+            ),
+            e('button',{className:'ec-panel-close',onClick:()=>setPanelMode('view')},'✕')
+          ),
+          e('div',{className:'ec-panel-body',style:{display:'flex',flexDirection:'column',gap:12,overflowY:'auto'}},
+            [0,1,2,3].map(i=>{
+              const pieza=banco[i]||{title:'',body:''};
+              return e('div',{key:i,style:{background:'var(--bg2)',borderRadius:8,padding:'10px 12px',border:'1px solid var(--border)'}},
+                e('div',{style:{fontSize:10,fontWeight:700,color:'var(--accent)',marginBottom:6,letterSpacing:'.04em'}},`PIEZA ${i+1}`),
+                e('input',{
+                  className:'ec-modal-input',
+                  placeholder:'Título o idea…',
+                  value:pieza.title||'',
+                  onChange:ev=>{
+                    const arr=[...banco];
+                    arr[i]={...arr[i]||{},title:ev.target.value};
+                    saveBanco(arr);
+                  },
+                  style:{marginBottom:6}
+                }),
+                e('textarea',{
+                  className:'ec-modal-textarea',
+                  placeholder:'Cuerpo del contenido…',
+                  value:pieza.body||'',
+                  rows:3,
+                  onChange:ev=>{
+                    const arr=[...banco];
+                    arr[i]={...arr[i]||{},body:ev.target.value};
+                    saveBanco(arr);
+                  }
+                })
+              );
+            }),
+            distribMsg&&e('div',{style:{fontSize:11,color:'var(--accent2)',textAlign:'center',padding:'4px 0',fontWeight:600}},distribMsg)
+          ),
+          e('div',{className:'ec-panel-ftr'},
+            e('button',{
+              className:'ec-panel-btn',
+              onClick:()=>{saveBanco([{title:'',body:''},{title:'',body:''},{title:'',body:''},{title:'',body:''}]);},
+              title:'Limpiar banco'
+            },'🗑 Limpiar'),
+            e('button',{
+              className:'ec-panel-btn ec-panel-btn-primary',
+              onClick:distribuir
+            },'→ Distribuir al mes')
           )
         ),
 
