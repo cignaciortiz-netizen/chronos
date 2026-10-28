@@ -7091,6 +7091,30 @@ function ComboView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
   const[stepRowCtx,setStepRowCtx]=useState(null);
   const[expandedRows,setExpandedRows]=useState(()=>new Set());
   const[newSubText,setNewSubText]=useState({}); // {stepId: string}
+  const[showPasteSteps,setShowPasteSteps]=useState(false);
+  const[pasteRaw,setPasteRaw]=useState('');
+
+  // ── parse checklist → fases con subtareas ──
+  function parsePasteSteps(raw){
+    const lines=raw.split('\n').map(l=>l.trimEnd()).filter(l=>l.trim());
+    const phases=[];let cur=null;
+    for(const line of lines){
+      const hm=line.match(/^#{1,4}\s+(.+)$/);
+      if(hm){cur={id:uid(),name:hm[1].replace(/:$/,'').trim(),subtasks:[],durationDays:null,dueDate:null,done:false,startDate:null};phases.push(cur);continue;}
+      const bm=line.match(/^[\-\*\•]\s+(?:\[[ xX]\]\s*)?(.+)$/);
+      const text=(bm?bm[1]:line).trim();
+      if(!text)continue;
+      if(!cur){cur={id:uid(),name:'General',subtasks:[],durationDays:null,dueDate:null,done:false,startDate:null};phases.push(cur);}
+      if(bm||!line.match(/^#{1,4}\s/)){
+        // si la línea es texto plano sin heading, va como subtarea
+        if(!bm&&line.match(/^[A-ZÁÉÍÓÚÑ#]/i)&&!cur.subtasks.length){
+          // podría ser una fase sin # — sólo si no hay subtareas aún y parece título
+        }
+        cur.subtasks.push({id:uid(),name:text,done:false});
+      }
+    }
+    return phases.filter(p=>p.name);
+  }
   function toggleExpand(id){setExpandedRows(s=>{const n=new Set(s);n.has(id)?n.delete(id):n.add(id);return n;});}
   function addSubtask(stepId){
     const txt=(newSubText[stepId]||'').trim();
@@ -7394,7 +7418,12 @@ function ComboView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
               style:{flex:1,background:'transparent',border:'none',outline:'none',fontSize:12,fontFamily:'Inter,sans-serif',color:'var(--text3)',padding:0}
             }),
             e(ChronosDatePicker,{value:newDate,onChange:v=>setNewDate(v||''),style:{width:120,flexShrink:0}}),
-            e('button',{className:'btn btn-primary',style:{fontSize:10,padding:'4px 10px',whiteSpace:'nowrap',flexShrink:0,marginLeft:8},onClick:addStep},'+ Agregar')
+            e('button',{className:'btn btn-primary',style:{fontSize:10,padding:'4px 10px',whiteSpace:'nowrap',flexShrink:0,marginLeft:8},onClick:addStep},'+ Agregar'),
+            e('button',{
+              title:'Pegar estructura desde checklist',
+              onClick:()=>{setPasteRaw('');setShowPasteSteps(true);},
+              style:{width:28,height:28,flexShrink:0,background:'var(--bg3)',border:'1px solid var(--border-neutral2)',borderRadius:'var(--r-sm)',color:'var(--text3)',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',transition:'all .12s'}
+            },e(DashIcon,{name:'pasteStruct',size:13}))
           ),
 
           // toggle completadas
@@ -7552,7 +7581,62 @@ function ComboView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
           )
         )
       )
-    )
+    ),
+
+    // ── Modal pegar estructura ──
+    showPasteSteps&&(()=>{
+      const preview=pasteRaw.trim()?parsePasteSteps(pasteRaw):[];
+      const totalSubs=preview.reduce((a,p)=>a+(p.subtasks||[]).length,0);
+      function doImport(){
+        if(!preview.length)return;
+        commit([...steps,...preview]);
+        setShowPasteSteps(false);
+        setPasteRaw('');
+      }
+      return e('div',{className:'ps-overlay',onClick:()=>setShowPasteSteps(false)},
+        e('div',{className:'ps-modal',onClick:ev=>ev.stopPropagation()},
+          e('div',{className:'ps-hdr'},
+            e('div',{className:'ps-hdr-icon'},e(DashIcon,{name:'pasteStruct',size:15})),
+            e('div',{style:{flex:1,minWidth:0}},
+              e('div',{className:'ps-title'},'Pegar estructura de fases'),
+              e('div',{className:'ps-subtitle'},'Headings → fases · guiones y texto → subtareas')
+            ),
+            e('button',{className:'ps-close',onClick:()=>setShowPasteSteps(false)},'✕')
+          ),
+          e('div',{className:'ps-body'},
+            e('textarea',{
+              className:'ps-textarea',
+              placeholder:'Pega el checklist aquí. Ejemplo:\n\n## Fase 1: Estrategia\n- Definir objetivos\n- Investigar mercado\n\n## Fase 2: Producción\n- Grabar contenido\n- Editar y publicar',
+              value:pasteRaw,
+              onChange:ev=>setPasteRaw(ev.target.value),
+              autoFocus:true,
+            }),
+            preview.length>0&&e('div',{className:'ps-preview'},
+              preview.map(ph=>e(React.Fragment,{key:ph.id},
+                e('div',{className:'ps-preview-phase'},
+                  e('span',{className:'ps-preview-phase-dot'}),
+                  ph.name,
+                  (ph.subtasks||[]).length>0&&e('span',{style:{fontWeight:400,color:'var(--text4)',marginLeft:4,fontSize:10}},`(${ph.subtasks.length} subtareas)`)
+                ),
+                (ph.subtasks||[]).map(t=>e('div',{key:t.id,className:'ps-preview-task'},t.name))
+              ))
+            ),
+            pasteRaw.trim().length>0&&preview.length===0&&e('div',{className:'ps-preview'},
+              e('div',{className:'ps-preview-empty'},'No se detectaron fases — asegurate de usar # para los títulos')
+            )
+          ),
+          e('div',{className:'ps-footer'},
+            preview.length>0
+              ?e('span',{className:'ps-count'},`${preview.length} fase${preview.length>1?'s':''}`+(totalSubs>0?` · ${totalSubs} subtarea${totalSubs!==1?'s':''}`:''))
+              :e('span',{className:'ps-count'},''),
+            e('div',{className:'ps-btns'},
+              e('button',{className:'ps-cancel',onClick:()=>setShowPasteSteps(false)},'Cancelar'),
+              e('button',{className:'ps-save',onClick:doImport,disabled:preview.length===0},'Importar fases')
+            )
+          )
+        )
+      );
+    })()
   );
 }
 
