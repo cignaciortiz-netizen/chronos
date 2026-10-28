@@ -9965,6 +9965,8 @@ function EditorialCalendar({project}){
   const[dragItem,setDragItem]=React.useState(null);
   // panel mode: 'view' | 'new' | 'recur'
   const[panelMode,setPanelMode]=React.useState('view');
+  const[editBody,setEditBody]=React.useState('');
+  React.useEffect(()=>{setEditBody(panelCard?panelCard.body||'':'');},[panelCard&&panelCard.id]);
   const[modalDate,setModalDate]=React.useState('');
   const[form,setForm]=React.useState({title:'',tipo:'WhatsApp',status:'borrador',body:'',tags:''});
   const[saving,setSaving]=React.useState(false);
@@ -10106,6 +10108,21 @@ function EditorialCalendar({project}){
     }
   }
 
+  // ── save body inline ──
+  function saveBody(val){
+    if(!panelCard)return;
+    const trimmed=val.trim();
+    setPanelCard(c=>({...c,body:trimmed}));
+    setItems(prev=>prev.map(it=>it.id===panelCard.id?{...it,body:trimmed}:it));
+    if(SB.configured()){
+      fetch(`${SB.url}/rest/v1/contenido_editorial?id=eq.${panelCard.id}`,{
+        method:'PATCH',
+        headers:{'apikey':SB.anon,'Authorization':'Bearer '+SB.anon,'Content-Type':'application/json','Prefer':'return=minimal'},
+        body:JSON.stringify({body:trimmed,updated_at:new Date().toISOString()})
+      }).catch(()=>{});
+    }
+  }
+
   // ── delete ──
   function deleteItem(item){
     setItems(prev=>prev.filter(it=>it.id!==item.id));
@@ -10241,11 +10258,18 @@ function EditorialCalendar({project}){
                 },STATUS_LBL[panelCard.status]||'Borrador')
               )
             ),
-            panelCard.body&&e(React.Fragment,null,
+            e(React.Fragment,null,
               e('div',{className:'ec-panel-divider'}),
               e('div',null,
                 e('div',{style:{fontSize:10,fontWeight:600,color:'var(--text4)',marginBottom:5,letterSpacing:'.04em',textTransform:'uppercase'}},'Contenido'),
-                e('div',{className:'ec-panel-body-text'},panelCard.body)
+                e('textarea',{
+                  className:'ec-panel-body-text',
+                  style:{width:'100%',resize:'vertical',minHeight:90,fontFamily:'inherit',boxSizing:'border-box',cursor:'text'},
+                  placeholder:'Escribe el contenido aquí…',
+                  value:editBody,
+                  onChange:ev=>setEditBody(ev.target.value),
+                  onBlur:()=>saveBody(editBody)
+                })
               )
             ),
             (panelCard.tags&&panelCard.tags.length>0)&&e('div',null,
