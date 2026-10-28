@@ -7225,10 +7225,16 @@ function ComboView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
     const dx=ev.clientX-drag.startX;
     const daysDelta=Math.round(dx/GW);
     if(drag.mode==='move'){
+      if(drag.subId){
+        // subtarea: solo mover dueDate
+        const newEnd=addDaysC(drag.origEnd,daysDelta);
+        setDrag(d=>({...d,curEnd:newEnd}));
+      } else {
       const newStart=addDaysC(drag.origStart,daysDelta);
       const dur=drag.origEnd&&drag.origStart?(toTs(drag.origEnd)-toTs(drag.origStart))/DAY_MS:0;
       const newEnd=addDaysC(newStart,dur);
       setDrag(d=>({...d,curStart:newStart,curEnd:newEnd}));
+      }
     } else if(drag.mode==='start'){
       const newStart=addDaysC(drag.origStart,daysDelta);
       if(drag.origEnd&&newStart>drag.origEnd)return;
@@ -7241,10 +7247,15 @@ function ComboView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
   }
   function onGanttMouseUp(){
     if(!drag)return;
-    const upd={};
-    if(drag.curStart)upd.startDate=drag.curStart;
-    if(drag.curEnd)upd.dueDate=drag.curEnd;
-    if(Object.keys(upd).length)updateStep(drag.id,upd);
+    if(drag.subId){
+      // subtarea: solo dueDate
+      if(drag.curEnd)updateSubDate(drag.stepId,drag.subId,drag.curEnd);
+    } else {
+      const upd={};
+      if(drag.curStart)upd.startDate=drag.curStart;
+      if(drag.curEnd)upd.dueDate=drag.curEnd;
+      if(Object.keys(upd).length)updateStep(drag.id,upd);
+    }
     setDrag(null);
   }
 
@@ -7618,22 +7629,27 @@ function ComboView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
                 );
               }
 
-              // Fila de SUBTAREA (outline style, punto único en su fecha)
+              // Fila de SUBTAREA (outline style, draggable por dueDate)
               const subDate=sub.dueDate;
               const hasSubBar=!!subDate;
-              const subBL=hasSubBar?dLeft(subDate):0;
+              const isSubDragging=drag&&drag.subId===sub.id&&drag.stepId===s.id;
+              const dispSubDate=isSubDragging?(drag.curEnd||subDate):subDate;
+              const subBL=hasSubBar?dLeft(dispSubDate):0;
               const subBW=hasSubBar?Math.max(GW,GW):0; // ancho mínimo = 1 día
               return e('div',{key:rowKey,style:{
                 height:26,borderBottom:'1px solid var(--border3)',position:'relative',boxSizing:'border-box',
                 background:'rgba(255,255,255,.008)'
               }},
                 hasSubBar&&e('div',{
-                  title:cleanMd(sub.name)+' · '+subDate,
+                  title:cleanMd(sub.name)+' · '+dispSubDate,
+                  onMouseDown:ev=>{if(ev.detail===2)return;ev.preventDefault();ev.stopPropagation();setDrag({subId:sub.id,stepId:s.id,mode:'move',startX:ev.clientX,origEnd:subDate,curEnd:subDate});},
                   style:{position:'absolute',left:subBL,width:subBW,top:'50%',transform:'translateY(-50%)',height:16,borderRadius:4,
                     background:'color-mix(in srgb,'+bc+' 10%,transparent)',
                     border:'1.5px solid color-mix(in srgb,'+bc+' 65%,transparent)',
-                    zIndex:2,display:'flex',alignItems:'center',paddingLeft:5,overflow:'hidden',boxSizing:'border-box',
-                    pointerEvents:'none'}
+                    zIndex:isSubDragging?5:2,display:'flex',alignItems:'center',paddingLeft:5,overflow:'hidden',boxSizing:'border-box',
+                    cursor:isSubDragging?'grabbing':'grab',
+                    boxShadow:isSubDragging?'0 4px 12px rgba(0,0,0,.45)':'none',
+                    userSelect:'none'}
                 },
                   e('span',{style:{fontSize:9,fontFamily:'Inter,sans-serif',fontWeight:500,
                     color:'color-mix(in srgb,'+bc+' 90%,var(--text1))',
