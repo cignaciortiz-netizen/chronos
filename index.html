@@ -9963,10 +9963,12 @@ function EditorialCalendar({project}){
   const[panelCard,setPanelCard]=React.useState(null);
   const[filterTipo,setFilterTipo]=React.useState('Todos');
   const[dragItem,setDragItem]=React.useState(null);
-  const[showModal,setShowModal]=React.useState(false);
+  // panel mode: 'view' | 'new' | 'recur'
+  const[panelMode,setPanelMode]=React.useState('view');
   const[modalDate,setModalDate]=React.useState('');
   const[form,setForm]=React.useState({title:'',tipo:'WhatsApp',status:'borrador',body:'',tags:''});
   const[saving,setSaving]=React.useState(false);
+  const[recurForm,setRecurForm]=React.useState({freq:'weekly',dayOfWeek:'3',weeks:4});
 
   // ── fetch from Supabase ──
   function fetchItems(){
@@ -10027,18 +10029,65 @@ function EditorialCalendar({project}){
       created_at:new Date().toISOString(),
       updated_at:new Date().toISOString(),
     };
-    // optimistic
     setItems(prev=>[...prev,newItem]);
-    setShowModal(false);
+    setPanelCard(newItem);
+    setPanelMode('view');
     setForm({title:'',tipo:'WhatsApp',status:'borrador',body:'',tags:''});
     setSaving(false);
-    // persist
     if(SB.configured()){
       fetch(`${SB.url}/rest/v1/contenido_editorial`,{
         method:'POST',
         headers:{'apikey':SB.anon,'Authorization':'Bearer '+SB.anon,'Content-Type':'application/json','Prefer':'return=minimal'},
         body:JSON.stringify(newItem)
       }).catch(()=>{});
+    }
+  }
+
+  // ── guardar entradas recurrentes ──
+  function saveRecurring(){
+    if(!form.title.trim())return;
+    setSaving(true);
+    const dow=parseInt(recurForm.dayOfWeek,10); // 0=dom…6=sab, usamos ISO: 1=lun…7=dom → ajustamos
+    const weeks=Math.max(1,Math.min(26,parseInt(recurForm.weeks,10)||4));
+    // fecha base: primer día de la semana que contiene modalDate con el dow pedido
+    const base=new Date(modalDate+'T12:00:00');
+    // avanzar hasta el próximo dow desde la base (o el mismo día si coincide)
+    const baseDow=base.getDay(); // 0=dom
+    let diff=(dow-baseDow+7)%7;
+    base.setDate(base.getDate()+diff);
+    const step=recurForm.freq==='biweekly'?14:7;
+    const newItems=[];
+    for(let i=0;i<weeks;i++){
+      const d=new Date(base.getTime()+i*step*86400000);
+      const fecha=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+      // salta si ya existe entrada con mismo título y fecha
+      if(items.some(x=>x.fecha===fecha&&x.title===form.title.trim()))continue;
+      newItems.push({
+        id:Math.random().toString(36).slice(2),
+        project_id:project.id,
+        title:form.title.trim(),
+        tipo:form.tipo,
+        status:'borrador',
+        body:form.body.trim()||null,
+        tags:form.tags.split(',').map(t=>t.trim()).filter(Boolean),
+        fecha,
+        created_at:new Date().toISOString(),
+        updated_at:new Date().toISOString(),
+      });
+    }
+    setItems(prev=>[...prev,...newItems]);
+    if(newItems.length>0){setPanelCard(newItems[0]);setPanelMode('view');}
+    setForm({title:'',tipo:'WhatsApp',status:'borrador',body:'',tags:''});
+    setRecurForm({freq:'weekly',dayOfWeek:'3',weeks:4});
+    setSaving(false);
+    if(SB.configured()&&newItems.length>0){
+      Promise.all(newItems.map(it=>
+        fetch(`${SB.url}/rest/v1/contenido_editorial`,{
+          method:'POST',
+          headers:{'apikey':SB.anon,'Authorization':'Bearer '+SB.anon,'Content-Type':'application/json','Prefer':'return=minimal'},
+          body:JSON.stringify(it)
+        })
+      )).catch(()=>{});
     }
   }
 
@@ -10116,7 +10165,7 @@ function EditorialCalendar({project}){
         cellCards.length>MAX&&e('span',{className:'ec-more'},`+${cellCards.length-MAX}`),
         cellCards.length===0&&e('span',{
           className:'ec-empty-day',
-          onClick:()=>{setModalDate(dateStr);setShowModal(true);}
+          onClick:()=>{setModalDate(dateStr);setForm({title:'',tipo:'WhatsApp',status:'borrador',body:'',tags:''});setPanelCard(null);setPanelMode('new');}
         },'＋')
       )
     ));
@@ -10135,7 +10184,7 @@ function EditorialCalendar({project}){
         e('button',{className:'ec-nav-btn',onClick:nextMo},'›'),
         e('button',{className:'ec-today-btn',onClick:goToday},'Hoy')
       ),
-      e('button',{className:'ec-add-btn',onClick:()=>{setModalDate(cellDateStr(todayD.getDate(),todayD.getMonth(),todayD.getFullYear()));setShowModal(true);}},
+      e('button',{className:'ec-add-btn',onClick:()=>{setModalDate(cellDateStr(todayD.getDate(),todayD.getMonth(),todayD.getFullYear()));setForm({title:'',tipo:'WhatsApp',status:'borrador',body:'',tags:''});setPanelCard(null);setPanelMode('new');}},
         '＋ Nueva entrada'
       )
     ),
@@ -10165,14 +10214,16 @@ function EditorialCalendar({project}){
         e('div',{className:'ec-grid'},cells)
       ),
       // panel lateral
-      e('div',{className:'ec-panel'+(panelVisible?'':' ec-panel-hidden')},
-        panelCard&&e(React.Fragment,null,
+      e('div',{className:'ec-panel'+((panelVisible||panelMode!=='view')?'':' ec-panel-hidden')},
+
+        // ── MODO VER ──
+        panelMode==='view'&&panelCard&&e(React.Fragment,null,
           e('div',{className:'ec-panel-hdr'},
             e('div',{style:{display:'flex',flexDirection:'column',gap:5,flex:1,minWidth:0}},
               e('span',{className:'ec-panel-badge'},panelCard.tipo||'General'),
               e('h3',{className:'ec-panel-title'},panelCard.title)
             ),
-            e('button',{className:'ec-panel-close',onClick:()=>setPanelCard(null)},'✕')
+            e('button',{className:'ec-panel-close',onClick:()=>{setPanelCard(null);setPanelMode('view');}},'✕')
           ),
           e('div',{className:'ec-panel-body'},
             e('div',{className:'ec-panel-row'},
@@ -10212,45 +10263,130 @@ function EditorialCalendar({project}){
               panelCard.status==='publicado'?'↩ Revertir':'→ Avanzar'
             )
           )
+        ),
+
+        // ── MODO NUEVA ENTRADA ──
+        panelMode==='new'&&e(React.Fragment,null,
+          e('div',{className:'ec-panel-hdr'},
+            e('div',{style:{display:'flex',flexDirection:'column',gap:3,flex:1,minWidth:0}},
+              e('span',{style:{fontSize:10,color:'var(--text3)',fontWeight:600,letterSpacing:'.05em',textTransform:'uppercase'}},'Nueva entrada'),
+              e('span',{style:{fontSize:11,color:'var(--text2)'}},modalDate)
+            ),
+            e('div',{style:{display:'flex',gap:6,alignItems:'center'}},
+              e('button',{
+                title:'Crear serie recurrente',
+                onClick:()=>setPanelMode('recur'),
+                style:{fontSize:11,background:'var(--bg3)',border:'1px solid var(--border2)',borderRadius:6,color:'var(--text2)',padding:'3px 8px',cursor:'pointer',whiteSpace:'nowrap'}
+              },'↻ Serie'),
+              e('button',{className:'ec-panel-close',onClick:()=>setPanelMode('view')},'✕')
+            )
+          ),
+          e('div',{className:'ec-panel-body',style:{display:'flex',flexDirection:'column',gap:10}},
+            e('div',null,
+              e('label',{className:'ec-modal-lbl'},'Título *'),
+              e('input',{className:'ec-modal-input',placeholder:'Ej: ¿Qué aprendiste esta semana?',value:form.title,
+                onChange:ev=>setForm(f=>({...f,title:ev.target.value})),
+                autoFocus:true,
+                onKeyDown:ev=>{if(ev.key==='Enter'&&form.title.trim())saveItem();}
+              })
+            ),
+            e('div',{style:{display:'flex',gap:8}},
+              e('div',{style:{flex:1}},
+                e('label',{className:'ec-modal-lbl'},'Tipo'),
+                e('select',{className:'ec-modal-select',value:form.tipo,onChange:ev=>setForm(f=>({...f,tipo:ev.target.value}))},
+                  ['WhatsApp','Tarea','Sistema','Proyecto','general'].map(t=>e('option',{key:t,value:t},t))
+                )
+              ),
+              e('div',{style:{flex:1}},
+                e('label',{className:'ec-modal-lbl'},'Estado'),
+                e('select',{className:'ec-modal-select',value:form.status,onChange:ev=>setForm(f=>({...f,status:ev.target.value}))},
+                  ['borrador','listo','publicado'].map(s=>e('option',{key:s,value:s},STATUS_LBL[s]))
+                )
+              )
+            ),
+            e('div',null,
+              e('label',{className:'ec-modal-lbl'},'Contenido'),
+              e('textarea',{className:'ec-modal-textarea',placeholder:'Descripción o detalle…',value:form.body,onChange:ev=>setForm(f=>({...f,body:ev.target.value}))})
+            ),
+            e('div',null,
+              e('label',{className:'ec-modal-lbl'},'Etiquetas'),
+              e('input',{className:'ec-modal-input',placeholder:'#comunidad, #engagement',value:form.tags,onChange:ev=>setForm(f=>({...f,tags:ev.target.value}))})
+            )
+          ),
+          e('div',{className:'ec-panel-ftr'},
+            e('button',{className:'ec-panel-btn',onClick:()=>setPanelMode('view')},'Cancelar'),
+            e('button',{className:'ec-panel-btn ec-panel-btn-primary',onClick:saveItem,disabled:saving||!form.title.trim()},saving?'Guardando…':'Guardar')
+          )
+        ),
+
+        // ── MODO SERIE RECURRENTE ──
+        panelMode==='recur'&&e(React.Fragment,null,
+          e('div',{className:'ec-panel-hdr'},
+            e('div',{style:{display:'flex',flexDirection:'column',gap:3,flex:1,minWidth:0}},
+              e('span',{style:{fontSize:10,color:'var(--accent2)',fontWeight:600,letterSpacing:'.05em',textTransform:'uppercase'}},'↻ Serie recurrente'),
+              e('span',{style:{fontSize:11,color:'var(--text2)'}},'Desde '+modalDate)
+            ),
+            e('button',{className:'ec-panel-close',onClick:()=>setPanelMode('new')},'✕')
+          ),
+          e('div',{className:'ec-panel-body',style:{display:'flex',flexDirection:'column',gap:10}},
+            e('div',null,
+              e('label',{className:'ec-modal-lbl'},'Título de la entrada *'),
+              e('input',{className:'ec-modal-input',placeholder:'Ej: Pregunta semanal WhatsApp',value:form.title,
+                onChange:ev=>setForm(f=>({...f,title:ev.target.value})),autoFocus:true
+              })
+            ),
+            e('div',{style:{display:'flex',gap:8}},
+              e('div',{style:{flex:1}},
+                e('label',{className:'ec-modal-lbl'},'Tipo'),
+                e('select',{className:'ec-modal-select',value:form.tipo,onChange:ev=>setForm(f=>({...f,tipo:ev.target.value}))},
+                  ['WhatsApp','Tarea','Sistema','Proyecto','general'].map(t=>e('option',{key:t,value:t},t))
+                )
+              ),
+              e('div',{style:{flex:1}},
+                e('label',{className:'ec-modal-lbl'},'Contenido'),
+                e('input',{className:'ec-modal-input',placeholder:'Descripción (opcional)',value:form.body,onChange:ev=>setForm(f=>({...f,body:ev.target.value}))})
+              )
+            ),
+            e('div',{className:'ec-panel-divider'}),
+            e('div',{style:{fontSize:10,fontWeight:600,color:'var(--text3)',letterSpacing:'.05em',textTransform:'uppercase',marginBottom:2}},'Repetición'),
+            e('div',{style:{display:'flex',gap:8}},
+              e('div',{style:{flex:1}},
+                e('label',{className:'ec-modal-lbl'},'Frecuencia'),
+                e('select',{className:'ec-modal-select',value:recurForm.freq,onChange:ev=>setRecurForm(f=>({...f,freq:ev.target.value}))},
+                  e('option',{value:'weekly'},'Cada semana'),
+                  e('option',{value:'biweekly'},'Cada 2 semanas')
+                )
+              ),
+              e('div',{style:{flex:1}},
+                e('label',{className:'ec-modal-lbl'},'Día de la semana'),
+                e('select',{className:'ec-modal-select',value:recurForm.dayOfWeek,onChange:ev=>setRecurForm(f=>({...f,dayOfWeek:ev.target.value}))},
+                  e('option',{value:'1'},'Lunes'),
+                  e('option',{value:'2'},'Martes'),
+                  e('option',{value:'3'},'Miércoles'),
+                  e('option',{value:'4'},'Jueves'),
+                  e('option',{value:'5'},'Viernes'),
+                  e('option',{value:'6'},'Sábado'),
+                  e('option',{value:'0'},'Domingo')
+                )
+              )
+            ),
+            e('div',{style:{flex:1}},
+              e('label',{className:'ec-modal-lbl'},'Cuántas semanas generar'),
+              e('input',{className:'ec-modal-input',type:'number',min:1,max:26,value:recurForm.weeks,
+                onChange:ev=>setRecurForm(f=>({...f,weeks:ev.target.value}))
+              })
+            ),
+            e('div',{style:{fontSize:10,color:'var(--text3)',fontStyle:'italic',marginTop:2}},
+              `Se crearán ${recurForm.weeks} entradas — todas como borrador, una por ${['dom','lun','mar','mié','jue','vie','sáb'][parseInt(recurForm.dayOfWeek,10)]||'miércoles'}.`
+            )
+          ),
+          e('div',{className:'ec-panel-ftr'},
+            e('button',{className:'ec-panel-btn',onClick:()=>setPanelMode('new')},'← Volver'),
+            e('button',{className:'ec-panel-btn ec-panel-btn-primary',onClick:saveRecurring,disabled:saving||!form.title.trim()},saving?'Creando…':'Crear serie')
+          )
         )
       )
     ),
-    // modal nueva entrada
-    showModal&&e('div',{className:'ec-modal-overlay',onClick:()=>setShowModal(false)},
-      e('div',{className:'ec-modal',onClick:ev=>ev.stopPropagation()},
-        e('div',{className:'ec-modal-title'},'Nueva entrada · '+modalDate),
-        e('div',{className:'ec-modal-row'},
-          e('label',{className:'ec-modal-lbl'},'Título *'),
-          e('input',{className:'ec-modal-input',placeholder:'Ej: ¿Qué aprendiste esta semana?',value:form.title,onChange:ev=>setForm(f=>({...f,title:ev.target.value})),autoFocus:true,onKeyDown:ev=>{if(ev.key==='Enter')saveItem();}})
-        ),
-        e('div',{style:{display:'flex',gap:8}},
-          e('div',{className:'ec-modal-row',style:{flex:1}},
-            e('label',{className:'ec-modal-lbl'},'Tipo'),
-            e('select',{className:'ec-modal-select',value:form.tipo,onChange:ev=>setForm(f=>({...f,tipo:ev.target.value}))},
-              ['WhatsApp','Tarea','Sistema','Proyecto','general'].map(t=>e('option',{key:t,value:t},t))
-            )
-          ),
-          e('div',{className:'ec-modal-row',style:{flex:1}},
-            e('label',{className:'ec-modal-lbl'},'Estado'),
-            e('select',{className:'ec-modal-select',value:form.status,onChange:ev=>setForm(f=>({...f,status:ev.target.value}))},
-              ['borrador','listo','publicado'].map(s=>e('option',{key:s,value:s},STATUS_LBL[s]))
-            )
-          )
-        ),
-        e('div',{className:'ec-modal-row'},
-          e('label',{className:'ec-modal-lbl'},'Contenido'),
-          e('textarea',{className:'ec-modal-textarea',placeholder:'Descripción, pregunta o detalle del contenido…',value:form.body,onChange:ev=>setForm(f=>({...f,body:ev.target.value}))})
-        ),
-        e('div',{className:'ec-modal-row'},
-          e('label',{className:'ec-modal-lbl'},'Etiquetas'),
-          e('input',{className:'ec-modal-input',placeholder:'#comunidad, #engagement (separados por coma)',value:form.tags,onChange:ev=>setForm(f=>({...f,tags:ev.target.value}))})
-        ),
-        e('div',{className:'ec-modal-footer'},
-          e('button',{className:'ec-modal-cancel',onClick:()=>setShowModal(false)},'Cancelar'),
-          e('button',{className:'ec-modal-save',onClick:saveItem,disabled:saving||!form.title.trim()},saving?'Guardando…':'Guardar')
-        )
-      )
-    )
   );
 }
 
