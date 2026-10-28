@@ -7154,11 +7154,24 @@ function ComboView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
     return()=>{window.removeEventListener('mousedown',close);window.removeEventListener('scroll',close,true);};
   },[stepRowCtx]);
 
+  // ── Gantt rows (fases + subtareas expandidas) ──
+  const ganttRows=[];
+  visSteps.forEach(s=>{
+    ganttRows.push({type:'phase',step:s});
+    if(expandedRows.has(s.id)){
+      (s.subtasks||[]).forEach(sub=>ganttRows.push({type:'sub',step:s,sub}));
+    }
+  });
+
   // ── Gantt date range ──
   const DAY_MS=86400000;
   const GW=DAY_W||28;
   const allDates=[toTs(today)];
-  visSteps.forEach(s=>{if(s.startDate)allDates.push(toTs(s.startDate));if(s.dueDate)allDates.push(toTs(s.dueDate));});
+  visSteps.forEach(s=>{
+    if(s.startDate)allDates.push(toTs(s.startDate));
+    if(s.dueDate)allDates.push(toTs(s.dueDate));
+    (s.subtasks||[]).forEach(sub=>{if(sub.dueDate)allDates.push(toTs(sub.dueDate));});
+  });
   const minTs=Math.min(...allDates)-3*DAY_MS;
   const maxTs=Math.max(...allDates)+10*DAY_MS;
   const numDays=Math.round((maxTs-minTs)/DAY_MS)+1;
@@ -7366,9 +7379,9 @@ function ComboView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
               )
             ),
             // ── bloque subtareas desplegable ──
-            isExpanded&&e('div',{style:{paddingLeft:42,paddingRight:14,paddingBottom:8,paddingTop:2}},
+            isExpanded&&e('div',{style:{paddingLeft:42,paddingRight:14,paddingBottom:6,paddingTop:0}},
               subs.map(sub=>e('div',{key:sub.id,
-                style:{display:'flex',alignItems:'center',gap:6,padding:'3px 0',minHeight:24}},
+                style:{display:'flex',alignItems:'center',gap:6,height:26,boxSizing:'border-box',borderBottom:'1px solid var(--border3)'}},
                 e('button',{
                   onClick:()=>toggleSubDone(s.id,sub.id),
                   title:sub.done?'Reabrir':'Marcar hecha',
@@ -7564,40 +7577,66 @@ function ComboView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
             // today line
             e('div',{style:{position:'absolute',left:todayPx,top:0,bottom:0,width:1.5,background:'#c9a35c',opacity:.45,pointerEvents:'none',zIndex:3}}),
 
-            visSteps.map((s,ri)=>{
+            ganttRows.map((row,ri)=>{
+              const isSubRow=row.type==='sub';
+              const s=row.step;
+              const sub=row.sub||null;
+              const rowKey=isSubRow?s.id+'_sub_'+sub.id:s.id;
               const bc=barColor(s);
-              const isDragging=drag&&drag.id===s.id;
-              const dispStart=isDragging?(drag.curStart||drag.origStart):(s.startDate||s.dueDate);
-              const dispEnd=isDragging?(drag.curEnd||drag.origEnd):(s.dueDate||s.startDate);
-              const hasBar=!!(dispStart&&dispEnd);
-              const bL=hasBar?dLeft(dispStart):0;
-              const bW=hasBar?dWidth(dispStart,dispEnd):0;
-              const isActive=!!activeStep&&activeStep.id===s.id;
-              return e('div',{key:s.id,style:{
-                height:ROW_H,borderBottom:BDR,position:'relative',boxSizing:'border-box',
-                background:isActive?'color-mix(in srgb, var(--accent2) 5%, transparent)':ri%2===1?'rgba(255,255,255,.015)':'transparent'
+
+              // Fila de FASE
+              if(!isSubRow){
+                const isDragging=drag&&drag.id===s.id;
+                const dispStart=isDragging?(drag.curStart||drag.origStart):(s.startDate||s.dueDate);
+                const dispEnd=isDragging?(drag.curEnd||drag.origEnd):(s.dueDate||s.startDate);
+                const hasBar=!!(dispStart&&dispEnd);
+                const bL=hasBar?dLeft(dispStart):0;
+                const bW=hasBar?dWidth(dispStart,dispEnd):0;
+                const isActive=!!activeStep&&activeStep.id===s.id;
+                return e('div',{key:rowKey,style:{
+                  height:ROW_H,borderBottom:BDR,position:'relative',boxSizing:'border-box',
+                  background:isActive?'color-mix(in srgb, var(--accent2) 5%, transparent)':ri%2===1?'rgba(255,255,255,.015)':'transparent'
+                }},
+                  hasBar&&e('div',{
+                    title:dispStart+' → '+dispEnd,
+                    onMouseDown:ev=>{if(ev.detail===2)return;ev.preventDefault();setDrag({id:s.id,mode:'move',startX:ev.clientX,origStart:s.startDate||s.dueDate,origEnd:s.dueDate||s.startDate,curStart:s.startDate||s.dueDate,curEnd:s.dueDate||s.startDate});},
+                    style:{position:'absolute',left:bL,width:bW,top:'50%',transform:'translateY(-50%)',height:22,borderRadius:5,
+                      background:bc,opacity:s.done?.45:1,zIndex:isDragging?5:2,
+                      display:'flex',alignItems:'center',paddingLeft:8,overflow:'visible',boxSizing:'border-box',
+                      cursor:isDragging?'grabbing':'grab',
+                      boxShadow:isDragging?'0 4px 16px rgba(0,0,0,.5)':'none',
+                      userSelect:'none'}
+                  },
+                    e('div',{style:{position:'absolute',left:0,top:0,bottom:0,width:7,cursor:'ew-resize',zIndex:3,borderRadius:'5px 0 0 5px'},
+                      onMouseDown:ev=>{ev.preventDefault();ev.stopPropagation();setDrag({id:s.id,mode:'start',startX:ev.clientX,origStart:s.startDate||s.dueDate,origEnd:s.dueDate||s.startDate,curStart:s.startDate||s.dueDate,curEnd:s.dueDate||s.startDate});}}),
+                    e('span',{style:{fontSize:10,fontFamily:'Inter,sans-serif',fontWeight:500,color:'#fff',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',lineHeight:1,textShadow:'0 1px 3px rgba(0,0,0,.5)',flex:1,pointerEvents:'none'}},cleanMd(s.name)),
+                    e('div',{style:{position:'absolute',right:0,top:0,bottom:0,width:7,cursor:'ew-resize',zIndex:3,borderRadius:'0 5px 5px 0'},
+                      onMouseDown:ev=>{ev.preventDefault();ev.stopPropagation();setDrag({id:s.id,mode:'end',startX:ev.clientX,origStart:s.startDate||s.dueDate,origEnd:s.dueDate||s.startDate,curStart:s.startDate||s.dueDate,curEnd:s.dueDate||s.startDate});}})
+                  )
+                );
+              }
+
+              // Fila de SUBTAREA (outline style, punto único en su fecha)
+              const subDate=sub.dueDate;
+              const hasSubBar=!!subDate;
+              const subBL=hasSubBar?dLeft(subDate):0;
+              const subBW=hasSubBar?Math.max(GW,GW):0; // ancho mínimo = 1 día
+              return e('div',{key:rowKey,style:{
+                height:26,borderBottom:'1px solid var(--border3)',position:'relative',boxSizing:'border-box',
+                background:'rgba(255,255,255,.008)'
               }},
-                hasBar&&e('div',{
-                  title:dispStart+' → '+dispEnd,
-                  onMouseDown:ev=>{if(ev.detail===2)return;ev.preventDefault();setDrag({id:s.id,mode:'move',startX:ev.clientX,origStart:s.startDate||s.dueDate,origEnd:s.dueDate||s.startDate,curStart:s.startDate||s.dueDate,curEnd:s.dueDate||s.startDate});},
-                  style:{position:'absolute',left:bL,width:bW,top:'50%',transform:'translateY(-50%)',height:22,borderRadius:5,
-                    background:bc,opacity:s.done?.45:1,zIndex:isDragging?5:2,
-                    display:'flex',alignItems:'center',paddingLeft:8,overflow:'visible',boxSizing:'border-box',
-                    cursor:isDragging?'grabbing':'grab',
-                    boxShadow:isDragging?'0 4px 16px rgba(0,0,0,.5)':'none',
-                    userSelect:'none'}
+                hasSubBar&&e('div',{
+                  title:cleanMd(sub.name)+' · '+subDate,
+                  style:{position:'absolute',left:subBL,width:subBW,top:'50%',transform:'translateY(-50%)',height:16,borderRadius:4,
+                    background:'color-mix(in srgb,'+bc+' 10%,transparent)',
+                    border:'1.5px solid color-mix(in srgb,'+bc+' 65%,transparent)',
+                    zIndex:2,display:'flex',alignItems:'center',paddingLeft:5,overflow:'hidden',boxSizing:'border-box',
+                    pointerEvents:'none'}
                 },
-                  // handle izquierdo (resize start)
-                  e('div',{
-                    style:{position:'absolute',left:0,top:0,bottom:0,width:7,cursor:'ew-resize',zIndex:3,borderRadius:'5px 0 0 5px'},
-                    onMouseDown:ev=>{ev.preventDefault();ev.stopPropagation();setDrag({id:s.id,mode:'start',startX:ev.clientX,origStart:s.startDate||s.dueDate,origEnd:s.dueDate||s.startDate,curStart:s.startDate||s.dueDate,curEnd:s.dueDate||s.startDate});}
-                  }),
-                  e('span',{style:{fontSize:10,fontFamily:'Inter,sans-serif',fontWeight:500,color:'#fff',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',lineHeight:1,textShadow:'0 1px 3px rgba(0,0,0,.5)',flex:1,pointerEvents:'none'}},s.name),
-                  // handle derecho (resize end)
-                  e('div',{
-                    style:{position:'absolute',right:0,top:0,bottom:0,width:7,cursor:'ew-resize',zIndex:3,borderRadius:'0 5px 5px 0'},
-                    onMouseDown:ev=>{ev.preventDefault();ev.stopPropagation();setDrag({id:s.id,mode:'end',startX:ev.clientX,origStart:s.startDate||s.dueDate,origEnd:s.dueDate||s.startDate,curStart:s.startDate||s.dueDate,curEnd:s.dueDate||s.startDate});}
-                  })
+                  e('span',{style:{fontSize:9,fontFamily:'Inter,sans-serif',fontWeight:500,
+                    color:'color-mix(in srgb,'+bc+' 90%,var(--text1))',
+                    whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',lineHeight:1,flex:1,pointerEvents:'none'}},
+                    cleanMd(sub.name))
                 )
               );
             })
