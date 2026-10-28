@@ -1478,7 +1478,7 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .ec-more{font-size:9.5px;color:var(--text4);padding:1px 3px;cursor:pointer;align-self:flex-start}
 .ec-more:hover{color:var(--accent2)}
 /* panel lateral */
-.ec-layout{flex:1;display:flex;min-height:0;overflow:hidden}
+.ec-layout{flex:1;display:flex;min-height:0;overflow:hidden;position:relative}
 .ec-panel{width:280px;flex-shrink:0;background:var(--bg1);border-left:1px solid var(--border);display:flex;flex-direction:column;transition:width .2s cubic-bezier(.4,0,.2,1)}
 .ec-panel.ec-panel-hidden{width:0;overflow:hidden;border-left:none}
 .ec-panel-hdr{display:flex;align-items:flex-start;gap:8px;padding:12px 12px 10px;border-bottom:1px solid var(--border);flex-shrink:0}
@@ -1523,6 +1523,75 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .ec-modal-cancel:hover{background:var(--bg3);color:var(--text0)}
 .ec-modal-save{padding:7px 16px;border-radius:var(--r-sm);border:none;background:var(--accent);color:#1a0a02;font-size:12px;font-family:'Inter',sans-serif;font-weight:600;cursor:pointer;transition:background .12s}
 .ec-modal-save:hover{background:var(--accent2)}
+
+/* ── EC responsive móvil ─────────────────────────────────── */
+@media (max-width:700px){
+  /* dash-body menos padding en móvil */
+  .dash-body{padding:12px 10px 80px}
+  /* header y tabs más compactos */
+  .dash-header{padding:14px 14px 0}
+  .dash-tabs{padding:10px 14px 0;gap:0}
+  .dash-tab{font-size:11px;padding:6px 8px 8px}
+  /* calendario: altura fija para que quepa en pantalla */
+  .ec-wrap{height:calc(100vh - 180px);min-height:460px}
+
+  /* toolbar: dos filas */
+  .ec-toolbar{padding:8px 10px;gap:6px}
+  .ec-title{font-size:12px}
+  .ec-month-nav{gap:2px}
+  .ec-month-lbl{font-size:12px;min-width:100px;text-align:center}
+  .ec-nav-btn{padding:4px 8px;font-size:14px}
+  .ec-today-btn{font-size:10px;padding:4px 8px}
+  .ec-add-btn{font-size:10px;padding:5px 10px;margin-left:auto}
+
+  /* filtros: scroll horizontal */
+  .ec-filters{overflow-x:auto;-webkit-overflow-scrolling:touch;flex-wrap:nowrap;scrollbar-width:none;padding:4px 10px}
+  .ec-filters::-webkit-scrollbar{display:none}
+  .ec-filter-lbl{flex-shrink:0}
+  .ec-chip{flex-shrink:0;font-size:10.5px;padding:3px 9px}
+
+  /* grid: celdas más compactas */
+  .ec-grid-wrap{overflow:auto;-webkit-overflow-scrolling:touch}
+  .ec-weekday{font-size:9px;padding:4px 2px}
+  .ec-cell{padding:3px 3px;min-height:54px}
+  .ec-day-num{font-size:9px;width:16px;height:16px;display:flex;align-items:center;justify-content:center}
+  .ec-card{padding:2px 4px;gap:2px}
+  .ec-card-dot{width:5px;height:5px;flex-shrink:0}
+  .ec-card-text{font-size:9px}
+  .ec-card-tag{display:none} /* ocultar tipo en celdas pequeñas */
+  .ec-more{font-size:9px}
+  .ec-empty-day{font-size:12px}
+
+  /* layout: panel como overlay en móvil */
+  .ec-layout{position:relative;overflow:hidden}
+  .ec-panel{
+    position:absolute;top:0;right:0;bottom:0;
+    width:100%!important;
+    z-index:20;
+    box-shadow:-4px 0 24px #0008;
+    transition:transform .22s cubic-bezier(.4,0,.2,1);
+    transform:translateX(0);
+  }
+  .ec-panel.ec-panel-hidden{
+    transform:translateX(100%);
+    width:100%!important;
+    overflow:hidden;
+    border-left:none;
+  }
+
+  /* modal: full screen en móvil */
+  .ec-modal-overlay{align-items:flex-end;padding:0}
+  .ec-modal{width:100%;max-width:100%;border-radius:var(--r-xl) var(--r-xl) 0 0;max-height:90vh;overflow-y:auto;padding:20px 16px 32px}
+  .ec-modal-title{font-size:13px}
+}
+
+/* tableta media (700–1000px) — panel más angosto */
+@media (min-width:701px) and (max-width:1000px){
+  .dash-body{padding:16px 16px 80px}
+  .ec-panel{width:220px}
+  .ec-card-tag{display:none}
+  .ec-cell{min-height:64px}
+}
 .dash-add-btn{background:transparent;border:none;color:var(--text3);cursor:pointer;font-size:15px;padding:0 2px;line-height:1;border-radius:4px}
 .dash-add-btn:hover{color:var(--accent2)}
 /* HORIZONTAL TIMELINE — Bloques de tiempo */
@@ -9712,6 +9781,11 @@ function EditorialCalendar({project}){
     ),
     // layout con panel
     e('div',{className:'ec-layout'},
+      // overlay para cerrar panel en móvil al tocar fuera
+      panelVisible&&e('div',{
+        style:{position:'absolute',inset:0,zIndex:19,background:'transparent'},
+        onClick:()=>setPanelCard(null)
+      }),
       e('div',{className:'ec-grid-wrap'},
         e('div',{className:'ec-weekdays'},
           ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'].map(d=>e('div',{key:d,className:'ec-weekday'},d))
