@@ -7139,6 +7139,9 @@ function ComboView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
   function updateSubName(stepId,subId,nameVal){
     commit(steps.map(s=>s.id===stepId?{...s,subtasks:(s.subtasks||[]).map(sub=>sub.id===subId?{...sub,name:nameVal}:sub)}:s));
   }
+  function updateSubStartEnd(stepId,subId,startVal,endVal){
+    commit(steps.map(s=>s.id===stepId?{...s,subtasks:(s.subtasks||[]).map(sub=>sub.id===subId?{...sub,startDate:startVal||null,dueDate:endVal||null}:sub)}:s));
+  }
   useEffect(()=>{
     if(!phaseNoteOpen)return;
     const close=(ev)=>{if(!ev.target.closest('[data-pnote]'))setPhaseNoteOpen(null);};
@@ -7229,14 +7232,15 @@ function ComboView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
     const daysDelta=Math.round(dx/GW);
     if(drag.mode==='move'){
       if(drag.subId){
-        // subtarea: solo mover dueDate
+        const dur=drag.origStart&&drag.origEnd?(toTs(drag.origEnd)-toTs(drag.origStart))/DAY_MS:0;
         const newEnd=addDaysC(drag.origEnd,daysDelta);
-        setDrag(d=>({...d,curEnd:newEnd}));
+        const newStart=dur>0?addDaysC(drag.origStart,daysDelta):null;
+        setDrag(d=>({...d,curStart:newStart,curEnd:newEnd}));
       } else {
-      const newStart=addDaysC(drag.origStart,daysDelta);
-      const dur=drag.origEnd&&drag.origStart?(toTs(drag.origEnd)-toTs(drag.origStart))/DAY_MS:0;
-      const newEnd=addDaysC(newStart,dur);
-      setDrag(d=>({...d,curStart:newStart,curEnd:newEnd}));
+        const newStart=addDaysC(drag.origStart,daysDelta);
+        const dur=drag.origEnd&&drag.origStart?(toTs(drag.origEnd)-toTs(drag.origStart))/DAY_MS:0;
+        const newEnd=addDaysC(newStart,dur);
+        setDrag(d=>({...d,curStart:newStart,curEnd:newEnd}));
       }
     } else if(drag.mode==='start'){
       const newStart=addDaysC(drag.origStart,daysDelta);
@@ -7251,8 +7255,7 @@ function ComboView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
   function onGanttMouseUp(){
     if(!drag)return;
     if(drag.subId){
-      // subtarea: solo dueDate
-      if(drag.curEnd)updateSubDate(drag.stepId,drag.subId,drag.curEnd);
+      if(drag.curEnd)updateSubStartEnd(drag.stepId,drag.subId,drag.curStart||null,drag.curEnd);
     } else {
       const upd={};
       if(drag.curStart)upd.startDate=drag.curStart;
@@ -7635,32 +7638,46 @@ function ComboView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
                 );
               }
 
-              // Fila de SUBTAREA (outline style, draggable por dueDate)
-              const subDate=sub.dueDate;
-              const hasSubBar=!!subDate;
+              // Fila de SUBTAREA (outline style, con startDate opcional, resize en handles)
+              const subEnd=sub.dueDate;
+              const subStart=sub.startDate||subEnd; // si no tiene startDate, la barra ocupa 1 día
+              const hasSubBar=!!subEnd;
               const isSubDragging=drag&&drag.subId===sub.id&&drag.stepId===s.id;
-              const dispSubDate=isSubDragging?(drag.curEnd||subDate):subDate;
-              const subBL=hasSubBar?dLeft(dispSubDate):0;
-              const subBW=hasSubBar?Math.max(GW,GW):0; // ancho mínimo = 1 día
+              const dispSubStart=isSubDragging?(drag.curStart||subStart):subStart;
+              const dispSubEnd=isSubDragging?(drag.curEnd||subEnd):subEnd;
+              const subBL=hasSubBar?dLeft(dispSubStart):0;
+              const subBW=hasSubBar?Math.max(GW,dWidth(dispSubStart,dispSubEnd)):0;
               return e('div',{key:rowKey,style:{
                 height:26,borderBottom:'1px solid var(--border3)',position:'relative',boxSizing:'border-box',
                 background:'rgba(255,255,255,.008)'
               }},
                 hasSubBar&&e('div',{
-                  title:cleanMd(sub.name)+' · '+dispSubDate,
-                  onMouseDown:ev=>{if(ev.detail===2)return;ev.preventDefault();ev.stopPropagation();setDrag({subId:sub.id,stepId:s.id,mode:'move',startX:ev.clientX,origEnd:subDate,curEnd:subDate});},
+                  title:cleanMd(sub.name)+' · '+(sub.startDate?dispSubStart+' → ':'')+dispSubEnd,
+                  onMouseDown:ev=>{if(ev.detail===2)return;ev.preventDefault();ev.stopPropagation();
+                    setDrag({subId:sub.id,stepId:s.id,mode:'move',startX:ev.clientX,
+                      origStart:sub.startDate||null,origEnd:subEnd,curStart:sub.startDate||null,curEnd:subEnd});},
                   style:{position:'absolute',left:subBL,width:subBW,top:'50%',transform:'translateY(-50%)',height:16,borderRadius:4,
                     background:'color-mix(in srgb,'+bc+' 10%,transparent)',
                     border:'1.5px solid color-mix(in srgb,'+bc+' 65%,transparent)',
-                    zIndex:isSubDragging?5:2,display:'flex',alignItems:'center',paddingLeft:5,overflow:'hidden',boxSizing:'border-box',
+                    zIndex:isSubDragging?5:2,display:'flex',alignItems:'center',paddingLeft:6,overflow:'visible',boxSizing:'border-box',
                     cursor:isSubDragging?'grabbing':'grab',
                     boxShadow:isSubDragging?'0 4px 12px rgba(0,0,0,.45)':'none',
                     userSelect:'none'}
                 },
+                  // handle izquierdo (resize start)
+                  e('div',{style:{position:'absolute',left:0,top:0,bottom:0,width:6,cursor:'ew-resize',zIndex:3,borderRadius:'4px 0 0 4px'},
+                    onMouseDown:ev=>{ev.preventDefault();ev.stopPropagation();
+                      setDrag({subId:sub.id,stepId:s.id,mode:'start',startX:ev.clientX,
+                        origStart:sub.startDate||subEnd,origEnd:subEnd,curStart:sub.startDate||subEnd,curEnd:subEnd});}}),
                   e('span',{style:{fontSize:9,fontFamily:'Inter,sans-serif',fontWeight:500,
                     color:'color-mix(in srgb,'+bc+' 90%,var(--text1))',
                     whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',lineHeight:1,flex:1,pointerEvents:'none'}},
-                    cleanMd(sub.name))
+                    cleanMd(sub.name)),
+                  // handle derecho (resize end)
+                  e('div',{style:{position:'absolute',right:0,top:0,bottom:0,width:6,cursor:'ew-resize',zIndex:3,borderRadius:'0 4px 4px 0'},
+                    onMouseDown:ev=>{ev.preventDefault();ev.stopPropagation();
+                      setDrag({subId:sub.id,stepId:s.id,mode:'end',startX:ev.clientX,
+                        origStart:sub.startDate||null,origEnd:subEnd,curStart:sub.startDate||null,curEnd:subEnd});}})
                 )
               );
             })
