@@ -1392,6 +1392,11 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .bento-tk-check.done{background:var(--green);border-color:var(--green)}
 .bento-tk-name{font-size:12px;color:var(--text1);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
 .bento-tk-name.done{color:var(--text4);text-decoration:line-through}
+.bento-done-row{display:flex;align-items:center;gap:8px;padding:5px 6px;border-radius:5px;cursor:pointer;transition:background .1s}
+.bento-done-row:hover{background:var(--bg3)}
+.bento-done-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.bento-done-name{font-size:12px;color:var(--text3);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bento-done-account{font-size:10px;color:var(--text4);font-family:'JetBrains Mono',monospace;flex-shrink:0;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .bento-wk-chart{display:flex;align-items:stretch;gap:6px;height:44px;margin-top:8px}
 .bento-wk-wrap{flex:1;height:100%;display:flex;align-items:flex-end}
 .bento-wk-bar{width:100%;border-radius:3px 3px 1px 1px;background:linear-gradient(180deg,var(--accent2) 0%,var(--accentd) 100%);min-height:2px}
@@ -12595,17 +12600,31 @@ function HomeResumen(props){
         e('div',{className:'bento-blk bento-third'},
           e('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:6}},
             e('span',{className:'bento-eyebrow',style:{margin:0}},'Tareas de hoy'),
-            e('span',{style:{fontSize:11,color:'var(--text3)',fontFamily:"'JetBrains Mono',monospace"}},tasksToday.length)
+            e('span',{style:{fontSize:11,color:'var(--text3)',fontFamily:"'JetBrains Mono',monospace"}},tasksToday.filter(t=>t.status!=='done').length+' pend.')
           ),
-          tasksToday.length===0
+          tasksToday.filter(t=>t.status!=='done').length===0&&doneTasksToday.length===0
             ?e('div',{className:'empty',style:{padding:0}},'Sin tareas para hoy.')
-            :tasksToday.slice(0,4).map(t=>{
-                const done=t.status==='done';
-                return e('div',{key:t.id,className:'bento-tk-row'},
-                  e('div',{className:'bento-tk-check'+(done?' done':''),onClick:()=>onQuickToggleTask(t.id)},done?'✓':''),
-                  e('span',{className:'bento-tk-name'+(done?' done':''),onClick:()=>onOpenProject(t.projectId)},t.name)
-                );
-              })
+            :e(React.Fragment,null,
+                tasksToday.filter(t=>t.status!=='done').slice(0,3).map(t=>
+                  e('div',{key:t.id,className:'bento-tk-row'},
+                    e('div',{className:'bento-tk-check',onClick:()=>onQuickToggleTask(t.id)},''),
+                    e('span',{className:'bento-tk-name',onClick:()=>onOpenProject(t.projectId)},t.name)
+                  )
+                ),
+                doneTasksToday.length>0&&e(React.Fragment,null,
+                  e('div',{style:{fontSize:10,color:'var(--text4)',fontFamily:"'JetBrains Mono',monospace",letterSpacing:'.04em',textTransform:'uppercase',margin:'8px 0 4px',paddingLeft:2}},
+                    '✓ completadas hoy — '+doneTasksToday.length
+                  ),
+                  doneTasksToday.slice(0,4).map(t=>{
+                    const proj=projects.find(p=>p.id===t.projectId);
+                    return e('div',{key:t.id,className:'bento-done-row',onClick:()=>onOpenProject(t.projectId)},
+                      e('div',{className:'bento-done-dot',style:{background:proj?.color||'var(--text4)'}}),
+                      e('span',{className:'bento-done-name'},t.name),
+                      proj&&e('span',{className:'bento-done-account'},proj.name)
+                    );
+                  })
+                )
+              )
         ),
 
         e('div',{className:'bento-blk bento-third'},
