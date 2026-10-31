@@ -117,41 +117,56 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 /* badge de punto en esquina superior derecha del ícono de tab */
 .tab-notif-dot{position:absolute;top:6px;right:10px;width:6px;height:6px;border-radius:50%;background:var(--red);box-shadow:0 0 0 2px var(--bg0);pointer-events:none}
 /* ── Content Agent Panel ── */
-.ca-section{display:flex;flex-direction:column;gap:14px;max-width:520px}
+/* Content Agent Panel */
+.ca-section{display:flex;flex-direction:column;gap:12px;max-width:520px}
 .ca-card{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r-lg);overflow:hidden}
-.ca-card-hdr{display:flex;align-items:center;gap:10px;padding:14px 16px 10px}
-.ca-agent-icon{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#2563eb 0%,#7c3aed 100%);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
-.ca-agent-meta{flex:1;min-width:0}
-.ca-agent-name{font-size:13px;font-weight:600;color:var(--text0);line-height:1.2}
-.ca-agent-slug{font-size:10px;color:var(--text4);font-family:'JetBrains Mono',monospace;margin-top:1px}
-.ca-status-dot{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:500}
-.ca-status-active{color:#34c386}
-.ca-status-inactive{color:var(--text3)}
-.ca-dot-pulse{width:7px;height:7px;border-radius:50%;background:#34c386;animation:caPulse 2s infinite}
-@keyframes caPulse{0%,100%{opacity:1}50%{opacity:.4}}
-.ca-dot-off{width:7px;height:7px;border-radius:50%;background:var(--text4)}
-.ca-card-body{padding:0 16px 14px;display:flex;flex-direction:column;gap:8px}
-.ca-desc{font-size:11.5px;color:var(--text2);line-height:1.6}
-.ca-fixed-note{font-size:11px;color:var(--text3);line-height:1.55;border-top:1px solid var(--border);padding-top:8px;margin-top:2px}
-.ca-stat-row{display:flex;align-items:center;gap:8px;padding:10px 16px;background:var(--bg3);font-size:11.5px;color:var(--text2);justify-content:space-between}
-.ca-stat-num{font-weight:700;color:var(--text0);font-size:13px}
-.ca-btn-sm{font-size:11px;padding:5px 12px;border-radius:var(--r-sm);background:var(--bg4);border:1px solid var(--border2);color:var(--text1);cursor:pointer;transition:background .1s}
-.ca-btn-sm:hover{background:var(--bg2)}
+.ca-card-hdr{display:flex;align-items:center;gap:7px;padding:12px 16px 0}
+.ca-hdr-icon{display:flex;align-items:center;color:var(--text3);flex-shrink:0}
+.ca-hdr-title{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text3)}
+.ca-card-body{padding:10px 16px 14px;display:flex;flex-direction:column;gap:8px}
+/* Card 1 — Agente */
+.ca-agent-row{display:flex;align-items:center;gap:10px}
+.ca-agent-emoji{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,#2563eb 0%,#7c3aed 100%);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.ca-agent-info{flex:1;min-width:0}
+.ca-agent-name{font-size:12.5px;font-weight:600;color:var(--text0)}
+.ca-agent-slug{font-size:9.5px;color:var(--text4);font-family:'JetBrains Mono',monospace;margin-top:1px}
+.ca-status-pill{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:500;padding:3px 9px;border-radius:20px;background:var(--bg4);color:var(--text3);border:1px solid var(--border)}
+.ca-status-active{background:rgba(52,195,134,.1);color:#34c386;border-color:rgba(52,195,134,.25)}
+.ca-dot-pulse{width:6px;height:6px;border-radius:50%;background:#34c386;flex-shrink:0;animation:caPulse 2s infinite}
+@keyframes caPulse{0%,100%{opacity:1}50%{opacity:.35}}
+.ca-desc{font-size:11.5px;color:var(--text2);line-height:1.6;margin-top:4px}
+/* Card 2 — Tareas */
+.ca-task-list{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:7px}
+.ca-task-item{display:flex;align-items:flex-start;gap:8px;font-size:12px;color:var(--text1);line-height:1.45}
+.ca-task-dot{width:5px;height:5px;border-radius:50%;background:var(--accent2);flex-shrink:0;margin-top:5px}
+/* Card 3 — Próxima sesión */
+.ca-session-block{display:flex;flex-direction:column;gap:6px}
+.ca-session-date{font-size:12.5px;font-weight:600;color:var(--text0);text-transform:capitalize}
+.ca-session-agenda{font-size:11.5px;color:var(--text2);line-height:1.55}
+.ca-session-label{font-weight:600;color:var(--text1)}
+/* Card 4 — Métricas */
+.ca-metrics-row{display:flex;gap:0}
+.ca-metric{flex:1;display:flex;flex-direction:column;align-items:center;padding:10px 0;border-right:1px solid var(--border)}
+.ca-metric:last-child{border-right:none}
+.ca-metric-val{font-size:20px;font-weight:700;color:var(--text0);line-height:1}
+.ca-metric-lbl{font-size:10px;color:var(--text4);margin-top:4px;text-align:center}
+/* Card 5 — Notificaciones */
 .ca-notif-list{display:flex;flex-direction:column;gap:8px}
-.ca-notif{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r-md);padding:12px 14px;display:flex;flex-direction:column;gap:6px}
+.ca-notif{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r-md);padding:10px 12px;display:flex;flex-direction:column;gap:5px}
 .ca-notif.ca-accion{border-left:3px solid var(--accent2)}
 .ca-notif.ca-info{border-left:3px solid var(--text4)}
 .ca-notif-top{display:flex;align-items:flex-start;gap:8px}
-.ca-notif-kind{font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 7px;border-radius:4px;flex-shrink:0;margin-top:1px}
+.ca-notif-kind{font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 6px;border-radius:4px;flex-shrink:0;margin-top:1px}
 .ca-notif-kind.ca-kind-accion{background:rgba(86,168,230,.18);color:var(--accent2)}
 .ca-notif-kind.ca-kind-info{background:var(--bg4);color:var(--text3)}
 .ca-notif-title{font-size:12px;font-weight:600;color:var(--text0);flex:1;line-height:1.35}
 .ca-notif-body{font-size:11.5px;color:var(--text2);line-height:1.55}
 .ca-notif-foot{display:flex;align-items:center;justify-content:space-between;margin-top:2px}
 .ca-notif-date{font-size:10px;color:var(--text4);font-family:'JetBrains Mono',monospace}
-.ca-mark-btn{font-size:10px;padding:3px 9px;border-radius:var(--r-sm);background:var(--bg3);border:1px solid var(--border);color:var(--text2);cursor:pointer;transition:all .1s}
+.ca-mark-btn{font-size:10px;padding:3px 9px;border-radius:var(--r-sm);background:var(--bg4);border:1px solid var(--border);color:var(--text2);cursor:pointer;transition:all .1s}
 .ca-mark-btn:hover{background:var(--accent-bg);color:var(--accent2);border-color:var(--accent2)}
-.ca-empty{font-size:11.5px;color:var(--text3);text-align:center;padding:18px 0}
+/* Shared */
+.ca-empty{font-size:11.5px;color:var(--text3);text-align:center;padding:16px 0}
 .ca-error{font-size:11px;color:var(--text4);padding:8px 0;text-align:center}
 .ca-spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--border2);border-top-color:var(--accent2);border-radius:50%;animation:spin .7s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -12996,6 +13011,7 @@ function ContentAgentPanel({project}){
   const[agentErr,setAgentErr]=React.useState(false);
   const[notifs,setNotifs]=React.useState(null);
   const[notifsErr,setNotifsErr]=React.useState(false);
+  const[metrics,setMetrics]=React.useState(null);
   const[marking,setMarking]=React.useState({});
 
   function sbFetch(path,opts){
@@ -13005,7 +13021,7 @@ function ContentAgentPanel({project}){
 
   async function loadAgent(){
     try{
-      const r=await sbFetch(`agents?slug=eq.${CA_SLUG}&select=name,slug,level,status,description&limit=1`);
+      const r=await sbFetch(`agents?slug=eq.${CA_SLUG}&select=name,slug,status,description,next_session_at,next_session_agenda&limit=1`);
       if(!r.ok)throw new Error(r.status);
       const d=await r.json();
       setAgentInfo(d[0]||null);
@@ -13023,6 +13039,16 @@ function ContentAgentPanel({project}){
     }catch{setNotifsErr(true);}
   }
 
+  async function loadMetrics(){
+    try{
+      // Trae las últimas 4 semanas de métricas
+      const r=await sbFetch(`tw_agent_metrics?agent_slug=eq.${CA_SLUG}&order=week_start.desc&limit=4`);
+      if(!r.ok)throw new Error(r.status);
+      const d=await r.json();
+      setMetrics(d);
+    }catch{setMetrics([]);}
+  }
+
   async function markDone(id){
     if(marking[id])return;
     setMarking(m=>({...m,[id]:true}));
@@ -13038,55 +13064,129 @@ function ContentAgentPanel({project}){
   }
 
   React.useEffect(()=>{
-    loadAgent(); loadNotifs();
-    const iv=setInterval(()=>{loadAgent();loadNotifs();},60000);
+    loadAgent(); loadNotifs(); loadMetrics();
+    const iv=setInterval(()=>{loadAgent();loadNotifs();loadMetrics();},60000);
     return()=>clearInterval(iv);
   },[]);
 
   function fmtDate(iso){
     if(!iso)return '';
-    const d=new Date(iso+'T12:00:00');
+    const d=new Date(iso.includes('T')?iso:iso+'T12:00:00');
     return d.toLocaleDateString('es-CL',{day:'numeric',month:'short',year:'numeric'});
+  }
+  function fmtDatetime(iso){
+    if(!iso)return '';
+    const d=new Date(iso);
+    return d.toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'long'})+' a las '+d.toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'});
+  }
+
+  // Totales de métricas (suma de los últimos registros)
+  const totalReactions=metrics?metrics.reduce((s,m)=>s+(m.total_reactions||0),0):null;
+  const totalReach=metrics?metrics.reduce((s,m)=>s+(m.total_reach||0),0):null;
+  const totalMsgs=metrics?metrics.reduce((s,m)=>s+(m.messages_published||0),0):null;
+
+  function CaIcon({path,size=14}){
+    return e('svg',{width:size,height:size,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round',style:{flexShrink:0}},
+      ...(Array.isArray(path)?path.map(p=>e('path',{d:p})):[e('path',{d:path})])
+    );
+  }
+
+  function CaCardHeader({icon,title}){
+    return e('div',{className:'ca-card-hdr'},
+      e('span',{className:'ca-hdr-icon'},e(CaIcon,{path:icon,size:13})),
+      e('span',{className:'ca-hdr-title'},title)
+    );
   }
 
   return e('div',{className:'ca-section'},
-    // ── Tarjeta del agente ──
+
+    // ── 1. Agente ──
     e('div',{className:'ca-card'},
-      e('div',{className:'ca-card-hdr'},
-        e('div',{className:'ca-agent-icon'},'🤖'),
-        e('div',{className:'ca-agent-meta'},
-          agentInfo
-            ? e(React.Fragment,null,
-                e('div',{className:'ca-agent-name'},agentInfo.name),
-                e('div',{className:'ca-agent-slug'},agentInfo.slug+(agentInfo.level?' · '+agentInfo.level:''))
-              )
-            : agentErr
-              ? e('div',{className:'ca-agent-name'},'Content Agent')
-              : e('div',{className:'ca-spinner'})
-        ),
-        agentInfo&&e('div',{className:'ca-status-dot '+(agentInfo.status==='active'?'ca-status-active':'ca-status-inactive')},
-          agentInfo.status==='active'
-            ? e(React.Fragment,null,e('span',{className:'ca-dot-pulse'}),'Activo')
-            : e(React.Fragment,null,e('span',{className:'ca-dot-off'}),agentInfo.status||'Inactivo')
-        )
-      ),
+      e(CaCardHeader,{icon:'M12 2a10 10 0 100 20A10 10 0 0012 2zm0 4a3 3 0 110 6 3 3 0 010-6zm0 14a8 8 0 01-6.19-2.93C7.48 15.48 9.64 14 12 14s4.52 1.48 6.19 3.07A8 8 0 0112 20z',title:'Agente'}),
       e('div',{className:'ca-card-body'},
-        agentInfo&&agentInfo.description&&e('p',{className:'ca-desc'},agentInfo.description),
-        e('p',{className:'ca-fixed-note'},'Escribe y planifica los mensajes del canal de WhatsApp con Tristán. Sesión de trabajo los lunes a las 14:00.')
+        e('div',{className:'ca-agent-row'},
+          e('div',{className:'ca-agent-emoji'},'🤖'),
+          e('div',{className:'ca-agent-info'},
+            e('div',{className:'ca-agent-name'},'WhatsApp Content Crafter'),
+            e('div',{className:'ca-agent-slug'},'content-agent')
+          ),
+          agentInfo&&e('div',{className:'ca-status-pill '+(agentInfo.status==='active'?'ca-status-active':'')},
+            agentInfo.status==='active'
+              ? e(React.Fragment,null,e('span',{className:'ca-dot-pulse'}),'Activo')
+              : (agentInfo.status||'Inactivo')
+          )
+        ),
+        agentInfo&&agentInfo.description&&e('p',{className:'ca-desc'},agentInfo.description)
       )
     ),
 
-    // ── Notificaciones pendientes ──
+    // ── 2. Tareas automatizadas ──
     e('div',{className:'ca-card'},
-      e('div',{className:'ca-card-hdr',style:{paddingBottom:12}},
-        e('span',{style:{fontSize:12,fontWeight:600,color:'var(--text0)'}},
-          e('svg',{width:14,height:14,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round',style:{display:'inline',verticalAlign:'middle',marginRight:6}},
-            e('path',{d:'M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9'}),
-            e('path',{d:'M13.73 21a2 2 0 01-3.46 0'})
+      e(CaCardHeader,{icon:['M9 11l3 3L22 4','M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11'],title:'Tareas automatizadas'}),
+      e('div',{className:'ca-card-body'},
+        e('ul',{className:'ca-task-list'},
+          e('li',{className:'ca-task-item'},
+            e('span',{className:'ca-task-dot'}),
+            e('span',null,'Redactar mensajes para el canal de WhatsApp')
           ),
-          'Notificaciones pendientes'
+          e('li',{className:'ca-task-item'},
+            e('span',{className:'ca-task-dot'}),
+            e('span',null,'Planificar el calendario editorial de contenido')
+          ),
+          e('li',{className:'ca-task-item'},
+            e('span',{className:'ca-task-dot'}),
+            e('span',null,'Enviarte notificaciones de acción y seguimiento')
+          )
         )
-      ),
+      )
+    ),
+
+    // ── 3. Próxima sesión ──
+    e('div',{className:'ca-card'},
+      e(CaCardHeader,{icon:'M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01',title:'Próxima sesión'}),
+      e('div',{className:'ca-card-body'},
+        agentInfo===null&&!agentErr
+          ? e('span',{className:'ca-spinner'})
+          : agentInfo&&agentInfo.next_session_at
+            ? e('div',{className:'ca-session-block'},
+                e('div',{className:'ca-session-date'},fmtDatetime(agentInfo.next_session_at)),
+                agentInfo.next_session_agenda&&e('div',{className:'ca-session-agenda'},
+                  e('span',{className:'ca-session-label'},'Te preguntará: '),
+                  agentInfo.next_session_agenda
+                )
+              )
+            : e('div',{className:'ca-empty'},'Sin fecha programada')
+      )
+    ),
+
+    // ── 4. Métricas de rendimiento ──
+    e('div',{className:'ca-card'},
+      e(CaCardHeader,{icon:['M18 20V10','M12 20V4','M6 20v-6'],title:'Rendimiento'}),
+      e('div',{className:'ca-card-body'},
+        metrics===null
+          ? e('span',{className:'ca-spinner'})
+          : metrics.length===0
+            ? e('div',{className:'ca-empty'},'Sin datos todavía')
+            : e('div',{className:'ca-metrics-row'},
+                e('div',{className:'ca-metric'},
+                  e('div',{className:'ca-metric-val'},totalReactions!==null?totalReactions:'—'),
+                  e('div',{className:'ca-metric-lbl'},'Reacciones')
+                ),
+                e('div',{className:'ca-metric'},
+                  e('div',{className:'ca-metric-val'},totalReach!==null?totalReach.toLocaleString('es-CL'):'—'),
+                  e('div',{className:'ca-metric-lbl'},'Alcance')
+                ),
+                e('div',{className:'ca-metric'},
+                  e('div',{className:'ca-metric-val'},totalMsgs!==null?totalMsgs:'—'),
+                  e('div',{className:'ca-metric-lbl'},'Mensajes')
+                )
+              )
+      )
+    ),
+
+    // ── 5. Notificaciones pendientes ──
+    e('div',{className:'ca-card'},
+      e(CaCardHeader,{icon:['M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9','M13.73 21a2 2 0 01-3.46 0'],title:'Notificaciones pendientes'}),
       e('div',{className:'ca-card-body'},
         notifsErr
           ? e('div',{className:'ca-error'},'No pude cargar las notificaciones')
