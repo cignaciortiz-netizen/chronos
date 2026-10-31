@@ -4110,7 +4110,9 @@ function App(){
     window.__chronosSetTasks=setTasks;
     window.__chronosForceSync=forceSync;
     window.__chronosAddReminder=(rem)=>{setReminders(prev=>[rem,...prev]);forceSync();};
-    return()=>{delete window.__chronosSetTasks;delete window.__chronosForceSync;delete window.__chronosAddReminder;};
+    window.__chronosAddHabit=(h)=>{setHabits(prev=>[...prev,h]);forceSync();};
+    window.__chronosHabits=()=>habits;
+    return()=>{delete window.__chronosSetTasks;delete window.__chronosForceSync;delete window.__chronosAddReminder;delete window.__chronosAddHabit;delete window.__chronosHabits;};
   },[]);
 
   // Escuchar cambios de etiquetas de status (guardadas desde GanttView vía SubStatusEditor)
@@ -13123,19 +13125,15 @@ function caFmtDatetime(iso){
   const hora=d.toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'});
   return dia.charAt(0).toUpperCase()+dia.slice(1)+' a las '+hora;
 }
-// Calcula próxima fecha desde last_run_at + cadence_days, saltando fines de semana si weekdays_only
-function caNextRun(agent){
-  if(!agent)return null;
-  const base=agent.last_run_at?new Date(agent.last_run_at):null;
-  if(!base)return null;
-  const days=agent.cadence_days||14;
-  const candidate=new Date(base.getTime()+days*864e5);
-  if(agent.cadence_weekdays_only){
-    const dow=candidate.getDay();
-    if(dow===6)candidate.setDate(candidate.getDate()+2);
-    else if(dow===0)candidate.setDate(candidate.getDate()+1);
-  }
-  return candidate;
+// Próximo lunes a las 14:00 (si hoy es lunes y aún no son las 14:00, devuelve hoy)
+function caNextRun(){
+  const now=new Date();
+  const d=new Date(now);
+  const dow=d.getDay(); // 0=dom,1=lun...
+  let daysToMonday=(dow===1&&(d.getHours()<14||(d.getHours()===14&&d.getMinutes()===0)))?0:(8-dow)%7||7;
+  d.setDate(d.getDate()+daysToMonday);
+  d.setHours(14,0,0,0);
+  return d;
 }
 function CaIcon({path,size=14}){
   return e('svg',{width:size,height:size,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round',style:{flexShrink:0}},
@@ -13337,8 +13335,8 @@ function AgentDetailModal({agent,onClose,onAgentUpdated}){
   const totReact=metrics?metrics.reduce((s,m)=>s+(m.total_reactions||0),0):null;
   const totReach=metrics?metrics.reduce((s,m)=>s+(m.total_reach||0),0):null;
   const totMsgs=metrics?metrics.reduce((s,m)=>s+(m.messages_published||0),0):null;
-  const nextRun=caNextRun(agent);
-  const displayNext=agent.next_session_at?new Date(agent.next_session_at):nextRun;
+  const nextRun=caNextRun();
+  const displayNext=nextRun;
   const pendingCount=(notifs||[]).filter(n=>{
     if(!n.due_date)return true;
     return n.due_date<=new Date().toISOString().slice(0,10);
@@ -13388,30 +13386,24 @@ function AgentDetailModal({agent,onClose,onAgentUpdated}){
         activeTab==='overview'&&e(React.Fragment,null,
           // Grid de info
           e('div',{className:'ca-info-grid'},
-            // Próxima automatización
+            // Próxima sesión
             e('div',{className:'ca-info-card ca-info-card-full'},
-              e('div',{className:'ca-info-lbl'},'Próxima automatización'),
-              displayNext
-                ?e(React.Fragment,null,
-                    e('div',{className:'ca-info-val'},caFmtDatetime(displayNext.toISOString())),
-                    agent.next_session_agenda&&e('div',{className:'ca-info-sub'},
-                      '💬 "'+agent.next_session_agenda+'"'
-                    )
-                  )
-                :e('div',{className:'ca-info-sub'},'Sin fecha calculada')
+              e('div',{className:'ca-info-lbl'},'Próxima sesión'),
+              e('div',{className:'ca-info-val'},caFmtDatetime(displayNext.toISOString())),
+              e('div',{className:'ca-info-sub'},'Abre Claude y escribe [Skill WA]. Ten a mano los screenshots de la semana pasada.')
             ),
-            // Cadencia
-            e('div',{className:'ca-info-card'},
-              e('div',{className:'ca-info-lbl'},'Cadencia'),
-              e('div',{className:'ca-info-val'},(agent.cadence_days||14)+' días'),
-              e('div',{className:'ca-info-sub'},agent.cadence_weekdays_only?'Solo lunes a viernes':'Cualquier día')
-            ),
-            // Última ejecución
+            // Última sesión
             e('div',{className:'ca-info-card'},
               e('div',{className:'ca-info-lbl'},'Última sesión'),
               agent.last_run_at
                 ?e('div',{className:'ca-info-val'},caFmtDate(agent.last_run_at))
                 :e('div',{className:'ca-info-sub'},'Sin registros')
+            ),
+            // Modo
+            e('div',{className:'ca-info-card'},
+              e('div',{className:'ca-info-lbl'},'Modo'),
+              e('div',{className:'ca-info-val'},'Manual'),
+              e('div',{className:'ca-info-sub'},'Recordatorio en Chronos cada lunes')
             )
           ),
           // Métricas acumuladas
@@ -13459,40 +13451,32 @@ function AgentDetailModal({agent,onClose,onAgentUpdated}){
           e('div',{className:'ca-auto-item'},
             e('div',{className:'ca-auto-icon',style:{background:'rgba(37,99,235,.15)'}},'📅'),
             e('div',{className:'ca-auto-body'},
-              e('div',{className:'ca-auto-title'},'Sesión de contenido quincenal'),
-              e('div',{className:'ca-auto-desc'},'Cada '+(agent.cadence_days||14)+' días el agente inicia una conversación para planificar los mensajes de WhatsApp del próximo período.'),
-              e('span',{className:'ca-auto-tag ca-auto-tag-cadencia'},'⏱ Cada '+(agent.cadence_days||14)+' días')
+              e('div',{className:'ca-auto-title'},'Sesión semanal — lunes 14:00'),
+              e('div',{className:'ca-auto-desc'},'Cada lunes abres Claude manualmente. El agente pide los screenshots de los mensajes de la semana pasada y registra las métricas en Chronos.'),
+              e('span',{className:'ca-auto-tag ca-auto-tag-cadencia'},'⏱ Lunes 14:00')
+            )
+          ),
+          e('div',{className:'ca-auto-item'},
+            e('div',{className:'ca-auto-icon',style:{background:'rgba(234,179,8,.1)'}},'📊'),
+            e('div',{className:'ca-auto-body'},
+              e('div',{className:'ca-auto-title'},'Registro de métricas'),
+              e('div',{className:'ca-auto-desc'},'Con los screenshots, actualiza tw_agent_message_metrics (por mensaje) y tw_agent_weekly_metrics (resumen semanal). Sin capturas, pregunta cuál tuvo más reacciones y registra con approx=true.'),
+              e('span',{className:'ca-auto-tag ca-auto-tag-sesion'},'✦ En sesión')
             )
           ),
           e('div',{className:'ca-auto-item'},
             e('div',{className:'ca-auto-icon',style:{background:'rgba(124,58,237,.15)'}},'✍️'),
             e('div',{className:'ca-auto-body'},
-              e('div',{className:'ca-auto-title'},'Brief y redacción de mensajes'),
-              e('div',{className:'ca-auto-desc'},'Al iniciar la sesión, el agente te pregunta los temas, el tono y las novedades del período para redactar los borradores de mensajes.'),
+              e('div',{className:'ca-auto-title'},'Planificación y redacción de contenido'),
+              e('div',{className:'ca-auto-desc'},'Si hay menos de 2 semanas de contenido aprobado, el agente hace la mini entrevista (pilar, formato, tema) y redacta los mensajes pieza por pieza para tu revisión.'),
               e('span',{className:'ca-auto-tag ca-auto-tag-sesion'},'✦ En sesión')
             )
           ),
           e('div',{className:'ca-auto-item'},
             e('div',{className:'ca-auto-icon',style:{background:'rgba(52,195,134,.1)'}},'🔔'),
             e('div',{className:'ca-auto-body'},
-              e('div',{className:'ca-auto-title'},'Notificaciones de acción'),
-              e('div',{className:'ca-auto-desc'},'Tras cada sesión el agente crea recordatorios concretos: revisar borradores, enviar fotos de resultados o cualquier pendiente de seguimiento.'),
-              e('span',{className:'ca-auto-tag ca-auto-tag-notif'},'🔔 Notificación')
-            )
-          ),
-          e('div',{className:'ca-auto-item'},
-            e('div',{className:'ca-auto-icon',style:{background:'rgba(234,179,8,.1)'}},'📊'),
-            e('div',{className:'ca-auto-body'},
-              e('div',{className:'ca-auto-title'},'Registro de rendimiento'),
-              e('div',{className:'ca-auto-desc'},'Al cerrar el ciclo, el agente registra los mensajes publicados, reacciones y alcance, que se acumulan en la sección Resumen.'),
-              e('span',{className:'ca-auto-tag ca-auto-tag-sesion'},'✦ En sesión')
-            )
-          ),
-          e('div',{className:'ca-auto-item'},
-            e('div',{className:'ca-auto-icon',style:{background:'rgba(124,58,237,.15)'}},'💡'),
-            e('div',{className:'ca-auto-body'},
-              e('div',{className:'ca-auto-title'},'Sugerencias para el próximo ciclo'),
-              e('div',{className:'ca-auto-desc'},'Basándose en el rendimiento anterior, el agente deja ideas y observaciones visibles en la pestaña Sugerencias.'),
+              e('div',{className:'ca-auto-title'},'Sugerencias y acciones'),
+              e('div',{className:'ca-auto-desc'},'Tras registrar las métricas, el agente genera un reporte corto y deja sugerencias visibles en Chronos. El primer lunes del mes suma el resumen mensual.'),
               e('span',{className:'ca-auto-tag ca-auto-tag-notif'},'💡 Sugerencia')
             )
           )
@@ -13544,26 +13528,38 @@ function AgentDetailModal({agent,onClose,onAgentUpdated}){
         ),
 
         // ── CONFIGURACIÓN ──
-        activeTab==='config'&&e('div',{className:'ca-config-body',style:{margin:0,border:'none',background:'none',padding:0}},
-          e('div',{className:'ca-cfg-row'},
-            e('label',{className:'ca-cfg-label'},'Cadencia (días entre automatizaciones)'),
-            e('div',{className:'ca-cfg-ctrl'},
-              e('input',{type:'number',min:1,max:365,className:'ca-cfg-input',value:cfgCadence,onChange:ev=>setCfgCadence(ev.target.value)}),
-              e('span',{className:'ca-cfg-unit'},'días')
-            )
-          ),
-          e('div',{className:'ca-cfg-row'},
-            e('label',{className:'ca-cfg-label'},'Solo días hábiles (lun–vie)'),
-            e('button',{className:'ca-toggle'+(cfgWeekdays?' ca-toggle-on':''),onClick:()=>setCfgWeekdays(v=>!v)},
-              e('span',{className:'ca-toggle-knob'}),
-              e('span',{className:'ca-toggle-label'},cfgWeekdays?'Sí':'No')
-            )
+        activeTab==='config'&&e(React.Fragment,null,
+          e('div',{className:'ca-info-card',style:{marginBottom:14}},
+            e('div',{className:'ca-info-lbl'},'Modo de sesión'),
+            e('div',{className:'ca-info-val',style:{marginTop:4}},'Manual — los lunes a las 14:00'),
+            e('div',{className:'ca-info-sub',style:{marginTop:6,lineHeight:1.6}},'La sesión es manual: los lunes a las 14:00, con el recordatorio en Chronos. Abre Claude y escribe [Skill WA] para comenzar.'),
+            e('button',{
+              style:{marginTop:10,fontSize:11,padding:'5px 12px',borderRadius:'var(--r-sm)',background:'var(--bg3)',border:'1px solid var(--border2)',color:'var(--text1)',cursor:'pointer'},
+              onClick:()=>{
+                // Verifica si ya existe el hábito para no duplicar
+                const existing=(typeof window.__chronosHabits==='function'?window.__chronosHabits():[]);
+                if(existing.some(h=>h.name==='Sesión WhatsApp — abrir Claude')){alert('El recordatorio ya existe en tus hábitos.');return;}
+                if(typeof window.__chronosAddHabit==='function'){
+                  window.__chronosAddHabit({
+                    id:'wa-session-habit-'+Date.now(),
+                    name:'Sesión WhatsApp — abrir Claude',
+                    icon:'💬',
+                    projectId:null,
+                    time:'14:00',
+                    recurrence:{type:'weekly',interval:1,days:[1]},// lunes=1
+                    log:[],skipLog:[],
+                    createdAt:Date.now()
+                  });
+                  alert('✓ Recordatorio creado: aparecerá cada lunes a las 14:00 en tus hábitos y en la campana de Chronos.');
+                }else{alert('No se pudo crear el recordatorio. Recarga Chronos e intenta de nuevo.');}
+              }
+            },'+ Crear recordatorio recurrente (lunes 14:00)')
           ),
           e('div',{className:'ca-cfg-row ca-cfg-agenda-row'},
-            e('label',{className:'ca-cfg-label'},'Pregunta inicial del agente'),
+            e('label',{className:'ca-cfg-label'},'Agenda / notas para la próxima sesión'),
             e('textarea',{
-              className:'ca-cfg-textarea',rows:3,
-              placeholder:'¿Qué le preguntará el agente al iniciar la sesión?',
+              className:'ca-cfg-textarea',rows:4,
+              placeholder:'Escribe aquí temas, novedades o instrucciones para que el agente las lea al iniciar la sesión del lunes…',
               value:cfgAgenda,onChange:ev=>setCfgAgenda(ev.target.value)
             })
           ),
