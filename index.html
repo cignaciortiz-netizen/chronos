@@ -1520,7 +1520,7 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .ec-more:hover{color:var(--accent2)}
 /* panel lateral */
 .ec-layout{flex:1;display:flex;min-height:0;overflow:hidden;position:relative}
-.ec-panel{width:280px;flex-shrink:0;background:var(--bg0);border-left:1px solid var(--border);display:flex;flex-direction:column;transition:width .2s cubic-bezier(.4,0,.2,1)}
+.ec-panel{width:300px;flex-shrink:0;background:var(--bg0);border-left:1px solid var(--border);display:flex;flex-direction:column;transition:width .2s cubic-bezier(.4,0,.2,1)}
 .ec-panel.ec-panel-hidden{width:0;overflow:hidden;border-left:none}
 .ec-panel-hdr{display:flex;align-items:flex-start;gap:8px;padding:12px 12px 10px;border-bottom:1px solid var(--border);flex-shrink:0}
 .ec-panel-close{margin-left:auto;width:22px;height:22px;border-radius:var(--r-sm);border:none;background:transparent;color:var(--text3);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;transition:background .1s,color .1s}
@@ -1536,7 +1536,7 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .ec-status-listo{background:var(--green-bg);color:var(--green)}
 .ec-status-publicado{background:var(--blue)+'14';color:var(--blue);background:#56a8e614}
 .ec-panel-divider{height:1px;background:var(--border)}
-.ec-panel-body-text{font-size:11.5px;color:var(--text2);line-height:1.6;padding:8px 10px;background:var(--bg2);border-radius:var(--r-md);border:1px solid var(--border)}
+.ec-panel-body-text{font-size:11.5px;color:var(--text2);line-height:1.6;padding:8px 10px;background:var(--bg2);border-radius:var(--r-md);border:1px solid var(--border);min-height:60px;resize:none;overflow:hidden;field-sizing:content}
 .ec-panel-tags{display:flex;flex-wrap:wrap;gap:3px}
 .ec-panel-tag{padding:1px 7px;border-radius:4px;background:var(--bg3);color:var(--text2);font-size:10.5px;font-weight:500}
 .ec-panel-ftr{padding:10px 12px;border-top:1px solid var(--border);display:flex;gap:6px;flex-shrink:0}
@@ -10353,11 +10353,16 @@ function EditorialCalendar({project}){
                 e('div',{style:{fontSize:10,fontWeight:600,color:'var(--text4)',marginBottom:5,letterSpacing:'.04em',textTransform:'uppercase'}},'Contenido'),
                 e('textarea',{
                   className:'ec-panel-body-text',
-                  style:{width:'100%',resize:'vertical',minHeight:90,fontFamily:'inherit',boxSizing:'border-box',cursor:'text'},
+                  style:{width:'100%',resize:'none',minHeight:80,fontFamily:'inherit',boxSizing:'border-box',cursor:'text'},
                   placeholder:'Escribe el contenido aquí…',
                   value:editBody,
-                  onChange:ev=>setEditBody(ev.target.value),
-                  onBlur:()=>saveBody(editBody)
+                  onChange:ev=>{
+                    setEditBody(ev.target.value);
+                    const el=ev.target;el.style.height='auto';el.style.height=el.scrollHeight+'px';
+                  },
+                  onFocus:ev=>{const el=ev.target;el.style.height='auto';el.style.height=el.scrollHeight+'px';},
+                  onBlur:ev=>{saveBody(editBody);},
+                  ref:el=>{if(el){el.style.height='auto';el.style.height=el.scrollHeight+'px';}}
                 })
               )
             ),
