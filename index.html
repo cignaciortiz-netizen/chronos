@@ -140,12 +140,39 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .ca-agent-card-next{display:flex;align-items:center;gap:5px;font-size:10.5px;color:var(--text4);margin-top:2px}
 .ca-agent-card-arrow{position:absolute;right:14px;top:50%;transform:translateY(-50%);color:var(--text4);opacity:.5}
 .ca-modal-overlay{position:fixed;inset:0;background:rgba(8,8,10,.65);backdrop-filter:blur(3px);z-index:500;display:flex;align-items:center;justify-content:center;padding:16px}
-.ca-modal{background:var(--bg1);border:1px solid var(--border3);border-radius:var(--r-lg);width:100%;max-width:500px;max-height:88vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 32px 80px -8px rgba(0,0,0,.7);animation:caModalIn .15s ease}
+.ca-modal{background:var(--bg1);border:1px solid var(--border3);border-radius:var(--r-lg);width:100%;max-width:620px;max-height:88vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 32px 80px -8px rgba(0,0,0,.7);animation:caModalIn .15s ease}
 @keyframes caModalIn{from{opacity:0;transform:scale(.97) translateY(6px)}to{opacity:1;transform:none}}
-.ca-modal-hdr{padding:18px 18px 14px;border-bottom:1px solid var(--border);position:relative;flex-shrink:0}
-.ca-modal-close{position:absolute;top:14px;right:14px;background:none;border:none;cursor:pointer;color:var(--text3);padding:4px;border-radius:var(--r-sm);display:flex;align-items:center;transition:color .1s,background .1s}
+.ca-modal-hdr{padding:22px 22px 0;position:relative;flex-shrink:0}
+.ca-modal-hero{display:flex;align-items:center;gap:14px;padding-bottom:18px}
+.ca-modal-emoji{width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,#2563eb 0%,#7c3aed 100%);display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0}
+.ca-modal-title{font-size:17px;font-weight:700;color:var(--text0);line-height:1.2}
+.ca-modal-sub{font-size:11.5px;color:var(--text3);margin-top:3px}
+.ca-modal-close{position:absolute;top:16px;right:16px;background:none;border:none;cursor:pointer;color:var(--text3);padding:5px;border-radius:var(--r-sm);display:flex;align-items:center;transition:color .1s,background .1s}
 .ca-modal-close:hover{color:var(--text0);background:var(--bg3)}
-.ca-modal-body{overflow-y:auto;padding:16px 18px 20px;display:flex;flex-direction:column;gap:18px}
+.ca-modal-tabs{display:flex;gap:0;border-bottom:1px solid var(--border);padding:0 2px}
+.ca-modal-tab{font-size:12px;font-weight:500;color:var(--text3);padding:8px 14px;border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .15s,border-color .15s}
+.ca-modal-tab:hover{color:var(--text1)}
+.ca-modal-tab.ca-tab-active{color:var(--accent2);font-weight:600;border-bottom-color:var(--accent2)}
+.ca-modal-body{overflow-y:auto;padding:20px 22px 24px;display:flex;flex-direction:column;gap:22px}
+.ca-info-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.ca-info-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r-md);padding:14px 16px;display:flex;flex-direction:column;gap:4px}
+.ca-info-card-full{grid-column:span 2}
+.ca-info-lbl{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text4)}
+.ca-info-val{font-size:13.5px;font-weight:600;color:var(--text0);line-height:1.3}
+.ca-info-sub{font-size:11px;color:var(--text3);margin-top:2px}
+.ca-timeline{display:flex;align-items:center;gap:0;margin-top:4px}
+.ca-tl-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.ca-tl-dot-done{background:var(--accent2)}
+.ca-tl-dot-next{background:var(--border2);border:2px solid var(--text4)}
+.ca-tl-line{flex:1;height:2px;background:linear-gradient(90deg,var(--accent2),var(--border2))}
+.ca-tl-label{font-size:10px;color:var(--text4);margin-top:5px}
+.ca-sugg-list{display:flex;flex-direction:column;gap:10px}
+.ca-sugg-item{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r-md);padding:12px 14px;border-left:3px solid #7c3aed}
+.ca-sugg-meta{font-size:10px;color:var(--text4);margin-bottom:4px;font-family:'JetBrains Mono',monospace}
+.ca-sugg-text{font-size:12.5px;color:var(--text1);line-height:1.6}
+.ca-sugg-empty{text-align:center;padding:32px 0;display:flex;flex-direction:column;align-items:center;gap:10px}
+.ca-sugg-icon{font-size:28px;opacity:.4}
+.ca-sugg-hint{font-size:12px;color:var(--text3);line-height:1.6;max-width:280px;text-align:center}
 .ca-modal-section{display:flex;flex-direction:column}
 .ca-task-list{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:7px}
 .ca-task-item{display:flex;align-items:flex-start;gap:8px;font-size:12px;color:var(--text1);line-height:1.45}
@@ -13093,14 +13120,13 @@ function CaCardHeader({icon,title}){
 // ── Modal de detalle de agente ──────────────────────────────────────────────
 function AgentDetailModal({agent,onClose,onAgentUpdated}){
   const slug=agent.slug;
+  const[activeTab,setActiveTab]=React.useState('overview');
   const[notifs,setNotifs]=React.useState(null);
   const[notifsErr,setNotifsErr]=React.useState(false);
   const[metrics,setMetrics]=React.useState(null);
   const[marking,setMarking]=React.useState({});
-  const[adjDelta,setAdjDelta]=React.useState(0); // días ajustados manualmente
-  const[saving,setSaving]=React.useState(false);
+  const[suggs,setSuggs]=React.useState(null);
   // Config state
-  const[showConfig,setShowConfig]=React.useState(false);
   const[cfgCadence,setCfgCadence]=React.useState(String(agent.cadence_days||14));
   const[cfgWeekdays,setCfgWeekdays]=React.useState(!!agent.cadence_weekdays_only);
   const[cfgAgenda,setCfgAgenda]=React.useState(agent.next_session_agenda||'');
@@ -13121,6 +13147,13 @@ function AgentDetailModal({agent,onClose,onAgentUpdated}){
       setMetrics(await r.json());
     }catch{setMetrics([]);}
   }
+  async function loadSuggs(){
+    try{
+      const r=await caFetch(`tw_agent_notifications?agent_slug=eq.${slug}&kind=eq.sugerencia&order=created_at.desc&limit=10`);
+      if(!r.ok)throw new Error();
+      setSuggs(await r.json());
+    }catch{setSuggs([]);}
+  }
   async function markDone(id){
     if(marking[id])return;
     setMarking(m=>({...m,[id]:true}));
@@ -13132,27 +13165,6 @@ function AgentDetailModal({agent,onClose,onAgentUpdated}){
       if(r.ok)setNotifs(n=>n.filter(x=>x.id!==id));
     }catch{}
     setMarking(m=>{const c={...m};delete c[id];return c;});
-  }
-
-  // Ajustar la próxima automatización (+/- días, saltando fines de semana)
-  function shiftToWeekday(date,delta){
-    const d=new Date(date.getTime());
-    d.setDate(d.getDate()+delta);
-    // buscar día hábil en la dirección indicada
-    while(agent.cadence_weekdays_only&&(d.getDay()===0||d.getDay()===6)){
-      d.setDate(d.getDate()+(delta>=0?1:-1));
-    }
-    return d;
-  }
-  async function saveNextRun(newDate){
-    setSaving(true);
-    try{
-      await caFetch(`agents?slug=eq.${slug}`,{
-        method:'PATCH',headers:{'Prefer':'return=minimal'},
-        body:JSON.stringify({next_session_at:newDate.toISOString()})
-      });
-    }catch{}
-    setSaving(false);
   }
   async function saveConfig(){
     setCfgSaving(true);
@@ -13172,12 +13184,10 @@ function AgentDetailModal({agent,onClose,onAgentUpdated}){
   }
 
   React.useEffect(()=>{
-    loadNotifs(); loadMetrics();
-    const iv=setInterval(()=>{loadNotifs();loadMetrics();},60000);
+    loadNotifs(); loadMetrics(); loadSuggs();
+    const iv=setInterval(()=>{loadNotifs();},60000);
     return()=>clearInterval(iv);
   },[]);
-
-  // Cerrar con Escape
   React.useEffect(()=>{
     function onKey(ev){if(ev.key==='Escape')onClose();}
     document.addEventListener('keydown',onKey);
@@ -13187,177 +13197,187 @@ function AgentDetailModal({agent,onClose,onAgentUpdated}){
   const totReact=metrics?metrics.reduce((s,m)=>s+(m.total_reactions||0),0):null;
   const totReach=metrics?metrics.reduce((s,m)=>s+(m.total_reach||0),0):null;
   const totMsgs=metrics?metrics.reduce((s,m)=>s+(m.messages_published||0),0):null;
-
-  // Próxima automatización: next_session_at (manual) ó calculada
-  const calcNext=caNextRun(agent);
-  const baseNext=agent.next_session_at?new Date(agent.next_session_at):calcNext;
-  const displayNext=baseNext&&adjDelta!==0?shiftToWeekday(baseNext,adjDelta):baseNext;
-
+  const nextRun=caNextRun(agent);
+  const displayNext=agent.next_session_at?new Date(agent.next_session_at):nextRun;
   const pendingCount=(notifs||[]).filter(n=>{
     if(!n.due_date)return true;
-    const today=new Date().toISOString().slice(0,10);
-    return n.due_date<=today;
+    return n.due_date<=new Date().toISOString().slice(0,10);
   }).length;
+
+  const TABS=[
+    {id:'overview',label:'Resumen'},
+    {id:'acciones',label:'Acciones'+(pendingCount>0?' ('+pendingCount+')':'')},
+    {id:'sugerencias',label:'Sugerencias'},
+    {id:'config',label:'Configurar'}
+  ];
 
   return e('div',{className:'ca-modal-overlay',onClick:ev=>{if(ev.target===ev.currentTarget)onClose();}},
     e('div',{className:'ca-modal'},
-      // Header del modal
+      // ── Header ──
       e('div',{className:'ca-modal-hdr'},
-        e('div',{className:'ca-agent-row'},
-          e('div',{className:'ca-agent-emoji'},'🤖'),
-          e('div',{className:'ca-agent-info'},
-            e('div',{className:'ca-agent-name'},agent.name||'WhatsApp Content Crafter'),
-            e('div',{className:'ca-agent-slug'},agent.slug)
+        e('div',{className:'ca-modal-hero'},
+          e('div',{className:'ca-modal-emoji'},'🤖'),
+          e('div',{style:{flex:1}},
+            e('div',{className:'ca-modal-title'},agent.name||'WhatsApp Content Crafter'),
+            e('div',{className:'ca-modal-sub'},agent.description||'Agente de contenido')
           ),
           e('div',{className:'ca-status-pill '+(agent.status==='active'?'ca-status-active':'')},
             agent.status==='active'
-              ? e(React.Fragment,null,e('span',{className:'ca-dot-pulse'}),'Activo')
-              : (agent.status||'Inactivo')
+              ?e(React.Fragment,null,e('span',{className:'ca-dot-pulse'}),'Activo')
+              :(agent.status||'Inactivo')
           )
         ),
-        agent.description&&e('p',{className:'ca-desc',style:{marginTop:10}},agent.description),
         e('button',{className:'ca-modal-close',onClick:onClose,'aria-label':'Cerrar'},
           e(CaIcon,{path:'M18 6L6 18M6 6l12 12',size:16})
+        ),
+        // Pestañas
+        e('div',{className:'ca-modal-tabs'},
+          TABS.map(t=>e('button',{
+            key:t.id,
+            className:'ca-modal-tab'+(activeTab===t.id?' ca-tab-active':''),
+            onClick:()=>setActiveTab(t.id)
+          },t.label))
         )
       ),
 
+      // ── Cuerpo según pestaña activa ──
       e('div',{className:'ca-modal-body'},
 
-        // ── Tareas automatizadas ──
-        e('div',{className:'ca-modal-section'},
-          e(CaCardHeader,{icon:['M9 11l3 3L22 4','M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11'],title:'Tareas automatizadas'}),
-          e('ul',{className:'ca-task-list',style:{marginTop:8}},
-            e('li',{className:'ca-task-item'},e('span',{className:'ca-task-dot'}),e('span',null,'Redactar mensajes para el canal de WhatsApp')),
-            e('li',{className:'ca-task-item'},e('span',{className:'ca-task-dot'}),e('span',null,'Planificar el calendario editorial de contenido')),
-            e('li',{className:'ca-task-item'},e('span',{className:'ca-task-dot'}),e('span',null,'Enviarte notificaciones de acción y seguimiento'))
+        // ── RESUMEN ──
+        activeTab==='overview'&&e(React.Fragment,null,
+          // Grid de info
+          e('div',{className:'ca-info-grid'},
+            // Próxima automatización
+            e('div',{className:'ca-info-card ca-info-card-full'},
+              e('div',{className:'ca-info-lbl'},'Próxima automatización'),
+              displayNext
+                ?e(React.Fragment,null,
+                    e('div',{className:'ca-info-val'},caFmtDatetime(displayNext.toISOString())),
+                    agent.next_session_agenda&&e('div',{className:'ca-info-sub'},
+                      '💬 "'+agent.next_session_agenda+'"'
+                    )
+                  )
+                :e('div',{className:'ca-info-sub'},'Sin fecha calculada')
+            ),
+            // Cadencia
+            e('div',{className:'ca-info-card'},
+              e('div',{className:'ca-info-lbl'},'Cadencia'),
+              e('div',{className:'ca-info-val'},(agent.cadence_days||14)+' días'),
+              e('div',{className:'ca-info-sub'},agent.cadence_weekdays_only?'Solo lunes a viernes':'Cualquier día')
+            ),
+            // Última ejecución
+            e('div',{className:'ca-info-card'},
+              e('div',{className:'ca-info-lbl'},'Última sesión'),
+              agent.last_run_at
+                ?e('div',{className:'ca-info-val'},caFmtDate(agent.last_run_at))
+                :e('div',{className:'ca-info-sub'},'Sin registros')
+            )
+          ),
+          // Métricas
+          e('div',null,
+            e('div',{className:'ca-card-hdr'},
+              e('span',{className:'ca-hdr-icon'},e(CaIcon,{path:['M18 20V10','M12 20V4','M6 20v-6'],size:13})),
+              e('span',{className:'ca-hdr-title'},'Rendimiento acumulado')
+            ),
+            metrics===null
+              ?e('span',{className:'ca-spinner'})
+              :metrics.length===0
+                ?e('div',{className:'ca-empty'},'Sin datos todavía — aparecerán tras la primera sesión')
+                :e('div',{className:'ca-metrics-row'},
+                    e('div',{className:'ca-metric'},e('div',{className:'ca-metric-val'},totMsgs),e('div',{className:'ca-metric-lbl'},'Mensajes')),
+                    e('div',{className:'ca-metric'},e('div',{className:'ca-metric-val'},totReact),e('div',{className:'ca-metric-lbl'},'Reacciones')),
+                    e('div',{className:'ca-metric'},e('div',{className:'ca-metric-val'},(totReach||0).toLocaleString('es-CL')),e('div',{className:'ca-metric-lbl'},'Alcance'))
+                  )
+          ),
+          // Qué hace
+          e('div',null,
+            e('div',{className:'ca-card-hdr'},
+              e('span',{className:'ca-hdr-icon'},e(CaIcon,{path:['M9 11l3 3L22 4','M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11'],size:13})),
+              e('span',{className:'ca-hdr-title'},'Qué hace este agente')
+            ),
+            e('ul',{className:'ca-task-list',style:{marginTop:8}},
+              e('li',{className:'ca-task-item'},e('span',{className:'ca-task-dot'}),e('span',null,'Redacta mensajes para el canal de WhatsApp de Tristán Wolf')),
+              e('li',{className:'ca-task-item'},e('span',{className:'ca-task-dot'}),e('span',null,'Planifica el calendario editorial de contenido quincenal')),
+              e('li',{className:'ca-task-item'},e('span',{className:'ca-task-dot'}),e('span',null,'Genera acciones de seguimiento y te notifica en este panel'))
+            )
           )
         ),
 
-        // ── Próxima automatización ──
-        e('div',{className:'ca-modal-section'},
-          e(CaCardHeader,{icon:'M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01',title:'Próxima automatización'}),
-          e('div',{style:{marginTop:8}},
-            displayNext
-              ? e('div',{className:'ca-session-block'},
-                  e('div',{className:'ca-session-date'},caFmtDatetime(displayNext.toISOString())),
-                  agent.next_session_agenda&&e('div',{className:'ca-session-agenda',style:{marginTop:4}},
-                    e('span',{className:'ca-session-label'},'Te preguntará: '),
-                    agent.next_session_agenda
-                  ),
-                  e('div',{className:'ca-adj-row'},
-                    e('span',{className:'ca-adj-lbl'},'Ajustar:'),
-                    e('button',{className:'ca-adj-btn',onClick:()=>setAdjDelta(d=>d-1),title:'Un día antes'},'−1d'),
-                    e('button',{className:'ca-adj-btn',onClick:()=>setAdjDelta(d=>d+1),title:'Un día después'},'+1d'),
-                    adjDelta!==0&&e('button',{
-                      className:'ca-adj-save'+(saving?' ca-adj-saving':''),
-                      disabled:saving,
-                      onClick:()=>{if(displayNext)saveNextRun(displayNext).then(()=>setAdjDelta(0));}
-                    },saving?'Guardando…':'Guardar fecha'),
-                    adjDelta!==0&&e('button',{className:'ca-adj-reset',onClick:()=>setAdjDelta(0)},'Cancelar')
-                  ),
-                  agent.cadence_days&&e('div',{className:'ca-cadence-note'},
-                    'Cadencia: cada '+agent.cadence_days+' días'+(agent.cadence_weekdays_only?' (días hábiles)':'')
+        // ── ACCIONES PENDIENTES ──
+        activeTab==='acciones'&&e('div',null,
+          notifsErr
+            ?e('div',{className:'ca-error'},'No pude cargar las notificaciones')
+            :notifs===null
+              ?e('span',{className:'ca-spinner'})
+              :notifs.length===0
+                ?e('div',{className:'ca-empty',style:{padding:'40px 0'}},
+                    e('div',{style:{fontSize:28,marginBottom:8}},'✓'),
+                    'Todo al día'
+                  )
+                :e('div',{className:'ca-notif-list'},
+                    notifs.map(n=>e('div',{key:n.id,className:'ca-notif ca-'+(n.kind==='accion'?'accion':'info')},
+                      e('div',{className:'ca-notif-top'},
+                        e('span',{className:'ca-notif-kind ca-kind-'+(n.kind==='accion'?'accion':'info')},n.kind==='accion'?'Acción':'Info'),
+                        e('span',{className:'ca-notif-title'},n.title)
+                      ),
+                      n.body&&e('div',{className:'ca-notif-body'},n.body),
+                      e('div',{className:'ca-notif-foot'},
+                        e('span',{className:'ca-notif-date'},n.due_date?'Para el '+caFmtDate(n.due_date):''),
+                        e('button',{className:'ca-mark-btn',disabled:!!marking[n.id],onClick:()=>markDone(n.id)},marking[n.id]?'…':'Marcar como atendida')
+                      )
+                    ))
+                  )
+        ),
+
+        // ── SUGERENCIAS ──
+        activeTab==='sugerencias'&&e('div',null,
+          suggs===null
+            ?e('span',{className:'ca-spinner'})
+            :suggs.length===0
+              ?e('div',{className:'ca-sugg-empty'},
+                  e('div',{className:'ca-sugg-icon'},'💡'),
+                  e('div',{className:'ca-sugg-hint'},
+                    'Aquí aparecerán las sugerencias que el agente escriba tras cada sesión — ideas de contenido, observaciones y recomendaciones.'
                   )
                 )
-              : e('div',{className:'ca-empty'},'Sin datos de última ejecución')
-          )
+              :e('div',{className:'ca-sugg-list'},
+                  suggs.map(s=>e('div',{key:s.id,className:'ca-sugg-item'},
+                    e('div',{className:'ca-sugg-meta'},caFmtDate(s.created_at)),
+                    e('div',{className:'ca-sugg-text'},s.body||s.title)
+                  ))
+                )
         ),
 
-        // ── Rendimiento ──
-        e('div',{className:'ca-modal-section'},
-          e(CaCardHeader,{icon:['M18 20V10','M12 20V4','M6 20v-6'],title:'Rendimiento'}),
-          e('div',{style:{marginTop:8}},
-            metrics===null
-              ? e('span',{className:'ca-spinner'})
-              : metrics.length===0
-                ? e('div',{className:'ca-empty'},'Sin datos todavía')
-                : e('div',{className:'ca-metrics-row'},
-                    e('div',{className:'ca-metric'},e('div',{className:'ca-metric-val'},totReact),e('div',{className:'ca-metric-lbl'},'Reacciones')),
-                    e('div',{className:'ca-metric'},e('div',{className:'ca-metric-val'},(totReach||0).toLocaleString('es-CL')),e('div',{className:'ca-metric-lbl'},'Alcance')),
-                    e('div',{className:'ca-metric'},e('div',{className:'ca-metric-val'},totMsgs),e('div',{className:'ca-metric-lbl'},'Mensajes'))
-                  )
-          )
-        ),
-
-        // ── Acciones pendientes ──
-        e('div',{className:'ca-modal-section'},
-          e(CaCardHeader,{icon:['M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9','M13.73 21a2 2 0 01-3.46 0'],title:'Acciones pendientes'}),
-          e('div',{style:{marginTop:8}},
-            notifsErr
-              ? e('div',{className:'ca-error'},'No pude cargar las notificaciones')
-              : notifs===null
-                ? e('span',{className:'ca-spinner'})
-                : notifs.length===0
-                  ? e('div',{className:'ca-empty'},'✓ Todo al día')
-                  : e('div',{className:'ca-notif-list'},
-                      notifs.map(n=>e('div',{key:n.id,className:'ca-notif ca-'+(n.kind==='accion'?'accion':'info')},
-                        e('div',{className:'ca-notif-top'},
-                          e('span',{className:'ca-notif-kind ca-kind-'+(n.kind==='accion'?'accion':'info')},n.kind==='accion'?'Acción':'Info'),
-                          e('span',{className:'ca-notif-title'},n.title)
-                        ),
-                        n.body&&e('div',{className:'ca-notif-body'},n.body),
-                        e('div',{className:'ca-notif-foot'},
-                          e('span',{className:'ca-notif-date'},n.due_date?'Para el '+caFmtDate(n.due_date):''),
-                          e('button',{className:'ca-mark-btn',disabled:!!marking[n.id],onClick:()=>markDone(n.id)},marking[n.id]?'…':'Marcar como atendida')
-                        )
-                      ))
-                    )
-          )
-        ),
-
-        // ── Configuración ──
-        e('div',{className:'ca-modal-section ca-config-section'},
-          e('div',{className:'ca-config-header',onClick:()=>setShowConfig(v=>!v)},
-            e('div',{className:'ca-card-hdr',style:{paddingBottom:0,marginBottom:0}},
-              e(CaCardHeader,{icon:'M12 15a3 3 0 100-6 3 3 0 000 6zM19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z',title:'Configuración'})
-            ),
-            e('div',{className:'ca-config-toggle'},showConfig?'▲':'▼')
-          ),
-          showConfig&&e('div',{className:'ca-config-body'},
-            // Cadencia
-            e('div',{className:'ca-cfg-row'},
-              e('label',{className:'ca-cfg-label'},'Cadencia (días entre automatizaciones)'),
-              e('div',{className:'ca-cfg-ctrl'},
-                e('input',{
-                  type:'number',min:1,max:365,
-                  className:'ca-cfg-input',
-                  value:cfgCadence,
-                  onChange:ev=>setCfgCadence(ev.target.value)
-                }),
-                e('span',{className:'ca-cfg-unit'},'días')
-              )
-            ),
-            // Solo días hábiles
-            e('div',{className:'ca-cfg-row'},
-              e('label',{className:'ca-cfg-label'},'Solo días hábiles (lun–vie)'),
-              e('button',{
-                className:'ca-toggle'+(cfgWeekdays?' ca-toggle-on':''),
-                onClick:()=>setCfgWeekdays(v=>!v)
-              },
-                e('span',{className:'ca-toggle-knob'}),
-                e('span',{className:'ca-toggle-label'},cfgWeekdays?'Sí':'No')
-              )
-            ),
-            // Agenda
-            e('div',{className:'ca-cfg-row ca-cfg-agenda-row'},
-              e('label',{className:'ca-cfg-label'},'Pregunta inicial del agente'),
-              e('textarea',{
-                className:'ca-cfg-textarea',
-                rows:3,
-                placeholder:'¿Qué le preguntará el agente al iniciar la sesión?',
-                value:cfgAgenda,
-                onChange:ev=>setCfgAgenda(ev.target.value)
-              })
-            ),
-            // Botón guardar
-            e('div',{className:'ca-cfg-actions'},
-              cfgSaved&&e('span',{className:'ca-cfg-saved'},'✓ Guardado'),
-              e('button',{
-                className:'ca-cfg-save-btn'+(cfgSaving?' ca-cfg-saving':''),
-                disabled:cfgSaving,
-                onClick:saveConfig
-              },cfgSaving?'Guardando…':'Guardar cambios')
+        // ── CONFIGURACIÓN ──
+        activeTab==='config'&&e('div',{className:'ca-config-body',style:{margin:0,border:'none',background:'none',padding:0}},
+          e('div',{className:'ca-cfg-row'},
+            e('label',{className:'ca-cfg-label'},'Cadencia (días entre automatizaciones)'),
+            e('div',{className:'ca-cfg-ctrl'},
+              e('input',{type:'number',min:1,max:365,className:'ca-cfg-input',value:cfgCadence,onChange:ev=>setCfgCadence(ev.target.value)}),
+              e('span',{className:'ca-cfg-unit'},'días')
             )
+          ),
+          e('div',{className:'ca-cfg-row'},
+            e('label',{className:'ca-cfg-label'},'Solo días hábiles (lun–vie)'),
+            e('button',{className:'ca-toggle'+(cfgWeekdays?' ca-toggle-on':''),onClick:()=>setCfgWeekdays(v=>!v)},
+              e('span',{className:'ca-toggle-knob'}),
+              e('span',{className:'ca-toggle-label'},cfgWeekdays?'Sí':'No')
+            )
+          ),
+          e('div',{className:'ca-cfg-row ca-cfg-agenda-row'},
+            e('label',{className:'ca-cfg-label'},'Pregunta inicial del agente'),
+            e('textarea',{
+              className:'ca-cfg-textarea',rows:3,
+              placeholder:'¿Qué le preguntará el agente al iniciar la sesión?',
+              value:cfgAgenda,onChange:ev=>setCfgAgenda(ev.target.value)
+            })
+          ),
+          e('div',{className:'ca-cfg-actions'},
+            cfgSaved&&e('span',{className:'ca-cfg-saved'},'✓ Guardado'),
+            e('button',{
+              className:'ca-cfg-save-btn'+(cfgSaving?' ca-cfg-saving':''),
+              disabled:cfgSaving,onClick:saveConfig
+            },cfgSaving?'Guardando…':'Guardar cambios')
           )
         )
       )
@@ -13373,7 +13393,7 @@ function ContentAgentPanel({project}){
 
   async function loadAgents(){
     try{
-      const r=await caFetch(`agents?select=name,slug,status,description,next_session_at,next_session_agenda,cadence_days,cadence_weekdays_only,last_run_at&order=name.asc`);
+      const r=await caFetch(`agents?select=name,slug,status,description,next_session_at,next_session_agenda,cadence_days,cadence_weekdays_only,last_run_at&status=eq.active&order=name.asc`);
       if(!r.ok)throw new Error();
       const d=await r.json();
       setAgents(d);
