@@ -113,7 +113,9 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .gsb-proj-name{font-size:12px;color:var(--text1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
 .gsb-proj.active .gsb-proj-name{color:var(--text0);font-weight:500}
 .gsb-proj-alert{width:6px;height:6px;border-radius:50%;background:var(--red);flex-shrink:0;box-shadow:0 0 0 2px var(--bg1)}
-.gsb-proj-notif{min-width:16px;height:16px;border-radius:8px;background:var(--accent2);color:#fff;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 4px;flex-shrink:0;line-height:1}
+.gsb-proj-notif{width:6px;height:6px;border-radius:50%;background:var(--red);flex-shrink:0;box-shadow:0 0 0 2px var(--bg1)}
+/* badge de punto en esquina superior derecha del ícono de tab */
+.tab-notif-dot{position:absolute;top:6px;right:10px;width:6px;height:6px;border-radius:50%;background:var(--red);box-shadow:0 0 0 2px var(--bg0);pointer-events:none}
 /* ── Content Agent Panel ── */
 .ca-section{display:flex;flex-direction:column;gap:14px;max-width:520px}
 .ca-card{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r-lg);overflow:hidden}
@@ -1318,7 +1320,7 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .cal-task-phases{font-size:10px;color:var(--text4);flex-shrink:0}
 .cal-cell-label{font-size:9px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2;margin-top:2px}
 .dash-tab{background:transparent;border:none;color:var(--text3);font-size:12px;font-family:'Inter',sans-serif;padding:8px 12px 10px;cursor:pointer;position:relative;transition:color .12s;border-radius:6px 6px 0 0}
-.dash-tab-icon{display:flex;align-items:center;justify-content:center;padding:9px 14px 11px}
+.dash-tab-icon{display:flex;align-items:center;justify-content:center;padding:9px 14px 11px;position:relative}
 .dash-tab-icon:hover{background:var(--bg3);color:var(--text1)}
 .dash-tab-icon.on{color:var(--accent2)}
 .dash-tab:hover{color:var(--text1)}
@@ -3217,7 +3219,7 @@ const GlobalSidebar=React.memo(function GlobalSidebar({projects,habits,systems,t
         e('span',{className:'gsb-proj-dot',style:{background:p.color}}),
         e('span',{className:'gsb-proj-name'},p.name),
         projAlert(p)&&e('span',{className:'gsb-proj-alert'}),
-        (p.id===TW_PROJECT_ID&&twAgentNotifCount>0)&&e('span',{className:'gsb-proj-notif',title:`${twAgentNotifCount} notificación${twAgentNotifCount!==1?'es':''} de acción pendiente${twAgentNotifCount!==1?'s':''}`},twAgentNotifCount)
+        (p.id===TW_PROJECT_ID&&twAgentNotifCount>0)&&e('span',{className:'gsb-proj-notif',title:`${twAgentNotifCount} notificación${twAgentNotifCount!==1?'es':''} de acción pendiente${twAgentNotifCount!==1?'s':''}`})
       ))
     ),
     ctxMenu&&e('div',{
@@ -13361,6 +13363,7 @@ function ProjectDashboard(props){
   const last5=lastNDays(5);
 
   const isTW=project.id===TW_PROJECT_ID;
+  const twNotifCount=useAgentNotifCount();
   const TABS=[
     {k:'resumen',label:'Resumen',icon:'home'},
     {k:'calendario',label:'Calendario',icon:'calendarGrid'},
@@ -13522,7 +13525,10 @@ function ProjectDashboard(props){
           e('button',{className:'btn btn-primary',onClick:onStartTimer},isRunningHere?'■ En curso':'▶ Iniciar timer')
         )
       ),
-      e('div',{className:'dash-tabs'},TABS.map(t=>e('button',{key:t.k,className:'dash-tab dash-tab-icon'+(tab===t.k?' on':''),onClick:()=>setTab(t.k),title:t.label},e(DashIcon,{name:t.icon,size:15}))))
+      e('div',{className:'dash-tabs'},TABS.map(t=>e('button',{key:t.k,className:'dash-tab dash-tab-icon'+(tab===t.k?' on':''),onClick:()=>setTab(t.k),title:t.label},
+        e(DashIcon,{name:t.icon,size:15}),
+        (t.k==='agente'&&isTW&&twNotifCount>0)&&e('span',{className:'tab-notif-dot',title:`${twNotifCount} pendiente${twNotifCount!==1?'s':''}` })
+      )))
     ),
 
     tab==='resumen'&&e(React.Fragment,null,
