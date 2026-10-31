@@ -183,6 +183,28 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .ca-auto-tag-cadencia{background:rgba(86,168,230,.12);color:var(--accent2)}
 .ca-auto-tag-sesion{background:rgba(124,58,237,.12);color:#a78bfa}
 .ca-auto-tag-notif{background:rgba(52,195,134,.1);color:#34c386}
+.ca-mm-wrap{display:flex;flex-direction:column;gap:0;margin-top:8px}
+.ca-mm-bars{display:flex;flex-direction:column;gap:8px;padding:2px 0 4px}
+.ca-mm-bar-row{display:flex;align-items:center;gap:8px}
+.ca-mm-bar-lbl{font-size:11.5px;font-weight:500;color:var(--text2);width:76px;flex-shrink:0;text-align:right}
+.ca-mm-bar-track{flex:1;height:8px;background:var(--bg3);border-radius:4px;overflow:hidden}
+.ca-mm-bar-fill{height:100%;border-radius:4px;transition:width .4s ease}
+.ca-mm-bar-val{font-size:11px;font-weight:600;width:84px;flex-shrink:0}
+.ca-mm-divider{height:1px;background:var(--border);margin:14px 0}
+.ca-mm-msg-list{display:flex;flex-direction:column;gap:1px}
+.ca-mm-msg{padding:9px 2px;border-bottom:1px solid var(--border);transition:background .1s}
+.ca-mm-msg:last-child{border-bottom:none}
+.ca-mm-msg-exp{background:var(--bg2);border-radius:var(--r-sm);padding:9px 10px;margin:0 -10px}
+.ca-mm-msg-top{display:flex;align-items:center;gap:8px}
+.ca-mm-msg-date{font-size:10px;color:var(--text4);font-family:'JetBrains Mono',monospace;flex-shrink:0;width:50px}
+.ca-mm-msg-tema{font-size:12px;color:var(--text1);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:flex;align-items:center;gap:5px}
+.ca-mm-tag-test{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;background:var(--bg4);color:var(--text4);padding:1px 5px;border-radius:3px;flex-shrink:0}
+.ca-mm-msg-right{display:flex;align-items:center;gap:7px;flex-shrink:0}
+.ca-mm-msg-bar{width:52px;height:5px;background:var(--bg3);border-radius:3px;overflow:hidden}
+.ca-mm-msg-bar-fill{height:100%;border-radius:3px}
+.ca-mm-msg-pct{font-size:11px;font-weight:600;width:36px;text-align:right}
+.ca-mm-pct-none{color:var(--text4)}
+.ca-mm-msg-notes{font-size:11.5px;color:var(--text2);line-height:1.6;margin-top:7px;padding-top:7px;border-top:1px solid var(--border)}
 .ca-modal-section{display:flex;flex-direction:column}
 .ca-task-list{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:7px}
 .ca-task-item{display:flex;align-items:flex-start;gap:8px;font-size:12px;color:var(--text1);line-height:1.45}
@@ -13127,6 +13149,105 @@ function CaCardHeader({icon,title}){
   );
 }
 
+// ── Visualización "Qué funciona mejor" ──────────────────────────────────────
+const CA_PILAR_COLORS={'historia':'#56a8e6','encuesta':'#a78bfa','avance':'#34c386','lanzamiento':'#f59e0b','reflexión':'#f472b6','otro':'#94a3b8'};
+function caParticipacion(views,reactions){
+  if(!views||!reactions||views<=0)return null;
+  return reactions/views;
+}
+function CaMsgMetricsViz({data,expandedMsg,setExpandedMsg}){
+  // Filtrar: excluir is_test=true y filas sin views/reactions
+  const valid=(data||[]).filter(r=>!r.is_test&&r.views>0&&r.reactions!=null);
+  const all=data||[];
+
+  if(all.length===0)return e('div',{className:'ca-empty'},'Sin datos todavía');
+
+  // ── Gráfico 1: barras por pilar ──
+  const byPilar={};
+  valid.forEach(r=>{
+    const p=(r.pilar||'otro').toLowerCase();
+    if(!byPilar[p])byPilar[p]={totalR:0,totalV:0,count:0};
+    byPilar[p].totalR+=r.reactions;
+    byPilar[p].totalV+=r.views;
+    byPilar[p].count+=1;
+  });
+  const pilarRows=Object.entries(byPilar)
+    .map(([p,d])=>({pilar:p,pct:d.totalV>0?d.totalR/d.totalV:0,count:d.count}))
+    .sort((a,b)=>b.pct-a.pct);
+  const maxPct=pilarRows.length>0?pilarRows[0].pct:0;
+
+  // ── Gráfico 2: lista de mensajes ──
+  const sorted=[...all].sort((a,b)=>new Date(b.published_on)-new Date(a.published_on));
+  const maxMsgPct=Math.max(0,...sorted.filter(r=>!r.is_test&&r.views>0&&r.reactions!=null).map(r=>r.reactions/r.views));
+
+  function fmtPct(v){return v!=null?(v*100).toFixed(1)+'%':null;}
+  function fmtDate(iso){
+    if(!iso)return '';
+    const d=new Date(iso+'T12:00:00');
+    return d.toLocaleDateString('es-CL',{day:'numeric',month:'short'});
+  }
+
+  return e('div',{className:'ca-mm-wrap'},
+    // Gráfico 1
+    pilarRows.length===0
+      ?e('div',{className:'ca-empty'},'Sin datos suficientes para comparar')
+      :e('div',{className:'ca-mm-bars'},
+          pilarRows.map(row=>{
+            const color=CA_PILAR_COLORS[row.pilar]||CA_PILAR_COLORS['otro'];
+            const widthPct=maxPct>0?(row.pct/maxPct)*100:0;
+            const label=row.pilar.charAt(0).toUpperCase()+row.pilar.slice(1);
+            return e('div',{key:row.pilar,className:'ca-mm-bar-row'},
+              e('div',{className:'ca-mm-bar-lbl'},label),
+              e('div',{className:'ca-mm-bar-track'},
+                e('div',{className:'ca-mm-bar-fill',style:{width:widthPct+'%',background:color}})
+              ),
+              e('div',{className:'ca-mm-bar-val',style:{color}},
+                fmtPct(row.pct)+' ('+row.count+')'
+              )
+            );
+          })
+        ),
+
+    // Separador
+    e('div',{className:'ca-mm-divider'}),
+
+    // Gráfico 2: lista de mensajes
+    sorted.length===0
+      ?e('div',{className:'ca-empty'},'Sin mensajes')
+      :e('div',{className:'ca-mm-msg-list'},
+          sorted.map((r,i)=>{
+            const pct=caParticipacion(r.views,r.reactions);
+            const color=(r.pilar?CA_PILAR_COLORS[r.pilar.toLowerCase()]:null)||CA_PILAR_COLORS['otro'];
+            const barW=maxMsgPct>0&&pct!=null?(pct/maxMsgPct)*100:0;
+            const isExp=expandedMsg===i;
+            return e('div',{key:r.id||i,className:'ca-mm-msg'+(isExp?' ca-mm-msg-exp':''),
+              onClick:()=>r.notes?setExpandedMsg(isExp?null:i):null,
+              style:{cursor:r.notes?'pointer':'default'}
+            },
+              e('div',{className:'ca-mm-msg-top'},
+                e('div',{className:'ca-mm-msg-date'},fmtDate(r.published_on)),
+                e('div',{className:'ca-mm-msg-tema'},
+                  r.is_test&&e('span',{className:'ca-mm-tag-test'},'prueba'),
+                  r.tema||'—'
+                ),
+                e('div',{className:'ca-mm-msg-right'},
+                  pct!=null&&e('div',{className:'ca-mm-msg-bar'},
+                    e('div',{className:'ca-mm-msg-bar-fill',style:{width:barW+'%',background:color}})
+                  ),
+                  pct!=null
+                    ?e('div',{className:'ca-mm-msg-pct',style:{color}},
+                        (r.approx?'~':'')+fmtPct(pct)
+                      )
+                    :e('div',{className:'ca-mm-msg-pct ca-mm-pct-none'},'—')
+                )
+              ),
+              isExp&&r.notes&&e('div',{className:'ca-mm-msg-notes'},r.notes)
+            );
+          })
+        )
+  );
+}
+
 // ── Modal de detalle de agente ──────────────────────────────────────────────
 function AgentDetailModal({agent,onClose,onAgentUpdated}){
   const slug=agent.slug;
@@ -13136,6 +13257,8 @@ function AgentDetailModal({agent,onClose,onAgentUpdated}){
   const[metrics,setMetrics]=React.useState(null);
   const[marking,setMarking]=React.useState({});
   const[suggs,setSuggs]=React.useState(null);
+  const[msgMetrics,setMsgMetrics]=React.useState(null);
+  const[expandedMsg,setExpandedMsg]=React.useState(null);
   // Config state
   const[cfgCadence,setCfgCadence]=React.useState(String(agent.cadence_days||14));
   const[cfgWeekdays,setCfgWeekdays]=React.useState(!!agent.cadence_weekdays_only);
@@ -13163,6 +13286,13 @@ function AgentDetailModal({agent,onClose,onAgentUpdated}){
       if(!r.ok)throw new Error();
       setSuggs(await r.json());
     }catch{setSuggs([]);}
+  }
+  async function loadMsgMetrics(){
+    try{
+      const r=await caFetch(`tw_agent_message_metrics?agent_slug=eq.${slug}&order=published_on.desc`);
+      if(!r.ok)throw new Error();
+      setMsgMetrics(await r.json());
+    }catch{setMsgMetrics([]);}
   }
   async function markDone(id){
     if(marking[id])return;
@@ -13194,7 +13324,7 @@ function AgentDetailModal({agent,onClose,onAgentUpdated}){
   }
 
   React.useEffect(()=>{
-    loadNotifs(); loadMetrics(); loadSuggs();
+    loadNotifs(); loadMetrics(); loadSuggs(); loadMsgMetrics();
     const iv=setInterval(()=>{loadNotifs();},60000);
     return()=>clearInterval(iv);
   },[]);
@@ -13284,7 +13414,7 @@ function AgentDetailModal({agent,onClose,onAgentUpdated}){
                 :e('div',{className:'ca-info-sub'},'Sin registros')
             )
           ),
-          // Métricas
+          // Métricas acumuladas
           e('div',null,
             e('div',{className:'ca-card-hdr'},
               e('span',{className:'ca-hdr-icon'},e(CaIcon,{path:['M18 20V10','M12 20V4','M6 20v-6'],size:13})),
@@ -13299,6 +13429,16 @@ function AgentDetailModal({agent,onClose,onAgentUpdated}){
                     e('div',{className:'ca-metric'},e('div',{className:'ca-metric-val'},totReact),e('div',{className:'ca-metric-lbl'},'Reacciones')),
                     e('div',{className:'ca-metric'},e('div',{className:'ca-metric-val'},(totReach||0).toLocaleString('es-CL')),e('div',{className:'ca-metric-lbl'},'Alcance'))
                   )
+          ),
+          // ── Qué funciona mejor ──
+          e('div',null,
+            e('div',{className:'ca-card-hdr'},
+              e('span',{className:'ca-hdr-icon'},e(CaIcon,{path:'M13 2L3 14h9l-1 8 10-12h-9l1-8',size:13})),
+              e('span',{className:'ca-hdr-title'},'Qué funciona mejor')
+            ),
+            msgMetrics===null
+              ?e('span',{className:'ca-spinner'})
+              :e(CaMsgMetricsViz,{data:msgMetrics,expandedMsg,setExpandedMsg})
           ),
           // Qué hace
           e('div',null,
