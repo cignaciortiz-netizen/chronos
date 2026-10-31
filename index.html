@@ -173,6 +173,16 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .ca-sugg-empty{text-align:center;padding:32px 0;display:flex;flex-direction:column;align-items:center;gap:10px}
 .ca-sugg-icon{font-size:28px;opacity:.4}
 .ca-sugg-hint{font-size:12px;color:var(--text3);line-height:1.6;max-width:280px;text-align:center}
+.ca-auto-list{display:flex;flex-direction:column;gap:10px}
+.ca-auto-item{display:flex;align-items:flex-start;gap:12px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r-md);padding:13px 14px}
+.ca-auto-icon{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.ca-auto-body{flex:1;min-width:0}
+.ca-auto-title{font-size:12.5px;font-weight:600;color:var(--text0);line-height:1.3}
+.ca-auto-desc{font-size:11.5px;color:var(--text2);line-height:1.55;margin-top:3px}
+.ca-auto-tag{display:inline-flex;align-items:center;gap:4px;font-size:9.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;padding:2px 7px;border-radius:20px;margin-top:6px}
+.ca-auto-tag-cadencia{background:rgba(86,168,230,.12);color:var(--accent2)}
+.ca-auto-tag-sesion{background:rgba(124,58,237,.12);color:#a78bfa}
+.ca-auto-tag-notif{background:rgba(52,195,134,.1);color:#34c386}
 .ca-modal-section{display:flex;flex-direction:column}
 .ca-task-list{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:7px}
 .ca-task-item{display:flex;align-items:flex-start;gap:8px;font-size:12px;color:var(--text1);line-height:1.45}
@@ -13206,6 +13216,7 @@ function AgentDetailModal({agent,onClose,onAgentUpdated}){
 
   const TABS=[
     {id:'overview',label:'Resumen'},
+    {id:'automatizaciones',label:'Automatizaciones'},
     {id:'acciones',label:'Acciones'+(pendingCount>0?' ('+pendingCount+')':'')},
     {id:'sugerencias',label:'Sugerencias'},
     {id:'config',label:'Configurar'}
@@ -13299,6 +13310,50 @@ function AgentDetailModal({agent,onClose,onAgentUpdated}){
               e('li',{className:'ca-task-item'},e('span',{className:'ca-task-dot'}),e('span',null,'Redacta mensajes para el canal de WhatsApp de Tristán Wolf')),
               e('li',{className:'ca-task-item'},e('span',{className:'ca-task-dot'}),e('span',null,'Planifica el calendario editorial de contenido quincenal')),
               e('li',{className:'ca-task-item'},e('span',{className:'ca-task-dot'}),e('span',null,'Genera acciones de seguimiento y te notifica en este panel'))
+            )
+          )
+        ),
+
+        // ── AUTOMATIZACIONES ──
+        activeTab==='automatizaciones'&&e('div',{className:'ca-auto-list'},
+          e('div',{className:'ca-auto-item'},
+            e('div',{className:'ca-auto-icon',style:{background:'rgba(37,99,235,.15)'}},'📅'),
+            e('div',{className:'ca-auto-body'},
+              e('div',{className:'ca-auto-title'},'Sesión de contenido quincenal'),
+              e('div',{className:'ca-auto-desc'},'Cada '+(agent.cadence_days||14)+' días el agente inicia una conversación para planificar los mensajes de WhatsApp del próximo período.'),
+              e('span',{className:'ca-auto-tag ca-auto-tag-cadencia'},'⏱ Cada '+(agent.cadence_days||14)+' días')
+            )
+          ),
+          e('div',{className:'ca-auto-item'},
+            e('div',{className:'ca-auto-icon',style:{background:'rgba(124,58,237,.15)'}},'✍️'),
+            e('div',{className:'ca-auto-body'},
+              e('div',{className:'ca-auto-title'},'Brief y redacción de mensajes'),
+              e('div',{className:'ca-auto-desc'},'Al iniciar la sesión, el agente te pregunta los temas, el tono y las novedades del período para redactar los borradores de mensajes.'),
+              e('span',{className:'ca-auto-tag ca-auto-tag-sesion'},'✦ En sesión')
+            )
+          ),
+          e('div',{className:'ca-auto-item'},
+            e('div',{className:'ca-auto-icon',style:{background:'rgba(52,195,134,.1)'}},'🔔'),
+            e('div',{className:'ca-auto-body'},
+              e('div',{className:'ca-auto-title'},'Notificaciones de acción'),
+              e('div',{className:'ca-auto-desc'},'Tras cada sesión el agente crea recordatorios concretos: revisar borradores, enviar fotos de resultados o cualquier pendiente de seguimiento.'),
+              e('span',{className:'ca-auto-tag ca-auto-tag-notif'},'🔔 Notificación')
+            )
+          ),
+          e('div',{className:'ca-auto-item'},
+            e('div',{className:'ca-auto-icon',style:{background:'rgba(234,179,8,.1)'}},'📊'),
+            e('div',{className:'ca-auto-body'},
+              e('div',{className:'ca-auto-title'},'Registro de rendimiento'),
+              e('div',{className:'ca-auto-desc'},'Al cerrar el ciclo, el agente registra los mensajes publicados, reacciones y alcance, que se acumulan en la sección Resumen.'),
+              e('span',{className:'ca-auto-tag ca-auto-tag-sesion'},'✦ En sesión')
+            )
+          ),
+          e('div',{className:'ca-auto-item'},
+            e('div',{className:'ca-auto-icon',style:{background:'rgba(124,58,237,.15)'}},'💡'),
+            e('div',{className:'ca-auto-body'},
+              e('div',{className:'ca-auto-title'},'Sugerencias para el próximo ciclo'),
+              e('div',{className:'ca-auto-desc'},'Basándose en el rendimiento anterior, el agente deja ideas y observaciones visibles en la pestaña Sugerencias.'),
+              e('span',{className:'ca-auto-tag ca-auto-tag-notif'},'💡 Sugerencia')
             )
           )
         ),
