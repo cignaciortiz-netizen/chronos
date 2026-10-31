@@ -113,6 +113,46 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .gsb-proj-name{font-size:12px;color:var(--text1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
 .gsb-proj.active .gsb-proj-name{color:var(--text0);font-weight:500}
 .gsb-proj-alert{width:6px;height:6px;border-radius:50%;background:var(--red);flex-shrink:0;box-shadow:0 0 0 2px var(--bg1)}
+.gsb-proj-notif{min-width:16px;height:16px;border-radius:8px;background:var(--accent2);color:#fff;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 4px;flex-shrink:0;line-height:1}
+/* ── Content Agent Panel ── */
+.ca-section{display:flex;flex-direction:column;gap:14px;max-width:520px}
+.ca-card{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r-lg);overflow:hidden}
+.ca-card-hdr{display:flex;align-items:center;gap:10px;padding:14px 16px 10px}
+.ca-agent-icon{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#2563eb 0%,#7c3aed 100%);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.ca-agent-meta{flex:1;min-width:0}
+.ca-agent-name{font-size:13px;font-weight:600;color:var(--text0);line-height:1.2}
+.ca-agent-slug{font-size:10px;color:var(--text4);font-family:'JetBrains Mono',monospace;margin-top:1px}
+.ca-status-dot{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:500}
+.ca-status-active{color:#34c386}
+.ca-status-inactive{color:var(--text3)}
+.ca-dot-pulse{width:7px;height:7px;border-radius:50%;background:#34c386;animation:caPulse 2s infinite}
+@keyframes caPulse{0%,100%{opacity:1}50%{opacity:.4}}
+.ca-dot-off{width:7px;height:7px;border-radius:50%;background:var(--text4)}
+.ca-card-body{padding:0 16px 14px;display:flex;flex-direction:column;gap:8px}
+.ca-desc{font-size:11.5px;color:var(--text2);line-height:1.6}
+.ca-fixed-note{font-size:11px;color:var(--text3);line-height:1.55;border-top:1px solid var(--border);padding-top:8px;margin-top:2px}
+.ca-stat-row{display:flex;align-items:center;gap:8px;padding:10px 16px;background:var(--bg3);font-size:11.5px;color:var(--text2);justify-content:space-between}
+.ca-stat-num{font-weight:700;color:var(--text0);font-size:13px}
+.ca-btn-sm{font-size:11px;padding:5px 12px;border-radius:var(--r-sm);background:var(--bg4);border:1px solid var(--border2);color:var(--text1);cursor:pointer;transition:background .1s}
+.ca-btn-sm:hover{background:var(--bg2)}
+.ca-notif-list{display:flex;flex-direction:column;gap:8px}
+.ca-notif{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r-md);padding:12px 14px;display:flex;flex-direction:column;gap:6px}
+.ca-notif.ca-accion{border-left:3px solid var(--accent2)}
+.ca-notif.ca-info{border-left:3px solid var(--text4)}
+.ca-notif-top{display:flex;align-items:flex-start;gap:8px}
+.ca-notif-kind{font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 7px;border-radius:4px;flex-shrink:0;margin-top:1px}
+.ca-notif-kind.ca-kind-accion{background:rgba(86,168,230,.18);color:var(--accent2)}
+.ca-notif-kind.ca-kind-info{background:var(--bg4);color:var(--text3)}
+.ca-notif-title{font-size:12px;font-weight:600;color:var(--text0);flex:1;line-height:1.35}
+.ca-notif-body{font-size:11.5px;color:var(--text2);line-height:1.55}
+.ca-notif-foot{display:flex;align-items:center;justify-content:space-between;margin-top:2px}
+.ca-notif-date{font-size:10px;color:var(--text4);font-family:'JetBrains Mono',monospace}
+.ca-mark-btn{font-size:10px;padding:3px 9px;border-radius:var(--r-sm);background:var(--bg3);border:1px solid var(--border);color:var(--text2);cursor:pointer;transition:all .1s}
+.ca-mark-btn:hover{background:var(--accent-bg);color:var(--accent2);border-color:var(--accent2)}
+.ca-empty{font-size:11.5px;color:var(--text3);text-align:center;padding:18px 0}
+.ca-error{font-size:11px;color:var(--text4);padding:8px 0;text-align:center}
+.ca-spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--border2);border-top-color:var(--accent2);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
 .shell2.gsb-collapsed .gsb-projlist{display:none}
 .gsb-bottom{padding:8px;border-top:1px solid var(--border);flex-shrink:0}
 
@@ -3056,6 +3096,7 @@ const TASK_STATUS_LABEL={pending:'Pendiente',inprog:'En curso',done:'Hecho'};
 const GlobalSidebar=React.memo(function GlobalSidebar({projects,habits,systems,tasks,notes,view,setView,selProj,onOpenProject,onNewProject,onArchiveProject,onShowArchived,onReorderProjects,collapsed,onToggleCollapse,onOpenCmdk,onOpenSettings}){
   const todayK=dayKey();
   const activeProjects=projects.filter(p=>p.status!=='archived');
+  const twAgentNotifCount=useAgentNotifCount();
   const[ctxMenu,setCtxMenu]=useState(null); // {x,y,proj}
   const[sortByAlert,setSortByAlert]=useState(()=>{try{const v=localStorage.getItem('chr4_sbsort');return v===null?true:v==='alert';}catch{return true;}});
   useEffect(()=>{try{localStorage.setItem('chr4_sbsort',sortByAlert?'alert':'manual');}catch{};},[sortByAlert]);
@@ -3175,7 +3216,8 @@ const GlobalSidebar=React.memo(function GlobalSidebar({projects,habits,systems,t
       },
         e('span',{className:'gsb-proj-dot',style:{background:p.color}}),
         e('span',{className:'gsb-proj-name'},p.name),
-        projAlert(p)&&e('span',{className:'gsb-proj-alert'})
+        projAlert(p)&&e('span',{className:'gsb-proj-alert'}),
+        (p.id===TW_PROJECT_ID&&twAgentNotifCount>0)&&e('span',{className:'gsb-proj-notif',title:`${twAgentNotifCount} notificación${twAgentNotifCount!==1?'es':''} de acción pendiente${twAgentNotifCount!==1?'s':''}`},twAgentNotifCount)
       ))
     ),
     ctxMenu&&e('div',{
@@ -9583,6 +9625,7 @@ const DASH_ICON_PATHS={
     e('path',{d:'M6 4H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V6a2 2 0 00-2-2h-1'}),
     e('path',{d:'M13 11l-3 4h5l-3 4',strokeLinejoin:'round',strokeLinecap:'round'}),
   ],
+  bolt:e=>[e('path',{d:'M13 2L3 14h9l-1 8 10-12h-9l1-8z'})],
 };
 function DashIcon({name,size=13,color='currentColor',fill='none'}){
   const draw=DASH_ICON_PATHS[name]||DASH_ICON_PATHS.target;
@@ -12944,6 +12987,192 @@ function CalendarView({tasks,project,onOpenSteps}){
     )
   );
 }
+// ── CONTENT AGENT PANEL — panel del agente de contenido de WhatsApp ──────────
+const TW_PROJECT_ID='0xejgnh';
+const CA_SLUG='content-agent';
+function ContentAgentPanel({project,onGoCalendar}){
+  const[agentInfo,setAgentInfo]=React.useState(null);
+  const[agentErr,setAgentErr]=React.useState(false);
+  const[summary,setSummary]=React.useState(null);
+  const[summaryErr,setSummaryErr]=React.useState(false);
+  const[notifs,setNotifs]=React.useState(null);
+  const[notifsErr,setNotifsErr]=React.useState(false);
+  const[marking,setMarking]=React.useState({});
+
+  function sbFetch(path,opts){
+    const url=SB.url+'/rest/v1/'+path;
+    return fetch(url,{...opts,headers:{apikey:SB.anon,Authorization:'Bearer '+SB.anon,'Content-Type':'application/json',...(opts&&opts.headers)}});
+  }
+
+  async function loadAgent(){
+    try{
+      const r=await sbFetch(`agents?slug=eq.${CA_SLUG}&select=name,slug,level,status,description&limit=1`);
+      if(!r.ok)throw new Error(r.status);
+      const d=await r.json();
+      setAgentInfo(d[0]||null);
+      setAgentErr(false);
+    }catch{setAgentErr(true);}
+  }
+
+  async function loadSummary(){
+    const today=new Date().toISOString().slice(0,10);
+    try{
+      const r=await sbFetch(`contenido_editorial?project_id=eq.${encodeURIComponent(project.id)}&tipo=eq.WhatsApp&status=eq.borrador&fecha=gte.${today}&select=id,fecha&order=fecha.desc`);
+      if(!r.ok)throw new Error(r.status);
+      const d=await r.json();
+      setSummary({count:d.length,last:d.length>0?d[0].fecha:null});
+      setSummaryErr(false);
+    }catch{setSummaryErr(true);}
+  }
+
+  async function loadNotifs(){
+    try{
+      const r=await sbFetch(`tw_agent_notifications?agent_slug=eq.${CA_SLUG}&status=eq.pendiente&order=created_at.desc`);
+      if(!r.ok)throw new Error(r.status);
+      const d=await r.json();
+      setNotifs(d);
+      setNotifsErr(false);
+    }catch{setNotifsErr(true);}
+  }
+
+  async function markDone(id){
+    if(marking[id])return;
+    setMarking(m=>({...m,[id]:true}));
+    try{
+      const r=await sbFetch(`tw_agent_notifications?id=eq.${id}`,{
+        method:'PATCH',
+        headers:{'Prefer':'return=minimal'},
+        body:JSON.stringify({status:'atendida',resolved_at:new Date().toISOString()})
+      });
+      if(r.ok){setNotifs(n=>n.filter(x=>x.id!==id));}
+    }catch{}
+    setMarking(m=>{const c={...m};delete c[id];return c;});
+  }
+
+  React.useEffect(()=>{
+    loadAgent(); loadSummary(); loadNotifs();
+    const iv=setInterval(()=>{loadAgent();loadSummary();loadNotifs();},60000);
+    return()=>clearInterval(iv);
+  },[]);
+
+  function fmtDate(iso){
+    if(!iso)return '';
+    const d=new Date(iso+'T12:00:00');
+    return d.toLocaleDateString('es-CL',{day:'numeric',month:'short',year:'numeric'});
+  }
+
+  return e('div',{className:'ca-section'},
+    // ── Tarjeta del agente ──
+    e('div',{className:'ca-card'},
+      e('div',{className:'ca-card-hdr'},
+        e('div',{className:'ca-agent-icon'},'🤖'),
+        e('div',{className:'ca-agent-meta'},
+          agentInfo
+            ? e(React.Fragment,null,
+                e('div',{className:'ca-agent-name'},agentInfo.name),
+                e('div',{className:'ca-agent-slug'},agentInfo.slug+(agentInfo.level?' · '+agentInfo.level:''))
+              )
+            : agentErr
+              ? e('div',{className:'ca-agent-name'},'Content Agent')
+              : e('div',{className:'ca-spinner'})
+        ),
+        agentInfo&&e('div',{className:'ca-status-dot '+(agentInfo.status==='active'?'ca-status-active':'ca-status-inactive')},
+          agentInfo.status==='active'
+            ? e(React.Fragment,null,e('span',{className:'ca-dot-pulse'}),'Activo')
+            : e(React.Fragment,null,e('span',{className:'ca-dot-off'}),agentInfo.status||'Inactivo')
+        )
+      ),
+      e('div',{className:'ca-card-body'},
+        agentInfo&&agentInfo.description&&e('p',{className:'ca-desc'},agentInfo.description),
+        e('p',{className:'ca-fixed-note'},'Escribe y planifica los mensajes del canal de WhatsApp con Tristán. Sesión de trabajo los lunes a las 14:00.')
+      )
+    ),
+
+    // ── Resumen de contenido ──
+    e('div',{className:'ca-card'},
+      e('div',{className:'ca-card-hdr',style:{paddingBottom:12}},
+        e('span',{style:{fontSize:12,fontWeight:600,color:'var(--text0)'}},
+          e('svg',{width:14,height:14,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round',style:{display:'inline',verticalAlign:'middle',marginRight:6}},
+            e('rect',{x:3,y:4,width:18,height:18,rx:2,ry:2}),
+            e('line',{x1:16,y1:2,x2:16,y2:6}),
+            e('line',{x1:8,y1:2,x2:8,y2:6}),
+            e('line',{x1:3,y1:10,x2:21,y2:10})
+          ),
+          'Contenido WhatsApp'
+        )
+      ),
+      summaryErr
+        ? e('div',{className:'ca-error ca-card-body'},'No pude cargar el resumen')
+        : summary===null
+          ? e('div',{className:'ca-card-body'},e('span',{className:'ca-spinner'}))
+          : e(React.Fragment,null,
+              e('div',{className:'ca-stat-row'},
+                e('span',null,e('span',{className:'ca-stat-num'},summary.count),' ',summary.count===1?'mensaje en borrador por delante':'mensajes en borrador por delante'),
+                summary.last&&e('span',{style:{fontSize:10,color:'var(--text4)'}},fmtDate(summary.last))
+              ),
+              e('div',{className:'ca-card-body',style:{paddingTop:12}},
+                e('button',{className:'ca-btn-sm',onClick:onGoCalendar},'Ver calendario editorial')
+              )
+            )
+    ),
+
+    // ── Notificaciones pendientes ──
+    e('div',{className:'ca-card'},
+      e('div',{className:'ca-card-hdr',style:{paddingBottom:12}},
+        e('span',{style:{fontSize:12,fontWeight:600,color:'var(--text0)'}},
+          e('svg',{width:14,height:14,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round',style:{display:'inline',verticalAlign:'middle',marginRight:6}},
+            e('path',{d:'M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9'}),
+            e('path',{d:'M13.73 21a2 2 0 01-3.46 0'})
+          ),
+          'Notificaciones pendientes'
+        )
+      ),
+      e('div',{className:'ca-card-body'},
+        notifsErr
+          ? e('div',{className:'ca-error'},'No pude cargar las notificaciones')
+          : notifs===null
+            ? e('span',{className:'ca-spinner'})
+            : notifs.length===0
+              ? e('div',{className:'ca-empty'},'✓ Todo al día')
+              : e('div',{className:'ca-notif-list'},
+                  notifs.map(n=>e('div',{key:n.id,className:'ca-notif ca-'+(n.kind==='accion'?'accion':'info')},
+                    e('div',{className:'ca-notif-top'},
+                      e('span',{className:'ca-notif-kind ca-kind-'+(n.kind==='accion'?'accion':'info')},n.kind==='accion'?'Acción':'Info'),
+                      e('span',{className:'ca-notif-title'},n.title)
+                    ),
+                    n.body&&e('div',{className:'ca-notif-body'},n.body),
+                    e('div',{className:'ca-notif-foot'},
+                      e('span',{className:'ca-notif-date'},fmtDate(n.created_at)),
+                      e('button',{
+                        className:'ca-mark-btn',
+                        disabled:!!marking[n.id],
+                        onClick:()=>markDone(n.id)
+                      },marking[n.id]?'…':'Marcar como atendida')
+                    )
+                  ))
+                )
+      )
+    )
+  );
+}
+// Hook para contar notificaciones de acción pendientes del Content Agent
+// (se usa en el sidebar para el badge del proyecto Tristán Wolf)
+function useAgentNotifCount(){
+  const[count,setCount]=React.useState(0);
+  React.useEffect(()=>{
+    if(!SB.url||!SB.anon)return;
+    function load(){
+      fetch(SB.url+`/rest/v1/tw_agent_notifications?agent_slug=eq.${CA_SLUG}&status=eq.pendiente&kind=eq.accion&select=id`,{
+        headers:{apikey:SB.anon,Authorization:'Bearer '+SB.anon}
+      }).then(r=>r.ok?r.json():Promise.reject()).then(d=>setCount(d.length)).catch(()=>{});
+    }
+    load();
+    const iv=setInterval(load,60000);
+    return()=>clearInterval(iv);
+  },[SB.url,SB.anon]);
+  return count;
+}
+
 function ProjectDashboard(props){
   const{
     project,projects,tasks,sessions,ctxs,habits,systems,
@@ -13131,12 +13360,14 @@ function ProjectDashboard(props){
   }
   const last5=lastNDays(5);
 
+  const isTW=project.id===TW_PROJECT_ID;
   const TABS=[
     {k:'resumen',label:'Resumen',icon:'home'},
     {k:'calendario',label:'Calendario',icon:'calendarGrid'},
     {k:'sistemas',label:'Sistemas',icon:'map'},
     {k:'libreta',label:'Libreta',icon:'note'},
     // ocultos: tareas, habitos, notas, tiempo, ajustes
+    ...(isTW?[{k:'agente',label:'Agente',icon:'bolt'}]:[]),
   ];
 
   // ── Parser de checklist inteligente ─────────────────────────────
@@ -13578,6 +13809,10 @@ function ProjectDashboard(props){
           )
         )
       )
+    ),
+
+    tab==='agente'&&isTW&&e('div',{className:'dash-body'},
+      e(ContentAgentPanel,{project,onGoCalendar:()=>setTab('calendario')})
     ),
 
     showPasteModal&&e(PasteStructModal,null),
