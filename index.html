@@ -1837,17 +1837,17 @@ const{createRoot}=ReactDOM;
     localStorage.setItem('sb_uid', 'ChWqvaxwWxPRf_Vs');
   }
 })();
-// ── MisFinanzas — mismo proyecto Supabase que usa la app MisFinanzas ya
-// desplegada. Chronos solo LEE de acá (no escribe ni sincroniza nada de
-// vuelta) — la fuente de verdad de tus finanzas sigue siendo MisFinanzas.
+// ── Finanzas — integradas en el mismo Supabase de Chronos (tablas mf_*)
+// La fuente de verdad es ahora Chronos; MisFinanzas ya no se usa.
 const MF_SB={
-  url:'https://fokiszemjatdpbhglpas.supabase.co',
-  anon:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZva2lzemVtamF0ZHBiaGdscGFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI2NzI0NTMsImV4cCI6MjA5ODI0ODQ1M30.xO7UTcbHhLZiMf2svaqrnnuJXItfSybIcDHuaehts0U',
+  get url(){return SB.url||''},
+  get anon(){return SB.anon||''},
   uid:'17ebb2ae-b868-51c2-80a2-220519cc4795',
   headers(){ return{apikey:this.anon,Authorization:'Bearer '+this.anon,'Content-Type':'application/json'}; }
 };
 async function mfSelect(table,filters){
-  const url=`${MF_SB.url}/rest/v1/${table}?select=*${filters?'&'+filters:''}`;
+  if(!SB.configured())throw new Error('Supabase no configurado');
+  const url=`${MF_SB.url}/rest/v1/mf_${table}?select=*${filters?'&'+filters:''}`;
   const r=await fetch(url,{headers:MF_SB.headers()});
   if(!r.ok)throw new Error(table+': HTTP '+r.status);
   return r.json();
@@ -1879,11 +1879,10 @@ async function loadFinanzas(){
 }
 function mfClp(n){return new Intl.NumberFormat('es-CL',{style:'currency',currency:'CLP',minimumFractionDigits:0}).format(Math.round(n||0));}
 function mfNowMonth(){const d=new Date();return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;}
-// ── Escritura — mismo patrón que ya usa MisFinanzas (upsert por id resuelve
-// tanto crear como editar en una sola llamada; nunca se toca nada más que
-// estas tablas, y siempre con el mismo user_id fijo). ──
+// ── Escritura — upsert por id hacia las tablas mf_* del Supabase de Chronos ──
 async function mfUpsert(table,row){
-  const url=`${MF_SB.url}/rest/v1/${table}`;
+  if(!SB.configured())throw new Error('Supabase no configurado');
+  const url=`${MF_SB.url}/rest/v1/mf_${table}`;
   const r=await fetch(url,{
     method:'POST',
     headers:{...MF_SB.headers(),'Prefer':'resolution=merge-duplicates,return=representation'},
@@ -1893,7 +1892,8 @@ async function mfUpsert(table,row){
   return r.json();
 }
 async function mfDeleteRow(table,id){
-  const url=`${MF_SB.url}/rest/v1/${table}?id=eq.${id}`;
+  if(!SB.configured())throw new Error('Supabase no configurado');
+  const url=`${MF_SB.url}/rest/v1/mf_${table}?id=eq.${id}`;
   const r=await fetch(url,{method:'DELETE',headers:MF_SB.headers()});
   if(!r.ok)throw new Error(table+': HTTP '+r.status);
 }
