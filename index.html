@@ -3219,7 +3219,6 @@ const GlobalSidebar=React.memo(function GlobalSidebar({projects,habits,systems,t
         e('span',{className:'gsb-proj-dot',style:{background:p.color}}),
         e('span',{className:'gsb-proj-name'},p.name),
         projAlert(p)&&e('span',{className:'gsb-proj-alert'}),
-        (p.id===TW_PROJECT_ID&&twAgentNotifCount>0)&&e('span',{className:'gsb-proj-notif',title:`${twAgentNotifCount} notificación${twAgentNotifCount!==1?'es':''} de acción pendiente${twAgentNotifCount!==1?'s':''}`})
       ))
     ),
     ctxMenu&&e('div',{
