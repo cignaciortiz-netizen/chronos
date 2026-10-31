@@ -185,6 +185,30 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .ca-mark-btn:hover{background:var(--accent-bg);color:var(--accent2);border-color:var(--accent2)}
 .ca-empty{font-size:11.5px;color:var(--text3);text-align:center;padding:16px 0}
 .ca-error{font-size:11px;color:var(--text4);padding:8px 0;text-align:center}
+.ca-config-section{border-top:1px solid var(--border);padding-top:16px}
+.ca-config-header{display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none}
+.ca-config-toggle{font-size:10px;color:var(--text4);padding:2px 6px}
+.ca-config-body{display:flex;flex-direction:column;gap:14px;margin-top:14px;padding:14px;background:var(--bg2);border-radius:var(--r-md);border:1px solid var(--border)}
+.ca-cfg-row{display:flex;flex-direction:column;gap:6px}
+.ca-cfg-label{font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.04em}
+.ca-cfg-ctrl{display:flex;align-items:center;gap:8px}
+.ca-cfg-input{background:var(--bg1);border:1px solid var(--border2);border-radius:var(--r-sm);color:var(--text0);font-size:13px;font-weight:600;padding:5px 10px;width:72px;outline:none;transition:border-color .15s}
+.ca-cfg-input:focus{border-color:var(--accent2)}
+.ca-cfg-unit{font-size:11.5px;color:var(--text3)}
+.ca-toggle{display:flex;align-items:center;gap:8px;background:var(--bg3);border:1px solid var(--border2);border-radius:20px;padding:4px 10px 4px 4px;cursor:pointer;transition:all .2s;width:fit-content}
+.ca-toggle-on{background:rgba(86,168,230,.15);border-color:var(--accent2)}
+.ca-toggle-knob{width:18px;height:18px;border-radius:50%;background:var(--text4);transition:background .2s}
+.ca-toggle-on .ca-toggle-knob{background:var(--accent2)}
+.ca-toggle-label{font-size:11.5px;font-weight:600;color:var(--text2)}
+.ca-toggle-on .ca-toggle-label{color:var(--accent2)}
+.ca-cfg-agenda-row{gap:7px}
+.ca-cfg-textarea{background:var(--bg1);border:1px solid var(--border2);border-radius:var(--r-sm);color:var(--text0);font-size:12.5px;line-height:1.55;padding:8px 10px;resize:vertical;outline:none;font-family:inherit;transition:border-color .15s;width:100%;box-sizing:border-box}
+.ca-cfg-textarea:focus{border-color:var(--accent2)}
+.ca-cfg-actions{display:flex;align-items:center;justify-content:flex-end;gap:10px;margin-top:4px}
+.ca-cfg-saved{font-size:11px;font-weight:600;color:#22c55e}
+.ca-cfg-save-btn{font-size:12px;padding:6px 16px;border-radius:var(--r-sm);background:var(--accent2);border:none;color:#fff;font-weight:600;cursor:pointer;transition:opacity .15s}
+.ca-cfg-save-btn:hover{opacity:.85}
+.ca-cfg-save-btn.ca-cfg-saving{opacity:.5;cursor:default}
 .ca-spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--border2);border-top-color:var(--accent2);border-radius:50%;animation:spin .7s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 .shell2.gsb-collapsed .gsb-projlist{display:none}
@@ -13067,7 +13091,7 @@ function CaCardHeader({icon,title}){
 }
 
 // ── Modal de detalle de agente ──────────────────────────────────────────────
-function AgentDetailModal({agent,onClose}){
+function AgentDetailModal({agent,onClose,onAgentUpdated}){
   const slug=agent.slug;
   const[notifs,setNotifs]=React.useState(null);
   const[notifsErr,setNotifsErr]=React.useState(false);
@@ -13075,6 +13099,13 @@ function AgentDetailModal({agent,onClose}){
   const[marking,setMarking]=React.useState({});
   const[adjDelta,setAdjDelta]=React.useState(0); // días ajustados manualmente
   const[saving,setSaving]=React.useState(false);
+  // Config state
+  const[showConfig,setShowConfig]=React.useState(false);
+  const[cfgCadence,setCfgCadence]=React.useState(String(agent.cadence_days||14));
+  const[cfgWeekdays,setCfgWeekdays]=React.useState(!!agent.cadence_weekdays_only);
+  const[cfgAgenda,setCfgAgenda]=React.useState(agent.next_session_agenda||'');
+  const[cfgSaving,setCfgSaving]=React.useState(false);
+  const[cfgSaved,setCfgSaved]=React.useState(false);
 
   async function loadNotifs(){
     try{
@@ -13122,6 +13153,22 @@ function AgentDetailModal({agent,onClose}){
       });
     }catch{}
     setSaving(false);
+  }
+  async function saveConfig(){
+    setCfgSaving(true);
+    try{
+      const days=parseInt(cfgCadence,10);
+      if(!isNaN(days)&&days>0){
+        await caFetch(`agents?slug=eq.${slug}`,{
+          method:'PATCH',headers:{'Prefer':'return=minimal'},
+          body:JSON.stringify({cadence_days:days,cadence_weekdays_only:cfgWeekdays,next_session_agenda:cfgAgenda.trim()||null})
+        });
+        setCfgSaved(true);
+        setTimeout(()=>setCfgSaved(false),2500);
+        if(onAgentUpdated)onAgentUpdated();
+      }
+    }catch{}
+    setCfgSaving(false);
   }
 
   React.useEffect(()=>{
@@ -13256,6 +13303,62 @@ function AgentDetailModal({agent,onClose}){
                       ))
                     )
           )
+        ),
+
+        // ── Configuración ──
+        e('div',{className:'ca-modal-section ca-config-section'},
+          e('div',{className:'ca-config-header',onClick:()=>setShowConfig(v=>!v)},
+            e('div',{className:'ca-card-hdr',style:{paddingBottom:0,marginBottom:0}},
+              e(CaCardHeader,{icon:'M12 15a3 3 0 100-6 3 3 0 000 6zM19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z',title:'Configuración'})
+            ),
+            e('div',{className:'ca-config-toggle'},showConfig?'▲':'▼')
+          ),
+          showConfig&&e('div',{className:'ca-config-body'},
+            // Cadencia
+            e('div',{className:'ca-cfg-row'},
+              e('label',{className:'ca-cfg-label'},'Cadencia (días entre automatizaciones)'),
+              e('div',{className:'ca-cfg-ctrl'},
+                e('input',{
+                  type:'number',min:1,max:365,
+                  className:'ca-cfg-input',
+                  value:cfgCadence,
+                  onChange:ev=>setCfgCadence(ev.target.value)
+                }),
+                e('span',{className:'ca-cfg-unit'},'días')
+              )
+            ),
+            // Solo días hábiles
+            e('div',{className:'ca-cfg-row'},
+              e('label',{className:'ca-cfg-label'},'Solo días hábiles (lun–vie)'),
+              e('button',{
+                className:'ca-toggle'+(cfgWeekdays?' ca-toggle-on':''),
+                onClick:()=>setCfgWeekdays(v=>!v)
+              },
+                e('span',{className:'ca-toggle-knob'}),
+                e('span',{className:'ca-toggle-label'},cfgWeekdays?'Sí':'No')
+              )
+            ),
+            // Agenda
+            e('div',{className:'ca-cfg-row ca-cfg-agenda-row'},
+              e('label',{className:'ca-cfg-label'},'Pregunta inicial del agente'),
+              e('textarea',{
+                className:'ca-cfg-textarea',
+                rows:3,
+                placeholder:'¿Qué le preguntará el agente al iniciar la sesión?',
+                value:cfgAgenda,
+                onChange:ev=>setCfgAgenda(ev.target.value)
+              })
+            ),
+            // Botón guardar
+            e('div',{className:'ca-cfg-actions'},
+              cfgSaved&&e('span',{className:'ca-cfg-saved'},'✓ Guardado'),
+              e('button',{
+                className:'ca-cfg-save-btn'+(cfgSaving?' ca-cfg-saving':''),
+                disabled:cfgSaving,
+                onClick:saveConfig
+              },cfgSaving?'Guardando…':'Guardar cambios')
+            )
+          )
         )
       )
     )
@@ -13338,7 +13441,7 @@ function ContentAgentPanel({project}){
         );
       })
     ),
-    selected&&e(AgentDetailModal,{agent:selected,onClose:()=>setSelected(null)})
+    selected&&e(AgentDetailModal,{agent:selected,onClose:()=>setSelected(null),onAgentUpdated:loadAgents})
   );
 }
 // Hook para contar notificaciones de acción pendientes del Content Agent
