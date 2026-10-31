@@ -13028,7 +13028,8 @@ function ContentAgentPanel({project,onGoCalendar}){
 
   async function loadNotifs(){
     try{
-      const r=await sbFetch(`tw_agent_notifications?agent_slug=eq.${CA_SLUG}&status=eq.pendiente&order=created_at.desc`);
+      const today=new Date().toISOString().slice(0,10);
+      const r=await sbFetch(`tw_agent_notifications?agent_slug=eq.${CA_SLUG}&status=eq.pendiente&or=(due_date.is.null,due_date.lte.${today})&order=created_at.desc`);
       if(!r.ok)throw new Error(r.status);
       const d=await r.json();
       setNotifs(d);
@@ -13143,7 +13144,7 @@ function ContentAgentPanel({project,onGoCalendar}){
                     ),
                     n.body&&e('div',{className:'ca-notif-body'},n.body),
                     e('div',{className:'ca-notif-foot'},
-                      e('span',{className:'ca-notif-date'},fmtDate(n.created_at)),
+                      e('span',{className:'ca-notif-date'},n.due_date?'Para el '+fmtDate(n.due_date):''),
                       e('button',{
                         className:'ca-mark-btn',
                         disabled:!!marking[n.id],
@@ -13163,7 +13164,8 @@ function useAgentNotifCount(){
   React.useEffect(()=>{
     if(!SB.url||!SB.anon)return;
     function load(){
-      fetch(SB.url+`/rest/v1/tw_agent_notifications?agent_slug=eq.${CA_SLUG}&status=eq.pendiente&kind=eq.accion&select=id`,{
+      const _today=new Date().toISOString().slice(0,10);
+      fetch(SB.url+`/rest/v1/tw_agent_notifications?agent_slug=eq.${CA_SLUG}&status=eq.pendiente&kind=eq.accion&or=(due_date.is.null,due_date.lte.${_today})&select=id`,{
         headers:{apikey:SB.anon,Authorization:'Bearer '+SB.anon}
       }).then(r=>r.ok?r.json():Promise.reject()).then(d=>setCount(d.length)).catch(()=>{});
     }
