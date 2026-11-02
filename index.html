@@ -5062,7 +5062,14 @@ function App(){
             fmtWhen,pStats
           })
         :view==='finanzas'
-        ?e('div',{className:'dashboard-view'},e(FinanzasView,null))
+        ?e('div',{className:'dashboard-view',style:{padding:0,overflow:'hidden',display:'flex',flexDirection:'column'}},
+            e('iframe',{
+              src:'https://cignaciortiz-netizen.github.io/misfinanzas/',
+              style:{flex:1,border:'none',width:'100%',minHeight:0},
+              title:'MisFinanzas',
+              allowFullScreen:true
+            })
+          )
         :view==='gantt'
         ?e('div',{className:'dashboard-view',style:{padding:0,overflow:'hidden'}},
             e(GlobalGanttView,{
