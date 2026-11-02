@@ -1792,6 +1792,42 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 }
 .dash-add-btn{background:transparent;border:none;color:var(--text3);cursor:pointer;font-size:15px;padding:0 2px;line-height:1;border-radius:4px}
 .dash-add-btn:hover{color:var(--accent2)}
+/* ── WEEK VIEW ── */
+.ec-week-wrap{display:flex;flex-direction:column;gap:8px;flex:1;overflow:hidden}
+.ec-week-nav{display:flex;align-items:center;gap:10px;padding:6px 0}
+.ec-week-nav button{background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--text1);cursor:pointer;padding:3px 10px;font-size:12px}
+.ec-week-nav button:hover{background:var(--bg4)}
+.ec-week-nav span{font-size:12px;color:var(--text2);font-weight:500}
+.ec-week-cols{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;flex:1;overflow-y:auto;align-items:start}
+.ec-week-col{display:flex;flex-direction:column;gap:3px;min-height:120px;background:var(--bg2);border:1px solid var(--border2);border-radius:8px;overflow:hidden}
+.ec-week-col.ec-week-col-today{border-color:var(--accent2);background:var(--accent2)0a}
+.ec-week-col-hdr{padding:5px 7px 4px;border-bottom:1px solid var(--border2);background:var(--bg3)}
+.ec-week-dow{font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em}
+.ec-week-daynum{font-size:15px;font-weight:700;color:var(--text1);line-height:1.2}
+.ec-week-col-today .ec-week-daynum{color:var(--accent2)}
+.ec-week-cards{display:flex;flex-direction:column;gap:2px;padding:3px 4px}
+.ec-week-card{background:var(--bg1);border:1px solid var(--border2);border-radius:5px;padding:4px 6px;cursor:pointer;transition:background .12s}
+.ec-week-card:hover{background:var(--bg3)}
+.ec-week-card-title{font-size:10px;font-weight:600;color:var(--text1);line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ec-week-card-meta{display:flex;align-items:center;gap:3px;margin-top:2px}
+.ec-week-add{background:none;border:none;color:var(--text4);cursor:pointer;font-size:16px;padding:2px 4px;line-height:1;margin:2px 4px}
+.ec-week-add:hover{color:var(--accent2)}
+/* ── LIST VIEW ── */
+.ec-list-wrap{display:flex;flex-direction:column;gap:2px;overflow-y:auto;flex:1}
+.ec-list-empty{text-align:center;padding:40px 0;color:var(--text4);font-size:13px}
+.ec-list-group{margin-bottom:6px}
+.ec-list-date-hdr{display:flex;align-items:baseline;gap:8px;padding:8px 4px 4px;border-bottom:1px solid var(--border2);margin-bottom:2px}
+.ec-list-dow{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em}
+.ec-list-d{font-size:17px;font-weight:800;color:var(--text1)}
+.ec-list-mon{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em}
+.ec-list-row{display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:6px;cursor:pointer;transition:background .12s}
+.ec-list-row:hover{background:var(--bg3)}
+.ec-list-status-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.ec-list-title{font-size:12px;font-weight:600;color:var(--text1);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ec-list-badges{display:flex;align-items:center;gap:4px;flex-shrink:0}
+.ec-list-badge{font-size:9px;padding:1px 6px;border-radius:10px;font-weight:600;background:var(--bg3);color:var(--text2);border:1px solid var(--border2)}
+/* ── CARD FORMAT PILL ── */
+.ec-card-fmt{font-size:8px;font-weight:700;color:var(--text3);letter-spacing:.03em}
 /* HORIZONTAL TIMELINE — Bloques de tiempo */
 .htl{display:flex;flex-direction:column;gap:14px}
 .htl-header{display:flex;align-items:center;justify-content:space-between}
@@ -10451,8 +10487,34 @@ function EditorialCalendar({project}){
     'general':'var(--accent2)',
   };
   function tipoColor(tipo){return TIPO_COLORS[tipo]||project.color||'var(--accent2)';}
-  const STATUS_CSS={borrador:'ec-status-borrador',listo:'ec-status-listo',publicado:'ec-status-publicado'};
-  const STATUS_LBL={borrador:'Borrador',listo:'Listo',publicado:'Publicado'};
+
+  // ── Pipeline de estados estilo Notion ──
+  // grupos: todo | in_progress | done
+  const STATUSES=[
+    {id:'sin_iniciar',  lbl:'Sin iniciar',       group:'todo',        color:'#8b949e'},
+    {id:'guion',        lbl:'Guión',             group:'in_progress', color:'#388bfd'},
+    {id:'edicion',      lbl:'Edición',           group:'in_progress', color:'#a371f7'},
+    {id:'copy',         lbl:'Copy',              group:'in_progress', color:'#ffa657'},
+    {id:'portada',      lbl:'Portada',           group:'in_progress', color:'#f78166'},
+    {id:'grafica_lista',lbl:'Gráfica lista',     group:'in_progress', color:'#3fb950'},
+    {id:'en_revision',  lbl:'En revisión',       group:'in_progress', color:'#d29922'},
+    {id:'cambios',      lbl:'Cambios solicitados',group:'in_progress',color:'#f0883e'},
+    {id:'video_listo',  lbl:'Video listo',       group:'in_progress', color:'#58a6ff'},
+    {id:'listo',        lbl:'Listo',             group:'done',        color:'#3fb950'},
+    {id:'programado',   lbl:'Programado',        group:'done',        color:'#bc8cff'},
+    // aliases de compatibilidad con datos viejos
+    {id:'borrador',     lbl:'Sin iniciar',       group:'todo',        color:'#8b949e', alias:true},
+    {id:'publicado',    lbl:'Programado',        group:'done',        color:'#bc8cff', alias:true},
+  ];
+  const STATUS_MAP=Object.fromEntries(STATUSES.map(s=>[s.id,s]));
+  function getStatus(id){return STATUS_MAP[id]||STATUSES[0];}
+  function statusColor(id){return getStatus(id).color;}
+  function statusLbl(id){return getStatus(id).lbl;}
+  const STATUS_OPTS=STATUSES.filter(s=>!s.alias); // sólo los reales para los selects
+
+  // ── Formato ──
+  const FORMATOS=['Post','Story','Reel','Carrusel','Video','Blog','Email','Otro'];
+  const FORMATO_ICONS={'Post':'📝','Story':'📱','Reel':'🎬','Carrusel':'🎠','Video':'▶️','Blog':'📰','Email':'📧','Otro':'📌'};
 
   const todayD=nowSCL();
   const[yr,setYr]=React.useState(todayD.getFullYear());
@@ -10461,7 +10523,10 @@ function EditorialCalendar({project}){
   const[loading,setLoading]=React.useState(false);
   const[panelCard,setPanelCard]=React.useState(null);
   const[filterTipo,setFilterTipo]=React.useState('Todos');
+  const[filterStatus,setFilterStatus]=React.useState('Todos');
   const[dragItem,setDragItem]=React.useState(null);
+  // view: 'mes' | 'semana' | 'lista'
+  const[calView,setCalView]=React.useState('mes');
   // panel mode: 'view' | 'new' | 'recur' | 'banco'
   const[panelMode,setPanelMode]=React.useState('view');
   const[editBody,setEditBody]=React.useState('');
@@ -10470,16 +10535,7 @@ function EditorialCalendar({project}){
   React.useEffect(()=>{setEditEmbedUrl(panelCard?panelCard.embed_url||'':'');},[panelCard&&panelCard.id]);
   function saveEmbedUrl(val){
     if(!panelCard)return;
-    const trimmed=val.trim();
-    setPanelCard(c=>({...c,embed_url:trimmed}));
-    setItems(prev=>prev.map(it=>it.id===panelCard.id?{...it,embed_url:trimmed}:it));
-    if(SB.configured()){
-      fetch(`${SB.url}/rest/v1/contenido_editorial?id=eq.${panelCard.id}`,{
-        method:'PATCH',
-        headers:{'apikey':SB.anon,'Authorization':'Bearer '+SB.anon,'Content-Type':'application/json','Prefer':'return=minimal'},
-        body:JSON.stringify({embed_url:trimmed,updated_at:new Date().toISOString()})
-      }).catch(()=>{});
-    }
+    patchItem(panelCard.id,{embed_url:val.trim()});
   }
   function getEmbedSrc(url){
     if(!url)return null;
@@ -10494,7 +10550,7 @@ function EditorialCalendar({project}){
     return null;
   }
   const[modalDate,setModalDate]=React.useState('');
-  const[form,setForm]=React.useState({title:'',tipo:'WhatsApp',status:'borrador',body:'',tags:''});
+  const[form,setForm]=React.useState({title:'',tipo:'WhatsApp',status:'sin_iniciar',body:'',tags:'',formato:'Post',serie:''});
   const[saving,setSaving]=React.useState(false);
   const[recurForm,setRecurForm]=React.useState({freq:'weekly',dayOfWeek:'3',weeks:4});
   const getBancoKey=()=>`ec_banco_${project&&project.id?project.id:'default'}`;
@@ -10504,13 +10560,15 @@ function EditorialCalendar({project}){
   function saveBanco(arr){setBanco(arr);try{localStorage.setItem(getBancoKey(),JSON.stringify(arr));}catch(e){}}
   const[distribMsg,setDistribMsg]=React.useState('');
 
-  // ── fetch from Supabase ──
+  // ── fetch from Supabase — trae 2 meses para que la vista semana no quede vacía ──
   function fetchItems(){
     if(!SB.configured()){setItems([]);return;}
     setLoading(true);
-    const start=`${yr}-${String(mo+1).padStart(2,'0')}-01`;
-    const endMo=mo===11?0:mo+1; const endYr=mo===11?yr+1:yr;
-    const end=`${endYr}-${String(endMo+1).padStart(2,'0')}-01`;
+    // Pide el mes actual + el siguiente (y el anterior por si acaso)
+    const prevMoN=mo===0?11:mo-1; const prevYrN=mo===0?yr-1:yr;
+    const start=`${prevYrN}-${String(prevMoN+1).padStart(2,'0')}-01`;
+    const nextMoN=mo===11?1:mo+2; const nextYrN=mo===11?yr+1:yr;
+    const end=`${nextYrN}-${String(nextMoN).padStart(2,'0')}-01`;
     fetch(`${SB.url}/rest/v1/contenido_editorial?project_id=eq.${encodeURIComponent(project.id)}&fecha=gte.${start}&fecha=lt.${end}&order=fecha.asc`,{
       headers:{'apikey':SB.anon,'Authorization':'Bearer '+SB.anon}
     })
@@ -10533,18 +10591,21 @@ function EditorialCalendar({project}){
   function handleDrop(targetDateStr,ev){
     ev.preventDefault();
     if(!dragItem)return;
-    // optimistic update
-    setItems(prev=>prev.map(it=>it.id===dragItem.id?{...it,fecha:targetDateStr}:it));
-    if(panelCard&&panelCard.id===dragItem.id)setPanelCard(c=>({...c,fecha:targetDateStr}));
-    // persist to Supabase
+    patchItem(dragItem.id,{fecha:targetDateStr});
+    setDragItem(null);
+  }
+
+  // ── patch helper ──
+  function patchItem(id,fields){
+    setItems(prev=>prev.map(it=>it.id===id?{...it,...fields}:it));
+    if(panelCard&&panelCard.id===id)setPanelCard(c=>({...c,...fields}));
     if(SB.configured()){
-      fetch(`${SB.url}/rest/v1/contenido_editorial?id=eq.${dragItem.id}`,{
+      fetch(`${SB.url}/rest/v1/contenido_editorial?id=eq.${id}`,{
         method:'PATCH',
         headers:{'apikey':SB.anon,'Authorization':'Bearer '+SB.anon,'Content-Type':'application/json','Prefer':'return=minimal'},
-        body:JSON.stringify({fecha:targetDateStr,updated_at:new Date().toISOString()})
+        body:JSON.stringify({...fields,updated_at:new Date().toISOString()})
       }).catch(()=>{});
     }
-    setDragItem(null);
   }
 
   // ── save new item ──
@@ -10556,17 +10617,19 @@ function EditorialCalendar({project}){
       project_id:project.id,
       title:form.title.trim(),
       tipo:form.tipo,
-      status:form.status,
+      status:form.status||'sin_iniciar',
       body:form.body.trim()||null,
       tags:form.tags.split(',').map(t=>t.trim()).filter(Boolean),
       fecha:modalDate,
+      formato:form.formato||'Post',
+      serie:form.serie.trim()||null,
       created_at:new Date().toISOString(),
       updated_at:new Date().toISOString(),
     };
     setItems(prev=>[...prev,newItem]);
     setPanelCard(newItem);
     setPanelMode('view');
-    setForm({title:'',tipo:'WhatsApp',status:'borrador',body:'',tags:''});
+    setForm({title:'',tipo:'WhatsApp',status:'sin_iniciar',body:'',tags:'',formato:'Post',serie:''});
     setSaving(false);
     if(SB.configured()){
       fetch(`${SB.url}/rest/v1/contenido_editorial`,{
@@ -10625,34 +10688,18 @@ function EditorialCalendar({project}){
     }
   }
 
-  // ── status cycle ──
-  function cycleStatus(item){
-    const cycle={borrador:'listo',listo:'publicado',publicado:'borrador'};
-    const ns=cycle[item.status]||'borrador';
-    setItems(prev=>prev.map(it=>it.id===item.id?{...it,status:ns}:it));
-    if(panelCard&&panelCard.id===item.id)setPanelCard(c=>({...c,status:ns}));
-    if(SB.configured()){
-      fetch(`${SB.url}/rest/v1/contenido_editorial?id=eq.${item.id}`,{
-        method:'PATCH',
-        headers:{'apikey':SB.anon,'Authorization':'Bearer '+SB.anon,'Content-Type':'application/json','Prefer':'return=minimal'},
-        body:JSON.stringify({status:ns,updated_at:new Date().toISOString()})
-      }).catch(()=>{});
-    }
+  // ── status avanzar (sigue el orden del pipeline) ──
+  function advanceStatus(item){
+    const real=STATUS_OPTS;
+    const idx=real.findIndex(s=>s.id===item.status);
+    const next=idx>=0&&idx<real.length-1?real[idx+1].id:real[0].id;
+    patchItem(item.id,{status:next});
   }
 
   // ── save body inline ──
   function saveBody(val){
     if(!panelCard)return;
-    const trimmed=val.trim();
-    setPanelCard(c=>({...c,body:trimmed}));
-    setItems(prev=>prev.map(it=>it.id===panelCard.id?{...it,body:trimmed}:it));
-    if(SB.configured()){
-      fetch(`${SB.url}/rest/v1/contenido_editorial?id=eq.${panelCard.id}`,{
-        method:'PATCH',
-        headers:{'apikey':SB.anon,'Authorization':'Bearer '+SB.anon,'Content-Type':'application/json','Prefer':'return=minimal'},
-        body:JSON.stringify({body:trimmed,updated_at:new Date().toISOString()})
-      }).catch(()=>{});
-    }
+    patchItem(panelCard.id,{body:val.trim()});
   }
 
   // ── distribuir banco al mes ──
@@ -10678,13 +10725,7 @@ function EditorialCalendar({project}){
       return u?{...it,body:u.body,title:u.title}:it;
     }));
     if(SB.configured()){
-      updates.forEach(u=>{
-        fetch(`${SB.url}/rest/v1/contenido_editorial?id=eq.${u.id}`,{
-          method:'PATCH',
-          headers:{'apikey':SB.anon,'Authorization':'Bearer '+SB.anon,'Content-Type':'application/json','Prefer':'return=minimal'},
-          body:JSON.stringify({body:u.body,title:u.title,updated_at:new Date().toISOString()})
-        }).catch(()=>{});
-      });
+      updates.forEach(u=>patchItem(u.id,{body:u.body,title:u.title}));
     }
     setDistribMsg(`✓ ${n} pieza${n>1?'s':''} distribuida${n>1?'s':''} al mes.`);
     setTimeout(()=>setDistribMsg(''),3000);
@@ -10693,7 +10734,7 @@ function EditorialCalendar({project}){
   // ── delete ──
   function deleteItem(item){
     setItems(prev=>prev.filter(it=>it.id!==item.id));
-    if(panelCard&&panelCard.id===item.id)setPanelCard(null);
+    if(panelCard&&panelCard.id===item.id){setPanelCard(null);setPanelMode('view');}
     if(SB.configured()){
       fetch(`${SB.url}/rest/v1/contenido_editorial?id=eq.${item.id}`,{
         method:'DELETE',
@@ -10702,20 +10743,48 @@ function EditorialCalendar({project}){
     }
   }
 
-  const visibleItems=filterTipo==='Todos'?items:items.filter(it=>it.tipo===filterTipo);
   const TIPOS=['Todos','WhatsApp','Tarea','Sistema','Proyecto'];
+  const visibleItems=items.filter(it=>{
+    if(filterTipo!=='Todos'&&it.tipo!==filterTipo)return false;
+    if(filterStatus!=='Todos'&&it.status!==filterStatus)return false;
+    return true;
+  });
 
-  // ── render ──
-  const fd=firstDow(yr,mo);
-  const dim=daysInMo(yr,mo);
-  const prevDim=daysInMo(yr,mo===0?11:mo-1);
+  // ── vista Semana: 7 días desde el lunes de la semana que contiene "hoy" del mes visible ──
+  const[weekOffset,setWeekOffset]=React.useState(0);
+  function getWeekDays(){
+    // Lunes de la semana actual (real)
+    const base=new Date(todayD.getFullYear(),todayD.getMonth(),todayD.getDate());
+    const dow=base.getDay()===0?6:base.getDay()-1; // 0=lun
+    base.setDate(base.getDate()-dow+weekOffset*7);
+    return Array.from({length:7},(_,i)=>{
+      const d=new Date(base);
+      d.setDate(d.getDate()+i);
+      const ds=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+      return{date:d,ds};
+    });
+  }
+
+  // ── vista Lista ──
+  function getMonthStr(){return`${yr}-${String(mo+1).padStart(2,'0')}`;}
+  const listItems=React.useMemo(()=>{
+    const ms=getMonthStr();
+    return visibleItems
+      .filter(it=>it.fecha&&it.fecha.startsWith(ms))
+      .sort((a,b)=>a.fecha<b.fecha?-1:1);
+  },[visibleItems,yr,mo]);
 
   function cellDateStr(day,month,year){
     return`${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
   }
 
+  // ── Vista Mes: celdas del calendario ──
+  const fd=firstDow(yr,mo);
+  const dim=daysInMo(yr,mo);
+  const prevDim=daysInMo(yr,mo===0?11:mo-1);
   const cells=[];
-  for(let i=0;i<35;i++){
+  const totalCells=fd+dim>35?42:35;
+  for(let i=0;i<totalCells;i++){
     let day,month,year,other=false;
     if(i<fd){day=prevDim-fd+i+1;month=mo===0?11:mo-1;year=mo===0?yr-1:yr;other=true;}
     else if(i>=fd+dim){day=i-fd-dim+1;month=mo===11?0:mo+1;year=mo===11?yr+1:yr;other=true;}
@@ -10740,22 +10809,121 @@ function EditorialCalendar({project}){
           draggable:true,
           onDragStart:()=>setDragItem(card),
           onDragEnd:()=>setDragItem(null),
-          onClick:ev=>{ev.stopPropagation();setPanelCard(card);},
+          onClick:ev=>{ev.stopPropagation();setPanelCard(card);setPanelMode('view');},
         },
-          e('span',{className:'ec-card-dot'}),
+          e('span',{className:'ec-card-dot',style:{background:statusColor(card.status)}}),
           e('span',{className:'ec-card-text'},card.title),
-          e('span',{className:'ec-card-tag'},card.tipo)
+          card.formato&&e('span',{className:'ec-card-fmt',style:{fontSize:8,opacity:.7,marginLeft:2}},card.formato)
         )),
         cellCards.length>MAX&&e('span',{className:'ec-more'},`+${cellCards.length-MAX}`),
         cellCards.length===0&&e('span',{
           className:'ec-empty-day',
-          onClick:()=>{setModalDate(dateStr);setForm({title:'',tipo:'WhatsApp',status:'borrador',body:'',tags:''});setPanelCard(null);setPanelMode('new');}
+          onClick:()=>{setModalDate(dateStr);setForm({title:'',tipo:'WhatsApp',status:'sin_iniciar',body:'',tags:'',formato:'Post',serie:''});setPanelCard(null);setPanelMode('new');}
         },'＋')
       )
     ));
   }
 
-  const panelVisible=!!panelCard;
+  // ── Vista Semana ──
+  function renderWeekView(){
+    const days=getWeekDays();
+    const weekLabel=(()=>{
+      const a=days[0].date,b=days[6].date;
+      return`${a.getDate()} ${MONTHS_ES[a.getMonth()].slice(0,3)} – ${b.getDate()} ${MONTHS_ES[b.getMonth()].slice(0,3)} ${b.getFullYear()}`;
+    })();
+    const DAY_NAMES_SHORT=['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+    return e('div',{className:'ec-week-wrap'},
+      e('div',{className:'ec-week-nav'},
+        e('button',{className:'ec-nav-btn',onClick:()=>setWeekOffset(o=>o-1)},'‹'),
+        e('span',{style:{fontSize:12,fontWeight:600,color:'var(--text1)'}},weekLabel),
+        e('button',{className:'ec-nav-btn',onClick:()=>setWeekOffset(o=>o+1)},'›'),
+        e('button',{className:'ec-today-btn',onClick:()=>setWeekOffset(0)},'Esta semana')
+      ),
+      e('div',{className:'ec-week-cols'},
+        days.map(({date,ds},di)=>{
+          const isToday=ds===`${todayD.getFullYear()}-${String(todayD.getMonth()+1).padStart(2,'0')}-${String(todayD.getDate()).padStart(2,'0')}`;
+          const dayCards=visibleItems.filter(it=>it.fecha===ds);
+          return e('div',{
+            key:ds,
+            className:'ec-week-col'+(isToday?' ec-today':''),
+            onDragOver:ev=>{ev.preventDefault();ev.currentTarget.classList.add('ec-drop-target');},
+            onDragLeave:ev=>{ev.currentTarget.classList.remove('ec-drop-target');},
+            onDrop:ev=>{ev.currentTarget.classList.remove('ec-drop-target');handleDrop(ds,ev);},
+          },
+            e('div',{className:'ec-week-col-hdr'},
+              e('span',{className:'ec-week-dow'},DAY_NAMES_SHORT[di]),
+              e('span',{className:'ec-week-daynum'+(isToday?' today':'')},date.getDate())
+            ),
+            e('div',{className:'ec-week-cards'},
+              dayCards.map(card=>e('div',{
+                key:card.id,
+                className:'ec-week-card',
+                style:{borderLeftColor:statusColor(card.status)},
+                draggable:true,
+                onDragStart:()=>setDragItem(card),
+                onDragEnd:()=>setDragItem(null),
+                onClick:()=>{setPanelCard(card);setPanelMode('view');},
+              },
+                e('div',{className:'ec-week-card-title'},card.title),
+                e('div',{className:'ec-week-card-meta'},
+                  e('span',{style:{color:tipoColor(card.tipo),fontSize:9,fontWeight:600}},card.tipo),
+                  card.formato&&e('span',{style:{color:'var(--text3)',fontSize:9}},card.formato),
+                  e('span',{style:{
+                    fontSize:9,padding:'1px 5px',borderRadius:10,
+                    background:statusColor(card.status)+'22',
+                    color:statusColor(card.status),
+                    border:'1px solid '+statusColor(card.status)+'44',
+                  }},statusLbl(card.status))
+                )
+              )),
+              e('div',{
+                className:'ec-week-add',
+                onClick:()=>{setModalDate(ds);setForm({title:'',tipo:'WhatsApp',status:'sin_iniciar',body:'',tags:'',formato:'Post',serie:''});setPanelCard(null);setPanelMode('new');}
+              },'＋')
+            )
+          );
+        })
+      )
+    );
+  }
+
+  // ── Vista Lista ──
+  function renderListView(){
+    const grouped={};
+    listItems.forEach(it=>{
+      if(!grouped[it.fecha])grouped[it.fecha]=[];
+      grouped[it.fecha].push(it);
+    });
+    const dates=Object.keys(grouped).sort();
+    if(dates.length===0)return e('div',{className:'ec-list-empty'},'No hay entradas en este mes.');
+    return e('div',{className:'ec-list-wrap'},
+      dates.map(ds=>{
+        const d=new Date(ds+'T12:00:00');
+        const dayName=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'][d.getDay()];
+        return e('div',{key:ds,className:'ec-list-group'},
+          e('div',{className:'ec-list-date-hdr'},
+            e('span',{className:'ec-list-dow'},dayName),
+            e('span',{className:'ec-list-d'},d.getDate()),
+            e('span',{className:'ec-list-mon'},MONTHS_ES[d.getMonth()].slice(0,3))
+          ),
+          grouped[ds].map(card=>e('div',{
+            key:card.id,
+            className:'ec-list-row',
+            onClick:()=>{setPanelCard(card);setPanelMode('view');},
+          },
+            e('span',{className:'ec-list-status-dot',style:{background:statusColor(card.status),boxShadow:'0 0 0 2px '+statusColor(card.status)+'33'}}),
+            e('span',{className:'ec-list-title'},card.title),
+            e('div',{className:'ec-list-badges'},
+              e('span',{className:'ec-list-badge',style:{color:tipoColor(card.tipo),background:tipoColor(card.tipo)+'18',border:'1px solid '+tipoColor(card.tipo)+'33'}},card.tipo),
+              card.formato&&e('span',{className:'ec-list-badge',style:{color:'var(--text3)',background:'var(--bg3)',border:'1px solid var(--border2)'}},card.formato),
+              card.serie&&e('span',{className:'ec-list-badge',style:{color:'var(--accent2)',background:'var(--accent2)18',border:'1px solid var(--accent2)33'}},card.serie),
+              e('span',{className:'ec-list-badge',style:{color:statusColor(card.status),background:statusColor(card.status)+'18',border:'1px solid '+statusColor(card.status)+'33'}},statusLbl(card.status))
+            )
+          ))
+        );
+      })
+    );
+  }
 
   return e('div',{className:'ec-wrap'},
     // toolbar
@@ -10763,19 +10931,34 @@ function EditorialCalendar({project}){
       e('span',{className:'ec-title'},'Calendario Editorial'),
       loading&&e('span',{style:{fontSize:10,color:'var(--text4)',marginLeft:4}},'sincronizando…'),
       e('div',{className:'ec-month-nav'},
-        e('button',{className:'ec-nav-btn',onClick:prevMo},'‹'),
-        e('span',{className:'ec-month-lbl'},`${MONTHS_ES[mo]} ${yr}`),
-        e('button',{className:'ec-nav-btn',onClick:nextMo},'›'),
-        e('button',{className:'ec-today-btn',onClick:goToday},'Hoy')
+        calView==='semana'?null:e('button',{className:'ec-nav-btn',onClick:prevMo},'‹'),
+        calView==='semana'?null:e('span',{className:'ec-month-lbl'},`${MONTHS_ES[mo]} ${yr}`),
+        calView==='semana'?null:e('button',{className:'ec-nav-btn',onClick:nextMo},'›'),
+        calView!=='semana'&&e('button',{className:'ec-today-btn',onClick:goToday},'Hoy')
+      ),
+      // view switcher
+      e('div',{style:{display:'flex',gap:2,background:'var(--bg2)',border:'1px solid var(--border2)',borderRadius:8,padding:2,marginLeft:'auto',marginRight:8}},
+        [['mes','📅'],['semana','📋'],['lista','☰']].map(([v,ic])=>e('button',{
+          key:v,
+          onClick:()=>setCalView(v),
+          style:{
+            fontSize:10,padding:'3px 8px',borderRadius:6,border:'none',cursor:'pointer',
+            background:calView===v?'var(--bg4)':'transparent',
+            color:calView===v?'var(--text0)':'var(--text3)',
+            fontWeight:calView===v?700:400,
+            display:'flex',alignItems:'center',gap:3,
+          }
+        },ic,' ',v.charAt(0).toUpperCase()+v.slice(1)))
       ),
       e('button',{
         className:'ec-add-btn',
         style:{background:'var(--bg3)',color:'var(--text2)',border:'1px solid var(--border2)',marginRight:4},
         onClick:()=>{setPanelCard(null);setPanelMode('banco');}
       },'📦 Banco'),
-      e('button',{className:'ec-add-btn',onClick:()=>{setModalDate(cellDateStr(todayD.getDate(),todayD.getMonth(),todayD.getFullYear()));setForm({title:'',tipo:'WhatsApp',status:'borrador',body:'',tags:''});setPanelCard(null);setPanelMode('new');}},
-        '＋ Nueva entrada'
-      )
+      e('button',{className:'ec-add-btn',onClick:()=>{
+        const ds=cellDateStr(todayD.getDate(),todayD.getMonth(),todayD.getFullYear());
+        setModalDate(ds);setForm({title:'',tipo:'WhatsApp',status:'sin_iniciar',body:'',tags:'',formato:'Post',serie:''});setPanelCard(null);setPanelMode('new');
+      }},'＋ Nueva')
     ),
     // filtros
     e('div',{className:'ec-filters'},
@@ -10787,99 +10970,156 @@ function EditorialCalendar({project}){
       },
         t!=='Todos'&&e('span',{className:'ec-chip-dot',style:{background:tipoColor(t)}}),
         t
-      ))
+      )),
+      e('span',{className:'ec-filter-lbl',style:{marginLeft:8}},'Estado:'),
+      e('select',{
+        className:'ec-modal-select',
+        style:{fontSize:10,padding:'2px 6px',borderRadius:6},
+        value:filterStatus,
+        onChange:ev=>setFilterStatus(ev.target.value)
+      },
+        e('option',{value:'Todos'},'Todos'),
+        STATUS_OPTS.map(s=>e('option',{key:s.id,value:s.id},s.lbl))
+      )
     ),
     // layout con panel
     e('div',{className:'ec-layout'},
       e('div',{className:'ec-grid-wrap'},
-        e('div',{className:'ec-weekdays'},
-          ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'].map(d=>e('div',{key:d,className:'ec-weekday'},d))
+        // Vista Mes
+        calView==='mes'&&e(React.Fragment,null,
+          e('div',{className:'ec-weekdays'},
+            ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'].map(d=>e('div',{key:d,className:'ec-weekday'},d))
+          ),
+          e('div',{className:'ec-grid'},cells)
         ),
-        e('div',{className:'ec-grid'},cells)
+        // Vista Semana
+        calView==='semana'&&renderWeekView(),
+        // Vista Lista
+        calView==='lista'&&e('div',{style:{padding:'0 4px'}},
+          e('div',{className:'ec-month-nav',style:{marginBottom:12}},
+            e('button',{className:'ec-nav-btn',onClick:prevMo},'‹'),
+            e('span',{className:'ec-month-lbl'},`${MONTHS_ES[mo]} ${yr}`),
+            e('button',{className:'ec-nav-btn',onClick:nextMo},'›'),
+            e('button',{className:'ec-today-btn',onClick:goToday},'Hoy')
+          ),
+          renderListView()
+        )
       ),
       // panel lateral
-      e('div',{className:'ec-panel'+((panelVisible||panelMode!=='view')?'':' ec-panel-hidden')},
+      e('div',{className:'ec-panel'+((!!panelCard||panelMode!=='view')?'':' ec-panel-hidden')},
 
         // ── MODO VER ──
         panelMode==='view'&&panelCard&&e(React.Fragment,null,
           e('div',{className:'ec-panel-hdr'},
             e('div',{style:{display:'flex',flexDirection:'column',gap:5,flex:1,minWidth:0}},
-              e('span',{className:'ec-panel-badge'},panelCard.tipo||'General'),
+              e('div',{style:{display:'flex',gap:6,alignItems:'center',flexWrap:'wrap'}},
+                e('span',{className:'ec-panel-badge'},panelCard.tipo||'General'),
+                panelCard.formato&&e('span',{style:{
+                  fontSize:9,padding:'2px 7px',borderRadius:10,fontWeight:600,
+                  background:'var(--bg3)',color:'var(--text2)',border:'1px solid var(--border2)'
+                }},FORMATO_ICONS[panelCard.formato]||'📌',' ',panelCard.formato),
+                panelCard.serie&&e('span',{style:{
+                  fontSize:9,padding:'2px 7px',borderRadius:10,fontWeight:600,
+                  background:'var(--accent2)18',color:'var(--accent2)',border:'1px solid var(--accent2)33'
+                }},'Serie: ',panelCard.serie)
+              ),
               e('h3',{className:'ec-panel-title'},panelCard.title)
             ),
             e('button',{className:'ec-panel-close',onClick:()=>{setPanelCard(null);setPanelMode('view');}},'✕')
           ),
           e('div',{className:'ec-panel-body'},
-            e('div',{className:'ec-panel-row'},
-              e('span',{className:'ec-panel-row-lbl'},'Fecha'),
-              e('span',{className:'ec-panel-row-val'},panelCard.fecha||'—')
-            ),
+            // ── Estado (pipeline completo) ──
             e('div',{className:'ec-panel-row'},
               e('span',{className:'ec-panel-row-lbl'},'Estado'),
               e('span',{className:'ec-panel-row-val'},
                 e('select',{
                   className:'ec-modal-select',
-                  style:{fontSize:11,padding:'2px 6px',borderRadius:6},
-                  value:panelCard.status||'borrador',
-                  onChange:ev=>{
-                    const ns=ev.target.value;
-                    setItems(prev=>prev.map(it=>it.id===panelCard.id?{...it,status:ns}:it));
-                    setPanelCard(c=>({...c,status:ns}));
-                    if(SB.configured()){
-                      fetch(`${SB.url}/rest/v1/contenido_editorial?id=eq.${panelCard.id}`,{
-                        method:'PATCH',
-                        headers:{'apikey':SB.anon,'Authorization':'Bearer '+SB.anon,'Content-Type':'application/json','Prefer':'return=minimal'},
-                        body:JSON.stringify({status:ns,updated_at:new Date().toISOString()})
-                      }).catch(()=>{});
-                    }
-                  }
+                  style:{fontSize:11,padding:'2px 6px',borderRadius:6,color:statusColor(panelCard.status),fontWeight:600},
+                  value:panelCard.status||'sin_iniciar',
+                  onChange:ev=>patchItem(panelCard.id,{status:ev.target.value})
                 },
-                  ['borrador','listo','publicado'].map(s=>e('option',{key:s,value:s},STATUS_LBL[s]))
+                  STATUS_OPTS.map(s=>e('option',{key:s.id,value:s.id,style:{color:s.color}},s.lbl))
                 )
               )
             ),
-            e(React.Fragment,null,
-              e('div',{className:'ec-panel-divider'}),
-              e('div',null,
-                e('div',{style:{fontSize:10,fontWeight:600,color:'var(--text4)',marginBottom:5,letterSpacing:'.04em',textTransform:'uppercase'}},'Contenido'),
-                e('textarea',{
-                  className:'ec-panel-body-text',
-                  style:{width:'100%',resize:'none',minHeight:80,fontFamily:'inherit',boxSizing:'border-box',cursor:'text'},
-                  placeholder:'Escribe el contenido aquí…',
-                  value:editBody,
-                  onChange:ev=>{
-                    setEditBody(ev.target.value);
-                    const el=ev.target;el.style.height='auto';el.style.height=el.scrollHeight+'px';
-                  },
-                  onFocus:ev=>{const el=ev.target;el.style.height='auto';el.style.height=el.scrollHeight+'px';},
-                  onBlur:ev=>{saveBody(editBody);},
-                  ref:el=>{if(el){el.style.height='auto';el.style.height=el.scrollHeight+'px';}}
-                })
-              )
+            // ── Fecha ──
+            e('div',{className:'ec-panel-row'},
+              e('span',{className:'ec-panel-row-lbl'},'Fecha'),
+              e('input',{
+                type:'date',
+                className:'ec-modal-input',
+                style:{fontSize:11,padding:'2px 6px',width:'auto'},
+                value:panelCard.fecha||'',
+                onChange:ev=>patchItem(panelCard.id,{fecha:ev.target.value})
+              })
             ),
-            e(React.Fragment,null,
-              e('div',{className:'ec-panel-divider'}),
-              e('div',null,
-                e('div',{style:{fontSize:10,fontWeight:600,color:'var(--text4)',marginBottom:5,letterSpacing:'.04em',textTransform:'uppercase'}},'Embed (video / URL)'),
+            // ── Formato + Serie ──
+            e('div',{style:{display:'flex',gap:8}},
+              e('div',{style:{flex:1}},
+                e('div',{className:'ec-panel-row-lbl',style:{marginBottom:4}},'Formato'),
+                e('select',{
+                  className:'ec-modal-select',
+                  style:{fontSize:11,width:'100%'},
+                  value:panelCard.formato||'Post',
+                  onChange:ev=>patchItem(panelCard.id,{formato:ev.target.value})
+                },
+                  FORMATOS.map(f=>e('option',{key:f,value:f},FORMATO_ICONS[f],' ',f))
+                )
+              ),
+              e('div',{style:{flex:1}},
+                e('div',{className:'ec-panel-row-lbl',style:{marginBottom:4}},'Serie'),
                 e('input',{
                   className:'ec-modal-input',
                   style:{fontSize:11,width:'100%',boxSizing:'border-box'},
-                  placeholder:'Pega un link de YouTube, Vimeo u otro…',
-                  value:editEmbedUrl,
-                  onChange:ev=>setEditEmbedUrl(ev.target.value),
-                  onBlur:ev=>saveEmbedUrl(editEmbedUrl)
-                }),
-                getEmbedSrc(editEmbedUrl)&&e('div',{style:{marginTop:8,borderRadius:8,overflow:'hidden',background:'#000',aspectRatio:'16/9'}},
-                  e('iframe',{
-                    src:getEmbedSrc(editEmbedUrl),
-                    style:{width:'100%',height:'100%',border:'none'},
-                    allow:'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture',
-                    allowFullScreen:true
-                  })
-                )
+                  placeholder:'Nombre de la serie…',
+                  defaultValue:panelCard.serie||'',
+                  key:panelCard.id+'_serie',
+                  onBlur:ev=>patchItem(panelCard.id,{serie:ev.target.value.trim()||null})
+                })
               )
             ),
+            // ── Contenido ──
+            e('div',{className:'ec-panel-divider'}),
+            e('div',null,
+              e('div',{style:{fontSize:10,fontWeight:600,color:'var(--text4)',marginBottom:5,letterSpacing:'.04em',textTransform:'uppercase'}},'Contenido'),
+              e('textarea',{
+                className:'ec-panel-body-text',
+                style:{width:'100%',resize:'none',minHeight:80,fontFamily:'inherit',boxSizing:'border-box',cursor:'text'},
+                placeholder:'Escribe el contenido aquí…',
+                value:editBody,
+                onChange:ev=>{
+                  setEditBody(ev.target.value);
+                  const el=ev.target;el.style.height='auto';el.style.height=el.scrollHeight+'px';
+                },
+                onFocus:ev=>{const el=ev.target;el.style.height='auto';el.style.height=el.scrollHeight+'px';},
+                onBlur:()=>{saveBody(editBody);},
+                ref:el=>{if(el){el.style.height='auto';el.style.height=el.scrollHeight+'px';}}
+              })
+            ),
+            // ── Embed ──
+            e('div',{className:'ec-panel-divider'}),
+            e('div',null,
+              e('div',{style:{fontSize:10,fontWeight:600,color:'var(--text4)',marginBottom:5,letterSpacing:'.04em',textTransform:'uppercase'}},'Embed (video / URL)'),
+              e('input',{
+                className:'ec-modal-input',
+                style:{fontSize:11,width:'100%',boxSizing:'border-box'},
+                placeholder:'YouTube, Vimeo u otro URL…',
+                value:editEmbedUrl,
+                onChange:ev=>setEditEmbedUrl(ev.target.value),
+                onBlur:()=>saveEmbedUrl(editEmbedUrl)
+              }),
+              getEmbedSrc(editEmbedUrl)&&e('div',{style:{marginTop:8,borderRadius:8,overflow:'hidden',background:'#000',aspectRatio:'16/9'}},
+                e('iframe',{
+                  src:getEmbedSrc(editEmbedUrl),
+                  style:{width:'100%',height:'100%',border:'none'},
+                  allow:'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture',
+                  allowFullScreen:true
+                })
+              )
+            ),
+            // ── Tags ──
             (panelCard.tags&&panelCard.tags.length>0)&&e('div',null,
+              e('div',{className:'ec-panel-divider'}),
               e('div',{style:{fontSize:10,fontWeight:600,color:'var(--text4)',marginBottom:5,letterSpacing:'.04em',textTransform:'uppercase'}},'Etiquetas'),
               e('div',{className:'ec-panel-tags'},
                 (panelCard.tags||[]).map((t,i)=>e('span',{key:i,className:'ec-panel-tag'},t))
@@ -10890,8 +11130,8 @@ function EditorialCalendar({project}){
           ),
           e('div',{className:'ec-panel-ftr'},
             e('button',{className:'ec-panel-btn',onClick:()=>deleteItem(panelCard)},'🗑'),
-            e('button',{className:'ec-panel-btn ec-panel-btn-primary',onClick:()=>cycleStatus(panelCard)},
-              panelCard.status==='publicado'?'↩ Revertir':'→ Avanzar'
+            e('button',{className:'ec-panel-btn ec-panel-btn-primary',onClick:()=>advanceStatus(panelCard)},
+              getStatus(panelCard.status).group==='done'?'↩ Reiniciar':'→ Avanzar'
             )
           )
         ),
@@ -10929,10 +11169,22 @@ function EditorialCalendar({project}){
                 )
               ),
               e('div',{style:{flex:1}},
+                e('label',{className:'ec-modal-lbl'},'Formato'),
+                e('select',{className:'ec-modal-select',value:form.formato,onChange:ev=>setForm(f=>({...f,formato:ev.target.value}))},
+                  FORMATOS.map(f=>e('option',{key:f,value:f},FORMATO_ICONS[f],' ',f))
+                )
+              )
+            ),
+            e('div',{style:{display:'flex',gap:8}},
+              e('div',{style:{flex:1}},
                 e('label',{className:'ec-modal-lbl'},'Estado'),
                 e('select',{className:'ec-modal-select',value:form.status,onChange:ev=>setForm(f=>({...f,status:ev.target.value}))},
-                  ['borrador','listo','publicado'].map(s=>e('option',{key:s,value:s},STATUS_LBL[s]))
+                  STATUS_OPTS.map(s=>e('option',{key:s.id,value:s.id},s.lbl))
                 )
+              ),
+              e('div',{style:{flex:1}},
+                e('label',{className:'ec-modal-lbl'},'Serie'),
+                e('input',{className:'ec-modal-input',placeholder:'Nombre de la serie…',value:form.serie,onChange:ev=>setForm(f=>({...f,serie:ev.target.value}))})
               )
             ),
             e('div',null,
@@ -11027,6 +11279,18 @@ function EditorialCalendar({project}){
                 )
               ),
               e('div',{style:{flex:1}},
+                e('label',{className:'ec-modal-lbl'},'Formato'),
+                e('select',{className:'ec-modal-select',value:form.formato,onChange:ev=>setForm(f=>({...f,formato:ev.target.value}))},
+                  FORMATOS.map(f=>e('option',{key:f,value:f},FORMATO_ICONS[f],' ',f))
+                )
+              )
+            ),
+            e('div',{style:{display:'flex',gap:8}},
+              e('div',{style:{flex:1}},
+                e('label',{className:'ec-modal-lbl'},'Serie (nombre del ciclo)'),
+                e('input',{className:'ec-modal-input',placeholder:'Ej: Pregunta semanal',value:form.serie,onChange:ev=>setForm(f=>({...f,serie:ev.target.value}))})
+              ),
+              e('div',{style:{flex:1}},
                 e('label',{className:'ec-modal-lbl'},'Contenido'),
                 e('input',{className:'ec-modal-input',placeholder:'Descripción (opcional)',value:form.body,onChange:ev=>setForm(f=>({...f,body:ev.target.value}))})
               )
@@ -11061,7 +11325,7 @@ function EditorialCalendar({project}){
               })
             ),
             e('div',{style:{fontSize:10,color:'var(--text3)',fontStyle:'italic',marginTop:2}},
-              `Se crearán ${recurForm.weeks} entradas — todas como borrador, una por ${['dom','lun','mar','mié','jue','vie','sáb'][parseInt(recurForm.dayOfWeek,10)]||'miércoles'}.`
+              `Se crearán ${recurForm.weeks} entradas — todas como "Sin iniciar", una por ${['dom','lun','mar','mié','jue','vie','sáb'][parseInt(recurForm.dayOfWeek,10)]||'miércoles'}.`
             )
           ),
           e('div',{className:'ec-panel-ftr'},
