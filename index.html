@@ -10466,6 +10466,33 @@ function EditorialCalendar({project}){
   const[panelMode,setPanelMode]=React.useState('view');
   const[editBody,setEditBody]=React.useState('');
   React.useEffect(()=>{setEditBody(panelCard?panelCard.body||'':'');},[panelCard&&panelCard.id]);
+  const[editEmbedUrl,setEditEmbedUrl]=React.useState('');
+  React.useEffect(()=>{setEditEmbedUrl(panelCard?panelCard.embed_url||'':'');},[panelCard&&panelCard.id]);
+  function saveEmbedUrl(val){
+    if(!panelCard)return;
+    const trimmed=val.trim();
+    setPanelCard(c=>({...c,embed_url:trimmed}));
+    setItems(prev=>prev.map(it=>it.id===panelCard.id?{...it,embed_url:trimmed}:it));
+    if(SB.configured()){
+      fetch(`${SB.url}/rest/v1/contenido_editorial?id=eq.${panelCard.id}`,{
+        method:'PATCH',
+        headers:{'apikey':SB.anon,'Authorization':'Bearer '+SB.anon,'Content-Type':'application/json','Prefer':'return=minimal'},
+        body:JSON.stringify({embed_url:trimmed,updated_at:new Date().toISOString()})
+      }).catch(()=>{});
+    }
+  }
+  function getEmbedSrc(url){
+    if(!url)return null;
+    // YouTube
+    const yt=url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([A-Za-z0-9_-]{11})/);
+    if(yt)return`https://www.youtube.com/embed/${yt[1]}`;
+    // Vimeo
+    const vm=url.match(/vimeo\.com\/(\d+)/);
+    if(vm)return`https://player.vimeo.com/video/${vm[1]}`;
+    // URL directa (ya es embed)
+    if(url.startsWith('http'))return url;
+    return null;
+  }
   const[modalDate,setModalDate]=React.useState('');
   const[form,setForm]=React.useState({title:'',tipo:'WhatsApp',status:'borrador',body:'',tags:''});
   const[saving,setSaving]=React.useState(false);
@@ -10790,12 +10817,25 @@ function EditorialCalendar({project}){
             e('div',{className:'ec-panel-row'},
               e('span',{className:'ec-panel-row-lbl'},'Estado'),
               e('span',{className:'ec-panel-row-val'},
-                e('span',{
-                  className:'ec-status-chip '+(STATUS_CSS[panelCard.status]||'ec-status-borrador'),
-                  style:{cursor:'pointer'},
-                  title:'Click para cambiar estado',
-                  onClick:()=>cycleStatus(panelCard)
-                },STATUS_LBL[panelCard.status]||'Borrador')
+                e('select',{
+                  className:'ec-modal-select',
+                  style:{fontSize:11,padding:'2px 6px',borderRadius:6},
+                  value:panelCard.status||'borrador',
+                  onChange:ev=>{
+                    const ns=ev.target.value;
+                    setItems(prev=>prev.map(it=>it.id===panelCard.id?{...it,status:ns}:it));
+                    setPanelCard(c=>({...c,status:ns}));
+                    if(SB.configured()){
+                      fetch(`${SB.url}/rest/v1/contenido_editorial?id=eq.${panelCard.id}`,{
+                        method:'PATCH',
+                        headers:{'apikey':SB.anon,'Authorization':'Bearer '+SB.anon,'Content-Type':'application/json','Prefer':'return=minimal'},
+                        body:JSON.stringify({status:ns,updated_at:new Date().toISOString()})
+                      }).catch(()=>{});
+                    }
+                  }
+                },
+                  ['borrador','listo','publicado'].map(s=>e('option',{key:s,value:s},STATUS_LBL[s]))
+                )
               )
             ),
             e(React.Fragment,null,
@@ -10815,6 +10855,28 @@ function EditorialCalendar({project}){
                   onBlur:ev=>{saveBody(editBody);},
                   ref:el=>{if(el){el.style.height='auto';el.style.height=el.scrollHeight+'px';}}
                 })
+              )
+            ),
+            e(React.Fragment,null,
+              e('div',{className:'ec-panel-divider'}),
+              e('div',null,
+                e('div',{style:{fontSize:10,fontWeight:600,color:'var(--text4)',marginBottom:5,letterSpacing:'.04em',textTransform:'uppercase'}},'Embed (video / URL)'),
+                e('input',{
+                  className:'ec-modal-input',
+                  style:{fontSize:11,width:'100%',boxSizing:'border-box'},
+                  placeholder:'Pega un link de YouTube, Vimeo u otro…',
+                  value:editEmbedUrl,
+                  onChange:ev=>setEditEmbedUrl(ev.target.value),
+                  onBlur:ev=>saveEmbedUrl(editEmbedUrl)
+                }),
+                getEmbedSrc(editEmbedUrl)&&e('div',{style:{marginTop:8,borderRadius:8,overflow:'hidden',background:'#000',aspectRatio:'16/9'}},
+                  e('iframe',{
+                    src:getEmbedSrc(editEmbedUrl),
+                    style:{width:'100%',height:'100%',border:'none'},
+                    allow:'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture',
+                    allowFullScreen:true
+                  })
+                )
               )
             ),
             (panelCard.tags&&panelCard.tags.length>0)&&e('div',null,
