@@ -13176,7 +13176,7 @@ const TASK_QUICK_STATUS=[
   {k:'done',    lbl:'Listo',     color:'#3fb950'},
 ];
 
-function TodayKanban({projects,tasks,habits,systems,notes,reminders,today,onOpenProject,onQuickToggleTask,onToggleHabitLog,onSetPriority,onUpdateTask,onUpdateTaskStep,streak,weekTotals,weekMax,FULL_DAY_LABEL}){
+function TodayKanban({projects,tasks,habits,systems,notes,reminders,today,onOpenProject,onStartProj,onQuickToggleTask,onToggleHabitLog,onSetPriority,onUpdateTask,onUpdateTaskStep,streak,weekTotals,weekMax,FULL_DAY_LABEL}){
   const[openProjFlag,setOpenProjFlag]=useState(null); // projId
   const[expandedItem,setExpandedItem]=useState(null); // itemId con panel inline abierto
 
@@ -13313,6 +13313,13 @@ function TodayKanban({projects,tasks,habits,systems,notes,reminders,today,onOpen
                           })
                         )
                       ),
+                      // botón cronómetro
+                      onStartProj&&e('button',{
+                        onClick:ev=>{ev.stopPropagation();onStartProj(proj.id);},
+                        style:{alignSelf:'flex-start',display:'flex',alignItems:'center',gap:5,background:'var(--accent2)15',
+                          border:'1px solid var(--accent2)44',borderRadius:6,padding:'4px 10px',cursor:'pointer',
+                          fontSize:10,color:'var(--accent2)',fontWeight:600,lineHeight:1}
+                      },'▶ Iniciar sesión'),
                       // fila estado (tareas y fases)
                       (item.kind==='task'||item.kind==='phase')&&e('div',{style:{display:'flex',alignItems:'center',gap:6}},
                         e('span',{style:{fontSize:9,color:'var(--text4)',minWidth:52}},'Estado'),
@@ -13603,7 +13610,7 @@ function HomeResumen(props){
       // ── KANBAN DE PENDIENTES DE HOY ──────────────────────────────────────
       e(TodayKanban,{
         projects:activeProjects,tasks,habits,systems,notes,reminders,
-        today,onOpenProject,onQuickToggleTask,onToggleHabitLog,
+        today,onOpenProject,onStartProj,onQuickToggleTask,onToggleHabitLog,
         onSetPriority,onUpdateTask,
         onUpdateTaskStep:(taskId,stepId,done)=>{
           if(onUpdateTask)onUpdateTask(taskId,{steps:(tasks.find(t=>t.id===taskId)?.steps||[]).map(s=>s.id===stepId?{...s,done}:s)});
