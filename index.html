@@ -13169,12 +13169,64 @@ function FlagMenu({priority,onSet,onClose}){
 }
 
 // ── TODAY KANBAN ──────────────────────────────────────────────────────────
-const TASK_QUICK_STATUS=[
-  {k:'pending', lbl:'Pendiente', color:'#8b949e'},
-  {k:'doing',   lbl:'En curso',  color:'#58a6ff'},
-  {k:'sent',    lbl:'Enviado',   color:'#e3b341'},
-  {k:'done',    lbl:'Listo',     color:'#3fb950'},
+// Estados de fases — mismos que DEFAULT_SUB_STATUSES para consistencia
+const KANBAN_STEP_STATUS=[
+  {k:'todo',    lbl:'Pendiente',   color:'#8b949e'},
+  {k:'doing',   lbl:'En curso',    color:'#58a6ff'},
+  {k:'review',  lbl:'Enviado',     color:'#e3b341'},
+  {k:'blocked', lbl:'Con cambios', color:'#f85149'},
+  {k:'done',    lbl:'Hecho',       color:'#3fb950'},
 ];
+// sub-estado de paso: guardado en step.status (string k)
+function stepStatus(step){return step?.status||'todo';}
+
+// Panel separado como componente propio para evitar re-renders que cierren el panel
+function KanbanInlinePanel({item,projId,onUpdateTask,onUpdateTaskStep,onStartProj}){
+  function btn(label,active,color,onClick){
+    return e('button',{
+      onClick,
+      style:{background:active?color+'22':'var(--bg2)',border:'1.5px solid '+(active?color:'var(--border2)33'),
+        borderRadius:5,padding:'3px 8px',cursor:'pointer',fontSize:9,fontWeight:active?700:400,
+        color:active?color:'var(--text3)',lineHeight:1.5,transition:'all .1s',whiteSpace:'nowrap'}
+    },label);
+  }
+  const curStepSt=item.kind==='phase'?stepStatus(item.step):null;
+  return e('div',{style:{padding:'8px 10px',background:'var(--bg1)',borderTop:'1px solid var(--border2)',display:'flex',flexDirection:'column',gap:8}},
+    // fila 1: bandera + cronómetro
+    e('div',{style:{display:'flex',alignItems:'center',gap:6}},
+      // 3 botones de bandera
+      e('div',{style:{display:'flex',gap:3,flex:1}},
+        [['urgent','🚩','#f85149'],['important','⚑','#e3b341'],['none','—','var(--text4)']].map(([k,icon,col])=>{
+          const active=item.priority===(k==='none'?null:k);
+          return btn(icon,active,col,()=>{
+            if(item.kind==='task'&&onUpdateTask)onUpdateTask(item.id,{priority:k==='none'?null:k});
+          });
+        })
+      ),
+      // botón cronómetro
+      onStartProj&&e('button',{
+        onClick:()=>onStartProj(projId),
+        style:{background:'var(--accent2)18',border:'1px solid var(--accent2)55',borderRadius:5,
+          padding:'4px 10px',cursor:'pointer',fontSize:12,color:'var(--accent2)',lineHeight:1,fontWeight:700}
+      },'▶')
+    ),
+    // fila 2: estado (tareas → sub-statuses, fases → step status)
+    (item.kind==='task'||item.kind==='phase')&&e('div',{style:{display:'flex',gap:3,flexWrap:'wrap'}},
+      item.kind==='task'
+        ?KANBAN_STEP_STATUS.map(({k,lbl,color})=>{
+            const active=(item.task?.status||'todo')===k;
+            return btn(lbl,active,color,()=>{if(onUpdateTask)onUpdateTask(item.id,{status:k});});
+          })
+        :KANBAN_STEP_STATUS.map(({k,lbl,color})=>{
+            const active=curStepSt===k;
+            return btn(lbl,active,color,()=>{
+              if(onUpdateTaskStep&&item.task&&item.step)
+                onUpdateTaskStep(item.task.id,item.step.id,k,k==='done');
+            });
+          })
+    )
+  );
+}
 
 function TodayKanban({projects,tasks,habits,systems,notes,reminders,today,onOpenProject,onStartProj,onQuickToggleTask,onToggleHabitLog,onSetPriority,onUpdateTask,onUpdateTaskStep,streak,weekTotals,weekMax,FULL_DAY_LABEL}){
   const[openProjFlag,setOpenProjFlag]=useState(null); // projId
@@ -13270,15 +13322,14 @@ function TodayKanban({projects,tasks,habits,systems,notes,reminders,today,onOpen
                 items.map(item=>{
                   const isOpen=expandedItem===item.id;
                   const itemFlag=item.priority?FLAG_CFG[item.priority]:null;
-                  const curSt=item.kind==='task'?(item.task?.status||'pending'):item.kind==='phase'?(item.step?.done?'done':'pending'):null;
-                  return e('div',{key:item.id,style:{borderRadius:6,overflow:'hidden'}},
-                    // fila principal del ítem
+                  return e('div',{key:item.id,style:{borderRadius:6,overflow:'hidden',marginBottom:1}},
+                    // fila principal — clic abre/cierra panel
                     e('div',{
                       style:{display:'flex',alignItems:'flex-start',gap:6,padding:'5px 6px',cursor:'pointer',
                         transition:'background .1s',background:isOpen?'var(--bg3)':'transparent'},
                       onMouseEnter:ev=>{if(!isOpen)ev.currentTarget.style.background='var(--bg3)';},
                       onMouseLeave:ev=>{if(!isOpen)ev.currentTarget.style.background='transparent';},
-                      onClick:ev=>{ev.stopPropagation();setExpandedItem(isOpen?null:item.id);}
+                      onClick:()=>setExpandedItem(isOpen?null:item.id)
                     },
                       e('span',{style:{fontSize:10,color:'var(--text4)',flexShrink:0,marginTop:2,lineHeight:1.3}},KIND_ICON[item.kind]||'·'),
                       e('div',{style:{flex:1,minWidth:0}},
@@ -13291,64 +13342,11 @@ function TodayKanban({projects,tasks,habits,systems,notes,reminders,today,onOpen
                       ),
                       itemFlag&&e('span',{style:{fontSize:11,flexShrink:0,marginTop:1,color:itemFlag.color}},itemFlag.icon)
                     ),
-                    // panel inline expandible
-                    isOpen&&e('div',{
-                      style:{padding:'6px 8px 8px',background:'var(--bg3)',borderTop:'1px solid var(--border2)',display:'flex',flexDirection:'column',gap:6}
-                    },
-                      // fila prioridad
-                      e('div',{style:{display:'flex',alignItems:'center',gap:6}},
-                        e('span',{style:{fontSize:9,color:'var(--text4)',minWidth:52}},'Prioridad'),
-                        e('div',{style:{display:'flex',gap:4}},
-                          [['urgent','🚩','#f85149'],['important','⚑','#e3b341'],['none','—','var(--text4)']].map(([k,icon,col])=>{
-                            const active=item.priority===(k==='none'?null:k);
-                            return e('button',{key:k,
-                              onClick:ev=>{
-                                ev.stopPropagation();
-                                if(item.kind==='task'&&onUpdateTask)onUpdateTask(item.id,{priority:k==='none'?null:k});
-                              },
-                              style:{background:active?col+'22':'var(--bg2)',border:'1.5px solid '+(active?col:'var(--border2)'),
-                                borderRadius:5,padding:'3px 7px',cursor:'pointer',fontSize:11,color:active?col:'var(--text3)',
-                                fontWeight:active?700:400,lineHeight:1,transition:'all .1s'}
-                            },icon);
-                          })
-                        )
-                      ),
-                      // botón cronómetro
-                      onStartProj&&e('button',{
-                        onClick:ev=>{ev.stopPropagation();onStartProj(proj.id);},
-                        style:{alignSelf:'flex-start',display:'flex',alignItems:'center',gap:5,background:'var(--accent2)15',
-                          border:'1px solid var(--accent2)44',borderRadius:6,padding:'4px 10px',cursor:'pointer',
-                          fontSize:10,color:'var(--accent2)',fontWeight:600,lineHeight:1}
-                      },'▶ Iniciar sesión'),
-                      // fila estado (tareas y fases)
-                      (item.kind==='task'||item.kind==='phase')&&e('div',{style:{display:'flex',alignItems:'center',gap:6}},
-                        e('span',{style:{fontSize:9,color:'var(--text4)',minWidth:52}},'Estado'),
-                        e('div',{style:{display:'flex',gap:3,flexWrap:'wrap'}},
-                          item.kind==='task'
-                            ?TASK_QUICK_STATUS.map(({k,lbl,color})=>{
-                                const active=curSt===k;
-                                return e('button',{key:k,
-                                  onClick:ev=>{ev.stopPropagation();if(onUpdateTask)onUpdateTask(item.id,{status:k});},
-                                  style:{background:active?color+'22':'var(--bg2)',border:'1.5px solid '+(active?color:'var(--border2)'),
-                                    borderRadius:5,padding:'2px 6px',cursor:'pointer',fontSize:9,color:active?color:'var(--text3)',
-                                    fontWeight:active?700:400,lineHeight:1.4,transition:'all .1s'}
-                                },lbl);
-                              })
-                            :[['pending','Pendiente','#8b949e'],['done','Hecho','#3fb950']].map(([k,lbl,color])=>{
-                                const active=curSt===k;
-                                return e('button',{key:k,
-                                  onClick:ev=>{
-                                    ev.stopPropagation();
-                                    if(onUpdateTaskStep&&item.task&&item.step)onUpdateTaskStep(item.task.id,item.step.id,k==='done');
-                                  },
-                                  style:{background:active?color+'22':'var(--bg2)',border:'1.5px solid '+(active?color:'var(--border2)'),
-                                    borderRadius:5,padding:'2px 6px',cursor:'pointer',fontSize:9,color:active?color:'var(--text3)',
-                                    fontWeight:active?700:400,lineHeight:1.4,transition:'all .1s'}
-                                },lbl);
-                              })
-                        )
-                      )
-                    )
+                    // panel inline — componente separado, sus clics no suben
+                    isOpen&&e(KanbanInlinePanel,{
+                      item,projId:proj.id,
+                      onUpdateTask,onUpdateTaskStep,onStartProj
+                    })
                   );
                 })
               )
@@ -13612,8 +13610,8 @@ function HomeResumen(props){
         projects:activeProjects,tasks,habits,systems,notes,reminders,
         today,onOpenProject,onStartProj,onQuickToggleTask,onToggleHabitLog,
         onSetPriority,onUpdateTask,
-        onUpdateTaskStep:(taskId,stepId,done)=>{
-          if(onUpdateTask)onUpdateTask(taskId,{steps:(tasks.find(t=>t.id===taskId)?.steps||[]).map(s=>s.id===stepId?{...s,done}:s)});
+        onUpdateTaskStep:(taskId,stepId,statusKey,done)=>{
+          if(onUpdateTask)onUpdateTask(taskId,{steps:(tasks.find(t=>t.id===taskId)?.steps||[]).map(s=>s.id===stepId?{...s,done,status:statusKey}:s)});
         },
         streak,weekTotals,weekMax,FULL_DAY_LABEL
       }),
