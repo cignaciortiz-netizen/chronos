@@ -13132,6 +13132,175 @@ function AreaChart({buckets,width=560,height=170}){
   );
 }
 
+// ── PRIORITY FLAG SYSTEM ──────────────────────────────────────────────────
+// Flags: 'urgent' (rojo 🚩), 'important' (amarillo ⚑), undefined/null = sin bandera
+const FLAG_CFG={
+  urgent:  {icon:'🚩',label:'Urgente',  color:'#f85149',bg:'#f8514922'},
+  important:{icon:'⚑', label:'Importante',color:'#e3b341',bg:'#e3b34122'},
+};
+function FlagBadge({priority}){
+  const f=FLAG_CFG[priority];
+  if(!f)return null;
+  return e('span',{title:f.label,style:{fontSize:12,lineHeight:1,cursor:'default',userSelect:'none',flexShrink:0}},f.icon);
+}
+function FlagMenu({priority,onSet,onClose}){
+  return e('div',{
+    style:{position:'absolute',top:'100%',right:0,background:'var(--bg2)',border:'1px solid var(--border2)',
+      borderRadius:8,padding:4,zIndex:300,boxShadow:'0 8px 24px #0007',minWidth:140},
+    onClick:ev=>ev.stopPropagation()
+  },
+    [null,'urgent','important'].map(k=>{
+      const f=k?FLAG_CFG[k]:null;
+      const active=priority===k;
+      return e('div',{key:k||'none',
+        onClick:()=>{onSet(k);onClose();},
+        style:{display:'flex',alignItems:'center',gap:8,padding:'6px 10px',borderRadius:6,cursor:'pointer',
+          fontWeight:active?700:400,
+          background:active?(f?f.bg:'var(--bg3)'):'transparent',
+          color:active?(f?f.color:'var(--text1)'):'var(--text2)',
+          fontSize:11}
+      },
+        e('span',{style:{width:14,textAlign:'center'}},f?f.icon:'—'),
+        f?f.label:'Sin bandera'
+      );
+    })
+  );
+}
+
+// ── TODAY KANBAN ──────────────────────────────────────────────────────────
+function TodayKanban({projects,tasks,habits,systems,notes,reminders,today,onOpenProject,onQuickToggleTask,onToggleHabitLog,onSetPriority,streak,weekTotals,weekMax,FULL_DAY_LABEL}){
+  const[openFlag,setOpenFlag]=useState(null); // projId con menu abierto
+  useEffect(()=>{
+    if(!openFlag)return;
+    const h=()=>setOpenFlag(null);
+    window.addEventListener('click',h);
+    return()=>window.removeEventListener('click',h);
+  },[openFlag]);
+
+  // Para cada proyecto activo, recoge todos los pendientes de hoy
+  const cols=useMemo(()=>{
+    return projects.map(proj=>{
+      const items=[];
+      // Tareas con dueDate===hoy
+      tasks.filter(t=>t.projectId===proj.id&&t.status!=='done'&&t.dueDate===today).forEach(t=>{
+        items.push({kind:'task',id:t.id,label:t.name,done:false,task:t});
+      });
+      // Fases de tareas con dueDate===hoy
+      tasks.filter(t=>t.projectId===proj.id&&t.status!=='done').forEach(t=>{
+        (t.steps||[]).forEach(s=>{
+          if(s.dueDate===today&&!s.done)
+            items.push({kind:'phase',id:t.id+'_'+s.id,label:s.name+' ('+t.name+')',done:false,task:t,step:s});
+        });
+      });
+      // Hábitos de hoy sin cumplir
+      habits.filter(h=>h.projectId===proj.id&&habitOccursOn(h,dateFromDayKey(today))&&!(h.log||[]).includes(today)&&!(h.skipLog||[]).includes(today))
+        .forEach(h=>items.push({kind:'habit',id:h.id,label:h.name,done:false,habit:h}));
+      // Recordatorios que vencen hoy (dueAt dentro de hoy, no completados)
+      reminders.filter(r=>r.projId===proj.id&&!r.done&&!r.noteId&&!r.habitId&&r.dueAt&&dayKeyFromTs(r.dueAt)===today)
+        .forEach(r=>items.push({kind:'reminder',id:r.id,label:r.title,done:false,reminder:r}));
+      // Notas con recordatorio vencido hoy
+      ((notes&&notes[proj.id])||[]).filter(n=>n.remindAt&&!n.done&&dayKeyFromTs(n.remindAt)===today)
+        .forEach(n=>items.push({kind:'note',id:n.id,label:n.text,done:false}));
+      return{proj,items};
+    }).filter(c=>c.items.length>0);
+  },[projects,tasks,habits,systems,notes,reminders,today]);
+
+  const totalPending=cols.reduce((a,c)=>a+c.items.length,0);
+
+  const KIND_ICON={task:'☑',phase:'◈',habit:'↻',reminder:'🔔',note:'📌'};
+  const KIND_LBL={task:'Tarea',phase:'Fase',habit:'Hábito',reminder:'Recordatorio',note:'Nota'};
+
+  return e('div',{style:{margin:'0 0 14px 0'}},
+    // Header del panel
+    e('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:10}},
+      e('div',{style:{display:'flex',alignItems:'center',gap:10}},
+        e('span',{style:{fontSize:12,fontWeight:700,color:'var(--text1)',letterSpacing:'.03em'}},'Pendientes de hoy'),
+        totalPending>0
+          ?e('span',{style:{fontSize:10,fontWeight:700,padding:'2px 8px',borderRadius:10,background:'var(--accent2)20',color:'var(--accent2)'}},totalPending+' item'+(totalPending!==1?'s':''))
+          :e('span',{style:{fontSize:10,color:'var(--text4)'}},cols.length===0?'🎉 Todo al día':'')
+      ),
+      // mini chart de racha + semana (antes en bento-third)
+      e('div',{style:{display:'flex',alignItems:'center',gap:12}},
+        e('div',{style:{display:'flex',alignItems:'center',gap:4,fontSize:10,color:'var(--text3)'}},
+          '🔥',e('span',{style:{fontFamily:"'JetBrains Mono',monospace",color:'var(--text2)',fontWeight:600}},streak),streak===1?'día':'días'
+        ),
+        e('div',{style:{display:'flex',alignItems:'flex-end',gap:3,height:22}},
+          (weekTotals||[]).map(w=>e('div',{key:w.key,title:FULL_DAY_LABEL[w.key]||'',style:{
+            width:14,
+            height:Math.max(3,Math.round((w.secs/(weekMax||1))*20))+'px',
+            background:'var(--accent2)',opacity:0.6,borderRadius:2
+          }}))
+        )
+      )
+    ),
+
+    // Tablero Kanban
+    cols.length===0
+      ?e('div',{style:{textAlign:'center',padding:'28px 0',color:'var(--text4)',fontSize:12,background:'var(--bg2)',borderRadius:10,border:'1px dashed var(--border2)'}},
+          '🎉 Sin pendientes para hoy — ¡todo al día!'
+        )
+      :e('div',{style:{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(220px,1fr))',gap:10}},
+          cols.map(({proj,items})=>{
+            const flagCfg=FLAG_CFG[proj.priority];
+            return e('div',{key:proj.id,style:{
+              background:'var(--bg2)',border:'1px solid var(--border2)',borderRadius:10,overflow:'hidden',
+              borderTop:'3px solid '+(proj.color||'var(--accent2)'),
+              boxShadow:flagCfg?'0 0 0 1.5px '+flagCfg.color+'33':undefined
+            }},
+              // header de columna
+              e('div',{style:{display:'flex',alignItems:'center',gap:6,padding:'8px 10px 6px',borderBottom:'1px solid var(--border2)',background:'var(--bg3)'}},
+                e('div',{style:{width:8,height:8,borderRadius:'50%',background:proj.color||'var(--accent2)',flexShrink:0}}),
+                e('span',{style:{flex:1,fontSize:11,fontWeight:700,color:'var(--text1)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',cursor:'pointer'},
+                  onClick:()=>onOpenProject(proj.id)},proj.name),
+                // bandera de prioridad
+                e('div',{style:{position:'relative',flexShrink:0}},
+                  e('button',{
+                    title:'Prioridad',
+                    onClick:ev=>{ev.stopPropagation();setOpenFlag(openFlag===proj.id?null:proj.id);},
+                    style:{background:'none',border:'none',cursor:'pointer',padding:'0 2px',lineHeight:1,fontSize:12,
+                      color:flagCfg?flagCfg.color:'var(--text4)',opacity:flagCfg?1:0.4}
+                  },flagCfg?flagCfg.icon:'⚑'),
+                  openFlag===proj.id&&e(FlagMenu,{
+                    priority:proj.priority,
+                    onSet:p=>onSetPriority(proj.id,p),
+                    onClose:()=>setOpenFlag(null)
+                  })
+                ),
+                e('span',{style:{fontSize:9,fontFamily:"'JetBrains Mono',monospace",color:'var(--text4)',flexShrink:0}},items.length)
+              ),
+              // items
+              e('div',{style:{padding:'4px 6px 6px',display:'flex',flexDirection:'column',gap:2}},
+                items.map(item=>e('div',{key:item.id,
+                  style:{display:'flex',alignItems:'flex-start',gap:6,padding:'5px 6px',borderRadius:6,cursor:'pointer',transition:'background .1s'},
+                  onMouseEnter:ev=>ev.currentTarget.style.background='var(--bg3)',
+                  onMouseLeave:ev=>ev.currentTarget.style.background='transparent',
+                  onClick:()=>onOpenProject(proj.id)
+                },
+                  // check para tareas y hábitos; icono para el resto
+                  (item.kind==='task'||item.kind==='habit')
+                    ?e('div',{
+                        onClick:ev=>{
+                          ev.stopPropagation();
+                          if(item.kind==='task')onQuickToggleTask(item.id);
+                          else if(item.kind==='habit'&&onToggleHabitLog)onToggleHabitLog(item.id,today);
+                        },
+                        style:{width:14,height:14,borderRadius:item.kind==='habit'?'50%':3,border:'1.5px solid var(--border2)',flexShrink:0,marginTop:1,cursor:'pointer',
+                          display:'flex',alignItems:'center',justifyContent:'center',background:'transparent',transition:'all .12s'}
+                      })
+                    :e('span',{style:{fontSize:10,color:'var(--text4)',flexShrink:0,marginTop:1,lineHeight:1.4}},KIND_ICON[item.kind]||'·'),
+                  e('div',{style:{flex:1,minWidth:0}},
+                    e('div',{style:{fontSize:11,color:'var(--text1)',lineHeight:1.3,overflow:'hidden',textOverflow:'ellipsis',
+                      display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical'}},item.label),
+                    e('span',{style:{fontSize:9,color:'var(--text4)',fontWeight:500}},KIND_LBL[item.kind]||'')
+                  )
+                ))
+              )
+            );
+          })
+        )
+  );
+}
+
 function HomeResumen(props){
   const{
     projects,tasks,sessions,habits,systems,notes,reminders,
@@ -13379,48 +13548,16 @@ function HomeResumen(props){
           )
         ),
 
-        e('div',{className:'bento-blk bento-third'},
-          e('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:6}},
-            e('span',{className:'bento-eyebrow',style:{margin:0}},'Tareas de hoy'),
-            e('span',{style:{fontSize:11,color:'var(--text3)',fontFamily:"'JetBrains Mono',monospace"}},tasksToday.filter(t=>t.status!=='done').length+' pend.')
-          ),
-          tasksToday.filter(t=>t.status!=='done').length===0&&doneTasksToday.length===0
-            ?e('div',{className:'empty',style:{padding:0}},'Sin tareas para hoy.')
-            :e(React.Fragment,null,
-                tasksToday.filter(t=>t.status!=='done').slice(0,3).map(t=>
-                  e('div',{key:t.id,className:'bento-tk-row'},
-                    e('div',{className:'bento-tk-check',onClick:()=>onQuickToggleTask(t.id)},''),
-                    e('span',{className:'bento-tk-name',onClick:()=>onOpenProject(t.projectId)},t.name)
-                  )
-                ),
-                doneTasksToday.length>0&&e(React.Fragment,null,
-                  e('div',{style:{fontSize:10,color:'var(--text4)',fontFamily:"'JetBrains Mono',monospace",letterSpacing:'.04em',textTransform:'uppercase',margin:'8px 0 4px',paddingLeft:2}},
-                    '✓ completadas hoy — '+doneTasksToday.length
-                  ),
-                  doneTasksToday.slice(0,4).map(t=>{
-                    const proj=projects.find(p=>p.id===t.projectId);
-                    return e('div',{key:t.id,className:'bento-done-row',onClick:()=>onOpenProject(t.projectId)},
-                      e('div',{className:'bento-done-dot',style:{background:proj?.color||'var(--text4)'}}),
-                      e('span',{className:'bento-done-name'},t.name),
-                      proj&&e('span',{className:'bento-done-account'},proj.name)
-                    );
-                  })
-                )
-              )
-        ),
-
-        e('div',{className:'bento-blk bento-third'},
-          e('div',{style:{display:'flex',alignItems:'baseline',justifyContent:'space-between',marginBottom:6}},
-            e('span',{className:'bento-eyebrow',style:{margin:0}},'Actividad de la semana'),
-            e('span',{style:{fontSize:11,color:'var(--text3)',fontFamily:"'JetBrains Mono',monospace",display:'flex',alignItems:'center',gap:4}},'🔥',streak,streak===1?'día':'días')
-          ),
-          e('div',{className:'bento-wk-chart'},
-            weekTotals.map(w=>e('div',{key:w.key,className:'bento-wk-wrap'},e('div',{className:'bento-wk-bar',style:{height:Math.max(3,Math.round(w.secs/(weekMax||1)*100))+'%'}})))
-          ),
-          e('div',{className:'bento-wk-lbls'},weekTotals.map(w=>e('span',{key:w.key},FULL_DAY_LABEL[w.key]?.slice(0,1)||'')))
-        )
-
       ),
+
+      // ── KANBAN DE PENDIENTES DE HOY ──────────────────────────────────────
+      e(TodayKanban,{
+        projects:activeProjects,tasks,habits,systems,notes,reminders,
+        today,onOpenProject,onQuickToggleTask,onToggleHabitLog,
+        onSetPriority,streak,weekTotals,weekMax,FULL_DAY_LABEL
+      }),
+
+
 
       e('div',{style:{display:'grid',gridTemplateColumns:'1fr 1.3fr',gap:14}},
         e('div',{className:'dash-panel'},
