@@ -4855,6 +4855,7 @@ function App(){
             onNewBlock:()=>{setNewBlockPreset(null);setShowNewBlock(true);},
             onNewProject:()=>setShowNewProj(true),
             onSetPriority:(pid,priority)=>{setProjects(ps=>ps.map(p=>p.id===pid?{...p,priority}:p));forceSync();},
+            onUpdateTask:(id,patch)=>{setTasks(ts=>ts.map(t=>t.id===id?{...t,...patch}:t));forceSync();},
             onArchiveProject:pid=>{setProjects(ps=>ps.map(p=>p.id===pid?{...p,status:'archived'}:p));forceSync();},
             onUnarchiveProject:pid=>{setProjects(ps=>ps.map(p=>p.id===pid?{...p,status:'active'}:p));forceSync();},
             showArchived:showArchivedProjects,setShowArchived:setShowArchivedProjects,
@@ -13168,14 +13169,15 @@ function FlagMenu({priority,onSet,onClose}){
 }
 
 // ── TODAY KANBAN ──────────────────────────────────────────────────────────
-function TodayKanban({projects,tasks,habits,systems,notes,reminders,today,onOpenProject,onQuickToggleTask,onToggleHabitLog,onSetPriority,streak,weekTotals,weekMax,FULL_DAY_LABEL}){
+function TodayKanban({projects,tasks,habits,systems,notes,reminders,today,onOpenProject,onQuickToggleTask,onToggleHabitLog,onSetPriority,onUpdateTask,streak,weekTotals,weekMax,FULL_DAY_LABEL}){
   const[openFlag,setOpenFlag]=useState(null); // projId con menu abierto
+  const[openItemFlag,setOpenItemFlag]=useState(null); // itemId con menu abierto
   useEffect(()=>{
-    if(!openFlag)return;
-    const h=()=>setOpenFlag(null);
+    if(!openFlag&&!openItemFlag)return;
+    const h=()=>{setOpenFlag(null);setOpenItemFlag(null);};
     window.addEventListener('click',h);
     return()=>window.removeEventListener('click',h);
-  },[openFlag]);
+  },[openFlag,openItemFlag]);
 
   // Para cada proyecto activo, recoge todos los pendientes de hoy
   const cols=useMemo(()=>{
@@ -13183,24 +13185,24 @@ function TodayKanban({projects,tasks,habits,systems,notes,reminders,today,onOpen
       const items=[];
       // Tareas con dueDate===hoy
       tasks.filter(t=>t.projectId===proj.id&&t.status!=='done'&&t.dueDate===today).forEach(t=>{
-        items.push({kind:'task',id:t.id,label:t.name,done:false,task:t});
+        items.push({kind:'task',id:t.id,label:t.name,ctx:null,done:false,task:t,priority:t.priority||null});
       });
       // Fases de tareas con dueDate===hoy
       tasks.filter(t=>t.projectId===proj.id&&t.status!=='done').forEach(t=>{
         (t.steps||[]).forEach(s=>{
           if(s.dueDate===today&&!s.done)
-            items.push({kind:'phase',id:t.id+'_'+s.id,label:s.name+' ('+t.name+')',done:false,task:t,step:s});
+            items.push({kind:'phase',id:t.id+'_'+s.id,label:s.name,ctx:t.name,done:false,task:t,step:s,priority:null});
         });
       });
       // Hábitos de hoy sin cumplir
       habits.filter(h=>h.projectId===proj.id&&habitOccursOn(h,dateFromDayKey(today))&&!(h.log||[]).includes(today)&&!(h.skipLog||[]).includes(today))
-        .forEach(h=>items.push({kind:'habit',id:h.id,label:h.name,done:false,habit:h}));
+        .forEach(h=>items.push({kind:'habit',id:h.id,label:h.name,ctx:null,done:false,habit:h,priority:null}));
       // Recordatorios que vencen hoy (dueAt dentro de hoy, no completados)
       reminders.filter(r=>r.projId===proj.id&&!r.done&&!r.noteId&&!r.habitId&&r.dueAt&&dayKeyFromTs(r.dueAt)===today)
-        .forEach(r=>items.push({kind:'reminder',id:r.id,label:r.title,done:false,reminder:r}));
+        .forEach(r=>items.push({kind:'reminder',id:r.id,label:r.title,ctx:null,done:false,reminder:r,priority:null}));
       // Notas con recordatorio vencido hoy
       ((notes&&notes[proj.id])||[]).filter(n=>n.remindAt&&!n.done&&dayKeyFromTs(n.remindAt)===today)
-        .forEach(n=>items.push({kind:'note',id:n.id,label:n.text,done:false}));
+        .forEach(n=>items.push({kind:'note',id:n.id,label:n.text,ctx:null,done:false,priority:null}));
       return{proj,items};
     }).filter(c=>c.items.length>0);
   },[projects,tasks,habits,systems,notes,reminders,today]);
@@ -13291,7 +13293,25 @@ function TodayKanban({projects,tasks,habits,systems,notes,reminders,today,onOpen
                   e('div',{style:{flex:1,minWidth:0}},
                     e('div',{style:{fontSize:11,color:'var(--text1)',lineHeight:1.3,overflow:'hidden',textOverflow:'ellipsis',
                       display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical'}},item.label),
-                    e('span',{style:{fontSize:9,color:'var(--text4)',fontWeight:500}},KIND_LBL[item.kind]||'')
+                    e('div',{style:{display:'flex',alignItems:'center',gap:4,marginTop:2,flexWrap:'wrap'}},
+                      item.ctx&&e('span',{style:{fontSize:9,color:'var(--text3)',background:'var(--bg3)',border:'1px solid var(--border2)',borderRadius:3,padding:'0 4px',lineHeight:'16px',maxWidth:100,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}},item.ctx),
+                      e('span',{style:{fontSize:9,color:'var(--text4)',fontWeight:500}},KIND_ICON[item.kind]+' '+KIND_LBL[item.kind])
+                    )
+                  ),
+                  // bandera por ítem (solo tareas)
+                  item.kind==='task'&&onUpdateTask&&e('div',{style:{position:'relative',flexShrink:0},onClick:ev=>ev.stopPropagation()},
+                    e('button',{
+                      title:'Prioridad del ítem',
+                      onClick:ev=>{ev.stopPropagation();setOpenItemFlag(openItemFlag===item.id?null:item.id);},
+                      style:{background:'none',border:'none',cursor:'pointer',padding:'2px 3px',lineHeight:1,fontSize:11,
+                        color:item.priority&&FLAG_CFG[item.priority]?FLAG_CFG[item.priority].color:'var(--text4)',
+                        opacity:item.priority?1:0.3}
+                    },item.priority&&FLAG_CFG[item.priority]?FLAG_CFG[item.priority].icon:'⚑'),
+                    openItemFlag===item.id&&e(FlagMenu,{
+                      priority:item.priority,
+                      onSet:p=>{onUpdateTask(item.id,{priority:p});setOpenItemFlag(null);},
+                      onClose:()=>setOpenItemFlag(null)
+                    })
                   )
                 ))
               )
@@ -13308,7 +13328,7 @@ function HomeResumen(props){
     tState,activeSess,activeProj,activeTask,workElapsed,todayTotal,
     onPauseTimer,onStopTimer,onQuickToggleTask,
     onOpenProject,onStartProj,onUpdateSystem,onToggleHabitLog,
-    blocks,onEditBlock,onNewBlock,onNewProject,onSetPriority,
+    blocks,onEditBlock,onNewBlock,onNewProject,onSetPriority,onUpdateTask,
     onArchiveProject,onUnarchiveProject,showArchived,setShowArchived,
     fmtWhen,fmtS,fmt,pStats
   }=props;
@@ -13554,7 +13574,7 @@ function HomeResumen(props){
       e(TodayKanban,{
         projects:activeProjects,tasks,habits,systems,notes,reminders,
         today,onOpenProject,onQuickToggleTask,onToggleHabitLog,
-        onSetPriority,streak,weekTotals,weekMax,FULL_DAY_LABEL
+        onSetPriority,onUpdateTask,streak,weekTotals,weekMax,FULL_DAY_LABEL
       }),
 
 
