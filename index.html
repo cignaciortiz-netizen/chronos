@@ -13169,51 +13169,101 @@ function FlagMenu({priority,onSet,onClose}){
 }
 
 // ── TODAY KANBAN ──────────────────────────────────────────────────────────
-function TodayKanban({projects,tasks,habits,systems,notes,reminders,today,onOpenProject,onQuickToggleTask,onToggleHabitLog,onSetPriority,onUpdateTask,streak,weekTotals,weekMax,FULL_DAY_LABEL}){
-  const[openFlag,setOpenFlag]=useState(null); // projId con menu abierto
-  const[openItemFlag,setOpenItemFlag]=useState(null); // itemId con menu abierto
-  useEffect(()=>{
-    if(!openFlag&&!openItemFlag)return;
-    const h=()=>{setOpenFlag(null);setOpenItemFlag(null);};
-    window.addEventListener('click',h);
-    return()=>window.removeEventListener('click',h);
-  },[openFlag,openItemFlag]);
+// Mini panel de acciones al hacer clic en un ítem
+function KanbanItemPanel({item,proj,onUpdateTask,onUpdateTaskStep,onSetPriority,onClose}){
+  const QUICK_STATUS=[
+    {k:'pending',   lbl:'Pendiente', color:'var(--text4)'},
+    {k:'doing',     lbl:'En curso',  color:'#58a6ff'},
+    {k:'sent',      lbl:'Enviado',   color:'#e3b341'},
+    {k:'done',      lbl:'Listo',     color:'#3fb950'},
+  ];
+  const curStatus=item.kind==='task'?(item.task?.status||'pending'):item.kind==='phase'?(item.step?.done?'done':'pending'):null;
+  const curPriority=item.priority;
+  return e('div',{
+    onClick:ev=>ev.stopPropagation(),
+    style:{margin:'4px 0 2px',padding:'8px 10px',background:'var(--bg1)',border:'1px solid var(--border2)',borderRadius:8,display:'flex',flexDirection:'column',gap:6}
+  },
+    // fila prioridad
+    e('div',{style:{display:'flex',alignItems:'center',gap:4}},
+      e('span',{style:{fontSize:9,color:'var(--text4)',width:52,flexShrink:0}},'Prioridad'),
+      e('div',{style:{display:'flex',gap:3}},
+        [['urgent','🚩','#f85149'],['important','⚑','#e3b341'],['none','-','var(--text4)']].map(([k,icon,color])=>
+          e('button',{key:k,
+            onClick:()=>{
+              if(item.kind==='task'&&onUpdateTask)onUpdateTask(item.id,{priority:k==='none'?null:k});
+              onClose();
+            },
+            style:{background:curPriority===(k==='none'?null:k)?color+'22':'var(--bg3)',
+              border:'1px solid '+(curPriority===(k==='none'?null:k)?color:'var(--border2)'),
+              borderRadius:4,padding:'2px 6px',cursor:'pointer',fontSize:10,color:curPriority===(k==='none'?null:k)?color:'var(--text3)',fontWeight:600}
+          },icon)
+        )
+      )
+    ),
+    // fila estado (solo tarea o fase)
+    (item.kind==='task'||item.kind==='phase')&&e('div',{style:{display:'flex',alignItems:'center',gap:4}},
+      e('span',{style:{fontSize:9,color:'var(--text4)',width:52,flexShrink:0}},'Estado'),
+      e('div',{style:{display:'flex',gap:3,flexWrap:'wrap'}},
+        item.kind==='task'
+          ?QUICK_STATUS.map(({k,lbl,color})=>
+              e('button',{key:k,
+                onClick:()=>{if(onUpdateTask){onUpdateTask(item.id,{status:k});onClose();}},
+                style:{background:curStatus===k?color+'22':'var(--bg3)',
+                  border:'1px solid '+(curStatus===k?color:'var(--border2)'),
+                  borderRadius:4,padding:'2px 6px',cursor:'pointer',fontSize:9,color:curStatus===k?color:'var(--text3)'}
+              },lbl)
+            )
+          :// fase: solo toggle hecho
+            [['pending','Pendiente','var(--text4)'],['done','Hecho','#3fb950']].map(([k,lbl,color])=>
+              e('button',{key:k,
+                onClick:()=>{
+                  if(onUpdateTaskStep){onUpdateTaskStep(item.task.id,item.step.id,k==='done');onClose();}
+                },
+                style:{background:curStatus===k?color+'22':'var(--bg3)',
+                  border:'1px solid '+(curStatus===k?color:'var(--border2)'),
+                  borderRadius:4,padding:'2px 6px',cursor:'pointer',fontSize:9,color:curStatus===k?color:'var(--text3)'}
+              },lbl)
+            )
+      )
+    )
+  );
+}
 
-  // Para cada proyecto activo, recoge todos los pendientes de hoy
+function TodayKanban({projects,tasks,habits,systems,notes,reminders,today,onOpenProject,onQuickToggleTask,onToggleHabitLog,onSetPriority,onUpdateTask,onUpdateTaskStep,streak,weekTotals,weekMax,FULL_DAY_LABEL}){
+  const[openFlag,setOpenFlag]=useState(null); // projId con menu abierto
+  const[expandedItem,setExpandedItem]=useState(null); // itemId con panel abierto
+
+  // Para cada proyecto activo, recoge pendientes de hoy (sin hábitos)
   const cols=useMemo(()=>{
     return projects.map(proj=>{
       const items=[];
       // Tareas con dueDate===hoy
       tasks.filter(t=>t.projectId===proj.id&&t.status!=='done'&&t.dueDate===today).forEach(t=>{
-        items.push({kind:'task',id:t.id,label:t.name,ctx:null,done:false,task:t,priority:t.priority||null});
+        items.push({kind:'task',id:t.id,label:t.name,ctx:null,task:t,priority:t.priority||null});
       });
-      // Fases de tareas con dueDate===hoy
+      // Fases con dueDate===hoy
       tasks.filter(t=>t.projectId===proj.id&&t.status!=='done').forEach(t=>{
         (t.steps||[]).forEach(s=>{
           if(s.dueDate===today&&!s.done)
-            items.push({kind:'phase',id:t.id+'_'+s.id,label:s.name,ctx:t.name,done:false,task:t,step:s,priority:null});
+            items.push({kind:'phase',id:t.id+'__'+s.id,label:s.name,ctx:t.name,task:t,step:s,priority:null});
         });
       });
-      // Hábitos de hoy sin cumplir
-      habits.filter(h=>h.projectId===proj.id&&habitOccursOn(h,dateFromDayKey(today))&&!(h.log||[]).includes(today)&&!(h.skipLog||[]).includes(today))
-        .forEach(h=>items.push({kind:'habit',id:h.id,label:h.name,ctx:null,done:false,habit:h,priority:null}));
-      // Recordatorios que vencen hoy (dueAt dentro de hoy, no completados)
+      // Recordatorios que vencen hoy
       reminders.filter(r=>r.projId===proj.id&&!r.done&&!r.noteId&&!r.habitId&&r.dueAt&&dayKeyFromTs(r.dueAt)===today)
-        .forEach(r=>items.push({kind:'reminder',id:r.id,label:r.title,ctx:null,done:false,reminder:r,priority:null}));
-      // Notas con recordatorio vencido hoy
+        .forEach(r=>items.push({kind:'reminder',id:r.id,label:r.title,ctx:null,reminder:r,priority:null}));
+      // Notas con recordatorio hoy
       ((notes&&notes[proj.id])||[]).filter(n=>n.remindAt&&!n.done&&dayKeyFromTs(n.remindAt)===today)
-        .forEach(n=>items.push({kind:'note',id:n.id,label:n.text,ctx:null,done:false,priority:null}));
+        .forEach(n=>items.push({kind:'note',id:n.id,label:n.text,ctx:null,priority:null}));
       return{proj,items};
     }).filter(c=>c.items.length>0);
-  },[projects,tasks,habits,systems,notes,reminders,today]);
+  },[projects,tasks,notes,reminders,today]);
 
   const totalPending=cols.reduce((a,c)=>a+c.items.length,0);
-
-  const KIND_ICON={task:'☑',phase:'◈',habit:'↻',reminder:'🔔',note:'📌'};
-  const KIND_LBL={task:'Tarea',phase:'Fase',habit:'Hábito',reminder:'Recordatorio',note:'Nota'};
+  const KIND_ICON={task:'☑',phase:'◈',reminder:'🔔',note:'📌'};
+  const KIND_LBL={task:'Tarea',phase:'Fase',reminder:'Recordatorio',note:'Nota'};
 
   return e('div',{style:{margin:'0 0 14px 0'}},
-    // Header del panel
+    // Header
     e('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:10}},
       e('div',{style:{display:'flex',alignItems:'center',gap:10}},
         e('span',{style:{fontSize:12,fontWeight:700,color:'var(--text1)',letterSpacing:'.03em'}},'Pendientes de hoy'),
@@ -13221,22 +13271,20 @@ function TodayKanban({projects,tasks,habits,systems,notes,reminders,today,onOpen
           ?e('span',{style:{fontSize:10,fontWeight:700,padding:'2px 8px',borderRadius:10,background:'var(--accent2)20',color:'var(--accent2)'}},totalPending+' item'+(totalPending!==1?'s':''))
           :e('span',{style:{fontSize:10,color:'var(--text4)'}},cols.length===0?'🎉 Todo al día':'')
       ),
-      // mini chart de racha + semana (antes en bento-third)
       e('div',{style:{display:'flex',alignItems:'center',gap:12}},
         e('div',{style:{display:'flex',alignItems:'center',gap:4,fontSize:10,color:'var(--text3)'}},
           '🔥',e('span',{style:{fontFamily:"'JetBrains Mono',monospace",color:'var(--text2)',fontWeight:600}},streak),streak===1?'día':'días'
         ),
         e('div',{style:{display:'flex',alignItems:'flex-end',gap:3,height:22}},
           (weekTotals||[]).map(w=>e('div',{key:w.key,title:FULL_DAY_LABEL[w.key]||'',style:{
-            width:14,
-            height:Math.max(3,Math.round((w.secs/(weekMax||1))*20))+'px',
+            width:14,height:Math.max(3,Math.round((w.secs/(weekMax||1))*20))+'px',
             background:'var(--accent2)',opacity:0.6,borderRadius:2
           }}))
         )
       )
     ),
 
-    // Tablero Kanban
+    // Tablero
     cols.length===0
       ?e('div',{style:{textAlign:'center',padding:'28px 0',color:'var(--text4)',fontSize:12,background:'var(--bg2)',borderRadius:10,border:'1px dashed var(--border2)'}},
           '🎉 Sin pendientes para hoy — ¡todo al día!'
@@ -13249,71 +13297,60 @@ function TodayKanban({projects,tasks,habits,systems,notes,reminders,today,onOpen
               borderTop:'3px solid '+(proj.color||'var(--accent2)'),
               boxShadow:flagCfg?'0 0 0 1.5px '+flagCfg.color+'33':undefined
             }},
-              // header de columna
+              // header columna
               e('div',{style:{display:'flex',alignItems:'center',gap:6,padding:'8px 10px 6px',borderBottom:'1px solid var(--border2)',background:'var(--bg3)'}},
                 e('div',{style:{width:8,height:8,borderRadius:'50%',background:proj.color||'var(--accent2)',flexShrink:0}}),
                 e('span',{style:{flex:1,fontSize:11,fontWeight:700,color:'var(--text1)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',cursor:'pointer'},
                   onClick:()=>onOpenProject(proj.id)},proj.name),
-                // bandera de prioridad
                 e('div',{style:{position:'relative',flexShrink:0}},
                   e('button',{
-                    title:'Prioridad',
+                    title:'Prioridad del proyecto',
                     onClick:ev=>{ev.stopPropagation();setOpenFlag(openFlag===proj.id?null:proj.id);},
                     style:{background:'none',border:'none',cursor:'pointer',padding:'0 2px',lineHeight:1,fontSize:12,
                       color:flagCfg?flagCfg.color:'var(--text4)',opacity:flagCfg?1:0.4}
                   },flagCfg?flagCfg.icon:'⚑'),
                   openFlag===proj.id&&e(FlagMenu,{
                     priority:proj.priority,
-                    onSet:p=>onSetPriority(proj.id,p),
+                    onSet:p=>{onSetPriority(proj.id,p);setOpenFlag(null);},
                     onClose:()=>setOpenFlag(null)
                   })
                 ),
                 e('span',{style:{fontSize:9,fontFamily:"'JetBrains Mono',monospace",color:'var(--text4)',flexShrink:0}},items.length)
               ),
               // items
-              e('div',{style:{padding:'4px 6px 6px',display:'flex',flexDirection:'column',gap:2}},
-                items.map(item=>e('div',{key:item.id,
-                  style:{display:'flex',alignItems:'flex-start',gap:6,padding:'5px 6px',borderRadius:6,cursor:'pointer',transition:'background .1s'},
-                  onMouseEnter:ev=>ev.currentTarget.style.background='var(--bg3)',
-                  onMouseLeave:ev=>ev.currentTarget.style.background='transparent',
-                  onClick:()=>onOpenProject(proj.id)
-                },
-                  // check para tareas y hábitos; icono para el resto
-                  (item.kind==='task'||item.kind==='habit')
-                    ?e('div',{
-                        onClick:ev=>{
-                          ev.stopPropagation();
-                          if(item.kind==='task')onQuickToggleTask(item.id);
-                          else if(item.kind==='habit'&&onToggleHabitLog)onToggleHabitLog(item.id,today);
-                        },
-                        style:{width:14,height:14,borderRadius:item.kind==='habit'?'50%':3,border:'1.5px solid var(--border2)',flexShrink:0,marginTop:1,cursor:'pointer',
-                          display:'flex',alignItems:'center',justifyContent:'center',background:'transparent',transition:'all .12s'}
-                      })
-                    :e('span',{style:{fontSize:10,color:'var(--text4)',flexShrink:0,marginTop:1,lineHeight:1.4}},KIND_ICON[item.kind]||'·'),
-                  e('div',{style:{flex:1,minWidth:0}},
-                    e('div',{style:{fontSize:11,color:'var(--text1)',lineHeight:1.3,overflow:'hidden',textOverflow:'ellipsis',
-                      display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical'}},item.label),
-                    e('div',{style:{display:'flex',alignItems:'center',gap:4,marginTop:2,flexWrap:'wrap'}},
-                      item.ctx&&e('span',{style:{fontSize:9,color:'var(--text3)',background:'var(--bg3)',border:'1px solid var(--border2)',borderRadius:3,padding:'0 4px',lineHeight:'16px',maxWidth:100,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}},item.ctx),
-                      e('span',{style:{fontSize:9,color:'var(--text4)',fontWeight:500}},KIND_ICON[item.kind]+' '+KIND_LBL[item.kind])
-                    )
-                  ),
-                  // bandera por ítem (solo tareas)
-                  item.kind==='task'&&onUpdateTask&&e('div',{style:{position:'relative',flexShrink:0},onClick:ev=>ev.stopPropagation()},
-                    e('button',{
-                      title:'Prioridad del ítem',
-                      onClick:ev=>{ev.stopPropagation();setOpenItemFlag(openItemFlag===item.id?null:item.id);},
-                      style:{background:'none',border:'none',cursor:'pointer',padding:'2px 3px',lineHeight:1,fontSize:11,
-                        color:item.priority&&FLAG_CFG[item.priority]?FLAG_CFG[item.priority].color:'var(--text4)',
-                        opacity:item.priority?1:0.3}
-                    },item.priority&&FLAG_CFG[item.priority]?FLAG_CFG[item.priority].icon:'⚑'),
-                    openItemFlag===item.id&&e(FlagMenu,{
-                      priority:item.priority,
-                      onSet:p=>{onUpdateTask(item.id,{priority:p});setOpenItemFlag(null);},
-                      onClose:()=>setOpenItemFlag(null)
+              e('div',{style:{padding:'4px 6px 6px',display:'flex',flexDirection:'column',gap:1}},
+                items.map(item=>{
+                  const isOpen=expandedItem===item.id;
+                  const itemFlag=FLAG_CFG[item.priority];
+                  return e('div',{key:item.id},
+                    e('div',{
+                      style:{display:'flex',alignItems:'flex-start',gap:6,padding:'5px 6px',borderRadius:6,cursor:'pointer',
+                        transition:'background .1s',background:isOpen?'var(--bg3)':'transparent'},
+                      onMouseEnter:ev=>{if(!isOpen)ev.currentTarget.style.background='var(--bg3)';},
+                      onMouseLeave:ev=>{if(!isOpen)ev.currentTarget.style.background='transparent';},
+                      onClick:()=>setExpandedItem(isOpen?null:item.id)
+                    },
+                      e('span',{style:{fontSize:10,color:'var(--text4)',flexShrink:0,marginTop:2,lineHeight:1.3}},KIND_ICON[item.kind]||'·'),
+                      e('div',{style:{flex:1,minWidth:0}},
+                        e('div',{style:{fontSize:11,color:'var(--text1)',lineHeight:1.3,overflow:'hidden',textOverflow:'ellipsis',
+                          display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical'}},item.label),
+                        e('div',{style:{display:'flex',alignItems:'center',gap:4,marginTop:1}},
+                          item.ctx&&e('span',{style:{fontSize:9,color:'var(--text3)',background:'var(--bg2)',border:'1px solid var(--border2)',borderRadius:3,padding:'0 4px',lineHeight:'15px',maxWidth:110,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}},item.ctx),
+                          e('span',{style:{fontSize:9,color:'var(--text4)'}},KIND_LBL[item.kind])
+                        )
+                      ),
+                      itemFlag&&e('span',{style:{fontSize:11,flexShrink:0,marginTop:1,color:itemFlag.color}},itemFlag.icon)
+                    ),
+                    // mini panel expandible
+                    isOpen&&e(KanbanItemPanel,{
+                      item,proj,
+                      onUpdateTask,
+                      onUpdateTaskStep,
+                      onSetPriority,
+                      onClose:()=>setExpandedItem(null)
                     })
-                  )
-                ))
+                  );
+                })
               )
             );
           })
@@ -13574,7 +13611,11 @@ function HomeResumen(props){
       e(TodayKanban,{
         projects:activeProjects,tasks,habits,systems,notes,reminders,
         today,onOpenProject,onQuickToggleTask,onToggleHabitLog,
-        onSetPriority,onUpdateTask,streak,weekTotals,weekMax,FULL_DAY_LABEL
+        onSetPriority,onUpdateTask,
+        onUpdateTaskStep:(taskId,stepId,done)=>{
+          if(onUpdateTask)onUpdateTask(taskId,{steps:(tasks.find(t=>t.id===taskId)?.steps||[]).map(s=>s.id===stepId?{...s,done}:s)});
+        },
+        streak,weekTotals,weekMax,FULL_DAY_LABEL
       }),
 
 
