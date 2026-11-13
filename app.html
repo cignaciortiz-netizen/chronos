@@ -7095,42 +7095,32 @@ function ChronosDatePicker({value,onChange,placeholder,style}){
 }
 
 // ── CalendarPanel: calendario mensual con toggle Preparación / Entrega ──
+// Soporta drag & drop de chips (fases y subtareas) entre días
+// y expansión de fases para ver/arrastrar sus subtareas
 function CalendarPanel({steps,updateStep,today,barColor}){
-  const[mode,setMode]=useState('entrega'); // 'preparacion' | 'entrega'
+  const[mode,setMode]=useState('entrega');
   const[nav,setNav]=useState(()=>{const d=new Date(today+'T00:00:00');return{y:d.getFullYear(),m:d.getMonth()};});
+  const[expanded,setExpanded]=useState(()=>new Set()); // ids de fases expandidas
+  const[drag,setDrag]=useState(null); // {kind:'phase'|'sub',stepId,subId?,name,color,origDate}
+  const[dragOver,setDragOver]=useState(null); // dateKey sobre el que está el cursor
   const BDR='1px solid var(--border)';
   const DAYS_ES=['Lu','Ma','Mi','Ju','Vi','Sa','Do'];
 
-  // fechas del mes actual
   const y=nav.y,m=nav.m;
   const firstDay=new Date(y,m,1);
   const lastDay=new Date(y,m+1,0);
-  // lunes como primer día: 0=Lu,…,6=Do
-  let startDow=(firstDay.getDay()+6)%7; // Mon-based
+  const startDow=(firstDay.getDay()+6)%7;
   const daysInMonth=lastDay.getDate();
   const totalCells=Math.ceil((startDow+daysInMonth)/7)*7;
+  const MONTHS_ES=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const dateField=mode==='entrega'?'dueDate':'startDate';
 
-  // helper: yyyy-mm-dd de un número de celda
   function cellKey(ci){
     const dOff=ci-startDow+1;
     if(dOff<1||dOff>daysInMonth)return null;
     return y+'-'+String(m+1).padStart(2,'0')+'-'+String(dOff).padStart(2,'0');
   }
 
-  // agrupar fases por fecha según modo
-  const dateField=mode==='entrega'?'dueDate':'startDate';
-  const byDate={};
-  steps.forEach(s=>{
-    const d=s[dateField];
-    if(!d)return;
-    if(!byDate[d])byDate[d]=[];
-    byDate[d].push(s);
-  });
-
-  // nombre del mes
-  const MONTHS_ES=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-
-  // colores de barra (reutiliza lógica existente)
   function chipColor(s){
     if(typeof barColor==='function')return barColor(s);
     if(s.done)return'#5a9e78';
@@ -7139,112 +7129,182 @@ function CalendarPanel({steps,updateStep,today,barColor}){
     return'#7a6faa';
   }
 
+  // ── índice por fecha: fases y subtareas ──
+  // byDate[dk] = [{kind:'phase',step},{kind:'sub',step,sub},...]
+  const byDate={};
+  function addEntry(dk,entry){if(!byDate[dk])byDate[dk]=[];byDate[dk].push(entry);}
+  steps.forEach(s=>{
+    const fd=s[dateField];
+    if(fd)addEntry(fd,{kind:'phase',step:s});
+    if(expanded.has(s.id)){
+      (s.subtasks||[]).forEach(sub=>{
+        const sd=sub[dateField]||sub.dueDate; // subtareas usan dueDate como principal
+        if(sd)addEntry(sd,{kind:'sub',step:s,sub});
+      });
+    }
+  });
+
+  // ── Drag handlers ──
+  function onChipDragStart(ev,entry){
+    const origDate=entry.kind==='phase'?entry.step[dateField]:(entry.sub[dateField]||entry.sub.dueDate);
+    setDrag({kind:entry.kind,stepId:entry.step.id,subId:entry.sub?.id,name:entry.kind==='phase'?entry.step.name:entry.sub.name,
+      color:entry.kind==='phase'?chipColor(entry.step):chipColor(entry.step),origDate});
+    ev.dataTransfer.effectAllowed='move';
+    ev.dataTransfer.setData('text/plain','cal-chip');
+  }
+  function onCellDragOver(ev,dk){
+    if(!drag||!dk)return;
+    ev.preventDefault();ev.dataTransfer.dropEffect='move';
+    if(dragOver!==dk)setDragOver(dk);
+  }
+  function onCellDrop(ev,dk){
+    ev.preventDefault();
+    if(!drag||!dk)return;
+    if(dk!==drag.origDate){
+      if(drag.kind==='phase'){
+        updateStep(drag.stepId,{[dateField]:dk});
+      } else {
+        // subtarea: actualizar dentro del step
+        const step=steps.find(s=>s.id===drag.stepId);
+        if(step){
+          const newSubs=(step.subtasks||[]).map(sub=>
+            sub.id===drag.subId?{...sub,[dateField]:dk,dueDate:dk}:sub
+          );
+          updateStep(drag.stepId,{subtasks:newSubs});
+        }
+      }
+    }
+    setDrag(null);setDragOver(null);
+  }
+  function onDragEnd(){setDrag(null);setDragOver(null);}
+
+  function toggleExpand(id){
+    setExpanded(s=>{const n=new Set(s);n.has(id)?n.delete(id):n.add(id);return n;});
+  }
+
+  // ── Render chip ──
+  function renderChip(entry,idx){
+    const isPhase=entry.kind==='phase';
+    const label=isPhase?entry.step.name:entry.sub.name;
+    const color=chipColor(isPhase?entry.step:entry.step);
+    const isDone=isPhase?entry.step.done:entry.sub.done;
+    const hasSubs=isPhase&&(entry.step.subtasks||[]).length>0;
+    const isExp=isPhase&&expanded.has(entry.step.id);
+    return e('div',{
+      key:(isPhase?entry.step.id:entry.sub.id)+idx,
+      draggable:true,
+      onDragStart:ev=>onChipDragStart(ev,entry),
+      onDragEnd:onDragEnd,
+      title:label+(isDone?' (hecho)':'')+(isPhase&&hasSubs?' · clic para ver tareas':''),
+      style:{
+        display:'flex',alignItems:'center',gap:2,
+        fontSize:9.5,fontFamily:'Inter,sans-serif',fontWeight:500,
+        color:'#fff',background:isPhase?color:(color+'cc'),
+        borderRadius:isPhase?3:2,
+        padding:isPhase?'2px 4px':'1px 4px',
+        marginLeft:isPhase?0:6,
+        whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',
+        opacity:isDone?.5:1,lineHeight:1.3,
+        cursor:'grab',userSelect:'none',
+        borderLeft:isPhase?'none':'2px solid rgba(255,255,255,.35)',
+        boxSizing:'border-box'
+      }
+    },
+      hasSubs&&e('span',{
+        onClick:ev=>{ev.stopPropagation();toggleExpand(entry.step.id);},
+        style:{flexShrink:0,marginRight:2,fontSize:8,lineHeight:1,
+          transform:isExp?'rotate(90deg)':'rotate(0deg)',display:'inline-block',
+          transition:'transform .12s',cursor:'pointer',padding:'0 1px'}
+      },'›'),
+      e('span',{style:{overflow:'hidden',textOverflow:'ellipsis',flex:1,minWidth:0}},label)
+    );
+  }
+
   return e('div',{style:{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',borderLeft:BDR}},
-    // ── header: toggle + nav mes ──
-    e('div',{style:{
-      height:38,flexShrink:0,display:'flex',alignItems:'center',
-      padding:'0 12px',gap:10,borderBottom:BDR,boxSizing:'border-box'
-    }},
-      // toggle Preparación / Entrega
-      e('div',{style:{
-        display:'flex',gap:2,background:'var(--bg2)',borderRadius:7,padding:2,
-        border:'1px solid var(--border)'
-      }},
+
+    // ── header ──
+    e('div',{style:{height:38,flexShrink:0,display:'flex',alignItems:'center',padding:'0 12px',gap:10,borderBottom:BDR,boxSizing:'border-box'}},
+      e('div',{style:{display:'flex',gap:2,background:'var(--bg2)',borderRadius:7,padding:2,border:'1px solid var(--border)'}},
         ['preparacion','entrega'].map(k=>
-          e('button',{
-            key:k,
-            onClick:()=>setMode(k),
-            style:{
-              padding:'3px 10px',border:'none',cursor:'pointer',borderRadius:5,
-              fontSize:10.5,fontFamily:'Inter,sans-serif',fontWeight:600,
-              background:mode===k?'var(--accent2)':'transparent',
-              color:mode===k?'var(--bg0)':'var(--text3)',
-              transition:'all .12s',letterSpacing:'.02em'
-            }
-          },k==='entrega'?'Entrega':'Preparación')
+          e('button',{key:k,onClick:()=>setMode(k),style:{
+            padding:'3px 10px',border:'none',cursor:'pointer',borderRadius:5,
+            fontSize:10.5,fontFamily:'Inter,sans-serif',fontWeight:600,
+            background:mode===k?'var(--accent2)':'transparent',
+            color:mode===k?'var(--bg0)':'var(--text3)',
+            transition:'all .12s',letterSpacing:'.02em'
+          }},k==='entrega'?'Entrega':'Preparación')
         )
       ),
       e('div',{style:{flex:1}}),
-      // nav mes
-      e('button',{
-        onClick:()=>setNav(n=>{const d=new Date(n.y,n.m-1,1);return{y:d.getFullYear(),m:d.getMonth()};}),
+      e('button',{onClick:()=>setNav(n=>{const d=new Date(n.y,n.m-1,1);return{y:d.getFullYear(),m:d.getMonth()};}),
         style:{width:22,height:22,border:'none',background:'none',cursor:'pointer',color:'var(--text3)',
-          display:'flex',alignItems:'center',justifyContent:'center',borderRadius:4,padding:0,fontSize:14,lineHeight:1}
-      },'‹'),
+          display:'flex',alignItems:'center',justifyContent:'center',borderRadius:4,padding:0,fontSize:14,lineHeight:1}},'‹'),
       e('span',{style:{fontSize:11,fontFamily:'Inter,sans-serif',fontWeight:600,color:'var(--text2)',minWidth:110,textAlign:'center'}},
         MONTHS_ES[m]+' '+y),
-      e('button',{
-        onClick:()=>setNav(n=>{const d=new Date(n.y,n.m+1,1);return{y:d.getFullYear(),m:d.getMonth()};}),
+      e('button',{onClick:()=>setNav(n=>{const d=new Date(n.y,n.m+1,1);return{y:d.getFullYear(),m:d.getMonth()};}),
         style:{width:22,height:22,border:'none',background:'none',cursor:'pointer',color:'var(--text3)',
-          display:'flex',alignItems:'center',justifyContent:'center',borderRadius:4,padding:0,fontSize:14,lineHeight:1}
-      },'›')
+          display:'flex',alignItems:'center',justifyContent:'center',borderRadius:4,padding:0,fontSize:14,lineHeight:1}},'›')
     ),
 
-    // ── cuerpo: grid de días ──
+    // ── cuerpo ──
     e('div',{style:{flex:1,overflow:'auto',display:'flex',flexDirection:'column',padding:'10px 10px 6px'}},
 
-      // cabecera días de semana
+      // cabecera días
       e('div',{style:{display:'grid',gridTemplateColumns:'repeat(7,1fr)',marginBottom:4}},
-        DAYS_ES.map(d=>e('div',{key:d,style:{
-          textAlign:'center',fontSize:9.5,fontFamily:'Inter,sans-serif',fontWeight:700,
-          color:'var(--text4)',textTransform:'uppercase',letterSpacing:'.05em',padding:'2px 0'
-        }},d))
+        DAYS_ES.map(d=>e('div',{key:d,style:{textAlign:'center',fontSize:9.5,fontFamily:'Inter,sans-serif',
+          fontWeight:700,color:'var(--text4)',textTransform:'uppercase',letterSpacing:'.05em',padding:'2px 0'}},d))
       ),
 
-      // celdas
+      // grid celdas
       e('div',{style:{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:3,flex:1}},
         Array.from({length:totalCells},(_,ci)=>{
           const dk=cellKey(ci);
           const isToday=dk===today;
-          const isOtherMonth=!dk;
-          const chips=dk?(byDate[dk]||[]):[];
-          const dNum=dk?parseInt(dk.slice(8),10):null;
-          const dow=ci%7; // 0=Lu,6=Do
+          const dow=ci%7;
           const isWknd=dow>=5;
+          const entries=dk?(byDate[dk]||[]):[];
+          const dNum=dk?parseInt(dk.slice(8),10):null;
+          const isDropTarget=dragOver===dk;
           return e('div',{
             key:ci,
+            onDragOver:ev=>onCellDragOver(ev,dk),
+            onDrop:ev=>onCellDrop(ev,dk),
+            onDragLeave:()=>{if(dragOver===dk)setDragOver(null);},
             style:{
-              minHeight:70,border:isToday?'1.5px solid #c9a35c':BDR,
-              borderRadius:6,padding:'4px 5px',boxSizing:'border-box',
-              background:isOtherMonth?'transparent':isToday?'rgba(201,163,92,.06)':isWknd?'rgba(255,255,255,.013)':'transparent',
-              display:'flex',flexDirection:'column',gap:2,overflow:'hidden'
+              minHeight:72,border:isDropTarget?'1.5px dashed #c9a35c':isToday?'1.5px solid #c9a35c':BDR,
+              borderRadius:6,padding:'4px 4px 4px 4px',boxSizing:'border-box',
+              background:isDropTarget?'rgba(201,163,92,.10)':!dk?'transparent':isToday?'rgba(201,163,92,.06)':isWknd?'rgba(255,255,255,.013)':'transparent',
+              display:'flex',flexDirection:'column',gap:2,overflow:'hidden',
+              transition:'background .1s,border-color .1s'
             }
           },
-            dNum&&e('span',{style:{
-              fontSize:10,fontFamily:'Inter,sans-serif',fontWeight:isToday?700:400,
+            dNum&&e('span',{style:{fontSize:10,fontFamily:'Inter,sans-serif',fontWeight:isToday?700:400,
               color:isToday?'#c9a35c':isWknd?'var(--text4)':'var(--text3)',
-              lineHeight:1,marginBottom:2,userSelect:'none'
-            }},dNum),
-            chips.slice(0,4).map(s=>e('div',{
-              key:s.id,
-              title:s.name+(s.done?' (hecho)':''),
-              style:{
-                fontSize:9.5,fontFamily:'Inter,sans-serif',fontWeight:500,
-                color:'#fff',background:chipColor(s),
-                borderRadius:3,padding:'2px 5px',
-                whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',
-                opacity:s.done?.6:1,lineHeight:1.3,cursor:'default'
-              }
-            },s.name)),
-            chips.length>4&&e('div',{style:{fontSize:9,color:'var(--text4)',fontFamily:'Inter,sans-serif',lineHeight:1,paddingLeft:2}},
-              '+'+(chips.length-4)+' más')
+              lineHeight:1,marginBottom:2,userSelect:'none',flexShrink:0}},dNum),
+            entries.slice(0,6).map((entry,idx)=>renderChip(entry,idx)),
+            entries.length>6&&e('div',{style:{fontSize:8.5,color:'var(--text4)',fontFamily:'Inter,sans-serif',lineHeight:1,paddingLeft:2}},
+              '+'+(entries.length-6)+' más')
           );
         })
       ),
 
-      // ── leyenda inferior: fases sin fecha en este modo ──
+      // ── sin fecha ──
       (()=>{
         const sinFecha=steps.filter(s=>!s[dateField]&&!s.done);
         if(!sinFecha.length)return null;
-        return e('div',{style:{marginTop:10,paddingTop:8,borderTop:BDR}},
+        return e('div',{
+          style:{marginTop:10,paddingTop:8,borderTop:BDR},
+          onDragOver:ev=>{ev.preventDefault();ev.dataTransfer.dropEffect='none';},
+        },
           e('p',{style:{fontSize:9.5,fontFamily:'Inter,sans-serif',color:'var(--text4)',margin:'0 0 5px',fontWeight:600,textTransform:'uppercase',letterSpacing:'.05em'}},
             'Sin fecha de '+(mode==='entrega'?'entrega':'inicio')+' ('+sinFecha.length+')'),
           e('div',{style:{display:'flex',flexWrap:'wrap',gap:4}},
-            sinFecha.map(s=>e('div',{key:s.id,
-              title:'Sin fecha — edítala en la lista',
+            sinFecha.map(s=>e('div',{
+              key:s.id,draggable:false,
+              title:'Sin fecha — edítala en la lista izquierda',
               style:{fontSize:9.5,fontFamily:'Inter,sans-serif',fontWeight:500,
                 color:'#fff',background:chipColor(s),
-                borderRadius:3,padding:'2px 6px',opacity:.55,
+                borderRadius:3,padding:'2px 6px',opacity:.45,
                 whiteSpace:'nowrap',overflow:'hidden',maxWidth:140,textOverflow:'ellipsis'
               }
             },s.name))
