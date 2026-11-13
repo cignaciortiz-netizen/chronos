@@ -7097,8 +7097,7 @@ function ChronosDatePicker({value,onChange,placeholder,style}){
 // ── CalendarPanel: calendario mensual con toggle Preparación / Entrega ──
 // Soporta drag & drop de chips (fases y subtareas) entre días
 // y expansión de fases para ver/arrastrar sus subtareas
-function CalendarPanel({steps,updateStep,today,barColor}){
-  const[mode,setMode]=useState('entrega');
+function CalendarPanel({steps,updateStep,today,barColor,mode,setMode}){
   const[nav,setNav]=useState(()=>{const d=new Date(today+'T00:00:00');return{y:d.getFullYear(),m:d.getMonth()};});
   const[expanded,setExpanded]=useState(()=>new Set()); // ids de fases expandidas
   const[drag,setDrag]=useState(null); // {kind:'phase'|'sub',stepId,subId?,name,color,origDate}
@@ -7267,11 +7266,11 @@ function CalendarPanel({steps,updateStep,today,barColor}){
           const isDropTarget=dragOver===dk;
           return e('div',{
             key:ci,
-            onDragOver:ev=>onCellDragOver(ev,dk),
-            onDrop:ev=>onCellDrop(ev,dk),
-            onDragLeave:()=>{if(dragOver===dk)setDragOver(null);},
+            onDragOver:dk?ev=>onCellDragOver(ev,dk):undefined,
+            onDrop:dk?ev=>onCellDrop(ev,dk):undefined,
+            onDragLeave:dk?()=>{if(dragOver===dk)setDragOver(null);}:undefined,
             style:{
-              minHeight:72,border:isDropTarget?'1.5px dashed #c9a35c':isToday?'1.5px solid #c9a35c':BDR,
+              minHeight:72,border:isDropTarget?'1.5px dashed #c9a35c':isToday?'1.5px solid #c9a35c':dk?BDR:'none',
               borderRadius:6,padding:'4px 4px 4px 4px',boxSizing:'border-box',
               background:isDropTarget?'rgba(201,163,92,.10)':!dk?'transparent':isToday?'rgba(201,163,92,.06)':isWknd?'rgba(255,255,255,.013)':'transparent',
               display:'flex',flexDirection:'column',gap:2,overflow:'hidden',
@@ -7323,6 +7322,7 @@ function ComboView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
   const toTs=d=>new Date(d+'T00:00:00').getTime();
   const sortByDeadline=arr=>[...arr].sort((a,b)=>{if(!a.dueDate&&!b.dueDate)return 0;if(!a.dueDate)return 1;if(!b.dueDate)return -1;return a.dueDate<b.dueDate?-1:a.dueDate>b.dueDate?1:0;});
   const visSteps=sortByDeadline(steps.filter(s=>showDoneSteps||!s.done));
+  const[calMode,setCalMode]=useState('entrega'); // compartido con CalendarPanel
   const[phaseNoteOpen,setPhaseNoteOpen]=useState(null);
   const[phaseNotePos,setPhaseNotePos]=useState({top:0,left:0});
   const[phaseAssigneeOpen,setPhaseAssigneeOpen]=useState(null);
@@ -7417,7 +7417,7 @@ function ComboView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
         e('div',{style:{height:HDR_H,flexShrink:0,display:'flex',alignItems:'center',borderBottom:BDR,padding:'0 14px 0 14px',gap:0,boxSizing:'border-box'}},
           e('div',{style:{width:28,flexShrink:0}}),
           e('span',{style:{flex:1,fontSize:9.5,fontWeight:700,textTransform:'uppercase',letterSpacing:'.05em',color:'var(--text4)',fontFamily:'Inter,sans-serif'}},'Fase'),
-          e('span',{style:{width:120,flexShrink:0,fontSize:9.5,fontWeight:700,textTransform:'uppercase',letterSpacing:'.05em',color:'var(--text4)',fontFamily:'Inter,sans-serif',textAlign:'right'}}, 'Deadline')
+          e('span',{style:{width:120,flexShrink:0,fontSize:9.5,fontWeight:700,textTransform:'uppercase',letterSpacing:'.05em',color:'var(--text4)',fontFamily:'Inter,sans-serif',textAlign:'right'}},calMode==='entrega'?'Deadline':'Inicio')
         ),
 
         // rows
@@ -7676,7 +7676,7 @@ function ComboView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
       ),
 
       // ══ RIGHT: Calendario ══
-      e(CalendarPanel,{steps:visSteps,updateStep,today,barColor})
+      e(CalendarPanel,{steps:visSteps,updateStep,today,barColor,mode:calMode,setMode:setCalMode})
     ),
 
     // ── Modal pegar estructura ──
