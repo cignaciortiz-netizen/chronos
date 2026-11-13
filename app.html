@@ -3742,7 +3742,7 @@ function App(){
         // local recién cargado desde localStorage con datos remotos más
         // viejos. Primero subimos lo local para no perder el cambio.
         if(SB.isDirty()){
-          await SB.push({projects,sessions,intenciones,tasks,blocks,habits,reminders,ctxs,systems,panelLabels,panelVisibility,panelSortModes,templates,sysTemplates,subStatuses});
+          await SB.push({projects,sessions,intenciones,tasks,blocks,habits,reminders,ctxs,systems,notes,panelLabels,panelVisibility,panelSortModes,templates,sysTemplates,subStatuses});
           SB.markSynced();
           // NO hacemos return: leemos igual para restaurar recordatorios
           // y cualquier dato que no esté en localStorage por actualizar el app.
@@ -3787,6 +3787,7 @@ function App(){
               return[...(remote.reminders||[]),...onlyLocal];
             });
           }
+          if(remote.notes)             setNotes(remote.notes);
           if(remote.ctxs?.length)      setCtxs(remote.ctxs);
           if(remote.templates?.length) setTemplates(remote.templates);
           if(remote.sysTemplates?.length) setSysTemplates(remote.sysTemplates);
@@ -3948,7 +3949,7 @@ function App(){
   // always sends fresh data, not a stale closure from when the listener was added
   const sbLatestRef=useRef(null);
   useEffect(()=>{
-    sbLatestRef.current={projects,sessions,intenciones,tasks,blocks,habits,reminders,ctxs,systems,panelLabels,panelVisibility,panelSortModes,templates,sysTemplates};
+    sbLatestRef.current={projects,sessions,intenciones,tasks,blocks,habits,reminders,ctxs,systems,notes,panelLabels,panelVisibility,panelSortModes,templates,sysTemplates};
   });
   // Mirrors of activeSess/tState kept fresh every render (no dep array) so the
   // beforeunload flush and the periodic checkpoint below always see the real
@@ -5007,7 +5008,7 @@ function App(){
       onDisconnect:()=>{ SB.disconnect(); setSbStatus('disconnected'); },
       onManualSync:async()=>{
         setSbSyncing(true);
-        try{ await SB.push({projects,sessions,intenciones,tasks,blocks,habits,reminders,ctxs,systems,panelLabels,panelVisibility,panelSortModes,templates,sysTemplates}); SB.markSynced(); showNotif('☁ Sincronizado ✓'); }
+        try{ await SB.push({projects,sessions,intenciones,tasks,blocks,habits,reminders,ctxs,systems,notes,panelLabels,panelVisibility,panelSortModes,templates,sysTemplates}); SB.markSynced(); showNotif('☁ Sincronizado ✓'); }
         catch(e){ console.warn(e); }
         setSbSyncing(false);
       },
