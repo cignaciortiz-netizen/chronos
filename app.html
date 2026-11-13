@@ -621,6 +621,25 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .combo-gantt-scroll{scrollbar-width:none;-ms-overflow-style:none;-webkit-overflow-scrolling:touch;scroll-behavior:smooth}
 .combo-gantt-scroll::-webkit-scrollbar{display:none}
 /* combo row actions — toolbar flotante, no ocupa columna */
+.cv-row{display:flex;border-bottom:1px solid var(--border)}
+.cv-row.cv-sub{border-bottom-color:#ffffff08}
+.cv-left{position:sticky;left:0;z-index:3;flex-shrink:0;box-sizing:border-box;border-right:1px solid var(--border2);display:flex;align-items:center}
+.cv-row:hover .combo-ctx-chip{opacity:1!important}
+.cv-row:hover .combo-sub-del{opacity:.55!important}
+.cv-cell{position:relative;border-right:1px solid #ffffff07;display:flex;align-items:center;justify-content:center;min-width:0}
+.cv-cell.wk{background:#ffffff06}
+.cv-cell.td{background:color-mix(in srgb,var(--accent2) 10%,transparent)}
+.cv-cell.ck{cursor:pointer}
+.cv-cell.ck:hover{background:color-mix(in srgb,var(--accent2) 20%,transparent)}
+.cv-run{position:absolute;right:0;top:50%;height:2px;margin-top:-1px;opacity:.5;pointer-events:none}
+.cv-dot{width:7px;height:7px;border-radius:50%;position:relative;z-index:1}
+.cv-dl{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:2;height:22px;padding:0 7px;border-radius:6px;display:flex;align-items:center;font:600 10.5px Inter,sans-serif;color:#1a0a02;white-space:nowrap;cursor:grab}
+.cv-tk{position:absolute;left:2px;right:2px;top:50%;transform:translateY(-50%);height:20px;border-radius:5px;border:1px solid var(--border3);display:flex;align-items:center;justify-content:center;font:500 10px Inter,sans-serif;color:var(--text1);white-space:nowrap;overflow:hidden;cursor:grab;z-index:1;box-sizing:border-box}
+.cv-tk.done{background:var(--green-bg);border-color:var(--green-border);color:var(--green)}
+.cv-tk.late{background:var(--red-bg);border-color:var(--red-border);color:var(--red)}
+.cv-tk.ghost{border-style:dashed;border-color:var(--accent2);color:var(--accent2);background:transparent;cursor:pointer}
+.cv-pill{font:500 11px Inter,sans-serif;padding:3px 10px;border-radius:10px;background:var(--amber-bg);border:1px solid var(--amber-border);color:var(--amber);max-width:420px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cv-pill.late{background:var(--red-bg);border-color:var(--red-border);color:var(--red)}
 .combo-row-wrap{position:relative}
 .combo-row{cursor:default}
 .combo-row:hover .combo-ctx-chip{opacity:1!important}
@@ -7578,73 +7597,152 @@ function ComboView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
     return psi.color||STATUS_COLOR[stepStatus(s)];
   }
 
-  const ROW_H=44;
-  const HDR_H=38;
+  // ══ Vista unificada: cada fila de la lista es también su fila en la línea de tiempo ══
+  const ROW_H=40,SUB_H=30,HDR_H=40,LEFT_W=400;
   const BDR='1px solid var(--border)';
+  const CVBG='var(--bg2)';
   const activeStep=steps.find(s=>!s.done);
+  const ZOOM_W=[16,24,34,48,70],ZOOM_LABELS=['XS','S','M','L','XL'];
+  const DOWS=['dom','lun','mar','mié','jue','vie','sáb'];
+  const[zoom,setZoomRaw]=useState(()=>{try{const v=localStorage.getItem('chr4_combo_zoom');const z=Number(v);return v!==null&&z>=0&&z<=4?z:2;}catch(err){return 2;}});
+  const setZoom=z=>{setZoomRaw(z);try{localStorage.setItem('chr4_combo_zoom',String(z));}catch(err){}};
+  const[collapsedRows,setCollapsedRows]=useState(()=>new Set(steps.filter(s=>s.done).map(s=>s.id)));
+  const[newSubDate,setNewSubDate]=useState({}); // {stepId: 'YYYY-MM-DD'} día elegido para la próxima tarea
+  const[showStatusEditor,setShowStatusEditor]=useState(false);
+  const dragRef=useRef(null);
+  const scrollerRef=useRef(null);
+  const W=ZOOM_W[zoom];
+
+  const pad2=n=>String(n).padStart(2,'0');
+  const fmtD=d=>d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate());
+  const addD=(k,n)=>{const d=new Date(k+'T12:00:00');d.setDate(d.getDate()+n);return fmtD(d);};
+
+  // rango de días: desde 2 días antes de lo más antiguo hasta 5 después de lo último (mínimo 3 semanas)
+  const allK=[today];
+  visSteps.forEach(s=>{if(s.dueDate)allK.push(s.dueDate);(s.subtasks||[]).forEach(x=>{if(x.dueDate)allK.push(x.dueDate);});});
+  allK.sort();
+  const rangeStart=addD(allK[0],-2);
+  let rangeEnd=addD(allK[allK.length-1],5);
+  if(rangeEnd<addD(rangeStart,20))rangeEnd=addD(rangeStart,20);
+  const days=[];
+  for(let k=rangeStart;k<=rangeEnd&&days.length<400;k=addD(k,1)){const d=new Date(k+'T12:00:00');days.push({key:k,dom:d.getDate(),dow:d.getDay(),mon:d.getMonth()});}
+  const gridStyle={flex:1,display:'grid',gridTemplateColumns:'repeat('+days.length+',minmax('+W+'px,1fr))',minWidth:days.length*W};
+  const rowMinW=LEFT_W+days.length*W;
+
+  function scrollToToday(){
+    const sc=scrollerRef.current;if(!sc)return;
+    const idx=days.findIndex(d=>d.key===today);if(idx<0)return;
+    const colW=(sc.scrollWidth-LEFT_W)/days.length;
+    sc.scrollLeft=Math.max(0,idx*colW-colW*2);
+  }
+  useEffect(()=>{scrollToToday();},[zoom]);
+
+  function updSub(stepId,subId,patch){updateStep(stepId,s=>({subtasks:(s.subtasks||[]).map(x=>x.id===subId?{...x,...patch}:x)}));}
+  function addSubWithDate(stepId){
+    const txt=(newSubText[stepId]||'').trim();if(!txt)return;
+    const dt=newSubDate[stepId]||null;
+    updateStep(stepId,s=>({subtasks:[...(s.subtasks||[]),{id:uid(),name:txt,done:false,dueDate:dt}]}));
+    setNewSubText(p=>({...p,[stepId]:''}));
+    // la siguiente tarea se propone para el día siguiente (flujo: 13, 14, 15…)
+    setNewSubDate(p=>({...p,[stepId]:dt?addD(dt,1):undefined}));
+  }
+  function toggleCollapse(id){setCollapsedRows(s=>{const n=new Set(s);n.has(id)?n.delete(id):n.add(id);return n;});}
+
+  function dayCells(h,render,onPick,canDrop,onDropDay){
+    return e('div',{style:{...gridStyle,height:h}},days.map(d=>e('div',{key:d.key,
+      className:'cv-cell'+(d.key===today?' td':(d.dow===0||d.dow===6)?' wk':'')+(onPick?' ck':''),
+      onClick:onPick?()=>onPick(d.key):undefined,
+      onDragOver:canDrop?ev=>{if(canDrop())ev.preventDefault();}:undefined,
+      onDrop:canDrop?ev=>{if(canDrop()){ev.preventDefault();const dr=dragRef.current;dragRef.current=null;onDropDay(d.key,dr);}}:undefined
+    },render?render(d):null)));
+  }
+
+  // resumen superior
+  const allSubs=[];steps.forEach(s=>(s.subtasks||[]).forEach(x=>allSubs.push({...x,_phase:s.name,_phaseDone:s.done})));
+  const subsTotal=allSubs.length,subsDone=allSubs.filter(x=>x.done).length;
+  const todaySubs=allSubs.filter(x=>!x.done&&x.dueDate===today);
+  const lateSubs=allSubs.filter(x=>!x.done&&!x._phaseDone&&x.dueDate&&x.dueDate<today);
+  const unsched=allSubs.filter(x=>!x.done&&!x._phaseDone&&!x.dueDate).length;
+  const mutedTxt={fontSize:11,color:'var(--text4)',fontFamily:'Inter,sans-serif'};
+  const openRowCtx=(ev,id)=>{
+    ev.preventDefault();ev.stopPropagation();
+    const vw=window.innerWidth,vh=window.innerHeight,MW=168,MH=110;
+    let left=ev.clientX,top=ev.clientY;
+    if(left+MW>vw-8)left=vw-MW-8;
+    if(top+MH>vh-8)top=vh-MH-8;
+    setStepRowCtx({id,top,left});
+  };
 
   return e('div',{style:{display:'flex',flexDirection:'column',flex:1,minHeight:0,overflow:'hidden'}},
 
-    // ── main split ──
-    e('div',{style:{display:'flex',flex:1,minHeight:0,overflow:'hidden'}},
+    // ── barra superior: avance, qué toca hoy, zoom ──
+    e('div',{style:{display:'flex',alignItems:'center',gap:10,padding:'0 2px 10px',flexShrink:0,flexWrap:'wrap'}},
+      e('span',{style:{fontSize:11,color:'var(--text3)',fontFamily:'Inter,sans-serif'}},doneCount+'/'+total+' fases'+(subsTotal?' · '+subsDone+'/'+subsTotal+' tareas':'')),
+      todaySubs.length>0&&e('span',{className:'cv-pill',title:todaySubs.map(x=>x.name+' — '+x._phase).join('\n')},
+        'Hoy: '+todaySubs.slice(0,2).map(x=>x.name).join(' · ')+(todaySubs.length>2?' +'+(todaySubs.length-2):'')),
+      todaySubs.length===0&&subsTotal>0&&e('span',{style:mutedTxt},'Nada agendado para hoy'),
+      lateSubs.length>0&&e('span',{className:'cv-pill late',title:lateSubs.map(x=>x.name+' — '+x._phase).join('\n')},lateSubs.length+(lateSubs.length===1?' atrasada':' atrasadas')),
+      unsched>0&&e('span',{style:mutedTxt,title:'Tareas sin día asignado: haz clic en un día de su fila'},unsched+' sin día'),
+      e('div',{style:{flex:1}}),
+      e('button',{className:'btn',style:{fontSize:10.5,padding:'4px 10px'},onClick:scrollToToday},'Hoy'),
+      e('div',{style:{display:'flex',border:'1px solid var(--border2)',borderRadius:'var(--r-md)',overflow:'hidden'}},
+        ZOOM_LABELS.map((lb,i)=>e('button',{key:lb,onClick:()=>setZoom(i),title:'Zoom '+lb,
+          style:{fontSize:9.5,fontWeight:600,padding:'4px 8px',border:'none',cursor:'pointer',fontFamily:'Inter,sans-serif',
+            background:zoom===i?'var(--accent2)':'transparent',color:zoom===i?'#1a0a02':'var(--text4)'}},lb))),
+      e('button',{className:'btn',style:{fontSize:10.5,padding:'4px 10px'},onClick:()=>setShowStatusEditor(true)},'Estados')
+    ),
 
-      // ══ LEFT: columna limpia ══
-      // ancho: 38px(dot) + nombre(flex) + 112px(fecha) + 28px(del) = ~380px mínimo, sin límite superior
-      e('div',{style:{width:'clamp(320px,38%,520px)',flexShrink:0,display:'flex',flexDirection:'column',borderRight:BDR,overflow:'hidden'}},
+    // ── tabla única con scroll ──
+    e('div',{ref:scrollerRef,style:{flex:1,minHeight:0,overflow:'auto',border:BDR,borderRadius:'var(--r-md)'}},
 
-        // header — dot(28) | Fase(flex) | Deadline(120)
-        e('div',{style:{height:HDR_H,flexShrink:0,display:'flex',alignItems:'center',borderBottom:BDR,padding:'0 14px 0 14px',gap:0,boxSizing:'border-box'}},
-          e('div',{style:{width:28,flexShrink:0}}),
-          e('span',{style:{flex:1,fontSize:9.5,fontWeight:700,textTransform:'uppercase',letterSpacing:'.05em',color:'var(--text4)',fontFamily:'Inter,sans-serif'}},'Fase'),
-          e('span',{style:{width:120,flexShrink:0,fontSize:9.5,fontWeight:700,textTransform:'uppercase',letterSpacing:'.05em',color:'var(--text4)',fontFamily:'Inter,sans-serif',textAlign:'right'}},calMode==='entrega'?'Deadline':'Inicio')
+      // encabezado
+      e('div',{className:'cv-row',style:{minWidth:rowMinW,position:'sticky',top:0,zIndex:6,background:CVBG}},
+        e('div',{className:'cv-left',style:{width:LEFT_W,height:HDR_H,background:CVBG,padding:'0 14px',zIndex:7}},
+          e('span',{style:{flex:1,fontSize:9.5,fontWeight:700,textTransform:'uppercase',letterSpacing:'.05em',color:'var(--text4)',fontFamily:'Inter,sans-serif'}},'Fase / tarea'),
+          e('span',{style:{width:112,flexShrink:0,fontSize:9.5,fontWeight:700,textTransform:'uppercase',letterSpacing:'.05em',color:'var(--text4)',fontFamily:'Inter,sans-serif',textAlign:'right',paddingRight:8}},'Deadline')
         ),
+        e('div',{style:{...gridStyle,height:HDR_H}},days.map((d,i)=>e('div',{key:d.key,
+          className:'cv-cell'+(d.key===today?' td':(d.dow===0||d.dow===6)?' wk':''),
+          style:{flexDirection:'column',justifyContent:'flex-end',paddingBottom:5,overflow:'visible'}},
+          (d.dom===1||i===0)&&e('span',{style:{position:'absolute',top:4,left:4,fontSize:9,fontWeight:700,letterSpacing:'.05em',textTransform:'uppercase',color:'var(--text3)',fontFamily:'Inter,sans-serif',whiteSpace:'nowrap',zIndex:1}},MONTHS_SHORT[d.mon]),
+          W>=48&&e('span',{style:{fontSize:8.5,color:'var(--text4)',fontFamily:'Inter,sans-serif',lineHeight:1}},DOWS[d.dow]),
+          (W>=24||d.dow===1||d.key===today)&&e('span',{style:{fontSize:10,fontWeight:d.key===today?700:500,fontFamily:'Inter,sans-serif',lineHeight:1.3,
+            color:d.key===today?'var(--accent2)':(d.dow===0||d.dow===6)?'var(--text4)':'var(--text3)'}},d.dom)
+        )))
+      ),
 
-        // rows
-        e('div',{style:{overflowY:'auto',flex:1}},
-          visSteps.length===0&&e('div',{style:{padding:'20px 12px',color:'var(--text4)',fontSize:12,fontFamily:'Inter,sans-serif'}},'Sin fases. Agrégalas abajo.'),
-          visSteps.map(s=>{
-            const isActive=!!activeStep&&activeStep.id===s.id;
-            const psStatuses=loadSubStatuses();
-            const psSt=subStatusInfo(s.status||'todo',psStatuses);
-            const isOpen=phaseStatusPicker===s.id;
-            const isExpanded=expandedRows.has(s.id);
-            const subs=s.subtasks||[];
-            const dateColor=s.dueDate?(()=>{const d=s.dueDate,t=dayKey();return d<t?'var(--red,#e05555)':d===t?'var(--amber,#dba14a)':'var(--text2)'})():'var(--text4)';
-            return e('div',{
-              key:s.id,
-              className:'combo-row-wrap',
-              style:{borderBottom:BDR,background:isActive?'color-mix(in srgb, var(--accent2) 6%, transparent)':s.done?'rgba(255,255,255,.01)':'transparent'}
-            },
-            // ── fila principal ──
-            e('div',{
-              className:'combo-row',
-              onContextMenu:ev=>{
-                ev.preventDefault();ev.stopPropagation();
-                const vw=window.innerWidth,vh=window.innerHeight;
-                const MW=168,MH=110;
-                let left=ev.clientX,top=ev.clientY;
-                if(left+MW>vw-8)left=vw-MW-8;
-                if(top+MH>vh-8)top=vh-MH-8;
-                setStepRowCtx({id:s.id,top,left});
-              },
-              style:{
-                height:ROW_H,display:'flex',alignItems:'center',gap:0,
-                padding:'0 6px 0 14px',boxSizing:'border-box',
-                opacity:s.done?.6:1
-              }
-            },
-              // dot estado
-              e('div',{style:{width:28,flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',position:'relative'}},
-                e('button',{
-                  title:'Estado · clic para cambiar',
+      visSteps.length===0&&e('div',{style:{padding:'20px 14px',color:'var(--text4)',fontSize:12,fontFamily:'Inter,sans-serif'}},'Sin fases. Agrega la primera abajo.'),
+
+      visSteps.map(s=>{
+        const isActive=!!activeStep&&activeStep.id===s.id;
+        const psStatuses=loadSubStatuses();
+        const psSt=subStatusInfo(s.status||'todo',psStatuses);
+        const isOpen=phaseStatusPicker===s.id;
+        const isExpanded=!collapsedRows.has(s.id);
+        const subs=s.subtasks||[];
+        const subsVis=subs.filter(x=>showDoneSteps||!x.done||!s.done);
+        // color de la fase: etiqueta si tiene; si está en el estado inicial, el acento ámbar; si no, el del estado
+        const col=labelColor(s.label)||((s.status||'todo')==='todo'&&!s.done?'var(--accent2)':barColor(s));
+        const subDates=subs.filter(x=>x.dueDate).map(x=>x.dueDate).sort();
+        let runStart=subDates.length?subDates[0]:null;
+        if(s.startDate&&s.dueDate&&s.startDate<s.dueDate&&(!runStart||s.startDate<runStart))runStart=s.startDate;
+        const rowBg=isActive?'color-mix(in srgb, var(--accent2) 6%, var(--bg2))':CVBG;
+        const pendDate=newSubDate[s.id];
+        return e(React.Fragment,{key:s.id},
+
+          // ── fila de fase ──
+          e('div',{className:'cv-row',style:{minWidth:rowMinW,opacity:s.done?.6:1},onContextMenu:ev=>openRowCtx(ev,s.id)},
+            e('div',{className:'cv-left',style:{width:LEFT_W,height:ROW_H,background:rowBg,padding:'0 6px 0 8px',zIndex:isOpen?20:3}},
+              e('button',{title:isExpanded?'Ocultar tareas':'Ver tareas',onClick:()=>toggleCollapse(s.id),
+                style:{width:20,height:22,flexShrink:0,border:'none',background:'none',cursor:'pointer',padding:0,color:'var(--text3)',display:'flex',alignItems:'center',justifyContent:'center'}},
+                e('span',{style:{fontSize:13,fontWeight:700,lineHeight:1,display:'inline-block',transition:'transform .15s',transform:isExpanded?'rotate(90deg)':'none'}},'›')),
+              e('div',{style:{width:24,flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',position:'relative'}},
+                e('button',{title:'Estado · clic para cambiar',
                   onMouseDown:ev=>{ev.stopPropagation();ev.preventDefault();setPhaseStatusPicker(isOpen?null:s.id);},
                   style:{width:14,height:14,borderRadius:'50%',border:'2px solid '+psSt.color,cursor:'pointer',padding:0,
-                    background:psSt.k==='done'?psSt.color:'transparent',
-                    display:'flex',alignItems:'center',justifyContent:'center',transition:'all .15s',flexShrink:0}
-                },
+                    background:psSt.k==='done'?psSt.color:'transparent',display:'flex',alignItems:'center',justifyContent:'center',transition:'all .15s',flexShrink:0}},
                   psSt.k==='done'&&e('svg',{width:7,height:7,viewBox:'0 0 7 7',fill:'none'},
-                    e('polyline',{points:'1,3.5 2.8,5.5 6,1.5',stroke:'#fff',strokeWidth:1.4,strokeLinecap:'round',strokeLinejoin:'round'}))
-                ),
+                    e('polyline',{points:'1,3.5 2.8,5.5 6,1.5',stroke:'#fff',strokeWidth:1.4,strokeLinecap:'round',strokeLinejoin:'round'}))),
                 isOpen&&e('div',{onMouseDown:ev=>ev.stopPropagation(),
                   style:{position:'absolute',left:0,top:'calc(100% + 5px)',zIndex:700,background:'var(--bg2)',border:'1px solid var(--border2)',borderRadius:'var(--r-md)',boxShadow:'0 8px 24px #0009',padding:4,minWidth:145}},
                   psStatuses.map(st=>{const sc=subStatusColor(st.colorId);const isCur=(s.status||'todo')===st.k;
@@ -7652,139 +7750,117 @@ function ComboView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
                       style:{display:'flex',alignItems:'center',gap:8,width:'100%',textAlign:'left',padding:'6px 9px',borderRadius:5,border:'none',background:isCur?'var(--bg4)':'transparent',cursor:'pointer',fontFamily:'Inter,sans-serif',fontSize:11,color:sc.color}},
                       e('div',{style:{width:8,height:8,borderRadius:'50%',background:sc.color,flexShrink:0}}),st.label,
                       isCur&&e('span',{style:{marginLeft:'auto',fontSize:10,opacity:.5}},'✓'));
-                  })
-                )
+                  }))
               ),
-              // nombre (flex) + indicadores pasivos
-              e('div',{style:{flex:1,minWidth:0,display:'flex',alignItems:'center',gap:5,overflow:'hidden'}},
-                e('input',{
-                  value:s.name,
-                  onChange:ev=>updateStep(s.id,{name:ev.target.value}),
-                  style:{
-                    flex:1,minWidth:0,background:'transparent',border:'none',outline:'none',
-                    fontSize:12.5,fontFamily:'Inter,sans-serif',color:s.done?'var(--text3)':'var(--text1)',
-                    textDecoration:s.done?'line-through':'none',padding:0,
-                    overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'
-                  }
-                }),
-                // zona de click derecho + indicadores pasivos
-                e('div',{
-                  title:'Click derecho para opciones',
-                  onContextMenu:ev=>{
-                    ev.preventDefault();ev.stopPropagation();
-                    const vw=window.innerWidth,vh=window.innerHeight;
-                    const MW=168,MH=110;
-                    let left=ev.clientX,top=ev.clientY;
-                    if(left+MW>vw-8)left=vw-MW-8;
-                    if(top+MH>vh-8)top=vh-MH-8;
-                    setStepRowCtx({id:s.id,top,left});
-                  },
-                  className:'combo-ctx-chip',
-                  style:{display:'flex',alignItems:'center',gap:3,flexShrink:0,padding:'2px 5px',borderRadius:5,cursor:'context-menu',
-                    border:'1px solid var(--border)',background:'var(--bg3)',
-                    opacity:(s.note||s.assignee)?1:0,transition:'opacity .12s'}
-                },
-                  e('span',{style:{fontSize:9,color:'var(--text4)',lineHeight:1,userSelect:'none',fontFamily:'Inter,sans-serif'}},'···'),
-                  s.note&&e('span',{title:'Tiene nota',style:{fontSize:9,color:'var(--accent2)',lineHeight:1,fontFamily:'Inter,sans-serif',userSelect:'none'}},'✎'),
-                  s.assignee&&e('span',{title:'Delegado a '+s.assignee,style:{fontSize:9,color:'var(--text3)',lineHeight:1,fontFamily:'Inter,sans-serif',userSelect:'none'}},'◎')
-                )
-              ),
-              // fecha
-              e(ChronosDatePicker,{
-                value:s.dueDate||'',
+              e('input',{value:s.name,title:s.name,onChange:ev=>updateStep(s.id,{name:ev.target.value}),
+                style:{flex:1,minWidth:0,background:'transparent',border:'none',outline:'none',fontSize:12.5,fontWeight:600,fontFamily:'Inter,sans-serif',
+                  color:s.done?'var(--text3)':'var(--text1)',textDecoration:s.done?'line-through':'none',padding:0,textOverflow:'ellipsis'}}),
+              e('div',{title:'Click derecho para opciones',onContextMenu:ev=>openRowCtx(ev,s.id),className:'combo-ctx-chip',
+                style:{display:'flex',alignItems:'center',gap:3,flexShrink:0,padding:'2px 5px',borderRadius:5,cursor:'context-menu',marginLeft:4,
+                  border:'1px solid var(--border)',background:'var(--bg3)',opacity:(s.note||s.assignee)?1:0,transition:'opacity .12s'}},
+                e('span',{style:{fontSize:9,color:'var(--text4)',lineHeight:1,userSelect:'none',fontFamily:'Inter,sans-serif'}},'···'),
+                s.note&&e('span',{title:'Tiene nota',style:{fontSize:9,color:'var(--accent2)',lineHeight:1,userSelect:'none'}},'✎'),
+                s.assignee&&e('span',{title:'Delegado a '+s.assignee,style:{fontSize:9,color:'var(--text3)',lineHeight:1,userSelect:'none'}},'◎')),
+              subs.length>0&&e('span',{title:'Tareas hechas / total',style:{fontSize:10,color:'var(--text4)',fontFamily:"'JetBrains Mono',monospace",flexShrink:0,marginLeft:6}},subs.filter(x=>x.done).length+'/'+subs.length),
+              e(ChronosDatePicker,{value:s.dueDate||'',
                 onChange:v=>{if(v&&s.startDate&&v<s.startDate)updateStep(s.id,{dueDate:v,startDate:v});else updateStep(s.id,{dueDate:v||null});},
-                style:{width:120,flexShrink:0}
-              }),
-              // botón expandir subtareas
-              e('button',{
-                title:isExpanded?'Ocultar tareas':'Ver tareas'+(subs.length?' ('+subs.length+')':''),
-                onClick:ev=>{ev.stopPropagation();toggleExpand(s.id);},
-                className:'combo-expand-btn'+(isExpanded?' open':'')+(subs.length?' has-subs':''),
-                style:{width:22,height:22,flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',
-                  border:'none',background:'none',cursor:'pointer',borderRadius:4,padding:0,marginLeft:4,
-                  color:subs.length?'var(--accent2)':'var(--text4)',opacity:subs.length?1:0,transition:'opacity .15s,transform .15s'}
-              },
-                subs.length>0
-                  ?e('span',{style:{fontSize:10,fontFamily:'Inter,sans-serif',fontWeight:700,lineHeight:1,
-                      transform:isExpanded?'rotate(90deg)':'rotate(0deg)',display:'inline-block',transition:'transform .15s'}},'›')
-                  :e('span',{style:{fontSize:10,color:'var(--text4)',lineHeight:1}},'+')
-              )
+                style:{width:112,flexShrink:0}})
             ),
-            // ── bloque subtareas desplegable ──
-            isExpanded&&e('div',{style:{paddingLeft:42,paddingRight:14,paddingBottom:8,paddingTop:2}},
-              subs.map(sub=>e('div',{key:sub.id,
-                style:{display:'flex',alignItems:'center',gap:6,padding:'3px 0',minHeight:24}},
-                e('button',{
-                  onClick:()=>toggleSubDone(s.id,sub.id),
-                  title:sub.done?'Reabrir':'Marcar hecha',
-                  style:{width:12,height:12,borderRadius:'50%',border:'1.5px solid '+(sub.done?'var(--accent2)':'var(--border3)'),
-                    background:sub.done?'var(--accent2)':'transparent',flexShrink:0,padding:0,cursor:'pointer',
-                    display:'flex',alignItems:'center',justifyContent:'center',transition:'all .12s'}
-                },
+            dayCells(ROW_H,d=>{
+              const out=[];
+              if(s.dueDate&&runStart&&runStart<s.dueDate&&d.key>=runStart&&d.key<s.dueDate)
+                out.push(e('span',{key:'r',className:'cv-run',style:{background:col,left:d.key===runStart?'50%':0}}));
+              if(d.key===s.dueDate){
+                out.push(e('div',{key:'dl',className:'cv-dl',draggable:true,title:'Deadline: '+s.name+' · arrastra para moverlo',
+                  onClick:ev=>ev.stopPropagation(),
+                  onDragStart:ev=>{dragRef.current={kind:'phase',stepId:s.id};try{ev.dataTransfer.setData('text/plain',s.id);ev.dataTransfer.effectAllowed='move';}catch(err){}},
+                  onDragEnd:()=>{dragRef.current=null;},
+                  style:{background:col,textDecoration:s.done?'line-through':'none'}},
+                  W>=34?d.dom+' '+MONTHS_SHORT[d.mon].toLowerCase():String(d.dom)));
+              }else if(!isExpanded){
+                const here=subs.filter(x=>x.dueDate===d.key);
+                if(here.length)out.push(e('span',{key:'d',className:'cv-dot',title:here.map(x=>x.name).join(' · '),
+                  style:{background:here.every(x=>x.done)?'var(--green)':col}}));
+              }
+              return out;
+            },
+            s.dueDate?null:k=>updateStep(s.id,{dueDate:k,startDate:k}),
+            ()=>{const dr=dragRef.current;return !!dr&&dr.kind==='phase'&&dr.stepId===s.id;},
+            k=>{if(s.startDate&&k<s.startDate)updateStep(s.id,{dueDate:k,startDate:k});else updateStep(s.id,{dueDate:k});})
+          ),
+
+          // ── filas de tareas ──
+          isExpanded&&subsVis.map(sub=>{
+            const late=!sub.done&&sub.dueDate&&((s.dueDate&&sub.dueDate>s.dueDate)||sub.dueDate<today);
+            return e('div',{key:sub.id,className:'cv-row cv-sub',style:{minWidth:rowMinW}},
+              e('div',{className:'cv-left',style:{width:LEFT_W,height:SUB_H,background:CVBG,padding:'0 8px 0 54px',gap:8}},
+                e('button',{onClick:()=>updSub(s.id,sub.id,{done:!sub.done}),title:sub.done?'Reabrir':'Marcar hecha',
+                  style:{width:13,height:13,borderRadius:'50%',border:'1.5px solid '+(sub.done?'var(--green)':'var(--border4)'),
+                    background:sub.done?'var(--green)':'transparent',flexShrink:0,padding:0,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',transition:'all .12s'}},
                   sub.done&&e('svg',{width:7,height:7,viewBox:'0 0 7 7',fill:'none'},
-                    e('polyline',{points:'1,3.5 2.8,5.5 6,1.5',stroke:'#fff',strokeWidth:1.5,strokeLinecap:'round',strokeLinejoin:'round'}))
-                ),
-                e('span',{
-                  style:{flex:1,fontSize:11.5,fontFamily:'Inter,sans-serif',
-                    color:sub.done?'var(--text4)':'var(--text1)',
-                    textDecoration:sub.done?'line-through':'none',lineHeight:1.3}
-                },sub.name),
-                e('button',{
-                  onClick:()=>deleteSubtask(s.id,sub.id),
-                  title:'Eliminar tarea',
-                  style:{width:16,height:16,border:'none',background:'none',cursor:'pointer',
-                    color:'var(--text4)',fontSize:12,padding:0,opacity:0,lineHeight:1,
-                    flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',
-                    borderRadius:3,transition:'opacity .12s'},
-                  className:'combo-sub-del'
-                },'×')
-              )),
-              // input nueva tarea
-              e('div',{style:{display:'flex',alignItems:'center',gap:6,marginTop:4}},
-                e('div',{style:{width:12,height:12,flexShrink:0}}),
-                e('input',{
-                  placeholder:'Nueva tarea…',
-                  value:newSubText[s.id]||'',
-                  onChange:ev=>setNewSubText(p=>({...p,[s.id]:ev.target.value})),
-                  onKeyDown:ev=>{
-                    if(ev.key==='Enter'){ev.preventDefault();addSubtask(s.id);}
-                    if(ev.key==='Escape')setExpandedRows(r=>{const n=new Set(r);n.delete(s.id);return n;});
-                  },
-                  style:{flex:1,background:'transparent',border:'none',borderBottom:'1px solid var(--border2)',
-                    outline:'none',fontSize:11.5,fontFamily:'Inter,sans-serif',color:'var(--text2)',
-                    padding:'2px 0',lineHeight:1.4}
-                })
-              )
-            )
+                    e('polyline',{points:'1,3.5 2.8,5.5 6,1.5',stroke:'#fff',strokeWidth:1.5,strokeLinecap:'round',strokeLinejoin:'round'}))),
+                e('input',{value:sub.name,title:sub.name,onChange:ev=>updSub(s.id,sub.id,{name:ev.target.value}),
+                  style:{flex:1,minWidth:0,background:'transparent',border:'none',outline:'none',fontSize:11.5,fontFamily:'Inter,sans-serif',padding:0,textOverflow:'ellipsis',
+                    color:sub.done?'var(--text4)':'var(--text2)',textDecoration:sub.done?'line-through':'none'}}),
+                !sub.dueDate&&!sub.done&&e('span',{style:{fontSize:9.5,color:'var(--text4)',fontFamily:'Inter,sans-serif',flexShrink:0,whiteSpace:'nowrap'}},'elige un día →'),
+                sub.dueDate&&e('button',{onClick:()=>updSub(s.id,sub.id,{dueDate:null}),title:'Quitar el día',className:'combo-sub-del',
+                  style:{border:'none',background:'none',cursor:'pointer',color:'var(--text4)',fontSize:9.5,padding:0,opacity:0,flexShrink:0,fontFamily:"'JetBrains Mono',monospace"}},
+                  sub.dueDate.slice(8)+'/'+sub.dueDate.slice(5,7)),
+                e('button',{onClick:()=>updateStep(s.id,st=>({subtasks:(st.subtasks||[]).filter(x=>x.id!==sub.id)})),title:'Eliminar tarea',className:'combo-sub-del',
+                  style:{width:16,height:16,border:'none',background:'none',cursor:'pointer',color:'var(--text4)',fontSize:13,padding:0,opacity:0,lineHeight:1,flexShrink:0}},'×')
+              ),
+              dayCells(SUB_H,d=>d.key===sub.dueDate?e('div',{className:'cv-tk'+(sub.done?' done':late?' late':''),draggable:true,
+                  title:sub.name+(late&&!sub.done?(sub.dueDate<today?' · atrasada':' · después del deadline'):'')+' · arrastra para cambiar de día',
+                  onClick:ev=>ev.stopPropagation(),
+                  onDragStart:ev=>{dragRef.current={kind:'sub',stepId:s.id,subId:sub.id};try{ev.dataTransfer.setData('text/plain',sub.id);ev.dataTransfer.effectAllowed='move';}catch(err){}},
+                  onDragEnd:()=>{dragRef.current=null;},
+                  style:sub.done||late?null:{background:'color-mix(in srgb, '+col+' 24%, transparent)',borderColor:'color-mix(in srgb, '+col+' 60%, transparent)'}},
+                  sub.done?'✓':W>=48?DOWS[d.dow]+' '+d.dom:W>=24?String(d.dom):''):null,
+                k=>updSub(s.id,sub.id,{dueDate:k}),
+                ()=>{const dr=dragRef.current;return !!dr&&dr.kind==='sub'&&dr.subId===sub.id;},
+                k=>updSub(s.id,sub.id,{dueDate:k}))
             );
           }),
 
-          // fila agregar
-          e('div',{style:{display:'flex',alignItems:'center',padding:'6px 14px',gap:8,borderTop:BDR}},
-            e('div',{style:{width:28,flexShrink:0}}),
-            e('input',{
-              placeholder:'+ Agregar fase...',value:newName,
-              onChange:ev=>setNewName(ev.target.value),
-              onKeyDown:ev=>{if(ev.key==='Enter')addStep();},
-              style:{flex:1,background:'transparent',border:'none',outline:'none',fontSize:12,fontFamily:'Inter,sans-serif',color:'var(--text3)',padding:0}
-            }),
-            e(ChronosDatePicker,{value:newDate,onChange:v=>setNewDate(v||''),style:{width:120,flexShrink:0}}),
-            e('button',{className:'btn btn-primary',style:{fontSize:10,padding:'4px 10px',whiteSpace:'nowrap',flexShrink:0,marginLeft:8},onClick:addStep},'+ Agregar'),
-            e('button',{
-              title:'Pegar estructura desde checklist',
-              onClick:()=>{setPasteRaw('');setShowPasteSteps(true);},
-              style:{width:28,height:28,flexShrink:0,background:'var(--bg3)',border:'1px solid var(--border-neutral2)',borderRadius:'var(--r-sm)',color:'var(--text3)',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',transition:'all .12s'}
-            },e(DashIcon,{name:'pasteStruct',size:13}))
-          ),
-
-          // toggle completadas
-          doneCount>0&&e('div',{style:{padding:'5px 12px',borderTop:BDR}},
-            e('button',{onClick:()=>setShowDoneSteps(v=>!v),
-              style:{fontSize:10,padding:'2px 8px',border:'1px solid var(--border3)',borderRadius:10,background:'none',color:'var(--text4)',cursor:'pointer',fontFamily:'Inter,sans-serif'}},
-              showDoneSteps?'Ocultar completadas ('+doneCount+')':'Mostrar completadas ('+doneCount+')')
+          // ── fila "agregar tarea" de la fase ──
+          isExpanded&&!s.done&&e('div',{className:'cv-row cv-sub',style:{minWidth:rowMinW}},
+            e('div',{className:'cv-left',style:{width:LEFT_W,height:SUB_H,background:CVBG,padding:'0 8px 0 54px',gap:8}},
+              e('span',{style:{width:13,flexShrink:0,textAlign:'center',color:'var(--text4)',fontSize:13,lineHeight:1}},'+'),
+              e('input',{placeholder:'Agregar tarea…'+(pendDate?'':'  (clic en un día para agendarla)'),value:newSubText[s.id]||'',
+                onChange:ev=>setNewSubText(p=>({...p,[s.id]:ev.target.value})),
+                onKeyDown:ev=>{if(ev.key==='Enter'){ev.preventDefault();addSubWithDate(s.id);}},
+                style:{flex:1,minWidth:0,background:'transparent',border:'none',outline:'none',fontSize:11.5,fontFamily:'Inter,sans-serif',color:'var(--text2)',padding:0}}),
+              pendDate&&e('button',{onClick:()=>setNewSubDate(p=>({...p,[s.id]:undefined})),title:'Quitar el día elegido',
+                style:{border:'none',background:'none',cursor:'pointer',color:'var(--accent2)',fontSize:9.5,padding:0,flexShrink:0,fontFamily:"'JetBrains Mono',monospace"}},
+                pendDate.slice(8)+'/'+pendDate.slice(5,7)+' ×')
+            ),
+            dayCells(SUB_H,d=>d.key===pendDate?e('div',{className:'cv-tk ghost',title:'La próxima tarea se agenda este día'},W>=24?'+':''):null,
+              k=>{setNewSubDate(p=>({...p,[s.id]:p[s.id]===k?undefined:k}));})
           )
-        )
+        );
+      }),
+
+      // ── agregar fase ──
+      e('div',{className:'cv-row',style:{minWidth:rowMinW,borderBottom:'none'}},
+        e('div',{className:'cv-left',style:{width:LEFT_W,height:ROW_H+4,background:CVBG,padding:'0 6px 0 14px',gap:6}},
+          e('input',{placeholder:'+ Agregar fase…',value:newName,onChange:ev=>setNewName(ev.target.value),
+            onKeyDown:ev=>{if(ev.key==='Enter')addStep();},
+            style:{flex:1,minWidth:0,background:'transparent',border:'none',outline:'none',fontSize:12,fontFamily:'Inter,sans-serif',color:'var(--text3)',padding:0}}),
+          e(ChronosDatePicker,{value:newDate,onChange:v=>setNewDate(v||''),style:{width:112,flexShrink:0}}),
+          e('button',{className:'btn btn-primary',style:{fontSize:10,padding:'4px 9px',whiteSpace:'nowrap',flexShrink:0},onClick:addStep},'+ Agregar'),
+          e('button',{title:'Pegar estructura desde checklist',onClick:()=>{setPasteRaw('');setShowPasteSteps(true);},
+            style:{width:26,height:26,flexShrink:0,background:'var(--bg3)',border:'1px solid var(--border-neutral2)',borderRadius:'var(--r-sm)',color:'var(--text3)',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}},
+            e(DashIcon,{name:'pasteStruct',size:13}))
+        ),
+        dayCells(ROW_H+4,null,k=>setNewDate(k))
       ),
+      doneCount>0&&e('div',{style:{padding:'6px 12px',borderTop:BDR,position:'sticky',left:0,width:LEFT_W,boxSizing:'border-box'}},
+        e('button',{onClick:()=>setShowDoneSteps(v=>!v),
+          style:{fontSize:10,padding:'2px 8px',border:'1px solid var(--border3)',borderRadius:10,background:'none',color:'var(--text4)',cursor:'pointer',fontFamily:'Inter,sans-serif'}},
+          showDoneSteps?'Ocultar completadas ('+doneCount+')':'Mostrar completadas ('+doneCount+')'))
+    ),
+
+    showStatusEditor&&e(SubStatusEditor,{onClose:()=>setShowStatusEditor(false)}),
 
       // ── Menú contextual de fila ──
       stepRowCtx&&e('div',{
@@ -7853,12 +7929,6 @@ function ComboView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
           style:{marginTop:6,fontSize:10,padding:'3px 8px',border:'1px solid var(--border3)',borderRadius:5,background:'transparent',color:'var(--text3)',cursor:'pointer',fontFamily:'Inter,sans-serif',width:'100%'}
         },'Quitar')
       ),
-
-      // ══ RIGHT: Gantt ══
-      e('div',{style:{flex:1,minWidth:0,minHeight:0,overflow:'hidden',display:'flex',flexDirection:'column'}},
-        e(GanttView,{steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,DAY_W:32})
-      )
-    ),
 
     // ── Modal pegar estructura ──
     showPasteSteps&&(()=>{
