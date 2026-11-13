@@ -7147,7 +7147,7 @@ function CalendarPanel({steps,updateStep,today,barColor,mode,setMode}){
   function onDrop(ev,dateKey){
     ev.preventDefault();if(!drag||!dateKey||dateKey===drag.origDate){setDrag(null);setDragOver(null);return;}
     if(drag.kind==='phase'){updateStep(drag.stepId,{[dateField]:dateKey});}
-    else{const st=steps.find(s=>s.id===drag.stepId);if(st){const ns=(st.subtasks||[]).map(sub=>sub.id===drag.subId?isPrep?{...sub,startDate:dateKey}:{...sub,[dateField]:dateKey,dueDate:dateKey}:sub);updateStep(drag.stepId,{subtasks:ns});}}
+    else{const sid=drag.subId;updateStep(drag.stepId,s=>{const ns=(s.subtasks||[]).map(sub=>sub.id===sid?isPrep?{...sub,startDate:dateKey}:{...sub,[dateField]:dateKey,dueDate:dateKey}:sub);return{subtasks:ns};});}
     setDrag(null);setDragOver(null);
   }
   function onEnd(){setDrag(null);setDragOver(null);}
@@ -15629,17 +15629,18 @@ function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask,templates,onAddTe
   }
   const DAY_W=64;
 
-  function commit(next){ setSteps(next); onSave(next); }
+  function commit(next){ setSteps(next); stepsRef.current=next; onSave(next); }
   function addStep(){
     if(!newName.trim())return;
     // Fecha automática pero editable: si no se especificó, se sugiere en base a la fase anterior.
-    const finalEnd=newDate||suggestPhaseDate(steps);
+    const cur=stepsRef.current;
+    const finalEnd=newDate||suggestPhaseDate(cur);
     const finalStart=newStartDate||finalEnd;
-    commit([...steps,{id:uid(),name:newName.trim(),startDate:finalStart,dueDate:finalEnd,done:false,automation:false,subtasks:[],actLog:{}}]);
+    commit([...cur,{id:uid(),name:newName.trim(),startDate:finalStart,dueDate:finalEnd,done:false,automation:false,subtasks:[],actLog:{}}]);
     setNewName('');setNewDate('');setNewStartDate('');
   }
-  function updateStep(id,patch){ commit(steps.map(s=>s.id===id?{...s,...patch}:s)); }
-  function deleteStep(id){ commit(steps.filter(s=>s.id!==id)); }
+  function updateStep(id,patchOrFn){ const cur=stepsRef.current; const patch=typeof patchOrFn==='function'?patchOrFn(cur.find(s=>s.id===id)||{}):patchOrFn; commit(cur.map(s=>s.id===id?{...s,...patch}:s)); }
+  function deleteStep(id){ commit(stepsRef.current.filter(s=>s.id!==id)); }
   function duplicateStep(id){
     const idx=steps.findIndex(s=>s.id===id);
     if(idx<0)return;
