@@ -7118,13 +7118,16 @@ function CalendarPanel({steps,updateStep,today,barColor,mode,setMode}){
     return'#5c5490';
   }
 
+  const isPrep=mode==='preparacion';
   const byDate={};
   steps.forEach(s=>{
     const fd=s[dateField];
     if(fd){if(!byDate[fd])byDate[fd]=[];byDate[fd].push({kind:'phase',step:s});}
-    if(expanded.has(s.id)){
+    // en preparación: mostrar subtareas siempre; en entrega: solo si expandido
+    const showSubs=isPrep||(expanded.has(s.id));
+    if(showSubs){
       (s.subtasks||[]).forEach(sub=>{
-        const sd=sub[dateField]||sub.dueDate;
+        const sd=isPrep?(sub.startDate||sub.dueDate):(sub[dateField]||sub.dueDate);
         if(sd){if(!byDate[sd])byDate[sd]=[];byDate[sd].push({kind:'sub',step:s,sub});}
       });
     }
@@ -7150,24 +7153,42 @@ function CalendarPanel({steps,updateStep,today,barColor,mode,setMode}){
     const label=isP?entry.step.name:entry.sub.name;
     const color=chipColor(isP?entry.step:entry.step);
     const done=isP?entry.step.done:entry.sub.done;
-    const hasSubs=isP&&(entry.step.subtasks||[]).length>0;
+    const hasSubs=isP&&(entry.step.subtasks||[]).length>0&&!isPrep;
     const isExp=isP&&expanded.has(entry.step.id);
+    // En preparación: outline. En entrega: sólido.
+    const style=isPrep?{
+      display:'flex',alignItems:'center',gap:2,
+      fontSize:9,fontFamily:'Inter,sans-serif',fontWeight:isP?500:400,
+      color:done?'var(--text4)':color,
+      background:'transparent',
+      border:'1px solid '+(done?'var(--border2)':color),
+      borderRadius:isP?3:2,
+      padding:isP?'1px 4px':'1px 4px',
+      marginLeft:isP?0:6,
+      whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',
+      opacity:done?.4:1,lineHeight:1.4,cursor:'grab',userSelect:'none',boxSizing:'border-box',
+      // subtarea: sin borde izq extra, solo el outline
+    }:{
+      display:'flex',alignItems:'center',gap:2,
+      fontSize:9,fontFamily:'Inter,sans-serif',fontWeight:500,
+      color:'rgba(255,255,255,.9)',background:color,borderRadius:2,padding:'1px 4px',
+      marginLeft:isP?0:8,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',
+      opacity:done?.45:1,lineHeight:1.4,cursor:'grab',userSelect:'none',boxSizing:'border-box',
+      borderLeft:isP?'none':'2px solid rgba(255,255,255,.2)'
+    };
     return e('div',{
       key:(isP?entry.step.id:entry.sub.id)+idx,
       draggable:true,
       onDragStart:ev=>startDrag(ev,entry),
       onDragEnd:onEnd,
-      title:label,
-      style:{display:'flex',alignItems:'center',gap:2,fontSize:9,fontFamily:'Inter,sans-serif',fontWeight:500,
-        color:'rgba(255,255,255,.9)',background:color,borderRadius:2,padding:'1px 4px',
-        marginLeft:isP?0:8,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',
-        opacity:done?.45:1,lineHeight:1.4,cursor:'grab',userSelect:'none',boxSizing:'border-box',
-        borderLeft:isP?'none':'2px solid rgba(255,255,255,.2)'}
+      title:label+(done?' ✓':''),
+      style
     },
       hasSubs&&e('span',{onClick:ev=>{ev.stopPropagation();toggleExp(entry.step.id);},
         style:{flexShrink:0,fontSize:7,lineHeight:1,transform:isExp?'rotate(90deg)':'none',
           display:'inline-block',transition:'transform .1s',cursor:'pointer',marginRight:1,opacity:.7}
       },'›'),
+      !isP&&isPrep&&e('span',{style:{flexShrink:0,marginRight:2,fontSize:7,opacity:.5,lineHeight:1}},'·'),
       e('span',{style:{overflow:'hidden',textOverflow:'ellipsis',flex:1,minWidth:0}},label)
     );
   }
