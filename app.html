@@ -7100,6 +7100,8 @@ function CalendarPanel({steps,updateStep,today,barColor,mode,setMode}){
   const[expanded,setExpanded]=useState(()=>new Set());
   const[drag,setDrag]=useState(null);
   const[dragOver,setDragOver]=useState(null);
+  const[editing,setEditing]=useState(null); // {stepId, subId?} — chip que está en edición inline
+  const[editVal,setEditVal]=useState('');
   const DAYS=['Lu','Ma','Mi','Ju','Vi','Sa','Do'];
   const MONTHS=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
   const y=nav.y,m=nav.m;
@@ -7153,6 +7155,25 @@ function CalendarPanel({steps,updateStep,today,barColor,mode,setMode}){
   function onEnd(){setDrag(null);setDragOver(null);}
   function toggleExp(id){setExpanded(s=>{const n=new Set(s);n.has(id)?n.delete(id):n.add(id);return n;});}
 
+  function startEdit(entry,ev){
+    ev.preventDefault();ev.stopPropagation();
+    const isP=entry.kind==='phase';
+    setEditing({stepId:entry.step.id,subId:isP?null:entry.sub.id});
+    setEditVal(isP?entry.step.name:entry.sub.name);
+  }
+  function commitEdit(){
+    if(!editing)return;
+    const val=editVal.trim();
+    if(val){
+      if(editing.subId){
+        updateStep(editing.stepId,s=>({subtasks:(s.subtasks||[]).map(sub=>sub.id===editing.subId?{...sub,name:val}:sub)}));
+      }else{
+        updateStep(editing.stepId,{name:val});
+      }
+    }
+    setEditing(null);setEditVal('');
+  }
+
   function Chip({entry,idx}){
     const isP=entry.kind==='phase';
     const label=isP?entry.step.name:entry.sub.name;
@@ -7181,12 +7202,29 @@ function CalendarPanel({steps,updateStep,today,barColor,mode,setMode}){
       opacity:done?.45:1,lineHeight:1.4,cursor:'grab',userSelect:'none',boxSizing:'border-box',
       borderLeft:isP?'none':'2px solid rgba(255,255,255,.2)'
     };
+    const chipId=(isP?entry.step.id:entry.sub.id);
+    const isEditing=editing&&editing.stepId===entry.step.id&&editing.subId===(isP?null:entry.sub.id);
+    if(isEditing){
+      return e('div',{key:chipId+idx,style:{...style,cursor:'text',padding:'0 2px',overflow:'visible'}},
+        e('input',{
+          autoFocus:true,
+          value:editVal,
+          onChange:ev=>setEditVal(ev.target.value),
+          onBlur:commitEdit,
+          onKeyDown:ev=>{if(ev.key==='Enter')commitEdit();if(ev.key==='Escape'){setEditing(null);setEditVal('');}ev.stopPropagation();},
+          onClick:ev=>ev.stopPropagation(),
+          style:{width:'100%',border:'none',outline:'none',background:'transparent',
+            font:'inherit',color:'inherit',padding:0,margin:0,lineHeight:'inherit',boxSizing:'border-box'}
+        })
+      );
+    }
     return e('div',{
-      key:(isP?entry.step.id:entry.sub.id)+idx,
+      key:chipId+idx,
       draggable:true,
       onDragStart:ev=>startDrag(ev,entry),
       onDragEnd:onEnd,
-      title:label+(done?' ✓':''),
+      onDoubleClick:ev=>startEdit(entry,ev),
+      title:label+(done?' ✓':'')+' · Doble clic para renombrar',
       style
     },
       hasSubs&&e('span',{onClick:ev=>{ev.stopPropagation();toggleExp(entry.step.id);},
