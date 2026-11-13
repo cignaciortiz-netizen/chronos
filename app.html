@@ -7123,18 +7123,23 @@ function CalendarPanel({steps,updateStep,today,barColor,mode,setMode}){
   steps.forEach(s=>{
     const fd=s[dateField];
     if(fd){if(!byDate[fd])byDate[fd]=[];byDate[fd].push({kind:'phase',step:s});}
-    // en preparación: mostrar subtareas siempre; en entrega: solo si expandido
     const showSubs=isPrep||(expanded.has(s.id));
     if(showSubs){
       (s.subtasks||[]).forEach(sub=>{
-        const sd=isPrep?(sub.startDate||sub.dueDate):(sub[dateField]||sub.dueDate);
+        // en preparación: usar startDate de la sub, luego dueDate de la sub,
+        // luego startDate de la fase como fallback para que siempre aparezca
+        const sd=isPrep
+          ?(sub.startDate||sub.dueDate||s.startDate||s.dueDate)
+          :(sub[dateField]||sub.dueDate);
         if(sd){if(!byDate[sd])byDate[sd]=[];byDate[sd].push({kind:'sub',step:s,sub});}
       });
     }
   });
 
   function startDrag(ev,entry){
-    const orig=entry.kind==='phase'?entry.step[dateField]:(entry.sub[dateField]||entry.sub.dueDate);
+    const orig=entry.kind==='phase'?entry.step[dateField]
+      :isPrep?(entry.sub.startDate||entry.sub.dueDate||entry.step.startDate||entry.step.dueDate)
+      :(entry.sub[dateField]||entry.sub.dueDate);
     setDrag({kind:entry.kind,stepId:entry.step.id,subId:entry.sub?.id,origDate:orig});
     ev.dataTransfer.effectAllowed='move';ev.dataTransfer.setData('text/plain','chip');
   }
@@ -7142,7 +7147,7 @@ function CalendarPanel({steps,updateStep,today,barColor,mode,setMode}){
   function onDrop(ev,dateKey){
     ev.preventDefault();if(!drag||!dateKey||dateKey===drag.origDate){setDrag(null);setDragOver(null);return;}
     if(drag.kind==='phase'){updateStep(drag.stepId,{[dateField]:dateKey});}
-    else{const st=steps.find(s=>s.id===drag.stepId);if(st){const ns=(st.subtasks||[]).map(sub=>sub.id===drag.subId?{...sub,[dateField]:dateKey,dueDate:dateKey}:sub);updateStep(drag.stepId,{subtasks:ns});}}
+    else{const st=steps.find(s=>s.id===drag.stepId);if(st){const ns=(st.subtasks||[]).map(sub=>sub.id===drag.subId?isPrep?{...sub,startDate:dateKey}:{...sub,[dateField]:dateKey,dueDate:dateKey}:sub);updateStep(drag.stepId,{subtasks:ns});}}
     setDrag(null);setDragOver(null);
   }
   function onEnd(){setDrag(null);setDragOver(null);}
