@@ -7719,8 +7719,10 @@ function ComboView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
         },'Quitar')
       ),
 
-      // ══ RIGHT: Calendario ══
-      e(CalendarPanel,{steps:visSteps,updateStep,today,barColor,mode:calMode,setMode:setCalMode})
+      // ══ RIGHT: Gantt ══
+      e('div',{style:{flex:1,minWidth:0,minHeight:0,overflow:'hidden',display:'flex',flexDirection:'column'}},
+        e(GanttView,{steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,DAY_W:32})
+      )
     ),
 
     // ── Modal pegar estructura ──
