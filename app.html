@@ -640,6 +640,59 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .cv-tk.ghost{border-style:dashed;border-color:var(--accent2);color:var(--accent2);background:transparent;cursor:pointer}
 .cv-pill{font:500 11px Inter,sans-serif;padding:3px 10px;border-radius:10px;background:var(--amber-bg);border:1px solid var(--amber-border);color:var(--amber);max-width:420px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cv-pill.late{background:var(--red-bg);border-color:var(--red-border);color:var(--red)}
+/* ── Tema Sobrio ── */
+.gsb-proj-count,.sb-task-bar,.sb-task-due,.sb-hero-bar,.sb-today{display:none}
+.sb-today-row{display:flex;align-items:center;gap:10px;background:var(--bg1);border-radius:10px;padding:9px 12px}
+.sb-today-ck{width:14px;height:14px;border-radius:50%;border:1.5px solid var(--text4);flex-shrink:0;cursor:pointer;transition:all .12s}
+.sb-today-ck:hover{border-color:var(--text1)}
+.sb-today-ck.on{background:var(--text2);border-color:var(--text2)}
+.sb-today-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12.5px;color:var(--text0)}
+.sb-today-name.done{color:var(--text4);text-decoration:line-through}
+.sb-today-proj{font-size:10.5px;color:var(--text3);cursor:pointer;flex-shrink:0;max-width:40%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sb-today-proj:hover{color:var(--text1)}
+.sb-today-proj.late{color:var(--red)}
+.sb-today-count{font-size:10.5px;color:var(--accent2);margin-left:auto}
+:root[data-theme="sobrio"]{--border-neutral2:#ffffff08;--border-neutral3:#ffffff12;--amber:#d9a95f;--amber-bg:#d9a95f17;--amber-border:#d9a95f3d;--r-xl:16px}
+:root[data-theme="sobrio"] .gsb{border-right-color:transparent}
+:root[data-theme="sobrio"] .gsb-proj-dot,:root[data-theme="sobrio"] .gsb-proj-alert{display:none}
+:root[data-theme="sobrio"] .gsb-proj{padding:7px 10px}
+:root[data-theme="sobrio"] .gsb-proj-count{display:block;font:500 10.5px 'JetBrains Mono',monospace;color:var(--text4);flex-shrink:0}
+:root[data-theme="sobrio"] .gsb-proj-count.alert{color:var(--red)}
+:root[data-theme="sobrio"] .gsb-item.active{background:var(--bg3);color:var(--text0)}
+:root[data-theme="sobrio"] .dash-avatar{display:none}
+:root[data-theme="sobrio"] .dash-status-pill.active{color:var(--text2);background:var(--bg3);border-color:transparent}
+:root[data-theme="sobrio"] .dash-title{font-weight:500}
+:root[data-theme="sobrio"] .dash-hero-row{grid-template-columns:repeat(3,minmax(0,1fr))}
+:root[data-theme="sobrio"] .dash-hero-card{background:var(--bg2);border-color:transparent;border-radius:16px}
+:root[data-theme="sobrio"] .dash-hero-card svg,:root[data-theme="sobrio"] .dash-hero-sep,:root[data-theme="sobrio"] .dash-hero-session{display:none!important}
+:root[data-theme="sobrio"] .dash-hero-info{flex:1}
+:root[data-theme="sobrio"] .dash-hero-val{font-size:22px;font-weight:500}
+:root[data-theme="sobrio"] .sb-hero-bar{display:block;height:3px;border-radius:3px;background:var(--bg4);margin-top:9px;overflow:hidden}
+:root[data-theme="sobrio"] .sb-hero-bar i{display:block;height:100%;background:var(--accent);border-radius:3px}
+:root[data-theme="sobrio"] .dash-stat-card{background:var(--bg2);border-color:transparent;border-radius:16px}
+:root[data-theme="sobrio"] .dash-stat-icon{display:none}
+:root[data-theme="sobrio"] .dash-stat-val{font-weight:500}
+:root[data-theme="sobrio"] .dash-stat-card .progress-track{height:3px;background:var(--bg4)}
+:root[data-theme="sobrio"] .dash-stat-card .progress-fill{background:var(--text1)!important}
+:root[data-theme="sobrio"] .dash-panel,:root[data-theme="sobrio"] .qn-panel{background:var(--bg2);border-color:transparent;border-radius:16px}
+:root[data-theme="sobrio"] .dash-panel:hover{border-color:transparent}
+:root[data-theme="sobrio"] .dash-panel-hdr{border-bottom-color:transparent;padding-bottom:6px}
+:root[data-theme="sobrio"] .dash-panel-title{font-family:'Space Grotesk',sans-serif;font-size:13.5px;font-weight:500}
+:root[data-theme="sobrio"] .dash-panel-body{padding:4px 10px 12px;gap:6px}
+:root[data-theme="sobrio"] .dash-top-row>.dash-panel:first-child{grid-column:1/-1}
+:root[data-theme="sobrio"] .sb-today{display:flex}
+:root[data-theme="sobrio"] .task-row{grid-template-columns:1fr 18px 22px 18px 18px;background:var(--bg1);border-radius:10px;padding:9px 12px}
+:root[data-theme="sobrio"] .task-row:hover{background:var(--bg3)}
+:root[data-theme="sobrio"] .task-row .proj-icon-badge,:root[data-theme="sobrio"] .task-main svg,:root[data-theme="sobrio"] .task-bell{display:none!important}
+:root[data-theme="sobrio"] .sb-task-bar{display:block;width:72px;height:3px;border-radius:3px;background:var(--bg4);overflow:hidden;flex-shrink:0}
+:root[data-theme="sobrio"] .sb-task-bar i{display:block;height:100%;background:var(--text1);border-radius:3px}
+:root[data-theme="sobrio"] .sb-task-due{display:block;width:62px;text-align:right;font:500 10.5px 'JetBrains Mono',monospace;color:var(--text3);flex-shrink:0}
+:root[data-theme="sobrio"] .sb-task-due.late{color:var(--red)}
+:root[data-theme="sobrio"] .task-play-btn,:root[data-theme="sobrio"] .habit-play-btn{background:transparent;border-color:var(--border3)}
+:root[data-theme="sobrio"] .habit-preview-icon{display:none}
+:root[data-theme="sobrio"] .habit-preview-row{background:var(--bg1);border-radius:10px;padding:8px 12px}
+:root[data-theme="sobrio"] .habit-dot.on{background:var(--text1)}
+:root[data-theme="sobrio"] .btn-primary{color:#231703;font-weight:600}
 .combo-row-wrap{position:relative}
 .combo-row{cursor:default}
 .combo-row:hover .combo-ctx-chip{opacity:1!important}
@@ -2517,6 +2570,12 @@ const INIT_SOUND_CFG={
 
 // ── THEMES ──
 const THEMES=[
+  {id:'sobrio',label:'Sobrio',desc:'Carbón neutro por capas, sin líneas, con el ámbar como único acento.',vars:{
+    '--bg0':'#131417','--bg1':'#18191d','--bg2':'#1e1f24','--bg3':'#26272d','--bg4':'#2e2f36','--bg5':'#393a43',
+    '--border':'#ffffff0a','--border2':'#ffffff12','--border3':'#ffffff1f',
+    '--text0':'#f1f1f3','--text1':'#c2c4cc','--text2':'#8a8d97','--text3':'#666973','--text4':'#4b4e57',
+    '--accent':'#d9a95f','--accent2':'#e3bb7a','--accentd':'#b98c47','--accent-bg':'#d9a95f17','--accent-border':'#d9a95f3d',
+  }},
   {id:'obsidian',label:'Obsidian',desc:'Gris carbón sofisticado. El original.',vars:{
     '--bg0':'#16161b','--bg1':'#1c1c22','--bg2':'#232329','--bg3':'#2b2b33','--bg4':'#34343d','--bg5':'#3f3f4a',
     '--border':'#ffffff14','--border2':'#ffffff20','--border3':'#ffffff2e',
@@ -3156,7 +3215,7 @@ const GlobalSidebar=React.memo(function GlobalSidebar({projects,habits,systems,t
       ),
     ),
     e('div',{className:'gsb-groupline'},
-      e('span',null,'PROYECTOS'),
+      e('span',null,'CUENTAS'),
       !collapsed&&e('button',{
         className:'ghost-btn',
         title:sortByAlert?'Orden manual (arrastra para reordenar)':'Ordenar por urgencia: alertas → urgente → importante → normal',
@@ -3197,6 +3256,7 @@ const GlobalSidebar=React.memo(function GlobalSidebar({projects,habits,systems,t
       },
         e('span',{className:'gsb-proj-dot',style:{background:p.color}}),
         e('span',{className:'gsb-proj-name'},p.name),
+        (()=>{const n=(tasks||[]).filter(t=>t.projectId===p.id&&t.status!=='done').length;return n?e('span',{className:'gsb-proj-count'+(projAlert(p)?' alert':''),title:n+(n===1?' proyecto pendiente':' proyectos pendientes')},n):null;})(),
         projAlert(p)&&e('span',{className:'gsb-proj-alert'})
       ))
     ),
@@ -3307,7 +3367,7 @@ function App(){
   const[ctxs,setCtxs]=useState(()=>load('chr4_ctxs',INIT_CTXS));
   const[pomoCfg,setPomoCfg]=useState(()=>load('chr4_pomo',{work:25,brk:5,mode:'25/5'}));
   const[soundCfg,setSoundCfg]=useState(()=>load('chr4_sound',INIT_SOUND_CFG));
-  const[themeCfg,setThemeCfg]=useState(()=>load('chr4_theme',{themeId:'combustion',blockOpacity:0.45,blockStyle:'stripe',realStyle:'solid'}));
+  const[themeCfg,setThemeCfg]=useState(()=>{const c=load('chr4_theme',{themeId:'sobrio',blockOpacity:0.45,blockStyle:'stripe',realStyle:'solid'});try{if(!localStorage.getItem('chr4_theme_sobrio_v1')){localStorage.setItem('chr4_theme_sobrio_v1','1');return{...c,themeId:'sobrio'};}}catch(err){}return c;});
   const[tlZoom,setTlZoom]=useState(0.5);
   const[selectedDay,setSelectedDay]=useState(()=>dayKey());
 
@@ -4233,6 +4293,7 @@ function App(){
     const t=THEMES.find(x=>x.id===themeCfg.themeId)||THEMES[0];
     const root=document.documentElement;
     Object.entries(t.vars).forEach(([k,v])=>root.style.setProperty(k,v));
+    root.dataset.theme=t.id;
   },[themeCfg.themeId]);
 
   // ── TIMER TICK — wall-clock based, zero drift ──
@@ -6131,13 +6192,13 @@ function ThemeCfgModal({cfg,onChange,onClose,tlZoom,setTlZoom}){
 
   function preview(id){
     const t=THEMES.find(x=>x.id===id)||THEMES[0];
-    Object.entries(t.vars).forEach(([k,v])=>document.documentElement.style.setProperty(k,v));
+    Object.entries(t.vars).forEach(([k,v])=>document.documentElement.style.setProperty(k,v));document.documentElement.dataset.theme=t.id;
     setTid(id);
   }
 
   function handleClose(){
     const t=THEMES.find(x=>x.id===cfg.themeId)||THEMES[0];
-    Object.entries(t.vars).forEach(([k,v])=>document.documentElement.style.setProperty(k,v));
+    Object.entries(t.vars).forEach(([k,v])=>document.documentElement.style.setProperty(k,v));document.documentElement.dataset.theme=t.id;
     onClose();
   }
 
@@ -6538,6 +6599,10 @@ function TaskRow({t,onCycleTaskStatus,onDeleteTask,isActive,onPlay,onFinish,onOp
   const PRI={urgent:'#e05555',important:'#e0b73a',low:'#2fb87a'};
   const priColor=t.priority?PRI[t.priority]:null;
   const taskPct=taskCompletionPct(t);
+  const openDues=steps.filter(s=>!s.done&&s.dueDate).map(s=>s.dueDate).sort();
+  const nextDue=openDues[0]||null;
+  const dueLate=!!nextDue&&nextDue<today;
+  const dueLbl=dueLate?'atrasado':nextDue?(Number(nextDue.slice(8))+' '+MONTHS_SHORT[Number(nextDue.slice(5,7))-1].toLowerCase()):'';
   return e('div',{className:'task-row'},
     e('div',{className:'task-main',onDoubleClick:()=>onOpenSteps&&onOpenSteps(t),title:onOpenSteps?'Doble click para ver pasos':undefined},
       e('div',{style:{display:'flex',alignItems:'center',gap:6}},
@@ -6545,7 +6610,9 @@ function TaskRow({t,onCycleTaskStatus,onDeleteTask,isActive,onPlay,onFinish,onOp
           e(ProjIconSVG,{iconKey:icon||DEFAULT_ICON,size:10,color:color||'var(--text3)'})
         ),
         e('span',{className:'task-name'},t.name),
-        taskPct!=null&&e(MiniProgressRing,{pct:taskPct,color:color||'var(--accent2)',title:taskPct+'% completado (según subtareas de cada paso)'})
+        taskPct!=null&&e(MiniProgressRing,{pct:taskPct,color:color||'var(--accent2)',title:taskPct+'% completado (según subtareas de cada paso)'}),
+        e('span',{className:'sb-task-bar',title:(taskPct||0)+'% completado'},e('i',{style:{width:(taskPct||0)+'%'}})),
+        e('span',{className:'sb-task-due'+(dueLate?' late':''),title:nextDue?'Próximo deadline: '+nextDue:'Sin deadlines pendientes'},dueLbl)
       ),
       null /* recurrencia de tareas eliminada */
     ),
@@ -12792,6 +12859,38 @@ function CalendarView({tasks,project,onOpenSteps}){
     )
   );
 }
+// Bloque "Hoy" del panel de cuenta (tema Sobrio): tareas de las fases agendadas
+// para el día seleccionado, más las atrasadas cuando se mira el día de hoy.
+function SobrioTodayPanel({tasks,day,onUpdateTaskSteps,onOpen}){
+  const today=dayKey();
+  const items=[];
+  (tasks||[]).forEach(t=>(t.steps||[]).forEach(s=>{
+    if(s.done)return;
+    (s.subtasks||[]).forEach(x=>{
+      if(!x.dueDate)return;
+      const late=!x.done&&x.dueDate<today&&day===today;
+      if(x.dueDate===day||late)items.push({t,s,x,late});
+    });
+  }));
+  items.sort((a,b)=>(Number(!!a.x.done)-Number(!!b.x.done))||(a.x.dueDate<b.x.dueDate?-1:a.x.dueDate>b.x.dueDate?1:0));
+  const pend=items.filter(i=>!i.x.done).length;
+  const toggle=i=>onUpdateTaskSteps(i.t.id,(i.t.steps||[]).map(s=>s.id===i.s.id?{...s,subtasks:(s.subtasks||[]).map(x=>x.id===i.x.id?{...x,done:!x.done}:x)}:s));
+  return e('div',{className:'dash-panel sb-today'},
+    e('div',{className:'dash-panel-hdr'},
+      e('span',{className:'dash-panel-title'},day===today?'Hoy':'Ese día'),
+      pend>0&&e('span',{className:'sb-today-count'},pend+(pend===1?' pendiente':' pendientes'))
+    ),
+    e('div',{className:'dash-panel-body'},
+      items.length===0&&e('div',{className:'empty'},'Nada agendado. Abre un proyecto y asigna un día a sus tareas.'),
+      items.map(i=>e('div',{key:i.x.id,className:'sb-today-row'},
+        e('div',{className:'sb-today-ck'+(i.x.done?' on':''),onClick:()=>{playUI('click');toggle(i);},title:i.x.done?'Reabrir':'Marcar hecha'}),
+        e('span',{className:'sb-today-name'+(i.x.done?' done':''),title:i.x.name+' — '+i.s.name},i.x.name),
+        e('span',{className:'sb-today-proj'+(i.late?' late':''),onClick:()=>onOpen&&onOpen(i.t),title:'Abrir '+i.t.name},i.late?'atrasada':i.t.name)
+      ))
+    )
+  );
+}
+
 function ProjectDashboard(props){
   const{
     project,projects,tasks,sessions,ctxs,habits,systems,
@@ -13150,7 +13249,8 @@ function ProjectDashboard(props){
           e('div',{className:'dash-hero-info'},
             e('div',{className:'dash-hero-lbl'},'Tiempo hoy'),
             e('div',{className:'dash-hero-val'},fmtS(stats.todaySecs)),
-            e('div',{className:'dash-hero-sub'},'de '+fmtS(dailyGoal)+' objetivo · '+todaySessions.length+' sesión'+(todaySessions.length===1?'':'es')+' hoy')
+            e('div',{className:'dash-hero-sub'},'de '+fmtS(dailyGoal)+' objetivo · '+todaySessions.length+' sesión'+(todaySessions.length===1?'':'es')+' hoy'),
+            e('div',{className:'sb-hero-bar'},e('i',{style:{width:Math.min(100,Math.max(0,focusPct||0))+'%'}}))
           ),
           e('div',{className:'dash-hero-sep'}),
           e('div',{className:'dash-hero-session'},
@@ -13177,6 +13277,7 @@ function ProjectDashboard(props){
             pendingTasks.slice(0,6).map(t=>e(TaskRow,{key:t.id,t,onCycleTaskStatus,onDeleteTask,isActive:isRunningHere&&activeSess.taskId===t.id,onPlay:onPlayTask,onFinish:onFinishTask,onOpenSteps:setStepsForTask,icon:project.icon,color:project.color,onSetPriority:(id,p)=>onUpdateTask(id,{priority:p})}))
           )
         ),
+        e(SobrioTodayPanel,{tasks:pendingTasks,day:selectedDay,onUpdateTaskSteps,onOpen:setStepsForTask}),
         e(QuickNotesPanel,{notes,onAddNote,onDeleteNote,onToggleNoteDone,onSetNoteReminder,onEditNoteText,onOpenAll:()=>setTab('notas')}),
         e('div',{className:'dash-panel habitos-mini-panel'},
           e('div',{className:'dash-panel-hdr'},
