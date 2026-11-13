@@ -2274,6 +2274,13 @@ const SB = {
   get anon(){ return this._load(this.K_ANON); },
   get uid(){ return this._load(this.K_UID); },
   configured(){ return !!(this.url && this.anon && this.uid); },
+  // Fila principal en Supabase. Desde esta versión los datos viven en una
+  // fila NUEVA (":v2"): las copias viejas de la app que hayan quedado
+  // abiertas en otra pestaña o dispositivo siguen escribiendo en la fila
+  // antigua (subían su copia completa cada 30-60s sin revisar nada y pisaban
+  // todo lo editado) y así ya no pueden tocar los datos actuales.
+  get mainId(){ return this.uid+':v2'; },
+  _fromLegacy: false,
 
   init(){
     return this.configured();
@@ -2308,7 +2315,7 @@ const SB = {
   // lo pisaría (la causa de "escribo, cierro, vuelvo a abrir y no quedó nada").
   _remoteAt: 0,
   async remoteAt(){
-    const resp = await fetch(`${this.url}/rest/v1/chronos?user_id=eq.${this.uid}&select=updated_at`, {
+    const resp = await fetch(`${this.url}/rest/v1/chronos?user_id=eq.${encodeURIComponent(this.mainId)}&select=updated_at`, {
       headers: { 'apikey': this.anon, 'Authorization': 'Bearer '+this.anon },
     });
     if(!resp.ok) throw new Error(await resp.text());
@@ -2329,7 +2336,7 @@ const SB = {
     // Strip imágenes base64 antes de subir — reducen el payload de ~3.3MB a ~0.8MB.
     // Las imágenes quedan en localStorage y se restauran al cargar la app desde ahí.
     const payload = data.tasks ? {...data, tasks: this.stripTaskImages(data.tasks)} : data;
-    const body = JSON.stringify({ user_id: this.uid, data: payload, updated_at: pushTs.toISOString() });
+    const body = JSON.stringify({ user_id: this.mainId, data: payload, updated_at: pushTs.toISOString() });
     // Advertencia si el payload sigue siendo grande (útil para debug)
     if(body.length > 500*1024) console.warn(`[SB] payload grande: ${Math.round(body.length/1024)}KB`);
     const resp = await fetch(`${this.url}/rest/v1/chronos`, {
@@ -2356,7 +2363,7 @@ const SB = {
   // sessions incluido) cada 3 minutos y al cerrar la pestaña, como respaldo
   // redundante — así que aunque esta parte tuviera un error, la fila
   // principal nunca queda más de un rato atrás con una copia completa.
-  get sessionsUid(){ return this.uid+':sessions'; },
+  get sessionsUid(){ return this.mainId+':sessions'; },
   async pushSessions(sessions){
     if(!this.configured()) return;
     const resp = await fetch(`${this.url}/rest/v1/chronos`, {
@@ -2384,7 +2391,7 @@ const SB = {
   async pull(){
     if(!this.configured()) return null;
     const[mainResp,sessResp]=await Promise.all([
-      fetch(`${this.url}/rest/v1/chronos?user_id=eq.${this.uid}&select=data,updated_at`, {
+      fetch(`${this.url}/rest/v1/chronos?user_id=eq.${encodeURIComponent(this.mainId)}&select=data,updated_at`, {
         headers: { 'apikey': this.anon, 'Authorization': 'Bearer '+this.anon },
       }),
       fetch(`${this.url}/rest/v1/chronos?user_id=eq.${encodeURIComponent(this.sessionsUid)}&select=data`, {
@@ -2393,7 +2400,24 @@ const SB = {
     ]);
     if(!mainResp.ok) throw new Error(await mainResp.text());
     const mainRows = await mainResp.json();
-    if(mainRows.length===0) return null;
+    if(mainRows.length===0){
+      // La fila nueva (":v2") todavía no existe: primera vez con esta
+      // versión. Se leen los datos de las filas antiguas y la app los copia
+      // a la fila nueva (ver _fromLegacy en el pull inicial).
+      const h = { 'apikey': this.anon, 'Authorization': 'Bearer '+this.anon };
+      const [lm, ls] = await Promise.all([
+        fetch(`${this.url}/rest/v1/chronos?user_id=eq.${this.uid}&select=data`, { headers: h }),
+        fetch(`${this.url}/rest/v1/chronos?user_id=eq.${encodeURIComponent(this.uid+':sessions')}&select=data`, { headers: h }).catch(()=>null),
+      ]);
+      if(!lm.ok) throw new Error(await lm.text());
+      const lmRows = await lm.json();
+      if(lmRows.length===0) return null;
+      let legacySess = null;
+      try{ if(ls&&ls.ok){ const r = await ls.json(); if(r.length>0) legacySess = r[0].data.sessions; } }catch(e){}
+      this._remoteAt = 0;
+      this._fromLegacy = true;
+      return {...lmRows[0].data, sessions: legacySess!=null?legacySess:(lmRows[0].data.sessions||[])};
+    }
     const main = mainRows[0].data;
     this._remoteAt = Date.parse(mainRows[0].updated_at)||0;
     // Prioriza la fila nueva de sessions si ya existe; si no, usa las que
@@ -3836,6 +3860,17 @@ function App(){
         // terminaran), NO hacemos pull todavía — eso reemplazaría el estado
         // local recién cargado desde localStorage con datos remotos más
         // viejos. Primero subimos lo local para no perder el cambio.
+        // Migración a la fila nueva (":v2"): si todavía no existe y este
+        // dispositivo ya tiene datos propios, lo que se copia es lo LOCAL
+        // (lo que se está viendo acá) — la fila antigua puede tener la copia
+        // vieja de alguna pestaña desactualizada que la sigue pisando.
+        let hasLocal=false;
+        try{ hasLocal=!!localStorage.getItem('chr4_proj'); }catch(e){}
+        if(hasLocal&&(await SB.remoteAt())===0){
+          await SB.push({projects,intenciones,tasks,blocks,habits,reminders,ctxs,systems,notes,panelLabels,panelVisibility,panelSortModes,templates,sysTemplates,subStatuses},{force:true});
+          await SB.pushSessions(sessions);
+          SB.markSynced();
+        }
         if(SB.isDirty()){
           // ...salvo que otro dispositivo/pestaña haya guardado DESPUÉS de
           // nuestro último cambio local: ahí gana lo remoto (más reciente).
@@ -3852,6 +3887,13 @@ function App(){
         const remote = await SB.pull();
         if(remote){
           applyRemote(remote);
+          if(SB._fromLegacy){
+            // Migración única: copiar lo leído de las filas antiguas a la nueva.
+            SB._fromLegacy=false;
+            const {sessions:legacySessions,...legacyRest}=remote;
+            await SB.push(legacyRest,{force:true});
+            await SB.pushSessions(legacySessions||[]);
+          }
           // Recuperación de sesión: si quedó un checkpoint (guardado cada 3 min
           // mientras corría una sesión) y esa sesión nunca se cerró con doStop
           // — porque se cerró la página o se apagó el PC — la convertimos en
@@ -3865,9 +3907,11 @@ function App(){
               const merged=[...baseSessions,recovered];
               setSessions(merged);
               showNotif('⏱ Sesión recuperada: '+fmtS(chk.duration)+' (se cerró sin guardar)',4000);
-              await SB.push({...(sbLatestRef.current||{}),projects:remote.projects?.length?remote.projects:projects,sessions:merged,liveCheckpoint:null});
+              // Se sube lo recién bajado (remote), no sbLatestRef: en este
+              // punto el ref aún tiene el estado local previo al pull.
+              await SB.push({...remote,sessions:merged,liveCheckpoint:null});
             }else{
-              await SB.push({...(sbLatestRef.current||{}),liveCheckpoint:null});
+              await SB.push({...remote,liveCheckpoint:null});
             }
           }
         }
@@ -4081,7 +4125,7 @@ function App(){
         // usa keepalive y no debe mandar los MB de imágenes de pizarra
         const data=rawData.tasks?{...rawData,tasks:SB.stripTaskImages(rawData.tasks)}:rawData;
         const flushTs=new Date();
-        const body=JSON.stringify({ user_id: SB.uid, data, updated_at: flushTs.toISOString() });
+        const body=JSON.stringify({ user_id: SB.mainId, data, updated_at: flushTs.toISOString() });
         // keepalive solo admite ~64KB: con más, el navegador rechaza el envío.
         // Solo se marca "sincronizado" cuando Supabase confirma; si no llegó,
         // queda "sucio" y se sube al volver a abrir.
