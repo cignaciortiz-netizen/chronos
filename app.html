@@ -7124,7 +7124,8 @@ function CalendarPanel({steps,updateStep,today,barColor,mode,setMode}){
   const byDate={};
   steps.forEach(s=>{
     const fd=s[dateField];
-    if(fd){if(!byDate[fd])byDate[fd]=[];byDate[fd].push({kind:'phase',step:s});}
+    // En preparación no mostramos el chip de fase — solo sus subtareas
+    if(fd&&!isPrep){if(!byDate[fd])byDate[fd]=[];byDate[fd].push({kind:'phase',step:s});}
     const showSubs=isPrep||(expanded.has(s.id));
     if(showSubs){
       (s.subtasks||[]).forEach(sub=>{
@@ -7307,9 +7308,33 @@ function CalendarPanel({steps,updateStep,today,barColor,mode,setMode}){
               fontWeight:isToday?700:400,
               color:isToday?'var(--accent2)':isWknd?'var(--text4)':'var(--text4)',
               lineHeight:1,marginBottom:1,userSelect:'none',flexShrink:0,display:'block',textAlign:'right',paddingRight:1}},dNum),
-            entries.slice(0,5).map((entry,idx)=>e(Chip,{key:(entry.kind==='phase'?entry.step.id:entry.sub.id)+idx,entry,idx})),
-            entries.length>5&&e('div',{style:{fontSize:8,color:'var(--text4)',fontFamily:'Inter,sans-serif',lineHeight:1,paddingLeft:2,marginTop:1}},
-              '+'+(entries.length-5))
+            (()=>{
+              if(!isPrep||!entries.length) return [
+                ...entries.slice(0,5).map((entry,idx)=>e(Chip,{key:(entry.kind==='phase'?entry.step.id:entry.sub.id)+idx,entry,idx})),
+                entries.length>5&&e('div',{key:'more',style:{fontSize:8,color:'var(--text4)',fontFamily:'Inter,sans-serif',lineHeight:1,paddingLeft:2,marginTop:1}},'+'+(entries.length-5))
+              ];
+              // Preparación: agrupar subtareas por fase con línea de color
+              const groups=[];const seen=new Map();
+              entries.forEach(entry=>{
+                const pid=entry.step.id;
+                if(!seen.has(pid)){seen.set(pid,{step:entry.step,subs:[]});groups.push(seen.get(pid));}
+                seen.get(pid).subs.push(entry);
+              });
+              let flat=[];let total=0;
+              groups.forEach(g=>{
+                const color=chipColor(g.step);
+                flat.push(e('div',{key:'ln'+g.step.id,title:g.step.name,style:{
+                  height:2,borderRadius:1,marginTop:total>0?3:0,marginBottom:1,flexShrink:0,
+                  background:color,opacity:.55
+                }}));
+                g.subs.forEach((entry,idx)=>{
+                  if(total<6) flat.push(e(Chip,{key:entry.sub.id+idx,entry,idx}));
+                  total++;
+                });
+              });
+              if(total>6) flat.push(e('div',{key:'more',style:{fontSize:8,color:'var(--text4)',fontFamily:'Inter,sans-serif',lineHeight:1,paddingLeft:2,marginTop:1}},'+'+(total-6)));
+              return flat;
+            })()
           );
         })
       ),
