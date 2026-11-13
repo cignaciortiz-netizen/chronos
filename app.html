@@ -7673,7 +7673,6 @@ function ComboView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
   const DOWS=['dom','lun','mar','mié','jue','vie','sáb'];
   const[zoom,setZoomRaw]=useState(()=>{try{const v=localStorage.getItem('chr4_combo_zoom');const z=Number(v);return v!==null&&z>=0&&z<=4?z:2;}catch(err){return 2;}});
   const setZoom=z=>{setZoomRaw(z);try{localStorage.setItem('chr4_combo_zoom',String(z));}catch(err){}};
-  const[collapsedRows,setCollapsedRows]=useState(()=>new Set(steps.filter(s=>s.done).map(s=>s.id)));
   const[newSubDate,setNewSubDate]=useState({}); // {stepId: 'YYYY-MM-DD'} día elegido para la próxima tarea
   const[showStatusEditor,setShowStatusEditor]=useState(false);
   const dragRef=useRef(null);
@@ -7713,7 +7712,6 @@ function ComboView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
     // la siguiente tarea se propone para el día siguiente (flujo: 13, 14, 15…)
     setNewSubDate(p=>({...p,[stepId]:dt?addD(dt,1):undefined}));
   }
-  function toggleCollapse(id){setCollapsedRows(s=>{const n=new Set(s);n.has(id)?n.delete(id):n.add(id);return n;});}
 
   function dayCells(h,render,onPick,canDrop,onDropDay){
     return e('div',{style:{...gridStyle,height:h}},days.map(d=>e('div',{key:d.key,
@@ -7785,7 +7783,7 @@ function ComboView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
         const psStatuses=loadSubStatuses();
         const psSt=subStatusInfo(s.status||'todo',psStatuses);
         const isOpen=phaseStatusPicker===s.id;
-        const isExpanded=!collapsedRows.has(s.id);
+        const isExpanded=expandedRows.has(s.id); // las fases abren cerradas; se abren a demanda
         const subs=s.subtasks||[];
         const subsVis=subs.filter(x=>showDoneSteps||!x.done||!s.done);
         // color de la fase: etiqueta si tiene; si está en el estado inicial, el acento ámbar; si no, el del estado
@@ -7800,7 +7798,7 @@ function ComboView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
           // ── fila de fase ──
           e('div',{className:'cv-row',style:{minWidth:rowMinW,opacity:s.done?.6:1},onContextMenu:ev=>openRowCtx(ev,s.id)},
             e('div',{className:'cv-left',style:{width:LEFT_W,height:ROW_H,background:rowBg,padding:'0 6px 0 8px',zIndex:isOpen?20:3}},
-              e('button',{title:isExpanded?'Ocultar tareas':'Ver tareas',onClick:()=>toggleCollapse(s.id),
+              e('button',{title:isExpanded?'Ocultar tareas':'Ver tareas',onClick:()=>toggleExpand(s.id),
                 style:{width:20,height:22,flexShrink:0,border:'none',background:'none',cursor:'pointer',padding:0,color:'var(--text3)',display:'flex',alignItems:'center',justifyContent:'center'}},
                 e('span',{style:{fontSize:13,fontWeight:700,lineHeight:1,display:'inline-block',transition:'transform .15s',transform:isExpanded?'rotate(90deg)':'none'}},'›')),
               e('div',{style:{width:24,flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',position:'relative'}},
