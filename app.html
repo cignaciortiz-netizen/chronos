@@ -7270,7 +7270,7 @@ function CalendarPanel({steps,updateStep,today,barColor,mode,setMode}){
             onDrop:dk?ev=>onCellDrop(ev,dk):undefined,
             onDragLeave:dk?()=>{if(dragOver===dk)setDragOver(null);}:undefined,
             style:{
-              minHeight:72,border:isDropTarget?'1.5px dashed #c9a35c':isToday?'1.5px solid #c9a35c':dk?BDR:'none',
+              minHeight:72,border:isDropTarget?'1.5px dashed #c9a35c':isToday?'1.5px solid #c9a35c':'none',
               borderRadius:6,padding:'4px 4px 4px 4px',boxSizing:'border-box',
               background:isDropTarget?'rgba(201,163,92,.10)':!dk?'transparent':isToday?'rgba(201,163,92,.06)':isWknd?'rgba(255,255,255,.013)':'transparent',
               display:'flex',flexDirection:'column',gap:2,overflow:'hidden',
