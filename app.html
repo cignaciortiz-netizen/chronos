@@ -7782,7 +7782,10 @@ function ComboView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
 
 // ── GanttView: Gantt por proyecto con fases expandibles y subtareas arrastrables ──
 function GanttView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,DAY_W}){
-  const GW=DAY_W||32;
+  const[zoom,setZoom]=useState(2); // 0=xs 1=sm 2=md 3=lg 4=xl
+  const ZOOM_SIZES=[20,28,38,52,72];
+  const ZOOM_LABELS=['XS','S','M','L','XL'];
+  const GW=ZOOM_SIZES[zoom];
   const today=dayKey();
   const toTs=d=>new Date(d+'T00:00:00').getTime();
   function addDaysG(dateStr,n){
@@ -7967,10 +7970,10 @@ function GanttView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
   },[subDrag&&subDrag.id,subDrag&&subDrag.startX]);
 
   const hasDated=visSteps.some(s=>s.dueDate);
-  const LABEL_W=200;
-  const ROW_H=34;
-  const SUB_H=26;
-  const HDR_H=42;
+  const LABEL_W=210;
+  const ROW_H=38;
+  const SUB_H=28;
+  const HDR_H=48;
 
   // Calcular altura total del canvas
   let canvasH=HDR_H;
@@ -7983,8 +7986,17 @@ function GanttView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
 
   return e('div',{className:'tl-wrap',style:{userSelect:drag||subDrag?'none':''}},
     e('div',{className:'tl-toolbar'},
-      e('span',{style:{fontSize:11,color:'var(--text3)'}},'Arrastra las barras para mover · bordes para extender'),
-      e('button',{className:'btn',style:{fontSize:10.5,padding:'4px 10px',marginLeft:'auto'},onClick:()=>setShowStatusEditor(true)},'Estados'),
+      e('span',{style:{fontSize:11,color:'var(--text4)',letterSpacing:'.01em'}},'Arrastra para mover · bordes para extender'),
+      e('div',{style:{display:'flex',alignItems:'center',gap:3,marginLeft:'auto',background:'var(--bg2)',borderRadius:6,padding:'2px 3px',border:'1px solid var(--border2)'}},
+        ZOOM_LABELS.map((lbl,i)=>e('button',{key:i,onClick:()=>setZoom(i),style:{
+          padding:'2px 7px',border:'none',cursor:'pointer',borderRadius:4,
+          fontSize:9.5,fontFamily:'Inter,sans-serif',fontWeight:600,
+          background:zoom===i?'var(--accent2)':'transparent',
+          color:zoom===i?'var(--bg0)':'var(--text4)',
+          transition:'all .12s',lineHeight:1.4
+        }},lbl))
+      ),
+      e('button',{className:'btn',style:{fontSize:10.5,padding:'4px 10px'},onClick:()=>setShowStatusEditor(true)},'Estados'),
       doneCount>0&&e('button',{className:'btn',style:{fontSize:10.5,padding:'4px 10px'},onClick:()=>setShowDoneSteps(v=>!v)},
         showDoneSteps?'Ocultar completadas':'Ver completadas ('+doneCount+')')
     ),
@@ -8094,18 +8106,41 @@ function GanttView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
         e('div',{style:{width:numDays*GW,minWidth:'100%',position:'relative',minHeight:canvasH}},
           // Header: meses + días
           e('div',{style:{position:'sticky',top:0,zIndex:3,background:'var(--bg1)',borderBottom:'1px solid var(--border2)',height:HDR_H}},
-            e('div',{style:{height:20,display:'flex',borderBottom:'1px solid var(--border2)',width:numDays*GW}},
+            // Fila de meses
+            e('div',{style:{height:22,display:'flex',borderBottom:'1px solid var(--border2)',width:numDays*GW}},
               monthLabels.map((m,mi)=>{
                 const nextI=mi+1<monthLabels.length?monthLabels[mi+1].i:numDays;
-                return e('div',{key:m.i,style:{width:(nextI-m.i)*GW,flexShrink:0,fontSize:9,fontWeight:700,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.4px',padding:'3px 4px',borderRight:'1px solid var(--border2)',overflow:'hidden',whiteSpace:'nowrap'}},m.label);
+                const wPx=(nextI-m.i)*GW;
+                return e('div',{key:m.i,style:{
+                  width:wPx,flexShrink:0,overflow:'hidden',whiteSpace:'nowrap',
+                  display:'flex',alignItems:'center',paddingLeft:8,gap:0,
+                  borderRight:'1px solid var(--border2)',
+                  background:'var(--bg1)',position:'relative'
+                }},
+                  e('span',{style:{fontSize:9.5,fontWeight:700,color:'var(--text2)',textTransform:'uppercase',letterSpacing:'.6px',lineHeight:1}},[m.label.slice(0,-3),e('span',{key:'yr',style:{opacity:.45,marginLeft:3,fontSize:8.5}},m.label.slice(-3))])
+                );
               })
             ),
-            e('div',{style:{height:22,display:'flex',width:numDays*GW}},
+            // Fila de días
+            e('div',{style:{height:26,display:'flex',width:numDays*GW}},
               days.map((d,i)=>{
                 const ds=d.toISOString().slice(0,10);
                 const isToday=ds===today;
                 const isWknd=d.getDay()===0||d.getDay()===6;
-                return e('div',{key:i,style:{width:GW,flexShrink:0,textAlign:'center',fontSize:9,color:isToday?'var(--accent)':isWknd?'var(--text4)':'var(--text4)',fontWeight:isToday?700:400,background:isToday?'color-mix(in srgb,var(--accent) 8%,transparent)':isWknd?'var(--bg2)':'',borderRight:'1px solid var(--border2)',paddingTop:4}},d.getDate());
+                const isMonday=d.getDay()===1;
+                return e('div',{key:i,style:{
+                  width:GW,flexShrink:0,
+                  display:'flex',alignItems:'center',justifyContent:'center',
+                  fontSize:GW>=38?9:8,
+                  color:isToday?'var(--accent2)':isWknd?'rgba(255,255,255,.18)':'rgba(255,255,255,.32)',
+                  fontWeight:isToday?700:isMonday?600:400,
+                  background:isToday?'color-mix(in srgb,var(--accent2) 10%,transparent)':isWknd?'rgba(255,255,255,.025)':'transparent',
+                  borderRight:isMonday?'1px solid rgba(255,255,255,.1)':'1px solid rgba(255,255,255,.045)',
+                  borderTop:isToday?'2px solid var(--accent2)':'2px solid transparent',
+                  boxSizing:'border-box',
+                  letterSpacing:'.02em',
+                  fontFamily:'Inter,sans-serif',
+                }},GW>=28?d.getDate():'');
               })
             )
           ),
@@ -8121,20 +8156,22 @@ function GanttView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
               const shownEnd=drag&&drag.id===s.id?(drag.curEnd||drag.origEnd):s.dueDate;
               const overdue=!s.done&&s.dueDate&&s.dueDate<today;
               // Fondo fila
-              els.push(e('div',{key:'bg-'+s.id,style:{position:'absolute',top:rowTop,left:0,right:0,height:ROW_H,borderBottom:'1px solid var(--border2)',background:expanded[s.id]?'var(--bg2)':''}}));
-              // Líneas de grid
+              els.push(e('div',{key:'bg-'+s.id,style:{position:'absolute',top:rowTop,left:0,right:0,height:ROW_H,borderBottom:'1px solid rgba(255,255,255,.04)',background:expanded[s.id]?'rgba(255,255,255,.025)':''}}));
+              // Líneas de grid verticales
               days.forEach((d,i)=>{
                 const isWknd=d.getDay()===0||d.getDay()===6;
-                if(isWknd)els.push(e('div',{key:'grid-'+s.id+'-'+i,style:{position:'absolute',top:rowTop,left:i*GW,width:GW,height:ROW_H,background:'color-mix(in srgb,var(--bg3) 50%,transparent)',pointerEvents:'none'}}));
+                const isMonday=d.getDay()===1;
+                if(isWknd)els.push(e('div',{key:'grid-'+s.id+'-'+i,style:{position:'absolute',top:rowTop,left:i*GW,width:GW,height:ROW_H,background:'rgba(255,255,255,.018)',pointerEvents:'none'}}));
+                else if(isMonday)els.push(e('div',{key:'gridml-'+s.id+'-'+i,style:{position:'absolute',top:rowTop,left:i*GW,width:1,height:ROW_H,background:'rgba(255,255,255,.07)',pointerEvents:'none'}}));
               });
               // Barra de fase (solo si tiene fecha)
               if(s.dueDate){
                 const bl=dLeft(shownStart);
                 const bw=dWidth(shownStart,shownEnd);
-                const barColor=overdue?'var(--red,#e05555)':s.done?'var(--text4)':'var(--accent2)';
+                const barColor=overdue?'var(--red,#e05555)':s.done?'rgba(255,255,255,.18)':'var(--accent2)';
                 els.push(e('div',{
                   key:'bar-'+s.id,
-                  style:{position:'absolute',top:rowTop+7,left:bl+2,width:bw-4,height:20,borderRadius:4,background:barColor,opacity:s.done?.5:1,cursor:'grab',display:'flex',alignItems:'center',padding:'0 6px',fontSize:10,color:'#fff',fontWeight:500,overflow:'hidden',whiteSpace:'nowrap',textOverflow:'ellipsis',boxShadow:'0 1px 3px rgba(0,0,0,.3)',zIndex:1},
+                  style:{position:'absolute',top:rowTop+8,left:bl+2,width:bw-4,height:22,borderRadius:5,background:barColor,opacity:s.done?.45:1,cursor:'grab',display:'flex',alignItems:'center',padding:'0 8px',fontSize:10,color:s.done?'rgba(255,255,255,.5)':'rgba(0,0,0,.8)',fontWeight:600,overflow:'hidden',whiteSpace:'nowrap',textOverflow:'ellipsis',boxShadow:'0 2px 6px rgba(0,0,0,.35)',zIndex:1,letterSpacing:'.01em'},
                   title:s.name+' · '+(s.startDate||s.dueDate)+' → '+s.dueDate+' · Doble clic para editar nombre',
                   onDoubleClick:ev=>{ev.preventDefault();startEditName(s,ev);},
                   onMouseDown:ev=>{if(ev.detail===2)return;ev.preventDefault();setDrag({id:s.id,mode:'move',startX:ev.clientX,origStart:s.startDate||s.dueDate,origEnd:s.dueDate,curStart:s.startDate||s.dueDate,curEnd:s.dueDate});}
