@@ -2301,12 +2301,35 @@ const SB = {
     });
   },
 
-  async push(data){
+  // Versión remota (ms) que ESTA pestaña conoce: la del último pull o push
+  // propio. Vive en memoria y no en localStorage a propósito — cada pestaña
+  // o dispositivo tiene la suya. Si en Supabase hay algo más nuevo, es que
+  // otra pestaña/dispositivo guardó después, y subir nuestro estado completo
+  // lo pisaría (la causa de "escribo, cierro, vuelvo a abrir y no quedó nada").
+  _remoteAt: 0,
+  async remoteAt(){
+    const resp = await fetch(`${this.url}/rest/v1/chronos?user_id=eq.${this.uid}&select=updated_at`, {
+      headers: { 'apikey': this.anon, 'Authorization': 'Bearer '+this.anon },
+    });
+    if(!resp.ok) throw new Error(await resp.text());
+    const rows = await resp.json();
+    return rows.length ? (Date.parse(rows[0].updated_at)||0) : 0;
+  },
+
+  async push(data, opts){
     if(!this.configured()) return;
+    // Antes de subir: si lo remoto es más nuevo que lo que esta pestaña
+    // conoce, NO se sube (se avisa con un error "conflict" para que la app
+    // primero baje lo nuevo). opts.force salta el chequeo.
+    if(!(opts&&opts.force)){
+      const r = await this.remoteAt();
+      if(r > this._remoteAt){ const err = new Error('SB_CONFLICT'); err.conflict = true; throw err; }
+    }
+    const pushTs = new Date();
     // Strip imágenes base64 antes de subir — reducen el payload de ~3.3MB a ~0.8MB.
     // Las imágenes quedan en localStorage y se restauran al cargar la app desde ahí.
     const payload = data.tasks ? {...data, tasks: this.stripTaskImages(data.tasks)} : data;
-    const body = JSON.stringify({ user_id: this.uid, data: payload, updated_at: new Date().toISOString() });
+    const body = JSON.stringify({ user_id: this.uid, data: payload, updated_at: pushTs.toISOString() });
     // Advertencia si el payload sigue siendo grande (útil para debug)
     if(body.length > 500*1024) console.warn(`[SB] payload grande: ${Math.round(body.length/1024)}KB`);
     const resp = await fetch(`${this.url}/rest/v1/chronos`, {
@@ -2320,6 +2343,7 @@ const SB = {
       body,
     });
     if(!resp.ok) throw new Error(await resp.text());
+    this._remoteAt = pushTs.getTime();
   },
 
   // ── Sessions en fila aparte (misma tabla, sin cambiar el esquema) ──
@@ -2360,7 +2384,7 @@ const SB = {
   async pull(){
     if(!this.configured()) return null;
     const[mainResp,sessResp]=await Promise.all([
-      fetch(`${this.url}/rest/v1/chronos?user_id=eq.${this.uid}&select=data`, {
+      fetch(`${this.url}/rest/v1/chronos?user_id=eq.${this.uid}&select=data,updated_at`, {
         headers: { 'apikey': this.anon, 'Authorization': 'Bearer '+this.anon },
       }),
       fetch(`${this.url}/rest/v1/chronos?user_id=eq.${encodeURIComponent(this.sessionsUid)}&select=data`, {
@@ -2371,6 +2395,7 @@ const SB = {
     const mainRows = await mainResp.json();
     if(mainRows.length===0) return null;
     const main = mainRows[0].data;
+    this._remoteAt = Date.parse(mainRows[0].updated_at)||0;
     // Prioriza la fila nueva de sessions si ya existe; si no, usa las que
     // vengan incrustadas en la fila principal (usuarios que aún no migraron)
     // — nunca se pierde el historial por no encontrar la fila nueva.
@@ -3567,6 +3592,8 @@ function App(){
   // Flag para evitar que el auto-push suba datos vacíos mientras el pull
   // inicial aún no terminó (race condition al borrar localStorage).
   const sbPullDoneRef=useRef(false);
+  const sbApplyingRemoteRef=useRef(false);
+  const sbLastRemoteCheckRef=useRef(0);
   // Marca los recordatorios YA vencidos al abrir la app para que no
   // disparen audio — solo queremos audio para los que vencen MIENTRAS
   // la app está abierta, no para los del pasado que el usuario ya sabe.
@@ -3615,7 +3642,7 @@ function App(){
   useEffect(()=>{
     function check(){
       const now=Date.now();
-      setReminders(prev=>prev.map(r=>{
+      setReminders(prev=>{let changed=false;const next=prev.map(r=>{
         if(r.done) return r;
         if(r.dueAt&&now<r.dueAt&&firedRemsRef.current.has(r.id)) firedRemsRef.current.delete(r.id);
         if(firedRemsRef.current.has(r.id)) return r;
@@ -3629,10 +3656,16 @@ function App(){
             playSound(soundCfg.remindSound||'bell',soundCfg.remindVol!=null?soundCfg.remindVol:0.6);
             setRemToast({id:r.id,title:r.title,projName:proj?.name||'',color:proj?.color||'var(--accent)'});
           }
+          if(r.overdue===true) return r; // ya estaba marcado: no tocar el objeto
+          changed=true;
           return{...r,overdue:true};
         }
         return r;
-      }));
+      });
+      // Sin cambios reales se devuelve el MISMO arreglo: antes se creaba uno
+      // nuevo cada 30s y eso disparaba una subida completa a Supabase desde
+      // cada pestaña abierta, pisando lo guardado en otra.
+      return changed?next:prev;});
     }
     check();
     remindersFirstRun.current=false;
@@ -3731,6 +3764,68 @@ function App(){
     return()=>clearInterval(id);
   },[]);
 
+  // Aplica al estado local los datos bajados de Supabase. Se usa en el pull
+  // inicial, cuando otra pestaña/dispositivo guardó algo más nuevo, y al
+  // volver a esta pestaña. Marca sbApplyingRemoteRef para que el auto-push
+  // no re-suba como "cambio propio" lo que acaba de bajar.
+  function applyRemote(remote){
+    sbApplyingRemoteRef.current=true;
+    setTimeout(()=>{sbApplyingRemoteRef.current=false;},1500);
+      if(remote.projects?.length)  setProjects(remote.projects);
+      if(remote.sessions?.length)  setSessions(remote.sessions);
+      if(remote.intenciones)       setIntenciones(remote.intenciones);
+      if(remote.tasks?.length){
+        // Las imágenes de pizarra no viajan a Supabase (para no colapsar el Disk IO).
+        // Al restaurar datos remotos, re-inyectamos las imágenes desde el localStorage local.
+        setTasks(prev=>{
+          const localById=Object.fromEntries(prev.map(t=>[t.id,t]));
+          return remote.tasks.map(rt=>{
+            const lt=localById[rt.id];
+            if(!lt) return rt;
+            const remoteImgs=rt.board?.images;
+            const localImgs=lt.board?.images;
+            // Si remoto viene sin imágenes pero local las tiene, preservar local
+            if((!remoteImgs||!remoteImgs.length)&&localImgs?.length){
+              return {...rt,board:{...(rt.board||{}),images:localImgs}};
+            }
+            return rt;
+          });
+        });
+      }
+      if(remote.blocks?.length)    setBlocks(remote.blocks);
+      if(remote.habits?.length)    setHabits(remote.habits);
+      if(remote.systems?.length)   setSystems(remote.systems);
+      if(remote.panelLabels)       setPanelLabels(remote.panelLabels);
+      if(remote.panelVisibility)   setPanelVisibility(remote.panelVisibility);
+      if(remote.panelSortModes)    setPanelSortModes(remote.panelSortModes);
+      // Recordatorios: siempre restauramos desde Supabase aunque el
+      // arreglo local no esté vacío — así sobreviven a actualizaciones
+      // del archivo. Merge: remotos ganan en conflicto, locales offline
+      // (sin id en remoto) se conservan.
+      if(remote.reminders!=null){
+        setReminders(prev=>{
+          const remoteIds=new Set((remote.reminders||[]).map(r=>r.id));
+          const onlyLocal=prev.filter(r=>!remoteIds.has(r.id));
+          return[...(remote.reminders||[]),...onlyLocal];
+        });
+      }
+      if(remote.notes)             setNotes(remote.notes);
+      if(remote.ctxs?.length)      setCtxs(remote.ctxs);
+      if(remote.templates?.length) setTemplates(remote.templates);
+      if(remote.sysTemplates?.length) setSysTemplates(remote.sysTemplates);
+      if(remote.subStatuses?.length){ setSubStatuses(remote.subStatuses); saveSubStatuses(remote.subStatuses); }
+  }
+  async function refreshFromRemote(notify){
+    try{
+      const remote=await SB.pull();
+      if(remote){
+        applyRemote(remote);
+        SB.markSynced();
+        if(notify)showNotif('☁ Había cambios más nuevos desde otra pestaña o dispositivo — se actualizó esta vista',5000);
+      }
+    }catch(e){ console.warn('[SB] refresh error',e); }
+  }
+
   // SB: on connect, pull and restore remote data
   useEffect(()=>{
     if(sbStatus!=='connected') return;
@@ -3742,56 +3837,21 @@ function App(){
         // local recién cargado desde localStorage con datos remotos más
         // viejos. Primero subimos lo local para no perder el cambio.
         if(SB.isDirty()){
-          await SB.push({projects,sessions,intenciones,tasks,blocks,habits,reminders,ctxs,systems,notes,panelLabels,panelVisibility,panelSortModes,templates,sysTemplates,subStatuses});
-          SB.markSynced();
+          // ...salvo que otro dispositivo/pestaña haya guardado DESPUÉS de
+          // nuestro último cambio local: ahí gana lo remoto (más reciente).
+          const dirtyAt=Number(SB._load(SB.K_DIRTY)||0);
+          let rAt=0;
+          try{ rAt=await SB.remoteAt(); }catch(e){}
+          if(rAt<=dirtyAt){
+            await SB.push({projects,sessions,intenciones,tasks,blocks,habits,reminders,ctxs,systems,notes,panelLabels,panelVisibility,panelSortModes,templates,sysTemplates,subStatuses},{force:true});
+            SB.markSynced();
+          }
           // NO hacemos return: leemos igual para restaurar recordatorios
           // y cualquier dato que no esté en localStorage por actualizar el app.
         }
         const remote = await SB.pull();
         if(remote){
-          if(remote.projects?.length)  setProjects(remote.projects);
-          if(remote.sessions?.length)  setSessions(remote.sessions);
-          if(remote.intenciones)       setIntenciones(remote.intenciones);
-          if(remote.tasks?.length){
-            // Las imágenes de pizarra no viajan a Supabase (para no colapsar el Disk IO).
-            // Al restaurar datos remotos, re-inyectamos las imágenes desde el localStorage local.
-            setTasks(prev=>{
-              const localById=Object.fromEntries(prev.map(t=>[t.id,t]));
-              return remote.tasks.map(rt=>{
-                const lt=localById[rt.id];
-                if(!lt) return rt;
-                const remoteImgs=rt.board?.images;
-                const localImgs=lt.board?.images;
-                // Si remoto viene sin imágenes pero local las tiene, preservar local
-                if((!remoteImgs||!remoteImgs.length)&&localImgs?.length){
-                  return {...rt,board:{...(rt.board||{}),images:localImgs}};
-                }
-                return rt;
-              });
-            });
-          }
-          if(remote.blocks?.length)    setBlocks(remote.blocks);
-          if(remote.habits?.length)    setHabits(remote.habits);
-          if(remote.systems?.length)   setSystems(remote.systems);
-          if(remote.panelLabels)       setPanelLabels(remote.panelLabels);
-          if(remote.panelVisibility)   setPanelVisibility(remote.panelVisibility);
-          if(remote.panelSortModes)    setPanelSortModes(remote.panelSortModes);
-          // Recordatorios: siempre restauramos desde Supabase aunque el
-          // arreglo local no esté vacío — así sobreviven a actualizaciones
-          // del archivo. Merge: remotos ganan en conflicto, locales offline
-          // (sin id en remoto) se conservan.
-          if(remote.reminders!=null){
-            setReminders(prev=>{
-              const remoteIds=new Set((remote.reminders||[]).map(r=>r.id));
-              const onlyLocal=prev.filter(r=>!remoteIds.has(r.id));
-              return[...(remote.reminders||[]),...onlyLocal];
-            });
-          }
-          if(remote.notes)             setNotes(remote.notes);
-          if(remote.ctxs?.length)      setCtxs(remote.ctxs);
-          if(remote.templates?.length) setTemplates(remote.templates);
-          if(remote.sysTemplates?.length) setSysTemplates(remote.sysTemplates);
-          if(remote.subStatuses?.length){ setSubStatuses(remote.subStatuses); saveSubStatuses(remote.subStatuses); }
+          applyRemote(remote);
           // Recuperación de sesión: si quedó un checkpoint (guardado cada 3 min
           // mientras corría una sesión) y esa sesión nunca se cerró con doStop
           // — porque se cerró la página o se apagó el PC — la convertimos en
@@ -3835,6 +3895,9 @@ function App(){
     // race condition donde datos vacíos (localStorage borrado) sobreescriben
     // los datos remotos si el push llega después del pull.
     if(!sbPullDoneRef.current) return;
+    // Este cambio de estado viene de aplicar datos remotos (applyRemote),
+    // no de una edición propia: no hay nada que subir.
+    if(sbApplyingRemoteRef.current){ sbApplyingRemoteRef.current=false; return; }
     // Se marca "sucio" apenas cambia cualquier dato sincronizable, antes de
     // que termine de subirse — así, si la página se recarga en ese
     // intervalo, sabemos que hubo un cambio que quizás no llegó a subirse.
@@ -3861,8 +3924,15 @@ function App(){
         SB.markSynced();
         sbFailStreakRef.current=0;
       }catch(e){
-        console.warn('[SB] push error',e);
-        sbFailStreakRef.current=Math.min(5,sbFailStreakRef.current+1); // tope en 5 → no pasa de 60s de espera
+        if(e&&e.conflict){
+          // Otra pestaña/dispositivo guardó algo más nuevo: no lo pisamos,
+          // bajamos esa versión.
+          console.warn('[SB] conflicto: remoto más nuevo, se baja en vez de subir');
+          await refreshFromRemote(true);
+        }else{
+          console.warn('[SB] push error',e);
+          sbFailStreakRef.current=Math.min(5,sbFailStreakRef.current+1); // tope en 5 → no pasa de 60s de espera
+        }
       }
       setSbSyncing(false);
     },backoff);
@@ -3949,7 +4019,7 @@ function App(){
   // always sends fresh data, not a stale closure from when the listener was added
   const sbLatestRef=useRef(null);
   useEffect(()=>{
-    sbLatestRef.current={projects,sessions,intenciones,tasks,blocks,habits,reminders,ctxs,systems,notes,panelLabels,panelVisibility,panelSortModes,templates,sysTemplates};
+    sbLatestRef.current={projects,sessions,intenciones,tasks,blocks,habits,reminders,ctxs,systems,notes,panelLabels,panelVisibility,panelSortModes,templates,sysTemplates,subStatuses};
   });
   // Mirrors of activeSess/tState kept fresh every render (no dep array) so the
   // beforeunload flush and the periodic checkpoint below always see the real
@@ -4000,7 +4070,9 @@ function App(){
       // (no solo al cerrar) — mucho más seguido que un cierre real. Si no hay
       // nada pendiente de subir (ya está todo sincronizado), no vale la pena
       // gastar una conexión en una subida que no cambia nada.
-      if(!force&&!SB.isDirty())return;
+      // Tampoco al cerrar: una pestaña sin cambios propios no debe subir su
+      // copia (posiblemente vieja) y pisar lo que guardó otra.
+      if(!SB.isDirty())return;
       try{
         const url=`${SB.url}/rest/v1/chronos`;
         const liveCheckpoint=buildLiveCheckpoint();
@@ -4008,14 +4080,32 @@ function App(){
         // Strip imágenes base64 igual que en push() — el beforeunload también
         // usa keepalive y no debe mandar los MB de imágenes de pizarra
         const data=rawData.tasks?{...rawData,tasks:SB.stripTaskImages(rawData.tasks)}:rawData;
-        const body=JSON.stringify({ user_id: SB.uid, data, updated_at: new Date().toISOString() });
-        fetch(url,{method:'POST',keepalive:true,headers:{'apikey':SB.anon,'Authorization':'Bearer '+SB.anon,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates'},body});
-        SB.markSynced();
+        const flushTs=new Date();
+        const body=JSON.stringify({ user_id: SB.uid, data, updated_at: flushTs.toISOString() });
+        // keepalive solo admite ~64KB: con más, el navegador rechaza el envío.
+        // Solo se marca "sincronizado" cuando Supabase confirma; si no llegó,
+        // queda "sucio" y se sube al volver a abrir.
+        fetch(url,{method:'POST',keepalive:body.length<60000,headers:{'apikey':SB.anon,'Authorization':'Bearer '+SB.anon,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates'},body})
+          .then(r=>{ if(r.ok){ SB._remoteAt=flushTs.getTime(); SB.markSynced(); } }).catch(()=>{});
       }catch(e){ /* best effort */ }
     }
     window.addEventListener('beforeunload',()=>flush(true));
     window.addEventListener('pagehide',()=>flush(true));
     document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden') flush(false); });
+    // Al volver a esta pestaña (o enfocar la ventana): si otra pestaña o
+    // dispositivo guardó algo más nuevo y acá no hay cambios pendientes, se
+    // baja esa versión para no seguir trabajando sobre datos viejos.
+    async function checkRemoteNewer(){
+      if(sbStatus!=='connected'||!SB.configured()||!sbPullDoneRef.current) return;
+      if(document.visibilityState!=='visible') return;
+      const now=Date.now();
+      if(now-sbLastRemoteCheckRef.current<5000) return;
+      sbLastRemoteCheckRef.current=now;
+      if(SB.isDirty()) return; // hay cambios propios en camino: decide el push
+      try{ const r=await SB.remoteAt(); if(r>SB._remoteAt) await refreshFromRemote(false); }catch(e){}
+    }
+    document.addEventListener('visibilitychange',checkRemoteNewer);
+    window.addEventListener('focus',checkRemoteNewer);
     return()=>{ window.removeEventListener('beforeunload',flush); window.removeEventListener('pagehide',flush); };
   },[sbStatus]);
 
@@ -5008,7 +5098,7 @@ function App(){
       onDisconnect:()=>{ SB.disconnect(); setSbStatus('disconnected'); },
       onManualSync:async()=>{
         setSbSyncing(true);
-        try{ await SB.push({projects,sessions,intenciones,tasks,blocks,habits,reminders,ctxs,systems,notes,panelLabels,panelVisibility,panelSortModes,templates,sysTemplates}); SB.markSynced(); showNotif('☁ Sincronizado ✓'); }
+        try{ await SB.push({projects,sessions,intenciones,tasks,blocks,habits,reminders,ctxs,systems,notes,panelLabels,panelVisibility,panelSortModes,templates,sysTemplates,subStatuses},{force:true}); SB.markSynced(); showNotif('☁ Sincronizado ✓'); }
         catch(e){ console.warn(e); }
         setSbSyncing(false);
       },
