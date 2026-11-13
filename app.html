@@ -3856,7 +3856,7 @@ function App(){
     sbSyncRef.current=setTimeout(async()=>{
       setSbSyncing(true);
       try{
-        await SB.push({projects,intenciones,tasks,blocks,habits,reminders,ctxs,systems,panelLabels,panelVisibility,panelSortModes,templates,sysTemplates,subStatuses});
+        await SB.push({projects,intenciones,tasks,blocks,habits,reminders,ctxs,systems,notes,panelLabels,panelVisibility,panelSortModes,templates,sysTemplates,subStatuses});
         SB.markSynced();
         sbFailStreakRef.current=0;
       }catch(e){
@@ -3866,7 +3866,7 @@ function App(){
       setSbSyncing(false);
     },backoff);
     return()=>clearTimeout(sbSyncRef.current);
-  },[projects,intenciones,tasks,blocks,habits,reminders,ctxs,systems,panelLabels,panelVisibility,panelSortModes,templates,sysTemplates,subStatuses,sbStatus]);
+  },[projects,intenciones,tasks,blocks,habits,reminders,ctxs,systems,notes,panelLabels,panelVisibility,panelSortModes,templates,sysTemplates,subStatuses,sbStatus]);
 
   // Sesiones — efecto aparte, con su propio debounce y su propio backoff.
   // Solo se dispara cuando el historial de sesiones realmente cambia
