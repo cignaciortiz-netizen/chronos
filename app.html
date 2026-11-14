@@ -15964,9 +15964,29 @@ function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask,templates,onAddTe
   // actLog. Las fases sin fecha quedan igual (no participan del encadenado).
   // Sirve para cuando el proyecto arrancó más tarde (o más temprano) de lo
   // planeado y hay que correr todo el calendario sin perder el trabajo ya hecho.
-  function recalcFromStart(newStart,bizOnly){
+  function recalcFromStart(newStart,bizOnly,fresh,perTask){
     let cursor=bizOnly?alignToBizDayKey(newStart):newStart;
+    // Modo "desde cero": se IGNORAN las fechas y duraciones anteriores. Cada fase dura
+    // lo que sus tareas pendientes necesitan (perTask días por tarea, mínimo 1 día) y
+    // las tareas se asignan una tras otra, en orden, a partir del inicio de la fase.
+    // Las fases y tareas ya hechas no se tocan.
+    const per=Math.max(1,Math.round(Number(perTask)||1));
     const next=steps.map(s=>{
+      if(fresh){
+        if(s.done)return s;
+        const subsAll=s.subtasks||[];
+        const pend=subsAll.filter(x=>!x.done);
+        const startDate=cursor;
+        const dueDate=addSpanDays(cursor,Math.max(0,Math.max(1,pend.length)*per-1),bizOnly);
+        cursor=nextChainCursor(dueDate,bizOnly);
+        let slot=0;
+        const subtasks=subsAll.map(x=>{
+          if(x.done)return x;
+          const d=addSpanDays(startDate,slot*per,bizOnly);slot++;
+          return{...x,dueDate:d,startDate:d};
+        });
+        return{...s,startDate,dueDate,subtasks};
+      }
       if(!s.startDate||!s.dueDate)return s; // sin fecha original: se deja tal cual
       const a=new Date(s.startDate+'T00:00:00'),b=new Date(s.dueDate+'T00:00:00');
       const dur=Math.max(0,Math.round((b-a)/86400000));
@@ -16556,6 +16576,15 @@ function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask,templates,onAddTe
             e('label',{style:{display:'flex',alignItems:'center',gap:7,fontSize:11.5,color:'var(--text2)',marginTop:8,cursor:'pointer'}},
               e('input',{type:'checkbox',id:'recalc-biz-only',defaultChecked:!!task.datesBizOnly}),
               'Contar solo días de semana (excluir sábado y domingo)'
+            ),
+            e('label',{style:{display:'flex',alignItems:'center',gap:7,fontSize:11.5,color:'var(--text2)',marginTop:8,cursor:'pointer'}},
+              e('input',{type:'checkbox',id:'recalc-fresh',defaultChecked:true}),
+              'Ignorar las fechas anteriores y calcular todo desde cero'
+            ),
+            e('div',{style:{display:'flex',alignItems:'center',gap:7,fontSize:11.5,color:'var(--text2)',marginTop:8,paddingLeft:21}},
+              'Días por tarea',
+              e('input',{className:'finput',type:'number',min:1,max:30,id:'recalc-per-task',defaultValue:1,style:{width:56,padding:'4px 8px'}}),
+              e('span',{style:{color:'var(--text4)'}},'cada fase dura lo que suman sus tareas pendientes')
             )
           ),
           e('div',{className:'modal-foot'},
@@ -16564,7 +16593,9 @@ function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask,templates,onAddTe
               const input=document.getElementById('recalc-start-date');
               const bizInput=document.getElementById('recalc-biz-only');
               const startFrom=(input&&input.value)||todayDateKey();
-              recalcFromStart(startFrom,!!(bizInput&&bizInput.checked));
+              const freshInput=document.getElementById('recalc-fresh');
+              const perInput=document.getElementById('recalc-per-task');
+              recalcFromStart(startFrom,!!(bizInput&&bizInput.checked),!!(freshInput&&freshInput.checked),perInput?perInput.value:1);
             }},'Recalcular fechas')
           )
         )
