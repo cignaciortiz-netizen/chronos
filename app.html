@@ -15962,19 +15962,16 @@ function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask,templates,onAddTe
       const startDate=cursor;
       const dueDate=addSpanDays(cursor,dur,bizOnly);
       cursor=nextChainCursor(dueDate,bizOnly); // nunca se pisa con la fase siguiente
-      // Las tareas con día asignado se mueven junto con su fase: si estaban dentro
-      // del tramo de la fase conservan su posición (días desde el inicio, sin pasar
-      // del nuevo deadline); si estaban fuera, se corren los mismos días que la fase.
+      // Las tareas de la fase se recalculan junto con ella: las que ya tenían día se
+      // reescalan para caer DENTRO del nuevo tramo (de inicio a deadline), conservando
+      // su orden y su agrupación (las que compartían día lo siguen compartiendo); las
+      // pendientes sin día se reparten en orden a lo largo del tramo.
       const dayDiff=(x,y)=>Math.round((new Date(y+'T00:00:00')-new Date(x+'T00:00:00'))/86400000);
-      const shiftKey=(k,n)=>{const d=new Date(k+'T12:00:00');d.setDate(d.getDate()+n);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
-      const moveKey=k=>{
-        if(!k)return k;
-        if(k>=s.startDate&&k<=s.dueDate)return addSpanDays(startDate,Math.min(dayDiff(s.startDate,k),dur),bizOnly);
-        return shiftKey(k,dayDiff(s.startDate,startDate));
-      };
-      // Las tareas que aún no tenían día (pendientes) se reparten en orden a lo largo
-      // del tramo de la fase: la primera el día de inicio y la última el deadline.
       const allSubs=s.subtasks||[];
+      const dated=allSubs.map(x=>x.dueDate||x.startDate).filter(Boolean).sort();
+      const dMin=dated[0],dMax=dated[dated.length-1];
+      const span=dated.length?dayDiff(dMin,dMax):0;
+      const moveKey=k=>addSpanDays(startDate,span>0?Math.round(dayDiff(dMin,k)*dur/span):0,bizOnly);
       const subtasks=allSubs.map((x,i)=>{
         if(x.dueDate||x.startDate)return{...x,...(x.dueDate?{dueDate:moveKey(x.dueDate)}:{}),...(x.startDate?{startDate:moveKey(x.startDate)}:{})};
         if(x.done)return x;
@@ -16540,7 +16537,7 @@ function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask,templates,onAddTe
           e('div',{className:'modal-head'},e('div',{className:'modal-title'},'Recalcular fechas del proyecto'),e('button',{className:'modal-x',onClick:()=>setShowRecalc(false)},'✕')),
           e('div',{className:'modal-body'},
             e('div',{style:{fontSize:11.5,color:'var(--text2)',lineHeight:1.6,marginBottom:10}},
-              'Elige la nueva fecha de inicio y las '+datedSteps.length+' fase(s) con fecha se recorren en cadena a partir de ahí, respetando la duración que ya tenía cada una; las tareas con día se mueven con su fase y las que no tenían día se reparten dentro de ella. No se pierde ningún nombre, tarea, avance ni fase sin fecha.'
+              'Elige la nueva fecha de inicio y las '+datedSteps.length+' fase(s) con fecha se recorren en cadena a partir de ahí, respetando la duración que ya tenía cada una; las tareas de cada fase se recalculan dentro de su nuevo tramo (conservando su orden) y las que no tenían día se reparten dentro de ella. No se pierde ningún nombre, tarea, avance ni fase sin fecha.'
             ),
             e('div',{className:'fg'},e('label',{className:'flabel'},'Nueva fecha de inicio'),
               e('input',{className:'finput',type:'date',id:'recalc-start-date',defaultValue:currentFirst||todayDateKey()})
