@@ -15972,7 +15972,15 @@ function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask,templates,onAddTe
         if(k>=s.startDate&&k<=s.dueDate)return addSpanDays(startDate,Math.min(dayDiff(s.startDate,k),dur),bizOnly);
         return shiftKey(k,dayDiff(s.startDate,startDate));
       };
-      const subtasks=(s.subtasks||[]).map(x=>(x.dueDate||x.startDate)?{...x,...(x.dueDate?{dueDate:moveKey(x.dueDate)}:{}),...(x.startDate?{startDate:moveKey(x.startDate)}:{})}:x);
+      // Las tareas que aún no tenían día (pendientes) se reparten en orden a lo largo
+      // del tramo de la fase: la primera el día de inicio y la última el deadline.
+      const allSubs=s.subtasks||[];
+      const subtasks=allSubs.map((x,i)=>{
+        if(x.dueDate||x.startDate)return{...x,...(x.dueDate?{dueDate:moveKey(x.dueDate)}:{}),...(x.startDate?{startDate:moveKey(x.startDate)}:{})};
+        if(x.done)return x;
+        const off=allSubs.length<=1?dur:Math.round(i*dur/(allSubs.length-1));
+        return{...x,dueDate:addSpanDays(startDate,off,bizOnly)};
+      });
       return{...s,startDate,dueDate,subtasks};
     });
     commit(next);
@@ -16532,7 +16540,7 @@ function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask,templates,onAddTe
           e('div',{className:'modal-head'},e('div',{className:'modal-title'},'Recalcular fechas del proyecto'),e('button',{className:'modal-x',onClick:()=>setShowRecalc(false)},'✕')),
           e('div',{className:'modal-body'},
             e('div',{style:{fontSize:11.5,color:'var(--text2)',lineHeight:1.6,marginBottom:10}},
-              'Elige la nueva fecha de inicio y las '+datedSteps.length+' fase(s) con fecha se recorren en cadena a partir de ahí, respetando la duración que ya tenía cada una; las tareas con día asignado se mueven con su fase. No se pierde ningún nombre, tarea, avance ni fase sin fecha.'
+              'Elige la nueva fecha de inicio y las '+datedSteps.length+' fase(s) con fecha se recorren en cadena a partir de ahí, respetando la duración que ya tenía cada una; las tareas con día se mueven con su fase y las que no tenían día se reparten dentro de ella. No se pierde ningún nombre, tarea, avance ni fase sin fecha.'
             ),
             e('div',{className:'fg'},e('label',{className:'flabel'},'Nueva fecha de inicio'),
               e('input',{className:'finput',type:'date',id:'recalc-start-date',defaultValue:currentFirst||todayDateKey()})
