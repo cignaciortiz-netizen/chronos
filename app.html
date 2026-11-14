@@ -7691,7 +7691,7 @@ function ComboView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
   let rangeEnd=addD(allK[allK.length-1],5);
   if(rangeEnd<addD(rangeStart,20))rangeEnd=addD(rangeStart,20);
   const days=[];
-  for(let k=rangeStart;k<=rangeEnd&&days.length<400;k=addD(k,1)){const d=new Date(k+'T12:00:00');days.push({key:k,dom:d.getDate(),dow:d.getDay(),mon:d.getMonth()});}
+  for(let k=rangeStart;k<=rangeEnd&&days.length<1500;k=addD(k,1)){const d=new Date(k+'T12:00:00');days.push({key:k,dom:d.getDate(),dow:d.getDay(),mon:d.getMonth()});}
   const gridStyle={flex:1,display:'grid',gridTemplateColumns:'repeat('+days.length+',minmax('+W+'px,1fr))',minWidth:days.length*W};
   const rowMinW=LEFT_W+days.length*W;
 
@@ -7702,6 +7702,13 @@ function ComboView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
     sc.scrollLeft=Math.max(0,idx*colW-colW*2);
   }
   useEffect(()=>{scrollToToday();},[zoom]);
+  // Lleva la línea de tiempo a una fecha (al abrir una fase, para ver sus tareas aunque estén lejos de hoy)
+  function scrollToKey(k){
+    const sc=scrollerRef.current;if(!sc||!k)return;
+    const idx=days.findIndex(d=>d.key===k);if(idx<0)return;
+    const colW=(sc.scrollWidth-LEFT_W)/days.length;
+    sc.scrollLeft=Math.max(0,idx*colW-colW*2);
+  }
 
   function updSub(stepId,subId,patch){updateStep(stepId,s=>({subtasks:(s.subtasks||[]).map(x=>x.id===subId?{...x,...patch}:x)}));}
   function addSubWithDate(stepId){
@@ -7798,7 +7805,11 @@ function ComboView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
           // ── fila de fase ──
           e('div',{className:'cv-row',style:{minWidth:rowMinW,opacity:s.done?.6:1},onContextMenu:ev=>openRowCtx(ev,s.id)},
             e('div',{className:'cv-left',style:{width:LEFT_W,height:ROW_H,background:rowBg,padding:'0 6px 0 8px',zIndex:isOpen?20:3}},
-              e('button',{title:isExpanded?'Ocultar tareas':'Ver tareas',onClick:()=>toggleExpand(s.id),
+              e('button',{title:isExpanded?'Ocultar tareas':'Ver tareas',onClick:()=>{
+                const opening=!expandedRows.has(s.id);
+                toggleExpand(s.id);
+                if(opening){const ks=subs.map(x=>x.dueDate).filter(Boolean).sort();const target=ks[0]||s.dueDate;setTimeout(()=>scrollToKey(target),60);}
+              },
                 style:{width:20,height:22,flexShrink:0,border:'none',background:'none',cursor:'pointer',padding:0,color:'var(--text3)',display:'flex',alignItems:'center',justifyContent:'center'}},
                 e('span',{style:{fontSize:13,fontWeight:700,lineHeight:1,display:'inline-block',transition:'transform .15s',transform:isExpanded?'rotate(90deg)':'none'}},'›')),
               e('div',{style:{width:24,flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',position:'relative'}},
