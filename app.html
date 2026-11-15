@@ -693,6 +693,37 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .dl-hint{font-size:11.5px;color:var(--text3);padding:4px 2px}
 .dl-old{margin-top:12px;width:100%;background:transparent;border:1px dashed var(--border3);border-radius:10px;color:var(--text3);font-size:10.5px;padding:7px 8px;cursor:pointer;font-family:'Inter',sans-serif}
 .dl-old:hover{color:var(--text1);border-color:var(--text3)}
+.dl-blocks{display:flex;flex-direction:column;gap:8px}
+.dl-part{display:flex;align-items:center;gap:10px;margin:8px 0 0}
+.dl-part span{font-size:10.5px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.07em}
+.dl-part i{flex:1;height:1px;background:#ffffff10}
+.dl-part:first-child{margin-top:0}
+.dl-bk{background:var(--bg2);border-radius:14px;overflow:hidden;transition:box-shadow .15s}
+.dl-bk.now{background:var(--accent-bg);box-shadow:inset 0 0 0 1px var(--accent-border)}
+.dl-bk.over{box-shadow:inset 0 0 0 1px var(--accent)}
+.dl-bk-h{display:flex;align-items:center;gap:10px;padding:11px 14px;cursor:pointer}
+.dl-bk-ic{width:30px;height:30px;border-radius:10px;background:var(--bg4);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.dl-bk.now .dl-bk-ic{background:var(--accent)}
+.dl-bk-t{flex:1;min-width:0}
+.dl-bk-name{font-size:13px;font-weight:500;color:var(--text0);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dl-bk-now{font-size:10px;font-weight:500;color:var(--accent2);background:var(--accent-bg);border-radius:20px;padding:2px 8px;margin-left:8px}
+.dl-bk-time{font:500 10.5px 'JetBrains Mono',monospace;color:var(--text3)}
+.dl-bk-pg{width:70px;height:4px;border-radius:4px;background:var(--bg4);overflow:hidden;flex-shrink:0}
+.dl-bk-pg i{display:block;height:100%;background:var(--accent);border-radius:4px;transition:width .3s}
+.dl-bk-cnt{font:500 11px 'JetBrains Mono',monospace;color:var(--text2);width:34px;text-align:right;flex-shrink:0}
+.dl-bk-cv{color:var(--text3);font-size:14px;transition:transform .15s;flex-shrink:0;line-height:1}
+.dl-bk.cl .dl-bk-cv{transform:rotate(-90deg)}
+.dl-bk-b{padding:0 14px 10px 54px}
+.dl-tk{display:flex;align-items:center;gap:10px;padding:8px;border-radius:9px;min-width:0;cursor:grab}
+.dl-tk+.dl-tk{border-top:1px solid #ffffff08}
+.dl-tk:hover{background:#ffffff06}
+.dl-tk.dn{opacity:.45;cursor:default}
+.dl-tk.dn .dl-tk-n{text-decoration:line-through}
+.dl-tk-n{flex:1;min-width:0;font-size:12.5px;color:var(--text0);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dl-tk-m{font-size:10.5px;color:var(--text3);flex-shrink:0;max-width:34%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
+.dl-tk-m:hover{color:var(--text1)}
+.dl-newblk{border:1px dashed var(--border3);border-radius:12px;padding:10px;text-align:center;font-size:10.5px;color:var(--text4);transition:all .12s}
+.dl-newblk.over{border-color:var(--accent);color:var(--accent2);background:var(--accent-bg)}
 .dl-cap{font:500 10.5px 'JetBrains Mono',monospace;color:var(--text3);background:var(--bg3);border-radius:20px;padding:2px 9px}
 .dl-cap.over{color:var(--amber);background:var(--amber-bg)}
 .dl-plan-btn{font-size:11px!important;padding:5px 12px!important;border-radius:20px!important;white-space:nowrap}
@@ -4773,8 +4804,8 @@ function App(){
               setTasks(ts=>ts.map(t=>t.id!==taskId?t:{...t,steps:(t.steps||[]).map(st=>st.id!==stepId?st:{...st,subtasks:(st.subtasks||[]).map(x=>x.id===subId?{...x,done:!x.done}:x)})}));
               forceSync();
             },
-            onSetSubTime:(taskId,stepId,subId,time,day)=>{
-              setTasks(ts=>ts.map(t=>t.id!==taskId?t:{...t,steps:(t.steps||[]).map(st=>st.id!==stepId?st:{...st,subtasks:(st.subtasks||[]).map(x=>x.id===subId?{...x,time:time||null,dueDate:day||x.dueDate}:x)})}));
+            onSetSubTime:(taskId,stepId,subId,time,day,block)=>{
+              setTasks(ts=>ts.map(t=>t.id!==taskId?t:{...t,steps:(t.steps||[]).map(st=>st.id!==stepId?st:{...st,subtasks:(st.subtasks||[]).map(x=>x.id===subId?{...x,time:time||null,dueDate:day||x.dueDate,...(block!==undefined?{block:block||null}:{})}:x)})}));
               forceSync();
             },
             onSetReminderTime:(id,day,time)=>{
@@ -4786,7 +4817,7 @@ function App(){
             onApplyPlan:updates=>{
               const byTask={};
               (updates||[]).forEach(u=>{(byTask[u.taskId]=byTask[u.taskId]||{})[u.subId]=u;});
-              setTasks(ts=>ts.map(t=>!byTask[t.id]?t:{...t,steps:(t.steps||[]).map(st=>({...st,subtasks:(st.subtasks||[]).map(x=>{const u=byTask[t.id][x.id];return u?{...x,time:u.time||null,dueDate:u.dueDate}:x;})}))}));
+              setTasks(ts=>ts.map(t=>!byTask[t.id]?t:{...t,steps:(t.steps||[]).map(st=>({...st,subtasks:(st.subtasks||[]).map(x=>{const u=byTask[t.id][x.id];return u?{...x,time:u.time||null,dueDate:u.dueDate,block:u.block||null}:x;})}))}));
               forceSync();
             },
             onSetHabitTime:(id,time)=>{
@@ -12412,7 +12443,8 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
   const toMin=t=>{const a=String(t).split(':').map(Number);return (a[0]||0)*60+(a[1]||0);};
   const minKey=(()=>{const d=dateFromDayKey(day);d.setUTCDate(d.getUTCDate()-RECENT_DAYS);return d.getUTCFullYear()+'-'+pad2(d.getUTCMonth()+1)+'-'+pad2(d.getUTCDate());})();
   const[showOld,setShowOld]=useState(false);
-  const[overHour,setOverHour]=useState(null);
+  const[overBlock,setOverBlock]=useState(null);
+  const[collapsed,setCollapsed]=useState(()=>new Set());
   const[overPool,setOverPool]=useState(false);
   const dragRef=useRef(null);
   const[showPlan,setShowPlan]=useState(false);
@@ -12457,15 +12489,13 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
   });
   // Los recordatorios son avisos, no tareas: van aparte (franja de chips) y no cuentan en la carga del día.
   const remItems=items.filter(i=>i.type==='rem').sort((a,b)=>(a.late?-1:0)-(b.late?-1:0)||String(a.time||'').localeCompare(String(b.time||'')));
-  const work=items.filter(i=>i.type!=='rem');
+  const habItems=items.filter(i=>i.type==='hab').sort((a,b)=>String(a.time||'99').localeCompare(String(b.time||'99')));
+  const work=items.filter(i=>i.type==='sub');
   const timed=work.filter(i=>i.time).sort((a,b)=>toMin(a.time)-toMin(b.time));
   const poolLate=work.filter(i=>i.late&&!i.done);
   const poolToday=work.filter(i=>!i.time&&!i.late&&!i.done);
   const total=work.length,doneN=work.filter(i=>i.done).length;
   const loadToday=work.filter(i=>i.type==='sub'&&!i.done).length; // tareas de fase pendientes hoy (con y sin hora)
-  const nextItem=isToday?timed.find(i=>!i.done&&toMin(i.time)>=nowMin-20):timed.find(i=>!i.done);
-  const hours=timed.map(i=>toMin(i.time)/60|0);
-  const hStart=Math.min(8,...(hours.length?hours:[8])),hEnd=Math.max(20,...(hours.length?hours:[20]));
 
 
   const addDayKey=(k,n)=>{const d=dateFromDayKey(k);d.setUTCDate(d.getUTCDate()+n);return d.getUTCFullYear()+'-'+pad2(d.getUTCMonth()+1)+'-'+pad2(d.getUTCDate());};
@@ -12489,16 +12519,16 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
     const byProj=new Map();
     chosen.forEach(i=>{const id=i.proj?i.proj.id:'_';if(!byProj.has(id))byProj.set(id,{proj:i.proj,list:[]});byProj.get(id).list.push(i);});
     let blocks=[];const singles=[];
-    byProj.forEach(g=>{if(g.list.length>1)blocks.push({name:g.proj?g.proj.name:'Sin cuenta',list:g.list});else singles.push(g.list[0]);});
-    if(singles.length>1)blocks.push({name:'Varias cuentas',list:singles});
-    else if(singles.length===1)blocks.push({name:singles[0].proj?singles[0].proj.name:'Sin cuenta',list:singles});
+    byProj.forEach(g=>{if(g.list.length>1)blocks.push({key:g.proj?g.proj.id:'_',name:g.proj?g.proj.name:'Sin cuenta',list:g.list});else singles.push(g.list[0]);});
+    if(singles.length>1)blocks.push({key:'_varias',name:'Varias cuentas',list:singles});
+    else if(singles.length===1)blocks.push({key:singles[0].proj?singles[0].proj.id:'_',name:singles[0].proj?singles[0].proj.name:'Sin cuenta',list:singles});
     blocks.sort((a,b)=>keyOf(a.list[0])-keyOf(b.list[0]));
     let cursor=toMin(startAt);
     if(isToday)cursor=Math.max(cursor,Math.ceil((nowMin+5)/15)*15);
     const updates=[];
     // lo que no alcanza a hacerse antes de las 21:00 pasa a otro día en vez de agendarse de noche
     const DAY_END=21*60,extra=[];
-    blocks.forEach(b=>{b.start=cursor;const keep=[];b.list.forEach(i=>{if(cursor+perTask>DAY_END){extra.push(i);return;}updates.push({taskId:i.t.id,stepId:i.st.id,subId:i.x.id,time:fmtMin(cursor),dueDate:day});keep.push(i);cursor+=perTask;});b.list=keep;b.end=cursor;cursor+=15;});
+    blocks.forEach(b=>{b.start=cursor;const keep=[];b.list.forEach(i=>{if(cursor+perTask>DAY_END){extra.push(i);return;}updates.push({taskId:i.t.id,stepId:i.st.id,subId:i.x.id,time:fmtMin(cursor),dueDate:day,block:b.key});keep.push(i);cursor+=perTask;});b.list=keep;b.end=cursor;cursor+=15;});
     blocks=blocks.filter(b=>b.list.length);
     over.push(...extra);
     over.sort((a,b)=>keyOf(a)-keyOf(b)); // lo más urgente de lo que sobra va al primer día disponible
@@ -12512,7 +12542,7 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
         d=addDayKey(d,1);
         const wd=dateFromDayKey(d).getUTCDay();
         if(wd===0||wd===6)continue;
-        if((count[d]||0)<cap){count[d]=(count[d]||0)+1;perDay[d]=(perDay[d]||0)+1;updates.push({taskId:i.t.id,stepId:i.st.id,subId:i.x.id,time:null,dueDate:d});break;}
+        if((count[d]||0)<cap){count[d]=(count[d]||0)+1;perDay[d]=(perDay[d]||0)+1;updates.push({taskId:i.t.id,stepId:i.st.id,subId:i.x.id,time:null,dueDate:d,block:null});break;}
       }
       // la siguiente tarea empieza a buscar desde el mismo día (llena cada día hasta el tope)
       d=addDayKey(d,-1);
@@ -12525,8 +12555,8 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
     else if(i.type==='rem')onToggleReminder(i.r.id);
     else onToggleHabitLog(i.h.id,day);
   }
-  function setTime(i,time){
-    if(i.type==='sub')onSetSubTime(i.t.id,i.st.id,i.x.id,time,day);
+  function setTime(i,time,block){
+    if(i.type==='sub')onSetSubTime(i.t.id,i.st.id,i.x.id,time,day,block);
     else if(i.type==='rem'){if(time)onSetReminderTime(i.r.id,day,time);}
     else if(i.type==='hab')onSetHabitTime(i.h.id,time);
   }
@@ -12545,7 +12575,7 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
   function row(i,hot){
     return e('div',{key:i.k,className:'dl-row'+(i.done?' dn':'')+(hot?' hot':''),draggable:!i.done,
       onDragStart:ev=>{dragRef.current=i;try{ev.dataTransfer.setData('text/plain',i.k);ev.dataTransfer.effectAllowed='move';}catch(err){}},
-      onDragEnd:()=>{dragRef.current=null;setOverHour(null);setOverPool(false);}},
+      onDragEnd:()=>{dragRef.current=null;setOverBlock(null);setOverPool(false);}},
       e('button',{className:'dl-ck'+(i.done?' on':''),onClick:()=>toggle(i),title:i.done?'Reabrir':'Marcar como hecho'},i.done?'✓':''),
       e('span',{className:'dl-ic'},iconFor(i)),
       e('div',{className:'dl-main'},
@@ -12556,41 +12586,103 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
       timeCell(i)
     );
   }
-  function dropOnHour(h){
-    const dr=dragRef.current;dragRef.current=null;setOverHour(null);
-    if(!dr)return;
-    let t=pad2(h)+':00';
-    if(timed.some(x=>x.k!==dr.k&&x.time===t))t=pad2(h)+':30';
-    setTime(dr,t);
-  }
   function dropOnPool(){
     const dr=dragRef.current;dragRef.current=null;setOverPool(false);
     if(!dr||dr.type!=='sub')return;
-    setTime(dr,null);
+    setTime(dr,null,null); // vuelve a "Por agendar": sin hora y sin bloque
   }
 
-  const hourRows=[];
-  for(let h=hStart;h<=hEnd;h++){
-    const here=timed.filter(i=>(toMin(i.time)/60|0)===h);
-    const showNow=isToday&&(nowMin/60|0)===h;
-    hourRows.push(e('div',{key:'h'+h,className:'dl-hrow'+(overHour===h?' over':'')+(here.length?' has':''),
-      onDragOver:ev=>{if(dragRef.current){ev.preventDefault();if(overHour!==h)setOverHour(h);}},
-      onDragLeave:()=>{if(overHour===h)setOverHour(null);},
-      onDrop:ev=>{ev.preventDefault();dropOnHour(h);}},
-      e('span',{className:'dl-h'+(showNow?' now':'')},pad2(h)+':00'),
-      e('div',{className:'dl-hcell'},
-        showNow&&e('div',{className:'dl-nowline',title:'Ahora '+pad2(nowD.getHours())+':'+pad2(nowD.getMinutes())},e('i',null),e('b',null,pad2(nowD.getHours())+':'+pad2(nowD.getMinutes()))),
-        here.map(i=>row(i,nextItem&&nextItem.k===i.k))
-      )
-    ));
+  // ── Bloques por cuenta ──
+  // Un bloque agrupa las tareas con hora del día de una misma cuenta (o el bloque que se les asignó
+  // con subtask.block). Se ordenan por su primera hora y se agrupan en Mañana / Tarde / Noche.
+  const groupMap=new Map();
+  timed.forEach(i=>{
+    const key=(i.x&&i.x.block)||(i.proj?i.proj.id:'_');
+    if(!groupMap.has(key)){
+      const pr=projects.find(x=>x.id===key);
+      groupMap.set(key,{key,name:key==='_varias'?'Varias cuentas':(pr?pr.name:(i.proj?i.proj.name:'Sin cuenta')),proj:pr||null,list:[]});
+    }
+    groupMap.get(key).list.push(i);
+  });
+  const groups=[...groupMap.values()].map(g=>{
+    const mins=g.list.map(i=>toMin(i.time));
+    g.start=Math.min(...mins);g.end=Math.max(...mins)+perTask;
+    g.now=isToday&&nowMin>=g.start&&nowMin<g.end;
+    return g;
+  }).sort((a,b)=>a.start-b.start);
+  const partOf=m=>m<13*60?'Mañana':m<19*60?'Tarde':'Noche';
+  function toggleCollapse(k){setCollapsed(sv=>{const n=new Set(sv);n.has(k)?n.delete(k):n.add(k);return n;});}
+  function dropOnBlock(g){
+    const dr=dragRef.current;dragRef.current=null;setOverBlock(null);
+    if(!dr||dr.type!=='sub')return;
+    if(g&&g.list.some(i=>i.k===dr.k))return;
+    const t=g?Math.min(23*60+30,g.end):null;
+    setTime(dr,fmtMin(t),g.key);
   }
+  function dropOnNew(){
+    const dr=dragRef.current;dragRef.current=null;setOverBlock(null);
+    if(!dr||dr.type!=='sub')return;
+    const key=(dr.x&&dr.x.block)||(dr.proj?dr.proj.id:'_');
+    const ex=groups.find(g=>g.key===key);
+    let t;
+    if(ex)t=Math.min(23*60+30,ex.end);
+    else{
+      const lastEnd=groups.length?Math.max(...groups.map(g=>g.end))+15:toMin(startAt);
+      t=Math.min(23*60+30,Math.max(lastEnd,isToday?Math.ceil((nowMin+5)/15)*15:0));
+    }
+    setTime(dr,fmtMin(t),key);
+  }
+  function trow(i,g){
+    const other=i.proj&&g.key!==i.proj.id;
+    return e('div',{key:i.k,className:'dl-tk'+(i.done?' dn':''),draggable:!i.done,
+      onDragStart:ev=>{dragRef.current=i;try{ev.dataTransfer.setData('text/plain',i.k);ev.dataTransfer.effectAllowed='move';}catch(err){}},
+      onDragEnd:()=>{dragRef.current=null;setOverBlock(null);setOverPool(false);}},
+      e('button',{className:'dl-ck'+(i.done?' on':''),onClick:()=>toggle(i),title:i.done?'Reabrir':'Marcar como hecho'},i.done?'✓':''),
+      e('span',{className:'dl-tk-n',title:i.name},i.name),
+      e('span',{className:'dl-tk-m',onClick:()=>{if(i.proj&&onOpenProject)onOpenProject(i.proj.id);},title:'Abrir la cuenta'},(other?i.proj.name+' · ':'')+i.meta),
+      timeCell(i)
+    );
+  }
+  function blockEl(g){
+    const d=g.list.filter(i=>i.done).length,n=g.list.length,open=!collapsed.has(g.key);
+    return e('div',{key:g.key,className:'dl-bk'+(g.now?' now':'')+(overBlock===g.key?' over':'')+(open?'':' cl'),
+      onDragOver:ev=>{if(dragRef.current&&dragRef.current.type==='sub'){ev.preventDefault();if(overBlock!==g.key)setOverBlock(g.key);}},
+      onDragLeave:ev=>{if(!ev.currentTarget.contains(ev.relatedTarget)&&overBlock===g.key)setOverBlock(null);},
+      onDrop:ev=>{ev.preventDefault();dropOnBlock(g);}},
+      e('div',{className:'dl-bk-h',onClick:()=>{playUI('click');toggleCollapse(g.key);}},
+        e('span',{className:'dl-bk-ic'},e(ProjIconSVG,{iconKey:(g.proj&&g.proj.icon)||DEFAULT_ICON,size:15,color:g.now?'#231703':'var(--text1)'})),
+        e('div',{className:'dl-bk-t'},
+          e('div',{className:'dl-bk-name'},g.name,g.now&&e('span',{className:'dl-bk-now'},'Ahora')),
+          e('div',{className:'dl-bk-time'},fmtMin(g.start)+' – '+fmtMin(g.end))
+        ),
+        e('span',{className:'dl-bk-pg'},e('i',{style:{width:(n?Math.round(d/n*100):0)+'%'}})),
+        e('span',{className:'dl-bk-cnt'},d+'/'+n),
+        e('span',{className:'dl-bk-cv'},'⌄')
+      ),
+      open&&e('div',{className:'dl-bk-b'},g.list.map(i=>trow(i,g)))
+    );
+  }
+  const blockNodes=[];
+  let lastPart='';
+  groups.forEach(g=>{
+    const pt=partOf(g.start);
+    if(pt!==lastPart){lastPart=pt;blockNodes.push(e('div',{key:'part'+pt,className:'dl-part'},e('span',null,pt),e('i',null)));}
+    blockNodes.push(blockEl(g));
+  });
+  const blocksView=e('div',{className:'dl-blocks'},
+    groups.length===0&&e('div',{className:'dl-hint'},'Todavía no hay bloques. Usa «Planificar mi día» o arrastra tareas desde «Por agendar» hasta aquí.'),
+    blockNodes,
+    e('div',{className:'dl-newblk'+(overBlock==='__new'?' over':''),
+      onDragOver:ev=>{if(dragRef.current&&dragRef.current.type==='sub'){ev.preventDefault();if(overBlock!=='__new')setOverBlock('__new');}},
+      onDragLeave:()=>{if(overBlock==='__new')setOverBlock(null);},
+      onDrop:ev=>{ev.preventDefault();dropOnNew();}},'Suelta aquí una tarea para sumarla al bloque de su cuenta (o abrir uno nuevo)')
+  );
 
-  const timeline=e('div',{className:'dl-timeline'},hourRows);
   const pool=e('div',{className:'dl-pool'+(overPool?' over':''),
     onDragOver:ev=>{if(dragRef.current&&dragRef.current.type==='sub'){ev.preventDefault();setOverPool(true);}},
     onDragLeave:()=>setOverPool(false),
     onDrop:ev=>{ev.preventDefault();dropOnPool();}},
-    e('div',{className:'dl-pool-t'},'Por agendar',e('span',null,'arrástralas al horario')),
+    e('div',{className:'dl-pool-t'},'Por agendar',e('span',null,'arrástralas a un bloque')),
     poolToday.length===0&&poolLate.length===0&&e('div',{className:'dl-hint'},'Nada pendiente sin hora.'),
     poolToday.length>0&&e('div',{className:'dl-sec-t'},'Para hoy · '+poolToday.length),
     poolToday.map(i=>row(i,false)),
@@ -12619,7 +12711,15 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
       )),
       remItems.length>4&&e('button',{className:'dl-chip more',onClick:()=>setShowRemAll(v=>!v)},showRemAll?'menos':'+'+(remItems.length-4))
     ),
-    e('div',{className:'dl-cols'},timeline,pool),
+    habItems.length>0&&e('div',{className:'dl-rems'},
+      e('span',{className:'dl-rems-t'},'Rutinas'),
+      habItems.map(i=>e('button',{key:i.k,className:'dl-chip'+(i.done?' dn':''),onClick:()=>toggle(i),title:(i.done?'Reabrir: ':'Marcar hecha: ')+i.name},
+        e(ProjIconSVG,{iconKey:i.h.icon||'target',size:11,color:'var(--accent2)'}),
+        e('span',{className:'dl-chip-n'},i.name),
+        i.time&&e('span',{className:'dl-chip-t'},i.time)
+      ))
+    ),
+    e('div',{className:'dl-cols'},blocksView,pool),
     showPlan&&plan&&e('div',{className:'overlay',onClick:ev=>{if(ev.target===ev.currentTarget)setShowPlan(false);}},
       e('div',{className:'modal',style:{width:520,maxHeight:'88vh'}},
         e('div',{className:'modal-head'},e('div',{className:'modal-title'},'Planificar '+(isToday?'mi día':'ese día')),e('button',{className:'modal-x',onClick:()=>setShowPlan(false)},'✕')),
