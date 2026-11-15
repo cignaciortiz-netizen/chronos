@@ -750,6 +750,21 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .dl-bk-h.compact{padding:8px 14px}
 .dl-bk-cnt.pend{width:auto;font-size:10.5px;color:var(--text3)}
 .dl-rut{background:var(--bg1)}
+.dl-bk-b.a{padding:2px 14px 12px}
+.dl-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}
+.dl-tile{background:var(--bg3);border:1px solid transparent;border-radius:12px;padding:11px 12px;cursor:pointer;min-width:0;transition:border-color .15s,background .15s}
+.dl-tile:hover{border-color:#ffffff1a}
+.dl-tile.sel{border-color:var(--accent-border);background:var(--accent-bg)}
+.dl-tile-top{display:flex;align-items:center;gap:10px}
+.dl-ring{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .3s}
+.dl-ring>span{width:34px;height:34px;border-radius:50%;background:var(--bg3);display:flex;align-items:center;justify-content:center}
+.dl-tile.sel .dl-ring>span{background:#28231a}
+.dl-tile-t{min-width:0}
+.dl-tile-n{font-size:12.5px;font-weight:500;color:var(--text0);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dl-tile-c{font:500 18px 'JetBrains Mono',monospace;color:var(--text0);line-height:1.2}
+.dl-tile-c span{font-size:11px;color:var(--text3)}
+.dl-tile-nx{font-size:10.5px;color:var(--text3);margin-top:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dl-tlist{margin-top:8px;background:var(--bg3);border-radius:12px;padding:4px 10px}
 .dl-newblk{border:1px dashed var(--border3);border-radius:12px;padding:10px;text-align:center;font-size:10.5px;color:var(--text4);transition:all .12s}
 .dl-newblk.over{border-color:var(--accent);color:var(--accent2);background:var(--accent-bg)}
 .dl-cap{font:500 10.5px 'JetBrains Mono',monospace;color:var(--text3);background:var(--bg3);border-radius:20px;padding:2px 9px}
@@ -12475,6 +12490,7 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
   const[collapsed,setCollapsed]=useState(()=>new Set());
   const[openBlock,setOpenBlock]=useState(undefined); // undefined = automático (el bloque de ahora); null = ninguno; '__rut' = rutinas y avisos
   const[showPool,setShowPool]=useState(false);
+  const[selGroup,setSelGroup]=useState({}); // ficha elegida dentro de cada bloque: {claveBloque: claveGrupo | null}
   const[openGroups,setOpenGroups]=useState(()=>new Set()); // desplegables dentro de un bloque (cerrados por defecto)
   const[overPool,setOverPool]=useState(false);
   const dragRef=useRef(null);
@@ -12722,6 +12738,34 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
       open&&e('div',{className:'dl-gp-b'},gp.list.map(i=>trow(i,g)))
     );
   }
+  // Fichas con anillo: cada grupo del bloque (un proyecto, los recordatorios, los hábitos) es una ficha con su
+  // anillo de avance; al tocar una se abre debajo su lista. Por defecto, la primera con pendientes.
+  function tileEl(g,gp,sel){
+    const d=gp.list.filter(i=>i.done).length,n=gp.list.length,pc=n?Math.round(d/n*100):0;
+    const nxt=gp.list.find(i=>!i.done);
+    const name=gp.type==='sub'?(gp.t.name+(g.key==='_varias'&&gp.list[0].proj?' · '+gp.list[0].proj.name:'')):(gp.type==='rem'?'Recordatorios':'Hábitos');
+    const icon=gp.type==='rem'?e(BellIcon,{active:true,size:15,color:'var(--text0)'}):e(ProjIconSVG,{iconKey:gp.type==='hab'?'target':((gp.list[0].proj&&gp.list[0].proj.icon)||DEFAULT_ICON),size:15,color:'var(--text0)'});
+    return e('div',{key:gp.k,className:'dl-tile'+(sel?' sel':''),onClick:()=>{playUI('click');setSelGroup(sv=>({...sv,[g.key]:sel?null:gp.k}));}},
+      e('div',{className:'dl-tile-top'},
+        e('span',{className:'dl-ring',style:{background:'conic-gradient(var(--accent) '+pc+'%,var(--bg4) 0)'}},e('span',null,icon)),
+        e('div',{className:'dl-tile-t'},
+          e('div',{className:'dl-tile-n',title:name},name),
+          e('div',{className:'dl-tile-c'},d,e('span',null,' / '+n))
+        )
+      ),
+      e('div',{className:'dl-tile-nx',title:nxt?nxt.name:''},nxt?'Sigue: '+nxt.name:'Todo hecho')
+    );
+  }
+  function blockTiles(g){
+    const gps=groupsOf(g);
+    const cur=selGroup[g.key];
+    const selKey=cur===undefined?((gps.find(x=>x.list.some(i=>!i.done))||gps[0]||{}).k):cur;
+    const selG=gps.find(x=>x.k===selKey);
+    return e('div',{className:'dl-bk-b a'},
+      e('div',{className:'dl-tiles'},gps.map(gp=>tileEl(g,gp,selKey===gp.k))),
+      selG&&e('div',{className:'dl-tlist'},selG.list.map(i=>trow(i,g)))
+    );
+  }
   function blockEl(g){
     const d=g.list.filter(i=>i.done).length,n=g.list.length,open=openKey===g.key;
     return e('div',{key:g.key,className:'dl-bk'+(g.now?' now':'')+(overBlock===g.key?' over':'')+(open?'':' cl'),
@@ -12738,7 +12782,7 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
         e('span',{className:'dl-bk-cnt'+(open?'':' pend')},open?(d+'/'+n):((n-d)>0?(n-d)+' pend.':'listo')),
         e('span',{className:'dl-bk-cv'},'⌄')
       ),
-      open&&e('div',{className:'dl-bk-b'},groupsOf(g).map(gp=>groupEl(g,gp)))
+      open&&blockTiles(g)
     );
   }
   function rutGroupEl(rg){
