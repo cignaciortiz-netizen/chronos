@@ -12493,7 +12493,7 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
   // Los recordatorios son avisos, no tareas: van aparte (franja de chips) y no cuentan en la carga del día.
   const remItems=items.filter(i=>i.type==='rem').sort((a,b)=>(a.late?-1:0)-(b.late?-1:0)||String(a.time||'').localeCompare(String(b.time||'')));
   const habItems=items.filter(i=>i.type==='hab').sort((a,b)=>String(a.time||'99').localeCompare(String(b.time||'99')));
-  const work=items.filter(i=>i.type==='sub'||i.type==='rem'); // los recordatorios cuentan como tareas a cumplir, dentro del bloque de su cuenta
+  const work=items; // tareas, recordatorios y hábitos cuentan como pendientes del día, dentro del bloque de su cuenta
   const timed=work.filter(i=>i.time).sort((a,b)=>toMin(a.time)-toMin(b.time));
   const poolLate=work.filter(i=>i.late&&!i.done);
   const poolToday=work.filter(i=>!i.time&&!i.late&&!i.done);
@@ -12569,7 +12569,7 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
     return e(ProjIconSVG,{iconKey:(i.proj&&i.proj.icon)||DEFAULT_ICON,size:13,color:'var(--text1)'});
   }
   function timeCell(i){
-    if(i.type!=='sub')return i.time?e('span',{className:'dl-time'},i.time):null;
+    if(i.type==='rem')return i.time?e('span',{className:'dl-time'},i.time):null;
     return e('label',{className:'dl-timebtn'+(i.time?' has':''),title:i.time?'Cambiar la hora':'Asignar una hora'},
       i.time||'+ hora',
       e('input',{type:'time',value:i.time||'',onChange:ev=>setTime(i,ev.target.value||null)})
@@ -12600,7 +12600,7 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
   // con subtask.block). Se ordenan por su primera hora y se agrupan en Mañana / Tarde / Noche.
   const groupMap=new Map();
   timed.forEach(i=>{
-    const key=i.type==='rem'?(i.proj?i.proj.id:'_'):((i.x&&i.x.block)||(i.proj?i.proj.id:'_'));
+    const key=i.type!=='sub'?(i.proj?i.proj.id:'_'):((i.x&&i.x.block)||(i.proj?i.proj.id:'_'));
     if(!groupMap.has(key)){
       const pr=projects.find(x=>x.id===key);
       groupMap.set(key,{key,name:key==='_varias'?'Varias cuentas':(pr?pr.name:(i.proj?i.proj.name:'Sin cuenta')),proj:pr||null,list:[]});
@@ -12618,7 +12618,7 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
     const dr=dragRef.current;dragRef.current=null;setOverBlock(null);
     if(!dr)return;
     if(g&&g.list.some(i=>i.k===dr.k))return;
-    if(dr.type==='rem'){ // un recordatorio se queda en el bloque de su cuenta; solo cambia su hora
+    if(dr.type!=='sub'){ // recordatorios y hábitos se quedan en el bloque de su cuenta; solo cambia su hora
       const own=groups.find(x=>x.key===(dr.proj?dr.proj.id:'_'));
       setTime(dr,fmtMin(Math.min(23*60+30,own?own.end:g.end)));return;
     }
@@ -12627,8 +12627,8 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
   }
   function dropOnNew(){
     const dr=dragRef.current;dragRef.current=null;setOverBlock(null);
-    if(!dr||(dr.type!=='sub'&&dr.type!=='rem'))return;
-    const key=dr.type==='rem'?(dr.proj?dr.proj.id:'_'):((dr.x&&dr.x.block)||(dr.proj?dr.proj.id:'_'));
+    if(!dr)return;
+    const key=dr.type!=='sub'?(dr.proj?dr.proj.id:'_'):((dr.x&&dr.x.block)||(dr.proj?dr.proj.id:'_'));
     const ex=groups.find(g=>g.key===key);
     let t;
     if(ex)t=Math.min(23*60+30,ex.end);
@@ -12636,15 +12636,15 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
       const lastEnd=groups.length?Math.max(...groups.map(g=>g.end))+15:toMin(startAt);
       t=Math.min(23*60+30,Math.max(lastEnd,isToday?Math.ceil((nowMin+5)/15)*15:0));
     }
-    setTime(dr,fmtMin(t),dr.type==='rem'?undefined:key);
+    setTime(dr,fmtMin(t),dr.type!=='sub'?undefined:key);
   }
   function trow(i,g){
     const other=i.proj&&g.key!==i.proj.id&&i.type==='sub';
-    return e('div',{key:i.k,className:'dl-tk'+(i.done?' dn':'')+(i.type==='rem'?' rem':''),draggable:!i.done&&i.type==='sub',
+    return e('div',{key:i.k,className:'dl-tk'+(i.done?' dn':'')+(i.type!=='sub'?' rem':''),draggable:!i.done&&i.type==='sub',
       onDragStart:ev=>{dragRef.current=i;try{ev.dataTransfer.setData('text/plain',i.k);ev.dataTransfer.effectAllowed='move';}catch(err){}},
       onDragEnd:()=>{dragRef.current=null;setOverBlock(null);setOverPool(false);}},
       e('button',{className:'dl-ck'+(i.done?' on':''),onClick:()=>toggle(i),title:i.done?'Reabrir':'Marcar como hecho'},i.done?'✓':''),
-      i.type==='rem'&&e('span',{className:'dl-tk-bell',title:'Recordatorio'},e(BellIcon,{active:!i.done,size:12,color:'var(--accent2)'})),
+      i.type!=='sub'&&e('span',{className:'dl-tk-bell',title:i.type==='rem'?'Recordatorio':'Hábito'},i.type==='rem'?e(BellIcon,{active:!i.done,size:12,color:'var(--accent2)'}):e(ProjIconSVG,{iconKey:i.h.icon||'target',size:12,color:'var(--accent2)'})),
       e('span',{className:'dl-tk-n',title:i.name},i.name),
       e('span',{className:'dl-tk-m',onClick:()=>{if(i.proj&&onOpenProject)onOpenProject(i.proj.id);},title:'Abrir la cuenta'},(other?i.proj.name+' · ':'')+i.meta),
       timeCell(i)
@@ -12707,14 +12707,6 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
       e('span',{className:'dl-cap'+(overloaded?' over':''),title:'Tareas de fase pendientes hoy frente a tu tope diario (se cambia en «Planificar mi día»)'},loadToday+' / '+cap+' hoy'),
       e('button',{className:'btn btn-primary dl-plan-btn',onClick:()=>{playUI('click');setShowPlan(true);}},'Planificar mi día'),
       total>0&&e('span',{className:'dl-bar'},e('i',{style:{width:Math.round(doneN/total*100)+'%'}}))
-    ),
-    habItems.length>0&&e('div',{className:'dl-rems'},
-      e('span',{className:'dl-rems-t'},'Rutinas'),
-      habItems.map(i=>e('button',{key:i.k,className:'dl-chip'+(i.done?' dn':''),onClick:()=>toggle(i),title:(i.done?'Reabrir: ':'Marcar hecha: ')+i.name},
-        e(ProjIconSVG,{iconKey:i.h.icon||'target',size:11,color:'var(--accent2)'}),
-        e('span',{className:'dl-chip-n'},i.name),
-        i.time&&e('span',{className:'dl-chip-t'},i.time)
-      ))
     ),
     e('div',{className:'dl-cols'},blocksView,pool),
     showPlan&&plan&&e('div',{className:'overlay',onClick:ev=>{if(ev.target===ev.currentTarget)setShowPlan(false);}},
