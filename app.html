@@ -643,23 +643,36 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 /* ── Línea del día (Inicio · modo Enfoque) ── */
 .dl-hero-row{display:block!important}
 .dl-mode-btn{width:auto!important;padding:0 10px;font-size:10.5px;white-space:nowrap}
-.dl-wrap{background:var(--bg1);border-radius:16px;padding:16px 18px 18px;display:flex;flex-direction:column;gap:6px}
-.dl-head{display:flex;align-items:center;gap:12px;margin-bottom:8px}
+.dl-wrap{background:var(--bg1);border-radius:16px;padding:16px 18px 18px;display:flex;flex-direction:column;gap:10px}
+.dl-head{display:flex;align-items:center;gap:12px}
 .dl-title{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:500;color:var(--text0)}
 .dl-count{font-size:11px;color:var(--text3)}
 .dl-bar{margin-left:auto;width:110px;height:4px;border-radius:4px;background:var(--bg4);overflow:hidden}
 .dl-bar i{display:block;height:100%;background:var(--accent);border-radius:4px;transition:width .4s}
+.dl-cols{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(260px,1fr);gap:18px;align-items:start}
+@media(max-width:900px){.dl-cols{grid-template-columns:minmax(0,1fr)}}
 .dl-timeline{display:flex;flex-direction:column}
-.dl-slot{display:grid;grid-template-columns:48px minmax(0,1fr);gap:0 12px;align-items:start}
-.dl-h{font:500 11px 'JetBrains Mono',monospace;color:var(--text3);text-align:right;padding-top:14px}
+.dl-hrow{display:grid;grid-template-columns:48px minmax(0,1fr);gap:0 12px;align-items:start;border-radius:10px;transition:background .12s}
+.dl-hrow:not(.has){min-height:30px}
+.dl-hrow:not(.has) .dl-hcell{border-top:1px dashed #ffffff0d;margin-top:14px}
+.dl-hrow.over{background:var(--accent-bg);box-shadow:inset 0 0 0 1px var(--accent-border)}
+.dl-hrow.over .dl-hcell{border-top-color:transparent}
+.dl-h{font:500 11px 'JetBrains Mono',monospace;color:var(--text3);text-align:right;padding-top:10px}
 .dl-h.now{color:var(--accent2)}
-.dl-now{display:grid;grid-template-columns:48px minmax(0,1fr);gap:0 12px;align-items:center;margin:2px 0}
-.dl-now .dl-h{padding-top:0}
-.dl-nowline{height:2px;background:var(--accent);border-radius:2px;position:relative}
-.dl-nowline i{position:absolute;left:-4px;top:-3px;width:8px;height:8px;border-radius:50%;background:var(--accent)}
-.dl-row{display:flex;align-items:center;gap:10px;background:var(--bg2);border-radius:12px;padding:9px 12px;margin:3px 0;min-width:0}
+.dl-hcell{min-width:0;padding:1px 0}
+.dl-nowline{display:flex;align-items:center;gap:8px;height:12px;margin:2px 0 3px}
+.dl-nowline::before{content:"";flex:1;height:2px;background:var(--accent);border-radius:2px;order:1}
+.dl-nowline i{width:8px;height:8px;border-radius:50%;background:var(--accent);order:0;flex-shrink:0}
+.dl-nowline b{font:600 10px 'JetBrains Mono',monospace;color:var(--accent2);order:2}
+.dl-pool{background:var(--bg2);border-radius:14px;padding:12px;min-height:120px;transition:box-shadow .12s;position:sticky;top:8px}
+.dl-pool.over{box-shadow:inset 0 0 0 1px var(--accent-border);background:var(--accent-bg)}
+.dl-pool-t{font-size:12.5px;font-weight:500;color:var(--text0);display:flex;align-items:baseline;gap:8px;margin-bottom:6px}
+.dl-pool-t span{font-size:10px;font-weight:400;color:var(--text4)}
+.dl-pool .dl-row{background:var(--bg3)}
+.dl-row{display:flex;align-items:center;gap:10px;background:var(--bg2);border-radius:12px;padding:9px 12px;margin:3px 0;min-width:0;cursor:grab}
+.dl-row:active{cursor:grabbing}
 .dl-row.hot{background:var(--accent-bg);box-shadow:inset 0 0 0 1px var(--accent-border);padding:13px 12px}
-.dl-row.dn{opacity:.5}
+.dl-row.dn{opacity:.5;cursor:default}
 .dl-row.dn .dl-name{text-decoration:line-through;color:var(--text3);font-weight:400}
 .dl-ck{width:18px;height:18px;border-radius:50%;border:1.5px solid var(--text3);background:transparent;flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;color:transparent;padding:0;transition:all .12s}
 .dl-ck:hover{border-color:var(--text0)}
@@ -675,10 +688,11 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .dl-timebtn:hover{background:var(--bg4);color:var(--text0)}
 .dl-timebtn input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%}
 .dl-late{font-size:10px;color:var(--red);flex-shrink:0}
-.dl-sec{margin-top:10px}
-.dl-sec-t{font-size:11px;color:var(--text3);margin:0 2px 4px}
+.dl-sec-t{font-size:11px;color:var(--text3);margin:10px 2px 2px}
 .dl-sec-t.late{color:var(--red)}
 .dl-hint{font-size:11.5px;color:var(--text3);padding:4px 2px}
+.dl-old{margin-top:12px;width:100%;background:transparent;border:1px dashed var(--border3);border-radius:10px;color:var(--text3);font-size:10.5px;padding:7px 8px;cursor:pointer;font-family:'Inter',sans-serif}
+.dl-old:hover{color:var(--text1);border-color:var(--text3)}
 /* ── Tema Sobrio ── */
 .gsb-proj-count,.sb-task-bar,.sb-task-due,.sb-hero-bar,.sb-today{display:none}
 .sb-today-row{display:flex;align-items:center;gap:10px;background:var(--bg1);border-radius:10px;padding:9px 12px}
@@ -4738,6 +4752,16 @@ function App(){
             },
             onSetSubTime:(taskId,stepId,subId,time,day)=>{
               setTasks(ts=>ts.map(t=>t.id!==taskId?t:{...t,steps:(t.steps||[]).map(st=>st.id!==stepId?st:{...st,subtasks:(st.subtasks||[]).map(x=>x.id===subId?{...x,time:time||null,dueDate:day||x.dueDate}:x)})}));
+              forceSync();
+            },
+            onSetReminderTime:(id,day,time)=>{
+              const a=String(day).split('-').map(Number),b=String(time).split(':').map(Number);
+              const ts=new Date(a[0],a[1]-1,a[2],b[0]||0,b[1]||0,0,0).getTime();
+              setReminders(rs=>rs.map(r=>r.id===id?{...r,dueAt:ts,overdue:ts<=Date.now()}:r));
+              forceSync();
+            },
+            onSetHabitTime:(id,time)=>{
+              setHabits(hs=>hs.map(x=>x.id===id?{...x,time:time||null}:x));
               forceSync();
             },
             onToggleReminder:id=>{
@@ -12349,14 +12373,21 @@ function AreaChart({buckets,width=560,height=170}){
 // (steps[].subtasks[] con dueDate = ese día), recordatorios y hábitos. Las tareas
 // pueden tener una hora opcional (subtask.time 'HH:MM'); las que no la tienen
 // quedan abajo en "Sin hora" y se les asigna con un selector de hora.
-function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTime,onToggleReminder,onToggleHabitLog,onOpenProject}){
+function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTime,onToggleReminder,onSetReminderTime,onSetHabitTime,onToggleHabitLog,onOpenProject}){
   const today=dayKey();
   const isToday=day===today;
+  const RECENT_DAYS=3; // solo se consideran "atrasadas" las de los últimos 3 días; lo más viejo se oculta
   const nowD=nowSCL();
   const nowMin=nowD.getHours()*60+nowD.getMinutes();
   const pad2=n=>String(n).padStart(2,'0');
   const toMin=t=>{const a=String(t).split(':').map(Number);return (a[0]||0)*60+(a[1]||0);};
+  const minKey=(()=>{const d=dateFromDayKey(day);d.setUTCDate(d.getUTCDate()-RECENT_DAYS);return d.getUTCFullYear()+'-'+pad2(d.getUTCMonth()+1)+'-'+pad2(d.getUTCDate());})();
+  const[showOld,setShowOld]=useState(false);
+  const[overHour,setOverHour]=useState(null);
+  const[overPool,setOverPool]=useState(false);
+  const dragRef=useRef(null);
   const items=[];
+  let oldHidden=0;
   tasks.forEach(t=>{
     if(t.status==='done')return;
     const proj=projects.find(x=>x.id===t.projectId);
@@ -12367,6 +12398,7 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
         if(!x.dueDate)return;
         const late=isToday&&!x.done&&x.dueDate<day;
         if(x.dueDate!==day&&!late)return;
+        if(late&&x.dueDate<minKey&&!showOld){oldHidden++;return;}
         items.push({k:'s'+x.id,type:'sub',t,st,x,proj,name:x.name,meta:t.name,time:late?null:(x.time||null),done:!!x.done,late});
       });
     });
@@ -12376,6 +12408,7 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
     const k=dayKeyFromTs(r.dueAt);
     const late=isToday&&!r.done&&k<day;
     if(k!==day&&!late)return;
+    if(late&&k<minKey&&!showOld){oldHidden++;return;}
     const d=new Date(r.dueAt);
     items.push({k:'r'+r.id,type:'rem',r,name:r.title,meta:'Recordatorio',time:late?null:pad2(d.getHours())+':'+pad2(d.getMinutes()),done:!!r.done,late});
   });
@@ -12386,16 +12419,23 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
     items.push({k:'h'+h.id,type:'hab',h,proj,name:h.name,meta:'Hábito',time:h.time||null,done:(h.log||[]).includes(day),late:false});
   });
   const timed=items.filter(i=>i.time).sort((a,b)=>toMin(a.time)-toMin(b.time));
-  const lateItems=items.filter(i=>i.late);
-  const noTime=items.filter(i=>!i.time&&!i.late);
+  const poolLate=items.filter(i=>i.late&&!i.done);
+  const poolToday=items.filter(i=>!i.time&&!i.late&&!i.done);
   const total=items.length,doneN=items.filter(i=>i.done).length;
   const nextItem=isToday?timed.find(i=>!i.done&&toMin(i.time)>=nowMin-20):timed.find(i=>!i.done);
+  const hours=timed.map(i=>toMin(i.time)/60|0);
+  const hStart=Math.min(8,...(hours.length?hours:[8])),hEnd=Math.max(20,...(hours.length?hours:[20]));
 
   function toggle(i){
     playUI('click');
     if(i.type==='sub')onToggleSub(i.t.id,i.st.id,i.x.id);
     else if(i.type==='rem')onToggleReminder(i.r.id);
     else onToggleHabitLog(i.h.id,day);
+  }
+  function setTime(i,time){
+    if(i.type==='sub')onSetSubTime(i.t.id,i.st.id,i.x.id,time,day);
+    else if(i.type==='rem'){if(time)onSetReminderTime(i.r.id,day,time);}
+    else if(i.type==='hab')onSetHabitTime(i.h.id,time);
   }
   function iconFor(i){
     if(i.type==='rem')return e(BellIcon,{active:true,size:13,color:'var(--accent2)'});
@@ -12406,11 +12446,13 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
     if(i.type!=='sub')return i.time?e('span',{className:'dl-time'},i.time):null;
     return e('label',{className:'dl-timebtn'+(i.time?' has':''),title:i.time?'Cambiar la hora':'Asignar una hora'},
       i.time||'+ hora',
-      e('input',{type:'time',value:i.time||'',onChange:ev=>onSetSubTime(i.t.id,i.st.id,i.x.id,ev.target.value||null,day)})
+      e('input',{type:'time',value:i.time||'',onChange:ev=>setTime(i,ev.target.value||null)})
     );
   }
   function row(i,hot){
-    return e('div',{key:i.k,className:'dl-row'+(i.done?' dn':'')+(hot?' hot':'')},
+    return e('div',{key:i.k,className:'dl-row'+(i.done?' dn':'')+(hot?' hot':''),draggable:!i.done,
+      onDragStart:ev=>{dragRef.current=i;try{ev.dataTransfer.setData('text/plain',i.k);ev.dataTransfer.effectAllowed='move';}catch(err){}},
+      onDragEnd:()=>{dragRef.current=null;setOverHour(null);setOverPool(false);}},
       e('button',{className:'dl-ck'+(i.done?' on':''),onClick:()=>toggle(i),title:i.done?'Reabrir':'Marcar como hecho'},i.done?'✓':''),
       e('span',{className:'dl-ic'},iconFor(i)),
       e('div',{className:'dl-main'},
@@ -12421,14 +12463,48 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
       timeCell(i)
     );
   }
-  const out=[];
-  let placed=false;
-  const marker=e('div',{key:'now',className:'dl-now'},e('span',{className:'dl-h now'},pad2(nowD.getHours())+':'+pad2(nowD.getMinutes())),e('div',{className:'dl-nowline'},e('i',null)));
-  timed.forEach(i=>{
-    if(isToday&&!placed&&toMin(i.time)>nowMin){out.push(marker);placed=true;}
-    out.push(e('div',{key:'t'+i.k,className:'dl-slot'},e('span',{className:'dl-h'},i.time),row(i,nextItem&&nextItem.k===i.k)));
-  });
-  if(isToday&&!placed&&timed.length>0)out.push(marker);
+  function dropOnHour(h){
+    const dr=dragRef.current;dragRef.current=null;setOverHour(null);
+    if(!dr)return;
+    let t=pad2(h)+':00';
+    if(timed.some(x=>x.k!==dr.k&&x.time===t))t=pad2(h)+':30';
+    setTime(dr,t);
+  }
+  function dropOnPool(){
+    const dr=dragRef.current;dragRef.current=null;setOverPool(false);
+    if(!dr||dr.type!=='sub')return;
+    setTime(dr,null);
+  }
+
+  const hourRows=[];
+  for(let h=hStart;h<=hEnd;h++){
+    const here=timed.filter(i=>(toMin(i.time)/60|0)===h);
+    const showNow=isToday&&(nowMin/60|0)===h;
+    hourRows.push(e('div',{key:'h'+h,className:'dl-hrow'+(overHour===h?' over':'')+(here.length?' has':''),
+      onDragOver:ev=>{if(dragRef.current){ev.preventDefault();if(overHour!==h)setOverHour(h);}},
+      onDragLeave:()=>{if(overHour===h)setOverHour(null);},
+      onDrop:ev=>{ev.preventDefault();dropOnHour(h);}},
+      e('span',{className:'dl-h'+(showNow?' now':'')},pad2(h)+':00'),
+      e('div',{className:'dl-hcell'},
+        showNow&&e('div',{className:'dl-nowline',title:'Ahora '+pad2(nowD.getHours())+':'+pad2(nowD.getMinutes())},e('i',null),e('b',null,pad2(nowD.getHours())+':'+pad2(nowD.getMinutes()))),
+        here.map(i=>row(i,nextItem&&nextItem.k===i.k))
+      )
+    ));
+  }
+
+  const timeline=e('div',{className:'dl-timeline'},hourRows);
+  const pool=e('div',{className:'dl-pool'+(overPool?' over':''),
+    onDragOver:ev=>{if(dragRef.current&&dragRef.current.type==='sub'){ev.preventDefault();setOverPool(true);}},
+    onDragLeave:()=>setOverPool(false),
+    onDrop:ev=>{ev.preventDefault();dropOnPool();}},
+    e('div',{className:'dl-pool-t'},'Por agendar',e('span',null,'arrástralas al horario')),
+    poolToday.length===0&&poolLate.length===0&&e('div',{className:'dl-hint'},'Nada pendiente sin hora.'),
+    poolToday.length>0&&e('div',{className:'dl-sec-t'},'Para hoy · '+poolToday.length),
+    poolToday.map(i=>row(i,false)),
+    poolLate.length>0&&e('div',{className:'dl-sec-t late'},'Atrasadas recientes · '+poolLate.length),
+    poolLate.map(i=>row(i,false)),
+    (oldHidden>0||showOld)&&e('button',{className:'dl-old',onClick:()=>setShowOld(v=>!v)},showOld?'Ocultar las más antiguas':oldHidden+' más antiguas (de hace más de '+RECENT_DAYS+' días) ocultas · ver')
+  );
 
   return e('div',{className:'dl-wrap'},
     e('div',{className:'dl-head'},
@@ -12436,17 +12512,7 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
       e('span',{className:'dl-count'},total===0?'sin pendientes':(total-doneN)+' pendientes · '+doneN+' hechos'),
       total>0&&e('span',{className:'dl-bar'},e('i',{style:{width:Math.round(doneN/total*100)+'%'}}))
     ),
-    total===0&&e('div',{className:'empty'},'Nada agendado. Abre un proyecto y asígnale un día a sus tareas, o crea un recordatorio.'),
-    timed.length>0&&e('div',{className:'dl-timeline'},out),
-    timed.length===0&&isToday&&total>0&&e('div',{className:'dl-hint'},'Nada tiene hora todavía. Usa «+ hora» en una tarea para ubicarla en tu día.'),
-    lateItems.length>0&&e('div',{className:'dl-sec'},
-      e('div',{className:'dl-sec-t late'},'Atrasadas · '+lateItems.length),
-      lateItems.map(i=>row(i,false))
-    ),
-    noTime.length>0&&e('div',{className:'dl-sec'},
-      e('div',{className:'dl-sec-t'},'Sin hora · '+noTime.length),
-      noTime.map(i=>row(i,false))
-    )
+    e('div',{className:'dl-cols'},timeline,pool)
   );
 }
 
@@ -12456,7 +12522,7 @@ function HomeResumen(props){
     realBlocks,liveBlock,tick,selectedDay,setSelectedDay,
     tState,activeSess,activeProj,activeTask,workElapsed,todayTotal,
     onPauseTimer,onStopTimer,onQuickToggleTask,
-    onToggleSub,onSetSubTime,onToggleReminder,
+    onToggleSub,onSetSubTime,onToggleReminder,onSetReminderTime,onSetHabitTime,
     onOpenProject,onStartProj,onUpdateSystem,onToggleHabitLog,
     blocks,onEditBlock,onNewBlock,onNewProject,onSetPriority,
     onArchiveProject,onUnarchiveProject,showArchived,setShowArchived,
@@ -12670,7 +12736,7 @@ function HomeResumen(props){
     ),
     e('div',{className:'dash-body'},
       focusMode&&e('div',{className:'bento-row dl-hero-row'},heroNode),
-      focusMode&&e(HomeDayLine,{day:selectedDay,projects,tasks,habits,reminders,onToggleSub,onSetSubTime,onToggleReminder,onToggleHabitLog,onOpenProject}),
+      focusMode&&e(HomeDayLine,{day:selectedDay,projects,tasks,habits,reminders,onToggleSub,onSetSubTime,onToggleReminder,onSetReminderTime,onSetHabitTime,onToggleHabitLog,onOpenProject}),
       !focusMode&&e(React.Fragment,null,
       e('div',{className:'bento-row'},
 
