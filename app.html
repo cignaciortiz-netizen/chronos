@@ -723,6 +723,17 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .dl-tk-m{font-size:10.5px;color:var(--text3);flex-shrink:0;max-width:34%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
 .dl-tk-m:hover{color:var(--text1)}
 .dl-tk-bell{display:flex;flex-shrink:0;margin-left:-2px}
+.dl-gp{border-radius:10px}
+.dl-gp+.dl-gp,.dl-gp+.dl-tk,.dl-tk+.dl-gp{border-top:1px solid #ffffff08}
+.dl-gp-h{display:flex;align-items:center;gap:8px;padding:8px;border-radius:9px;cursor:pointer;min-width:0}
+.dl-gp-h:hover{background:#ffffff06}
+.dl-gp-cv{width:14px;color:var(--text3);font-size:15px;line-height:1;flex-shrink:0;transition:transform .15s;text-align:center}
+.dl-gp.open .dl-gp-cv{transform:rotate(90deg)}
+.dl-gp-ic{width:22px;height:22px;border-radius:7px;background:var(--bg4);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.dl-gp-n{font-size:12.5px;font-weight:500;color:var(--text0);white-space:nowrap;flex-shrink:0}
+.dl-gp-c{font:500 10.5px 'JetBrains Mono',monospace;color:var(--text2);background:var(--bg4);border-radius:20px;padding:1px 8px;flex-shrink:0}
+.dl-gp-next{font-size:10.5px;color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.dl-gp-b{padding-left:22px}
 .dl-newblk{border:1px dashed var(--border3);border-radius:12px;padding:10px;text-align:center;font-size:10.5px;color:var(--text4);transition:all .12s}
 .dl-newblk.over{border-color:var(--accent);color:var(--accent2);background:var(--accent-bg)}
 .dl-cap{font:500 10.5px 'JetBrains Mono',monospace;color:var(--text3);background:var(--bg3);border-radius:20px;padding:2px 9px}
@@ -12446,6 +12457,7 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
   const[showOld,setShowOld]=useState(false);
   const[overBlock,setOverBlock]=useState(null);
   const[collapsed,setCollapsed]=useState(()=>new Set());
+  const[openGroups,setOpenGroups]=useState(()=>new Set()); // desplegables dentro de un bloque (cerrados por defecto)
   const[overPool,setOverPool]=useState(false);
   const dragRef=useRef(null);
   const[showPlan,setShowPlan]=useState(false);
@@ -12650,6 +12662,38 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
       timeCell(i)
     );
   }
+  function toggleGroup(k){setOpenGroups(sv=>{const n=new Set(sv);n.has(k)?n.delete(k):n.add(k);return n;});}
+  // Dentro de un bloque, lo que es del mismo proyecto (o los recordatorios, o los hábitos) se junta en un
+  // desplegable cerrado: se ve "Webinar · 0/3" y se abre solo cuando hace falta. Lo suelto queda tal cual.
+  function groupsOf(g){
+    const m=new Map();
+    g.list.forEach(i=>{
+      const k=i.type==='sub'?'p'+i.t.id:i.type;
+      if(!m.has(k))m.set(k,{k,type:i.type,t:i.t,list:[]});
+      m.get(k).list.push(i);
+    });
+    return [...m.values()];
+  }
+  function groupEl(g,gp){
+    if(gp.list.length===1)return trow(gp.list[0],g);
+    const gk=g.key+':'+gp.k,open=openGroups.has(gk);
+    const d=gp.list.filter(i=>i.done).length,n=gp.list.length;
+    const nxt=gp.list.find(i=>!i.done);
+    const name=gp.type==='sub'?(gp.t.name+(g.key==='_varias'&&gp.list[0].proj?' · '+gp.list[0].proj.name:'')):(gp.type==='rem'?'Recordatorios':'Hábitos');
+    const first=gp.list.map(i=>i.time).filter(Boolean).sort()[0];
+    return e('div',{key:gk,className:'dl-gp'+(open?' open':'')},
+      e('div',{className:'dl-gp-h',onClick:()=>{playUI('click');toggleGroup(gk);}},
+        e('span',{className:'dl-gp-cv'},'›'),
+        e('span',{className:'dl-gp-ic'},gp.type==='rem'?e(BellIcon,{active:true,size:12,color:'var(--accent2)'}):e(ProjIconSVG,{iconKey:gp.type==='hab'?'target':((gp.list[0].proj&&gp.list[0].proj.icon)||DEFAULT_ICON),size:12,color:'var(--text1)'})),
+        e('span',{className:'dl-gp-n'},name),
+        e('span',{className:'dl-gp-c'},d+'/'+n),
+        !open&&nxt&&e('span',{className:'dl-gp-next',title:nxt.name},'Sigue: '+nxt.name),
+        !open&&!nxt&&e('span',{className:'dl-gp-next'},'Todo hecho'),
+        first&&e('span',{className:'dl-time',style:{marginLeft:'auto'}},first)
+      ),
+      open&&e('div',{className:'dl-gp-b'},gp.list.map(i=>trow(i,g)))
+    );
+  }
   function blockEl(g){
     const d=g.list.filter(i=>i.done).length,n=g.list.length,open=!collapsed.has(g.key);
     return e('div',{key:g.key,className:'dl-bk'+(g.now?' now':'')+(overBlock===g.key?' over':'')+(open?'':' cl'),
@@ -12666,7 +12710,7 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
         e('span',{className:'dl-bk-cnt'},d+'/'+n),
         e('span',{className:'dl-bk-cv'},'⌄')
       ),
-      open&&e('div',{className:'dl-bk-b'},g.list.map(i=>trow(i,g)))
+      open&&e('div',{className:'dl-bk-b'},groupsOf(g).map(gp=>groupEl(g,gp)))
     );
   }
   const blockNodes=[];
