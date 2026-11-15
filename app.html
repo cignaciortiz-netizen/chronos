@@ -734,6 +734,22 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .dl-gp-c{font:500 10.5px 'JetBrains Mono',monospace;color:var(--text2);background:var(--bg4);border-radius:20px;padding:1px 8px;flex-shrink:0}
 .dl-gp-next{font-size:10.5px;color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .dl-gp-b{padding-left:22px}
+.dl-cols.one{grid-template-columns:minmax(0,1fr)}
+.dl-pool.inline{position:static;min-height:0}
+.dl-poolpill{border:0;background:var(--bg3);color:var(--text1);border-radius:20px;padding:4px 11px;font-size:11px;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap}
+.dl-poolpill:hover,.dl-poolpill.on{background:var(--accent-bg);color:var(--accent2)}
+.dl-poolpill.over{box-shadow:inset 0 0 0 1px var(--accent)}
+.dl-focus{margin-left:auto;display:flex;align-items:center;gap:8px;min-width:0;background:var(--bg2);border-radius:20px;padding:3px 4px 3px 12px}
+.dl-focus-dot{width:7px;height:7px;border-radius:50%;background:var(--text4);flex-shrink:0}
+.dl-focus-dot.on{background:var(--green);box-shadow:0 0 0 3px var(--green-bg)}
+.dl-focus-t{font:600 12px 'JetBrains Mono',monospace;color:var(--text0);flex-shrink:0}
+.dl-focus-n{font-size:11.5px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:260px}
+.dl-focus-go{border:0;background:var(--accent);color:#231703;border-radius:20px;padding:5px 12px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap}
+.dl-focus-b{border:0;background:var(--bg4);color:var(--text1);border-radius:50%;width:24px;height:24px;font-size:9px;cursor:pointer;flex-shrink:0}
+.dl-focus-b:hover{background:var(--bg5);color:var(--text0)}
+.dl-bk-h.compact{padding:8px 14px}
+.dl-bk-cnt.pend{width:auto;font-size:10.5px;color:var(--text3)}
+.dl-rut{background:var(--bg1)}
 .dl-newblk{border:1px dashed var(--border3);border-radius:12px;padding:10px;text-align:center;font-size:10.5px;color:var(--text4);transition:all .12s}
 .dl-newblk.over{border-color:var(--accent);color:var(--accent2);background:var(--accent-bg)}
 .dl-cap{font:500 10.5px 'JetBrains Mono',monospace;color:var(--text3);background:var(--bg3);border-radius:20px;padding:2px 9px}
@@ -12445,7 +12461,7 @@ function AreaChart({buckets,width=560,height=170}){
 // (steps[].subtasks[] con dueDate = ese día), recordatorios y hábitos. Las tareas
 // pueden tener una hora opcional (subtask.time 'HH:MM'); las que no la tienen
 // quedan abajo en "Sin hora" y se les asigna con un selector de hora.
-function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTime,onToggleReminder,onSetReminderTime,onSetHabitTime,onToggleHabitLog,onOpenProject,onApplyPlan}){
+function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTime,onToggleReminder,onSetReminderTime,onSetHabitTime,onToggleHabitLog,onOpenProject,onApplyPlan,focusNode}){
   const today=dayKey();
   const isToday=day===today;
   const RECENT_DAYS=3; // solo se consideran "atrasadas" las de los últimos 3 días; lo más viejo se oculta
@@ -12457,6 +12473,8 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
   const[showOld,setShowOld]=useState(false);
   const[overBlock,setOverBlock]=useState(null);
   const[collapsed,setCollapsed]=useState(()=>new Set());
+  const[openBlock,setOpenBlock]=useState(undefined); // undefined = automático (el bloque de ahora); null = ninguno; '__rut' = rutinas y avisos
+  const[showPool,setShowPool]=useState(false);
   const[openGroups,setOpenGroups]=useState(()=>new Set()); // desplegables dentro de un bloque (cerrados por defecto)
   const[overPool,setOverPool]=useState(false);
   const dragRef=useRef(null);
@@ -12611,7 +12629,7 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
   // Un bloque agrupa las tareas con hora del día de una misma cuenta (o el bloque que se les asignó
   // con subtask.block). Se ordenan por su primera hora y se agrupan en Mañana / Tarde / Noche.
   const groupMap=new Map();
-  timed.forEach(i=>{
+  timed.filter(i=>i.type==='sub').forEach(i=>{
     const key=i.type!=='sub'?(i.proj?i.proj.id:'_'):((i.x&&i.x.block)||(i.proj?i.proj.id:'_'));
     if(!groupMap.has(key)){
       const pr=projects.find(x=>x.id===key);
@@ -12625,6 +12643,16 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
     return g;
   }).sort((a,b)=>a.start-b.start);
   const partOf=m=>m<13*60?'Mañana':m<19*60?'Tarde':'Noche';
+  // Un solo bloque abierto a la vez: por defecto el de ahora (o el primero con pendientes).
+  const autoOpen=(groups.find(x=>x.now)||groups.find(x=>x.list.some(i=>!i.done))||groups[0]||{key:null}).key;
+  const openKey=openBlock===undefined?autoOpen:openBlock;
+  function toggleBlock(k){setOpenBlock(openKey===k?null:k);}
+  // Rutinas y avisos: recordatorios y hábitos con hora de todas las cuentas, juntos y cerrados.
+  const rutAll=timed.filter(i=>i.type!=='sub');
+  const rutMap=new Map();
+  rutAll.forEach(i=>{const k=i.proj?i.proj.id:'_';if(!rutMap.has(k))rutMap.set(k,{k,proj:i.proj||null,list:[]});rutMap.get(k).list.push(i);});
+  const rutGroups=[...rutMap.values()];
+  const rutPend=rutAll.filter(i=>!i.done).length;
   function toggleCollapse(k){setCollapsed(sv=>{const n=new Set(sv);n.has(k)?n.delete(k):n.add(k);return n;});}
   function dropOnBlock(g){
     const dr=dragRef.current;dragRef.current=null;setOverBlock(null);
@@ -12695,24 +12723,53 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
     );
   }
   function blockEl(g){
-    const d=g.list.filter(i=>i.done).length,n=g.list.length,open=!collapsed.has(g.key);
+    const d=g.list.filter(i=>i.done).length,n=g.list.length,open=openKey===g.key;
     return e('div',{key:g.key,className:'dl-bk'+(g.now?' now':'')+(overBlock===g.key?' over':'')+(open?'':' cl'),
       onDragOver:ev=>{if(dragRef.current){ev.preventDefault();if(overBlock!==g.key)setOverBlock(g.key);}},
       onDragLeave:ev=>{if(!ev.currentTarget.contains(ev.relatedTarget)&&overBlock===g.key)setOverBlock(null);},
       onDrop:ev=>{ev.preventDefault();dropOnBlock(g);}},
-      e('div',{className:'dl-bk-h',onClick:()=>{playUI('click');toggleCollapse(g.key);}},
+      e('div',{className:'dl-bk-h'+(open?'':' compact'),onClick:()=>{playUI('click');toggleBlock(g.key);}},
         e('span',{className:'dl-bk-ic'},e(ProjIconSVG,{iconKey:(g.proj&&g.proj.icon)||DEFAULT_ICON,size:15,color:g.now?'#231703':'var(--text1)'})),
         e('div',{className:'dl-bk-t'},
           e('div',{className:'dl-bk-name'},g.name,g.now&&e('span',{className:'dl-bk-now'},'Ahora')),
-          e('div',{className:'dl-bk-time'},fmtMin(g.start)+' – '+fmtMin(g.end))
+          open&&e('div',{className:'dl-bk-time'},fmtMin(g.start)+' – '+fmtMin(g.end))
         ),
-        e('span',{className:'dl-bk-pg'},e('i',{style:{width:(n?Math.round(d/n*100):0)+'%'}})),
-        e('span',{className:'dl-bk-cnt'},d+'/'+n),
+        open&&e('span',{className:'dl-bk-pg'},e('i',{style:{width:(n?Math.round(d/n*100):0)+'%'}})),
+        e('span',{className:'dl-bk-cnt'+(open?'':' pend')},open?(d+'/'+n):((n-d)>0?(n-d)+' pend.':'listo')),
         e('span',{className:'dl-bk-cv'},'⌄')
       ),
       open&&e('div',{className:'dl-bk-b'},groupsOf(g).map(gp=>groupEl(g,gp)))
     );
   }
+  function rutGroupEl(rg){
+    const gk='rut:'+rg.k,open=openGroups.has(gk);
+    const d=rg.list.filter(i=>i.done).length,n=rg.list.length;
+    const nxt=rg.list.find(i=>!i.done);
+    const first=rg.list.map(i=>i.time).filter(Boolean).sort()[0];
+    const nm=rg.proj?rg.proj.name:'Sin cuenta';
+    return e('div',{key:gk,className:'dl-gp'+(open?' open':'')},
+      e('div',{className:'dl-gp-h',onClick:()=>{playUI('click');toggleGroup(gk);}},
+        e('span',{className:'dl-gp-cv'},'›'),
+        e('span',{className:'dl-gp-ic'},e(ProjIconSVG,{iconKey:(rg.proj&&rg.proj.icon)||DEFAULT_ICON,size:12,color:'var(--text1)'})),
+        e('span',{className:'dl-gp-n'},nm),
+        e('span',{className:'dl-gp-c'},d+'/'+n),
+        !open&&nxt&&e('span',{className:'dl-gp-next',title:nxt.name},'Sigue: '+nxt.name),
+        !open&&!nxt&&e('span',{className:'dl-gp-next'},'Todo hecho'),
+        first&&e('span',{className:'dl-time',style:{marginLeft:'auto'}},first)
+      ),
+      open&&e('div',{className:'dl-gp-b'},rg.list.map(i=>trow(i,{key:rg.k})))
+    );
+  }
+  const rutOpen=openKey==='__rut';
+  const rutBlock=rutAll.length>0&&e('div',{key:'rut',className:'dl-bk dl-rut'+(rutOpen?'':' cl')},
+    e('div',{className:'dl-bk-h'+(rutOpen?'':' compact'),onClick:()=>{playUI('click');toggleBlock('__rut');}},
+      e('span',{className:'dl-bk-ic'},e(ProjIconSVG,{iconKey:'target',size:15,color:'var(--text1)'})),
+      e('div',{className:'dl-bk-t'},e('div',{className:'dl-bk-name'},'Rutinas y avisos'),rutOpen&&e('div',{className:'dl-bk-time'},'hábitos y recordatorios de todas tus cuentas')),
+      e('span',{className:'dl-bk-cnt pend'},rutPend>0?rutPend+' pend.':'listo'),
+      e('span',{className:'dl-bk-cv'},'⌄')
+    ),
+    rutOpen&&e('div',{className:'dl-bk-b'},rutGroups.map(rutGroupEl))
+  );
   const blockNodes=[];
   let lastPart='';
   groups.forEach(g=>{
@@ -12721,15 +12778,17 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
     blockNodes.push(blockEl(g));
   });
   const blocksView=e('div',{className:'dl-blocks'},
-    groups.length===0&&e('div',{className:'dl-hint'},'Todavía no hay bloques. Usa «Planificar mi día» o arrastra tareas desde «Por agendar» hasta aquí.'),
+    groups.length===0&&rutAll.length===0&&e('div',{className:'dl-hint'},'Todavía no hay bloques. Usa «Planificar mi día» o abre «Por agendar» y arrastra tareas hasta aquí.'),
     blockNodes,
+    rutBlock,
     e('div',{className:'dl-newblk'+(overBlock==='__new'?' over':''),
       onDragOver:ev=>{if(dragRef.current){ev.preventDefault();if(overBlock!=='__new')setOverBlock('__new');}},
       onDragLeave:()=>{if(overBlock==='__new')setOverBlock(null);},
       onDrop:ev=>{ev.preventDefault();dropOnNew();}},'Suelta aquí una tarea para sumarla al bloque de su cuenta (o abrir uno nuevo)')
   );
 
-  const pool=e('div',{className:'dl-pool'+(overPool?' over':''),
+  const poolN=poolToday.length+poolLate.length;
+  const pool=e('div',{className:'dl-pool'+(overPool?' over':'')+' inline',
     onDragOver:ev=>{if(dragRef.current&&dragRef.current.type==='sub'){ev.preventDefault();setOverPool(true);}},
     onDragLeave:()=>setOverPool(false),
     onDrop:ev=>{ev.preventDefault();dropOnPool();}},
@@ -12750,9 +12809,15 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
       e('span',{className:'dl-count'},total===0?'sin pendientes':(total-doneN)+' pendientes · '+doneN+' hechos'),
       e('span',{className:'dl-cap'+(overloaded?' over':''),title:'Tareas de fase pendientes hoy frente a tu tope diario (se cambia en «Planificar mi día»)'},loadToday+' / '+cap+' hoy'),
       e('button',{className:'btn btn-primary dl-plan-btn',onClick:()=>{playUI('click');setShowPlan(true);}},'Planificar mi día'),
-      total>0&&e('span',{className:'dl-bar'},e('i',{style:{width:Math.round(doneN/total*100)+'%'}}))
+      e('button',{className:'dl-poolpill'+(showPool?' on':'')+(overPool?' over':''),onClick:()=>{playUI('click');setShowPool(v=>!v);},
+        onDragOver:ev=>{if(dragRef.current&&dragRef.current.type==='sub'){ev.preventDefault();setOverPool(true);}},
+        onDragLeave:()=>setOverPool(false),
+        onDrop:ev=>{ev.preventDefault();dropOnPool();},
+        title:'Tareas y avisos de hoy que aún no tienen hora. También puedes soltar aquí una tarea para quitarle la hora.'},'Por agendar · '+poolN),
+      focusNode
     ),
-    e('div',{className:'dl-cols'},blocksView,pool),
+    showPool&&pool,
+    e('div',{className:'dl-cols one'},blocksView),
     showPlan&&plan&&e('div',{className:'overlay',onClick:ev=>{if(ev.target===ev.currentTarget)setShowPlan(false);}},
       e('div',{className:'modal',style:{width:520,maxHeight:'88vh'}},
         e('div',{className:'modal-head'},e('div',{className:'modal-title'},'Planificar '+(isToday?'mi día':'ese día')),e('button',{className:'modal-x',onClick:()=>setShowPlan(false)},'✕')),
@@ -12948,6 +13013,19 @@ function HomeResumen(props){
   }
   const sortedBlocks=realBlocks.slice().sort((a,b)=>a.startAt-b.startAt);
 
+  const focusNode=tState!=='idle'&&activeSess
+    ?e('div',{className:'dl-focus run'},
+        e('span',{className:'dl-focus-dot on'}),
+        e('span',{className:'dl-focus-t'},fmt(workElapsed)),
+        e('span',{className:'dl-focus-n',title:(activeTask?.name||'Sesión libre')},(activeTask?.name||'Sesión libre')+(activeProj?' · '+activeProj.name:'')),
+        e('button',{className:'dl-focus-b',onClick:onPauseTimer,title:tState==='paused'?'Reanudar':'Pausar'},tState==='paused'?'▶':'❚❚'),
+        e('button',{className:'dl-focus-b',onClick:onStopTimer,title:'Terminar la sesión'},'■')
+      )
+    :e('div',{className:'dl-focus'},
+        e('span',{className:'dl-focus-dot'}),
+        e('span',{className:'dl-focus-n'},'Sin sesión activa'),
+        recentProjects[0]&&e('button',{className:'dl-focus-go',onClick:()=>onStartProj(recentProjects[0].proj.id),title:'Iniciar un enfoque con '+recentProjects[0].proj.name},'▶ Iniciar enfoque · '+recentProjects[0].proj.name)
+      );
   const heroNode=e('div',{className:'bento-blk bento-hero'},
           tState!=='idle'&&activeSess
             ?e(React.Fragment,null,
@@ -13012,8 +13090,7 @@ function HomeResumen(props){
       )
     ),
     e('div',{className:'dash-body'},
-      focusMode&&e('div',{className:'bento-row dl-hero-row'},heroNode),
-      focusMode&&e(HomeDayLine,{day:selectedDay,projects,tasks,habits,reminders,onToggleSub,onSetSubTime,onToggleReminder,onSetReminderTime,onSetHabitTime,onToggleHabitLog,onOpenProject,onApplyPlan}),
+      focusMode&&e(HomeDayLine,{day:selectedDay,projects,tasks,habits,reminders,onToggleSub,onSetSubTime,onToggleReminder,onSetReminderTime,onSetHabitTime,onToggleHabitLog,onOpenProject,onApplyPlan,focusNode}),
       !focusMode&&e(React.Fragment,null,
       e('div',{className:'bento-row'},
 
