@@ -765,6 +765,42 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .dl-tile-c span{font-size:11px;color:var(--text3)}
 .dl-tile-nx{font-size:10.5px;color:var(--text3);margin-top:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .dl-tlist{margin-top:8px;background:var(--bg3);border-radius:12px;padding:4px 10px}
+.dl-vsw{display:inline-flex;background:var(--bg3);border-radius:20px;padding:2px}
+.dl-vsw button{border:0;background:transparent;color:var(--text3);font-size:11px;padding:3px 11px;border-radius:20px;cursor:pointer;font-family:'Inter',sans-serif}
+.dl-vsw button.on{background:var(--bg5);color:var(--text0)}
+.dl-list{display:flex;flex-direction:column;padding:2px 0}
+.dl-lopts{display:flex;justify-content:flex-end;margin-bottom:2px}
+.dl-ltog{display:inline-flex;align-items:center;gap:7px;border:0;background:transparent;color:var(--text3);font-size:11px;cursor:pointer;font-family:'Inter',sans-serif;padding:2px 4px}
+.dl-ltog i{width:24px;height:14px;border-radius:14px;background:var(--bg4);position:relative;transition:background .15s}
+.dl-ltog i::after{content:"";position:absolute;top:2px;left:2px;width:10px;height:10px;border-radius:50%;background:var(--text3);transition:all .15s}
+.dl-ltog.on{color:var(--text1)}
+.dl-ltog.on i{background:var(--accent)}
+.dl-ltog.on i::after{left:12px;background:#231703}
+.dl-lr{display:grid;grid-template-columns:44px 3px minmax(0,1fr);gap:0 10px;align-items:stretch;min-height:36px}
+.dl-lt{font:500 11px 'JetBrains Mono',monospace;color:var(--text4);text-align:right;padding-top:11px}
+.dl-lt.now{color:var(--accent2);padding:0}
+.dl-lbar{border-radius:3px;background:transparent}
+.dl-lbar.on{background:#ffffff14}
+.dl-lc{display:flex;align-items:center;gap:10px;padding:7px 6px;border-bottom:1px solid #ffffff07;min-width:0}
+.dl-lr:hover .dl-lc{background:#ffffff05}
+.dl-lr.nxt .dl-lc{background:var(--accent-bg);border-radius:10px;border-bottom-color:transparent;padding:10px}
+.dl-lr.nxt .dl-ln{font-weight:600}
+.dl-lr.dn .dl-ln{text-decoration:line-through;color:var(--text3)}
+.dl-lr.dn .dl-lc{opacity:.55}
+.dl-lic{display:flex;flex-shrink:0;color:var(--text3)}
+.dl-ln{flex:1;min-width:0;font-size:12.5px;color:var(--text0);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dl-la{font-size:10.5px;color:var(--text3);flex-shrink:0;max-width:36%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
+.dl-la:hover{color:var(--text1)}
+.dl-lgo{border:0;background:var(--accent);color:#231703;border-radius:20px;padding:4px 12px;font-size:11px;font-weight:600;cursor:pointer;flex-shrink:0;font-family:'Inter',sans-serif}
+.dl-lacc{padding:8px 0 0 57px;font-size:10.5px;font-weight:600;color:var(--text2);letter-spacing:.03em}
+.dl-lgap{display:grid;grid-template-columns:44px 3px minmax(0,1fr);gap:0 10px;padding:3px 0;font-size:10.5px;color:var(--text4)}
+.dl-lgap span{grid-column:3;display:flex;align-items:center;gap:8px}
+.dl-lgap span::before,.dl-lgap span::after{content:"";height:1px;background:#ffffff0d;flex:1}
+.dl-lnow{display:grid;grid-template-columns:44px 3px minmax(0,1fr);gap:0 10px;align-items:center;margin:3px 0}
+.dl-lnow i{grid-column:2/4;height:2px;background:var(--accent);border-radius:2px;position:relative}
+.dl-lnow i::before{content:"";position:absolute;left:-3px;top:-3px;width:8px;height:8px;border-radius:50%;background:var(--accent)}
+.dl-ldone{align-self:flex-start;margin:4px 0 2px 57px;border:0;background:transparent;color:var(--text4);font-size:11px;cursor:pointer;font-family:'Inter',sans-serif;padding:2px 0}
+.dl-ldone:hover{color:var(--text1)}
 .dl-newblk{border:1px dashed var(--border3);border-radius:12px;padding:10px;text-align:center;font-size:10.5px;color:var(--text4);transition:all .12s}
 .dl-newblk.over{border-color:var(--accent);color:var(--accent2);background:var(--accent-bg)}
 .dl-cap{font:500 10.5px 'JetBrains Mono',monospace;color:var(--text3);background:var(--bg3);border-radius:20px;padding:2px 9px}
@@ -12476,7 +12512,7 @@ function AreaChart({buckets,width=560,height=170}){
 // (steps[].subtasks[] con dueDate = ese día), recordatorios y hábitos. Las tareas
 // pueden tener una hora opcional (subtask.time 'HH:MM'); las que no la tienen
 // quedan abajo en "Sin hora" y se les asigna con un selector de hora.
-function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTime,onToggleReminder,onSetReminderTime,onSetHabitTime,onToggleHabitLog,onOpenProject,onApplyPlan,focusNode}){
+function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTime,onToggleReminder,onSetReminderTime,onSetHabitTime,onToggleHabitLog,onOpenProject,onApplyPlan,focusNode,onStartProj}){
   const today=dayKey();
   const isToday=day===today;
   const RECENT_DAYS=3; // solo se consideran "atrasadas" las de los últimos 3 días; lo más viejo se oculta
@@ -12490,6 +12526,11 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
   const[collapsed,setCollapsed]=useState(()=>new Set());
   const[openBlock,setOpenBlock]=useState(undefined); // undefined = automático (el bloque de ahora); null = ninguno; '__rut' = rutinas y avisos
   const[showPool,setShowPool]=useState(false);
+  const[viewMode,setViewModeRaw]=useState(()=>load('chr4_day_view','blocks')); // 'blocks' (fichas) | 'lista' (línea plana por horas)
+  const setViewMode=v=>{setViewModeRaw(v);save('chr4_day_view',v);};
+  const[grpAcc,setGrpAccRaw]=useState(()=>load('chr4_day_grp',true));
+  const setGrpAcc=v=>{setGrpAccRaw(v);save('chr4_day_grp',v);};
+  const[showDoneL,setShowDoneL]=useState(false);
   const[selGroup,setSelGroup]=useState({}); // ficha elegida dentro de cada bloque: {claveBloque: claveGrupo | null}
   const[openGroups,setOpenGroups]=useState(()=>new Set()); // desplegables dentro de un bloque (cerrados por defecto)
   const[overPool,setOverPool]=useState(false);
@@ -12830,6 +12871,50 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
       onDrop:ev=>{ev.preventDefault();dropOnNew();}},'Suelta aquí una tarea para sumarla al bloque de su cuenta (o abrir uno nuevo)')
   );
 
+  // ── Vista Lista: línea del día plana, sin tarjetas ──
+  // Filas por hora con separadores finos; una barra lateral une las filas seguidas de una misma cuenta
+  // (el nombre de la cuenta solo al inicio del tramo); huecos libres resumidos; lo hecho plegado.
+  const keyOfItem=i=>i.type==='sub'?((i.x&&i.x.block)||(i.proj?i.proj.id:'_')):(i.proj?i.proj.id:'_');
+  const nameOfKey=k=>k==='_varias'?'Varias cuentas':((projects.find(x=>x.id===k)||{name:'Sin cuenta'}).name);
+  const durOf=i=>i.type==='sub'?perTask:10;
+  const fmtDur=m=>{const h=Math.floor(m/60),r=m%60;return (h?h+' h':'')+(h&&r?' ':'')+(r?r+' min':'');};
+  const doneL=timed.filter(i=>i.done);
+  const visL=timed.filter(i=>showDoneL||!i.done);
+  const nextL=isToday?visL.find(i=>!i.done&&toMin(i.time)>=nowMin-20):visL.find(i=>!i.done);
+  function rowL(i,isNext){
+    return e('div',{key:i.k,className:'dl-lr'+(i.done?' dn':'')+(isNext?' nxt':'')},
+      e('span',{className:'dl-lt'},i.time),
+      e('span',{className:'dl-lbar'+(grpAcc?' on':'')}),
+      e('div',{className:'dl-lc'},
+        e('button',{className:'dl-ck'+(i.done?' on':''),onClick:()=>toggle(i),title:i.done?'Reabrir':'Marcar como hecho'},i.done?'✓':''),
+        e('span',{className:'dl-lic'},iconFor(i)),
+        e('span',{className:'dl-ln',title:i.name},i.name),
+        e('span',{className:'dl-la',onClick:()=>{if(i.proj&&onOpenProject)onOpenProject(i.proj.id);}},(!grpAcc&&i.proj?i.proj.name+' · ':'')+(i.type==='sub'?i.meta:(i.type==='rem'?'Recordatorio':'Hábito'))),
+        isNext&&onStartProj&&i.proj&&e('button',{className:'dl-lgo',onClick:()=>{playUI('click');onStartProj(i.proj.id);},title:'Iniciar un enfoque con '+i.proj.name},'Empezar')
+      )
+    );
+  }
+  const nowMarker=e('div',{key:'now',className:'dl-lnow'},e('span',{className:'dl-lt now'},pad2(nowD.getHours())+':'+pad2(nowD.getMinutes())),e('i',null));
+  const listNodes=[];
+  let prevI=null,placedNow=false;
+  if(doneL.length>0)listNodes.push(e('button',{key:'dn',className:'dl-ldone',onClick:()=>setShowDoneL(v=>!v)},showDoneL?'Ocultar las hechas':doneL.length+(doneL.length===1?' hecha':' hechas')+' · ver'));
+  visL.forEach(i=>{
+    if(isToday&&!placedNow&&toMin(i.time)>nowMin){listNodes.push(nowMarker);placedNow=true;}
+    if(prevI){const gapMin=toMin(i.time)-(toMin(prevI.time)+durOf(prevI));if(gapMin>=45)listNodes.push(e('div',{key:'g'+i.k,className:'dl-lgap'},e('span',null,fmtDur(gapMin)+' libres')));}
+    const k=keyOfItem(i);
+    if(grpAcc&&(!prevI||keyOfItem(prevI)!==k))listNodes.push(e('div',{key:'a'+i.k,className:'dl-lacc'},nameOfKey(k)));
+    listNodes.push(rowL(i,nextL&&nextL.k===i.k));
+    prevI=i;
+  });
+  if(isToday&&!placedNow&&visL.length>0)listNodes.push(nowMarker);
+  const listView=e('div',{className:'dl-list'},
+    e('div',{className:'dl-lopts'},
+      e('button',{className:'dl-ltog'+(grpAcc?' on':''),onClick:()=>setGrpAcc(!grpAcc)},e('i',null),'Agrupar por cuenta')
+    ),
+    visL.length===0&&e('div',{className:'dl-hint'},timed.length===0?'Nada tiene hora todavía. Usa «Planificar mi día» o abre «Por agendar» para ubicar tus tareas.':'Todo lo de hoy está hecho.'),
+    listNodes
+  );
+
   const poolN=poolToday.length+poolLate.length;
   const pool=e('div',{className:'dl-pool'+(overPool?' over':'')+' inline',
     onDragOver:ev=>{if(dragRef.current&&dragRef.current.type==='sub'){ev.preventDefault();setOverPool(true);}},
@@ -12852,6 +12937,10 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
       e('span',{className:'dl-count'},total===0?'sin pendientes':(total-doneN)+' pendientes · '+doneN+' hechos'),
       e('span',{className:'dl-cap'+(overloaded?' over':''),title:'Tareas de fase pendientes hoy frente a tu tope diario (se cambia en «Planificar mi día»)'},loadToday+' / '+cap+' hoy'),
       e('button',{className:'btn btn-primary dl-plan-btn',onClick:()=>{playUI('click');setShowPlan(true);}},'Planificar mi día'),
+      e('div',{className:'dl-vsw',title:'Cambiar cómo se ve tu día'},
+        e('button',{className:viewMode==='blocks'?'on':'',onClick:()=>{playUI('click');setViewMode('blocks');}},'Bloques'),
+        e('button',{className:viewMode==='lista'?'on':'',onClick:()=>{playUI('click');setViewMode('lista');}},'Lista')
+      ),
       e('button',{className:'dl-poolpill'+(showPool?' on':'')+(overPool?' over':''),onClick:()=>{playUI('click');setShowPool(v=>!v);},
         onDragOver:ev=>{if(dragRef.current&&dragRef.current.type==='sub'){ev.preventDefault();setOverPool(true);}},
         onDragLeave:()=>setOverPool(false),
@@ -12860,7 +12949,7 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
       focusNode
     ),
     showPool&&pool,
-    e('div',{className:'dl-cols one'},blocksView),
+    e('div',{className:'dl-cols one'},viewMode==='lista'?listView:blocksView),
     showPlan&&plan&&e('div',{className:'overlay',onClick:ev=>{if(ev.target===ev.currentTarget)setShowPlan(false);}},
       e('div',{className:'modal',style:{width:520,maxHeight:'88vh'}},
         e('div',{className:'modal-head'},e('div',{className:'modal-title'},'Planificar '+(isToday?'mi día':'ese día')),e('button',{className:'modal-x',onClick:()=>setShowPlan(false)},'✕')),
@@ -13133,7 +13222,7 @@ function HomeResumen(props){
       )
     ),
     e('div',{className:'dash-body'},
-      focusMode&&e(HomeDayLine,{day:selectedDay,projects,tasks,habits,reminders,onToggleSub,onSetSubTime,onToggleReminder,onSetReminderTime,onSetHabitTime,onToggleHabitLog,onOpenProject,onApplyPlan,focusNode}),
+      focusMode&&e(HomeDayLine,{day:selectedDay,projects,tasks,habits,reminders,onToggleSub,onSetSubTime,onToggleReminder,onSetReminderTime,onSetHabitTime,onToggleHabitLog,onOpenProject,onApplyPlan,focusNode,onStartProj}),
       !focusMode&&e(React.Fragment,null,
       e('div',{className:'bento-row'},
 
