@@ -12629,7 +12629,7 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
   // Un bloque agrupa las tareas con hora del día de una misma cuenta (o el bloque que se les asignó
   // con subtask.block). Se ordenan por su primera hora y se agrupan en Mañana / Tarde / Noche.
   const groupMap=new Map();
-  timed.filter(i=>i.type==='sub').forEach(i=>{
+  timed.forEach(i=>{
     const key=i.type!=='sub'?(i.proj?i.proj.id:'_'):((i.x&&i.x.block)||(i.proj?i.proj.id:'_'));
     if(!groupMap.has(key)){
       const pr=projects.find(x=>x.id===key);
@@ -12648,7 +12648,7 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
   const openKey=openBlock===undefined?autoOpen:openBlock;
   function toggleBlock(k){setOpenBlock(openKey===k?null:k);}
   // Rutinas y avisos: recordatorios y hábitos con hora de todas las cuentas, juntos y cerrados.
-  const rutAll=timed.filter(i=>i.type!=='sub');
+  const rutAll=[]; // las rutinas y avisos ya NO van en un bloque aparte: viven dentro del bloque de su cuenta
   const rutMap=new Map();
   rutAll.forEach(i=>{const k=i.proj?i.proj.id:'_';if(!rutMap.has(k))rutMap.set(k,{k,proj:i.proj||null,list:[]});rutMap.get(k).list.push(i);});
   const rutGroups=[...rutMap.values()];
@@ -12778,9 +12778,8 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
     blockNodes.push(blockEl(g));
   });
   const blocksView=e('div',{className:'dl-blocks'},
-    groups.length===0&&rutAll.length===0&&e('div',{className:'dl-hint'},'Todavía no hay bloques. Usa «Planificar mi día» o abre «Por agendar» y arrastra tareas hasta aquí.'),
+    groups.length===0&&e('div',{className:'dl-hint'},'Todavía no hay bloques. Usa «Planificar mi día» o abre «Por agendar» y arrastra tareas hasta aquí.'),
     blockNodes,
-    rutBlock,
     e('div',{className:'dl-newblk'+(overBlock==='__new'?' over':''),
       onDragOver:ev=>{if(dragRef.current){ev.preventDefault();if(overBlock!=='__new')setOverBlock('__new');}},
       onDragLeave:()=>{if(overBlock==='__new')setOverBlock(null);},
