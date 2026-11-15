@@ -693,6 +693,29 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .dl-hint{font-size:11.5px;color:var(--text3);padding:4px 2px}
 .dl-old{margin-top:12px;width:100%;background:transparent;border:1px dashed var(--border3);border-radius:10px;color:var(--text3);font-size:10.5px;padding:7px 8px;cursor:pointer;font-family:'Inter',sans-serif}
 .dl-old:hover{color:var(--text1);border-color:var(--text3)}
+.dl-cap{font:500 10.5px 'JetBrains Mono',monospace;color:var(--text3);background:var(--bg3);border-radius:20px;padding:2px 9px}
+.dl-cap.over{color:var(--amber);background:var(--amber-bg)}
+.dl-plan-btn{font-size:11px!important;padding:5px 12px!important;border-radius:20px!important;white-space:nowrap}
+.dl-rems{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.dl-rems-t{font-size:10.5px;color:var(--text4);margin-right:2px}
+.dl-chip{display:inline-flex;align-items:center;gap:6px;max-width:300px;background:var(--bg2);border:0;border-radius:20px;padding:4px 10px;color:var(--text1);font-size:11px;cursor:pointer;font-family:'Inter',sans-serif}
+.dl-chip:hover{background:var(--bg3)}
+.dl-chip.dn{opacity:.45;text-decoration:line-through}
+.dl-chip.late .dl-chip-t{color:var(--red)}
+.dl-chip.more{color:var(--text3)}
+.dl-chip-n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.dl-chip-t{font:500 10px 'JetBrains Mono',monospace;color:var(--text3);flex-shrink:0}
+.dl-plan-cfg{display:flex;gap:10px;flex-wrap:wrap}
+.dl-plan-cfg label{display:flex;flex-direction:column;gap:4px;font-size:10.5px;color:var(--text3);flex:1;min-width:110px}
+.dl-plan-sum{font-size:12px;color:var(--text2);margin-top:4px}
+.dl-plan-sum b{color:var(--text0);font-weight:600}
+.dl-plan-blk,.dl-plan-over{background:var(--bg2);border-radius:12px;padding:10px 12px}
+.dl-plan-bh{display:flex;align-items:baseline;gap:8px;font-size:12px;font-weight:500;color:var(--text0);margin-bottom:4px}
+.dl-plan-bt{margin-left:auto;font:500 10.5px 'JetBrains Mono',monospace;color:var(--text3)}
+.dl-plan-it{display:flex;gap:10px;padding:4px 0;font-size:11.5px;color:var(--text1);border-top:1px solid #ffffff08}
+.dl-plan-n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dl-plan-m{color:var(--text3);font-size:10.5px;flex-shrink:0}
+.dl-plan-note{font-size:10.5px;color:var(--text3);line-height:1.5}
 /* ── Tema Sobrio ── */
 .gsb-proj-count,.sb-task-bar,.sb-task-due,.sb-hero-bar,.sb-today{display:none}
 .sb-today-row{display:flex;align-items:center;gap:10px;background:var(--bg1);border-radius:10px;padding:9px 12px}
@@ -4758,6 +4781,12 @@ function App(){
               const a=String(day).split('-').map(Number),b=String(time).split(':').map(Number);
               const ts=new Date(a[0],a[1]-1,a[2],b[0]||0,b[1]||0,0,0).getTime();
               setReminders(rs=>rs.map(r=>r.id===id?{...r,dueAt:ts,overdue:ts<=Date.now()}:r));
+              forceSync();
+            },
+            onApplyPlan:updates=>{
+              const byTask={};
+              (updates||[]).forEach(u=>{(byTask[u.taskId]=byTask[u.taskId]||{})[u.subId]=u;});
+              setTasks(ts=>ts.map(t=>!byTask[t.id]?t:{...t,steps:(t.steps||[]).map(st=>({...st,subtasks:(st.subtasks||[]).map(x=>{const u=byTask[t.id][x.id];return u?{...x,time:u.time||null,dueDate:u.dueDate}:x;})}))}));
               forceSync();
             },
             onSetHabitTime:(id,time)=>{
@@ -12373,7 +12402,7 @@ function AreaChart({buckets,width=560,height=170}){
 // (steps[].subtasks[] con dueDate = ese día), recordatorios y hábitos. Las tareas
 // pueden tener una hora opcional (subtask.time 'HH:MM'); las que no la tienen
 // quedan abajo en "Sin hora" y se les asigna con un selector de hora.
-function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTime,onToggleReminder,onSetReminderTime,onSetHabitTime,onToggleHabitLog,onOpenProject}){
+function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTime,onToggleReminder,onSetReminderTime,onSetHabitTime,onToggleHabitLog,onOpenProject,onApplyPlan}){
   const today=dayKey();
   const isToday=day===today;
   const RECENT_DAYS=3; // solo se consideran "atrasadas" las de los últimos 3 días; lo más viejo se oculta
@@ -12386,6 +12415,14 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
   const[overHour,setOverHour]=useState(null);
   const[overPool,setOverPool]=useState(false);
   const dragRef=useRef(null);
+  const[showPlan,setShowPlan]=useState(false);
+  const[showRemAll,setShowRemAll]=useState(false);
+  const[cap,setCapRaw]=useState(()=>Math.max(1,Number(load('chr4_plan_cap',8))||8));
+  const[perTask,setPerTaskRaw]=useState(()=>Math.max(5,Number(load('chr4_plan_per',20))||20));
+  const[startAt,setStartAtRaw]=useState(()=>load('chr4_plan_start','09:00'));
+  const setCap=v=>{const n=Math.max(1,Math.min(30,Number(v)||8));setCapRaw(n);save('chr4_plan_cap',n);};
+  const setPerTask=v=>{const n=Math.max(5,Math.min(180,Number(v)||20));setPerTaskRaw(n);save('chr4_plan_per',n);};
+  const setStartAt=v=>{if(v){setStartAtRaw(v);save('chr4_plan_start',v);}};
   const items=[];
   let oldHidden=0;
   tasks.forEach(t=>{
@@ -12418,14 +12455,70 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
     if(proj&&proj.status==='archived')return;
     items.push({k:'h'+h.id,type:'hab',h,proj,name:h.name,meta:'Hábito',time:h.time||null,done:(h.log||[]).includes(day),late:false});
   });
-  const timed=items.filter(i=>i.time).sort((a,b)=>toMin(a.time)-toMin(b.time));
-  const poolLate=items.filter(i=>i.late&&!i.done);
-  const poolToday=items.filter(i=>!i.time&&!i.late&&!i.done);
-  const total=items.length,doneN=items.filter(i=>i.done).length;
+  // Los recordatorios son avisos, no tareas: van aparte (franja de chips) y no cuentan en la carga del día.
+  const remItems=items.filter(i=>i.type==='rem').sort((a,b)=>(a.late?-1:0)-(b.late?-1:0)||String(a.time||'').localeCompare(String(b.time||'')));
+  const work=items.filter(i=>i.type!=='rem');
+  const timed=work.filter(i=>i.time).sort((a,b)=>toMin(a.time)-toMin(b.time));
+  const poolLate=work.filter(i=>i.late&&!i.done);
+  const poolToday=work.filter(i=>!i.time&&!i.late&&!i.done);
+  const total=work.length,doneN=work.filter(i=>i.done).length;
+  const loadToday=work.filter(i=>i.type==='sub'&&!i.done).length; // tareas de fase pendientes hoy (con y sin hora)
   const nextItem=isToday?timed.find(i=>!i.done&&toMin(i.time)>=nowMin-20):timed.find(i=>!i.done);
   const hours=timed.map(i=>toMin(i.time)/60|0);
   const hStart=Math.min(8,...(hours.length?hours:[8])),hEnd=Math.max(20,...(hours.length?hours:[20]));
 
+
+  const addDayKey=(k,n)=>{const d=dateFromDayKey(k);d.setUTCDate(d.getUTCDate()+n);return d.getUTCFullYear()+'-'+pad2(d.getUTCMonth()+1)+'-'+pad2(d.getUTCDate());};
+  const fmtMin=m=>pad2(Math.floor(m/60)%24)+':'+pad2(m%60);
+  // Arma el plan: elige las tareas que caben hoy (tope = cap, descontando las que ya tienen hora),
+  // las agrupa en bloques por cuenta y reparte el resto en los próximos días hábiles (máx. cap por día).
+  function computePlan(){
+    const subs=[...poolLate,...poolToday].filter(i=>i.type==='sub');
+    const fixed=timed.filter(i=>i.type==='sub'&&!i.done).length;
+    const slots=Math.max(0,cap-fixed);
+    const rank={urgent:0,important:1,low:2};
+    const today0=dayKey();
+    const keyOf=i=>{
+      const dd=i.st.dueDate?Math.round((new Date(i.st.dueDate+'T00:00:00')-new Date(today0+'T00:00:00'))/86400000)+1000:5000;
+      const rk=rank[i.proj&&i.proj.priority]!=null?rank[i.proj.priority]:3;
+      return (i.late?0:1)*1e6+dd*10+rk;
+    };
+    const sorted=subs.slice().sort((a,b)=>keyOf(a)-keyOf(b));
+    const chosen=sorted.slice(0,slots),over=sorted.slice(slots);
+    // bloques por cuenta; las cuentas con una sola tarea se juntan en un bloque "Varias cuentas"
+    const byProj=new Map();
+    chosen.forEach(i=>{const id=i.proj?i.proj.id:'_';if(!byProj.has(id))byProj.set(id,{proj:i.proj,list:[]});byProj.get(id).list.push(i);});
+    let blocks=[];const singles=[];
+    byProj.forEach(g=>{if(g.list.length>1)blocks.push({name:g.proj?g.proj.name:'Sin cuenta',list:g.list});else singles.push(g.list[0]);});
+    if(singles.length>1)blocks.push({name:'Varias cuentas',list:singles});
+    else if(singles.length===1)blocks.push({name:singles[0].proj?singles[0].proj.name:'Sin cuenta',list:singles});
+    blocks.sort((a,b)=>keyOf(a.list[0])-keyOf(b.list[0]));
+    let cursor=toMin(startAt);
+    if(isToday)cursor=Math.max(cursor,Math.ceil((nowMin+5)/15)*15);
+    const updates=[];
+    // lo que no alcanza a hacerse antes de las 21:00 pasa a otro día en vez de agendarse de noche
+    const DAY_END=21*60,extra=[];
+    blocks.forEach(b=>{b.start=cursor;const keep=[];b.list.forEach(i=>{if(cursor+perTask>DAY_END){extra.push(i);return;}updates.push({taskId:i.t.id,stepId:i.st.id,subId:i.x.id,time:fmtMin(cursor),dueDate:day});keep.push(i);cursor+=perTask;});b.list=keep;b.end=cursor;cursor+=15;});
+    blocks=blocks.filter(b=>b.list.length);
+    over.push(...extra);
+    over.sort((a,b)=>keyOf(a)-keyOf(b)); // lo más urgente de lo que sobra va al primer día disponible
+    // reparto del resto en días hábiles siguientes
+    const count={};
+    tasks.forEach(t=>{if(t.status==='done')return;(t.steps||[]).forEach(st=>{if(st.done)return;(st.subtasks||[]).forEach(x=>{if(x.dueDate&&!x.done)count[x.dueDate]=(count[x.dueDate]||0)+1;});});});
+    over.forEach(i=>{if(i.x.dueDate===day||i.late)count[i.x.dueDate]=Math.max(0,(count[i.x.dueDate]||1)-1);});
+    const perDay={};let d=day;
+    over.forEach(i=>{
+      for(let n=0;n<120;n++){
+        d=addDayKey(d,1);
+        const wd=dateFromDayKey(d).getUTCDay();
+        if(wd===0||wd===6)continue;
+        if((count[d]||0)<cap){count[d]=(count[d]||0)+1;perDay[d]=(perDay[d]||0)+1;updates.push({taskId:i.t.id,stepId:i.st.id,subId:i.x.id,time:null,dueDate:d});break;}
+      }
+      // la siguiente tarea empieza a buscar desde el mismo día (llena cada día hasta el tope)
+      d=addDayKey(d,-1);
+    });
+    return{blocks,over,perDay,updates,fixed,slots,candidates:sorted.length};
+  }
   function toggle(i){
     playUI('click');
     if(i.type==='sub')onToggleSub(i.t.id,i.st.id,i.x.id);
@@ -12506,13 +12599,64 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
     (oldHidden>0||showOld)&&e('button',{className:'dl-old',onClick:()=>setShowOld(v=>!v)},showOld?'Ocultar las más antiguas':oldHidden+' más antiguas (de hace más de '+RECENT_DAYS+' días) ocultas · ver')
   );
 
+  const plan=showPlan?computePlan():null;
+  const overloaded=loadToday>cap;
+  const remShown=showRemAll?remItems:remItems.slice(0,4);
   return e('div',{className:'dl-wrap'},
     e('div',{className:'dl-head'},
       e('span',{className:'dl-title'},isToday?'Tu día':'Ese día'),
       e('span',{className:'dl-count'},total===0?'sin pendientes':(total-doneN)+' pendientes · '+doneN+' hechos'),
+      e('span',{className:'dl-cap'+(overloaded?' over':''),title:'Tareas de fase pendientes hoy frente a tu tope diario (se cambia en «Planificar mi día»)'},loadToday+' / '+cap+' hoy'),
+      e('button',{className:'btn btn-primary dl-plan-btn',onClick:()=>{playUI('click');setShowPlan(true);}},'Planificar mi día'),
       total>0&&e('span',{className:'dl-bar'},e('i',{style:{width:Math.round(doneN/total*100)+'%'}}))
     ),
-    e('div',{className:'dl-cols'},timeline,pool)
+    remItems.length>0&&e('div',{className:'dl-rems'},
+      e('span',{className:'dl-rems-t'},'Recordatorios'),
+      remShown.map(i=>e('button',{key:i.k,className:'dl-chip'+(i.done?' dn':'')+(i.late?' late':''),onClick:()=>toggle(i),title:(i.done?'Reabrir: ':'Marcar hecho: ')+i.name},
+        e(BellIcon,{active:!i.done,size:11,color:i.late?'var(--red)':'var(--accent2)'}),
+        e('span',{className:'dl-chip-n'},i.name),
+        e('span',{className:'dl-chip-t'},i.late?'atrasado':i.time)
+      )),
+      remItems.length>4&&e('button',{className:'dl-chip more',onClick:()=>setShowRemAll(v=>!v)},showRemAll?'menos':'+'+(remItems.length-4))
+    ),
+    e('div',{className:'dl-cols'},timeline,pool),
+    showPlan&&plan&&e('div',{className:'overlay',onClick:ev=>{if(ev.target===ev.currentTarget)setShowPlan(false);}},
+      e('div',{className:'modal',style:{width:520,maxHeight:'88vh'}},
+        e('div',{className:'modal-head'},e('div',{className:'modal-title'},'Planificar '+(isToday?'mi día':'ese día')),e('button',{className:'modal-x',onClick:()=>setShowPlan(false)},'✕')),
+        e('div',{className:'modal-body'},
+          e('div',{className:'dl-plan-cfg'},
+            e('label',null,'Tareas por día',e('input',{className:'finput',type:'number',min:1,max:30,value:cap,onChange:ev=>setCap(ev.target.value)})),
+            e('label',null,'Min. por tarea',e('input',{className:'finput',type:'number',min:5,max:180,step:5,value:perTask,onChange:ev=>setPerTask(ev.target.value)})),
+            e('label',null,'Empiezas a las',e('input',{className:'finput',type:'time',value:startAt,onChange:ev=>setStartAt(ev.target.value)}))
+          ),
+          plan.candidates===0
+            ?e('div',{className:'empty'},'No hay tareas por agendar: lo que tienes hoy ya tiene hora o está hecho.')
+            :e(React.Fragment,null,
+                e('div',{className:'dl-plan-sum'},
+                  e('b',null,plan.updates.filter(u=>u.dueDate===day).length+' tareas hoy'),
+                  plan.fixed>0&&' (más '+plan.fixed+' que ya tienen hora)',
+                  plan.over.length>0&&e('span',null,' · ',e('b',null,plan.over.length),' pasan a otros días')
+                ),
+                plan.blocks.map((b,bi)=>e('div',{key:bi,className:'dl-plan-blk'},
+                  e('div',{className:'dl-plan-bh'},e('span',null,'Bloque '+(bi+1)+' · '+b.name),e('span',{className:'dl-plan-bt'},fmtMin(b.start)+' – '+fmtMin(b.end-0))),
+                  b.list.map(i=>e('div',{key:i.k,className:'dl-plan-it'},e('span',{className:'dl-plan-n'},i.name),e('span',{className:'dl-plan-m'},i.type==='sub'&&i.proj&&b.name==='Varias cuentas'?i.proj.name:(i.late?'atrasada':''))))
+                )),
+                plan.over.length>0&&e('div',{className:'dl-plan-over'},
+                  e('div',{className:'dl-plan-bh'},e('span',null,'Para otros días'),e('span',{className:'dl-plan-bt'},'máx. '+cap+' por día')),
+                  Object.keys(plan.perDay).sort().map(k=>e('div',{key:k,className:'dl-plan-it'},
+                    e('span',{className:'dl-plan-n'},dateFromDayKey(k).toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'short',timeZone:'UTC'})),
+                    e('span',{className:'dl-plan-m'},plan.perDay[k]+' tarea'+(plan.perDay[k]===1?'':'s'))
+                  ))
+                ),
+                e('div',{className:'dl-plan-note'},'Nada se borra: las tareas que pasan a otros días conservan su fase y su proyecto, y puedes arrastrarlas de vuelta.')
+              )
+        ),
+        e('div',{className:'modal-foot'},
+          e('button',{className:'btn',onClick:()=>setShowPlan(false)},'Cancelar'),
+          e('button',{className:'btn btn-primary',disabled:plan.candidates===0,onClick:()=>{onApplyPlan(plan.updates);setShowPlan(false);}},'Aplicar plan')
+        )
+      )
+    )
   );
 }
 
@@ -12522,7 +12666,7 @@ function HomeResumen(props){
     realBlocks,liveBlock,tick,selectedDay,setSelectedDay,
     tState,activeSess,activeProj,activeTask,workElapsed,todayTotal,
     onPauseTimer,onStopTimer,onQuickToggleTask,
-    onToggleSub,onSetSubTime,onToggleReminder,onSetReminderTime,onSetHabitTime,
+    onToggleSub,onSetSubTime,onToggleReminder,onSetReminderTime,onSetHabitTime,onApplyPlan,
     onOpenProject,onStartProj,onUpdateSystem,onToggleHabitLog,
     blocks,onEditBlock,onNewBlock,onNewProject,onSetPriority,
     onArchiveProject,onUnarchiveProject,showArchived,setShowArchived,
@@ -12736,7 +12880,7 @@ function HomeResumen(props){
     ),
     e('div',{className:'dash-body'},
       focusMode&&e('div',{className:'bento-row dl-hero-row'},heroNode),
-      focusMode&&e(HomeDayLine,{day:selectedDay,projects,tasks,habits,reminders,onToggleSub,onSetSubTime,onToggleReminder,onSetReminderTime,onSetHabitTime,onToggleHabitLog,onOpenProject}),
+      focusMode&&e(HomeDayLine,{day:selectedDay,projects,tasks,habits,reminders,onToggleSub,onSetSubTime,onToggleReminder,onSetReminderTime,onSetHabitTime,onToggleHabitLog,onOpenProject,onApplyPlan}),
       !focusMode&&e(React.Fragment,null,
       e('div',{className:'bento-row'},
 
