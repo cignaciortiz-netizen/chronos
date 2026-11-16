@@ -3353,7 +3353,7 @@ const TASK_STATUS_LABEL={pending:'Pendiente',inprog:'En curso',done:'Hecho'};
 // rápidos, visible en cualquier vista (Inicio, Analíticas, Proyecto).
 // Colapsable a un riel de íconos; el estado se guarda entre sesiones.
 // ═══════════════════════════════════════════
-const GlobalSidebar=React.memo(function GlobalSidebar({projects,habits,systems,tasks,notes,view,setView,selProj,onOpenProject,onNewProject,onArchiveProject,onShowArchived,onReorderProjects,collapsed,onToggleCollapse,onOpenCmdk,onOpenSettings}){
+const GlobalSidebar=React.memo(function GlobalSidebar({projects,habits,systems,tasks,notes,reminders,view,setView,selProj,onOpenProject,onNewProject,onArchiveProject,onShowArchived,onReorderProjects,collapsed,onToggleCollapse,onOpenCmdk,onOpenSettings}){
   const todayK=dayKey();
   const activeProjects=projects.filter(p=>p.status!=='archived');
   const[ctxMenu,setCtxMenu]=useState(null); // {x,y,proj}
@@ -3391,16 +3391,24 @@ const GlobalSidebar=React.memo(function GlobalSidebar({projects,habits,systems,t
     onReorderProjects&&onReorderProjects(srcId,id,pos);
   }
   function onProjDragEnd(){ dragProjId.current=null; setDragOverProj(null); }
-  function projAlert(p){
-    const habitDue=habits.some(h=>h.projectId===p.id&&habitOccursOn(h,dateFromDayKey(todayK))&&!(h.log||[]).includes(todayK)&&!(h.skipLog||[]).includes(todayK));
-    const systemDue=systems.some(s=>s.projectId===p.id&&s.status!=='paused'&&s.nextRun&&s.nextRun<=Date.now());
-    const taskDue=tasks.some(t=>t.projectId===p.id&&t.status!=='done'&&(
-      (t.dueDate&&t.dueDate<=todayK)||
-      (t.steps||[]).some(s=>stepNeedsAction(s,todayK,!!(t.actLog&&t.actLog[todayK])))
-    ));
-    const noteDue=((notes&&notes[p.id])||[]).some(noteReminderDue);
-    return habitDue||systemDue||taskDue||noteDue;
+  // Pendientes de HOY de una cuenta: hábitos que tocan hoy y no están hechos ni saltados, recordatorios de hoy sin
+  // cumplir y tareas de fase (subtareas) agendadas para hoy sin terminar. Nada de proyectos activos, sistemas ni
+  // pendientes viejos: solo lo que realmente falta hoy.
+  function todayPending(p){
+    const dToday=dateFromDayKey(todayK);
+    let n=0;
+    (habits||[]).forEach(h=>{if(h.projectId===p.id&&habitOccursOn(h,dToday)&&!(h.log||[]).includes(todayK)&&!(h.skipLog||[]).includes(todayK))n++;});
+    (reminders||[]).forEach(r=>{if(r.projId===p.id&&!r.habitId&&!r.done&&dayKeyFromTs(r.dueAt)===todayK)n++;});
+    (tasks||[]).forEach(t=>{
+      if(t.projectId!==p.id||t.status==='done')return;
+      (t.steps||[]).forEach(st=>{
+        if(st.done)return;
+        (st.subtasks||[]).forEach(x=>{if(!x.done&&x.dueDate===todayK)n++;});
+      });
+    });
+    return n;
   }
+  function projAlert(p){return todayPending(p)>0;}
   return e('aside',{className:'gsb'},
     e('div',{className:'gsb-top'},
       e('div',{className:'gsb-mark'},
@@ -3479,7 +3487,7 @@ const GlobalSidebar=React.memo(function GlobalSidebar({projects,habits,systems,t
       },
         e('span',{className:'gsb-proj-dot',style:{background:p.color}}),
         e('span',{className:'gsb-proj-name'},p.name),
-        (()=>{const n=(tasks||[]).filter(t=>t.projectId===p.id&&t.status!=='done').length;return n?e('span',{className:'gsb-proj-count'+(projAlert(p)?' alert':''),title:n+(n===1?' proyecto pendiente':' proyectos pendientes')},n):null;})(),
+        (()=>{const n=todayPending(p);return n?e('span',{className:'gsb-proj-count alert',title:n+(n===1?' pendiente hoy':' pendientes hoy')},n):null;})(),
         projAlert(p)&&e('span',{className:'gsb-proj-alert'})
       ))
     ),
@@ -4841,7 +4849,7 @@ function App(){
   return e(React.Fragment,null,
     e('div',{className:'shell2'+(sidebarCollapsed?' gsb-collapsed':'')},
       e(GlobalSidebar,{
-        projects,habits,systems,tasks,notes,view,setView,selProj,
+        projects,habits,systems,tasks,notes,reminders,view,setView,selProj,
         onOpenProject:onOpenProjectCb,
         onNewProject:onNewProjectCb,
         onArchiveProject:onArchiveProjectCb,
