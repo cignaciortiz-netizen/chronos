@@ -623,6 +623,19 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 /* combo row actions — toolbar flotante, no ocupa columna */
 .cv-row{display:flex;border-bottom:1px solid var(--border)}
 .cv-row.cv-sub{border-bottom-color:#ffffff08}
+.pl-act{margin-left:auto;font-size:10.5px;color:var(--text3)}
+.pl-body{padding:4px 16px 14px}
+.pl-ax{position:relative;height:16px;margin-left:160px}
+.pl-ax span{position:absolute;top:0;font:500 9.5px 'JetBrains Mono',monospace;color:var(--text4);white-space:nowrap}
+.pl-row{display:flex;align-items:center;height:28px;cursor:pointer}
+.pl-nm{width:160px;flex-shrink:0;padding-right:10px;font-size:11.5px;color:var(--text1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pl-row:hover .pl-nm{color:var(--text0)}
+.pl-tr{position:relative;flex:1;height:100%;min-width:0}
+.pl-gl{position:absolute;top:0;bottom:0;width:1px;background:#ffffff08}
+.pl-bar{position:absolute;top:9px;height:10px;border-radius:6px;background:#ffffff24;overflow:hidden}
+.pl-bar i{position:absolute;left:0;top:0;bottom:0;border-radius:6px;background:var(--accent)}
+.pl-row:hover .pl-bar{background:#ffffff38}
+.pl-today{position:absolute;top:0;bottom:0;width:1px;background:var(--accent-border);pointer-events:none}
 .cv-prog{display:flex;align-items:center;gap:10px;padding:2px 2px 10px;flex-shrink:0}
 .cv-prog-bar{flex:1;height:6px;border-radius:6px;background:var(--bg4);overflow:hidden}
 .cv-prog-bar i{display:block;height:100%;background:var(--accent);border-radius:6px;transition:width .4s}
@@ -13869,6 +13882,59 @@ function SobrioTodayPanel({tasks,day,onUpdateTaskSteps,onOpen}){
   );
 }
 
+// ── Línea de tiempo de proyectos de una cuenta (panel de la cuenta) ──
+// Una barra por proyecto activo de ESTA cuenta, con su avance dentro de la barra. Minimalista: sin conteos,
+// sin leyendas ni marcas de fecha límite. Clic en una barra abre las fases del proyecto.
+function ProjectsTimeline({tasks,onOpen}){
+  const DAY=86400000;
+  const toTs=k=>new Date(k+'T00:00:00').getTime();
+  const todayK=dayKey(),T=toTs(todayK);
+  const rows=[];
+  (tasks||[]).forEach(t=>{
+    if(t.status==='done')return;
+    const ks=[];
+    (t.steps||[]).forEach(st=>{if(st.startDate)ks.push(st.startDate);if(st.dueDate)ks.push(st.dueDate);});
+    if(t.deadline)ks.push(t.deadline);
+    if(!ks.length)return;
+    ks.sort();
+    let uT=0,uD=0;
+    (t.steps||[]).forEach(st=>{const sb=st.subtasks||[];if(sb.length){sb.forEach(x=>{uT++;if(x.done||st.done)uD++;});}else{uT++;if(st.done)uD++;}});
+    rows.push({t,s:toTs(ks[0]),e:toTs(ks[ks.length-1])+DAY,pct:uT?uD/uT*100:0,uD,uT});
+  });
+  if(!rows.length)return null;
+  rows.sort((a,b)=>a.s-b.s);
+  // ventana de tiempo: desde 2 semanas atrás hasta lo que abarcan los proyectos (mínimo 6 semanas, máximo ~6 meses)
+  const w0=Math.max(Math.min(T-14*DAY,Math.min(...rows.map(r=>r.s))),T-30*DAY);
+  const w1=Math.min(Math.max(T+42*DAY,Math.max(...rows.map(r=>r.e))),T+190*DAY);
+  const span=w1-w0;
+  const pc=ts=>Math.max(0,Math.min(100,(ts-w0)/span*100));
+  const months=[];
+  {const d=new Date(w0);d.setDate(1);d.setHours(0,0,0,0);if(d.getTime()<w0)d.setMonth(d.getMonth()+1);
+   for(;d.getTime()<w1;d.setMonth(d.getMonth()+1))months.push({ts:d.getTime(),lbl:MONTHS_SHORT[d.getMonth()]+(d.getMonth()===0?' '+d.getFullYear():'')});}
+  const fd=ts=>{const d=new Date(ts);return d.getDate()+' '+MONTHS_SHORT[d.getMonth()].toLowerCase();};
+  const active=rows.filter(r=>r.s<=T+DAY&&r.e>=T).length;
+  return e('div',{className:'dash-panel pl-panel'},
+    e('div',{className:'dash-panel-hdr'},
+      e('span',{className:'dash-panel-title'},'Proyectos'),
+      e('span',{className:'pl-act'},active+(active===1?' activo':' activos'))
+    ),
+    e('div',{className:'pl-body'},
+      e('div',{className:'pl-ax'},months.map(m=>e('span',{key:m.ts,style:{left:pc(m.ts)+'%'}},m.lbl))),
+      rows.map(r=>{
+        const l=pc(Math.max(r.s,w0)),w=Math.max(1.2,pc(Math.min(r.e,w1))-l);
+        return e('div',{key:r.t.id,className:'pl-row',onClick:()=>{playUI('click');onOpen&&onOpen(r.t);},title:r.t.name+' · '+fd(r.s)+' → '+fd(r.e-DAY)+' · '+Math.round(r.pct)+'% ('+r.uD+' de '+r.uT+' tareas)'},
+          e('span',{className:'pl-nm'},r.t.name),
+          e('span',{className:'pl-tr'},
+            months.map(m=>e('i',{key:m.ts,className:'pl-gl',style:{left:pc(m.ts)+'%'}})),
+            e('span',{className:'pl-bar',style:{left:l+'%',width:w+'%'}},e('i',{style:{width:r.pct+'%'}})),
+            e('span',{className:'pl-today',style:{left:pc(T)+'%'}})
+          )
+        );
+      })
+    )
+  );
+}
+
 function ProjectDashboard(props){
   const{
     project,projects,tasks,sessions,ctxs,habits,systems,
@@ -14296,6 +14362,7 @@ function ProjectDashboard(props){
           )
         )
       ),
+      e(ProjectsTimeline,{tasks:tasks.filter(t=>t.projectId===project.id),onOpen:setStepsForTask}),
     )),
 
     tab==='tareas'&&e('div',{className:'dash-body'},
