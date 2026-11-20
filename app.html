@@ -657,6 +657,54 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .rc-sum-n{font-size:11px;color:var(--text3)}
 .rc-sum-d{font-size:13px;color:var(--accent2);font-weight:500;margin-top:2px}
 .rc-sum-w{font-size:10.5px;color:var(--amber);margin-top:4px}
+.pv-wrap{display:flex;flex-direction:column;height:100%;min-height:0}
+.pv-bar{display:flex;align-items:center;gap:8px;padding:0 2px 8px;flex-shrink:0}
+.pv-hint{flex:1;font-size:11px;color:var(--text4)}
+.pv-btn{border:1px solid var(--border);background:transparent;color:var(--text2);font-size:11px;padding:3px 9px;border-radius:7px;cursor:pointer}
+.pv-btn:hover{color:var(--text0);border-color:var(--border2)}
+.pv-mm{position:relative;height:50px;flex-shrink:0;border-radius:8px;background:var(--bg3);margin-bottom:8px;cursor:pointer;overflow:hidden}
+.pv-mmb{position:absolute;border-radius:2px;background:var(--accent);opacity:.45}
+.pv-mmb.on{opacity:1}
+.pv-mmt{position:absolute;top:0;bottom:0;width:1px;background:var(--accent)}
+.pv-mmd{position:absolute;top:0;bottom:0;width:0;border-left:1px dashed #e6675f99}
+.pv-mmv{position:absolute;top:0;bottom:0;background:#ffffff10;border:1px solid var(--accent-border);border-radius:4px;pointer-events:none}
+.pv-card{flex:1;min-height:0;border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden;display:flex;flex-direction:column}
+.pv-sc{flex:1;min-height:0;overflow:auto;user-select:none}
+.pv-r{display:flex;align-items:center;height:28px}
+.pv-l{width:170px;flex:none;position:sticky;left:0;z-index:6;background:var(--bg2);height:100%;display:flex;align-items:center;gap:6px;padding:0 8px 0 12px;box-sizing:border-box;font-size:12px;color:var(--text1);min-width:0}
+.pv-lp{cursor:pointer;font-weight:500}
+.pv-lp.open{color:var(--accent2)}
+.pv-lp.dn .pv-nm{text-decoration:line-through;color:var(--text4)}
+.pv-car{width:10px;flex:none;color:var(--text4);font-size:10px}
+.pv-nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pv-nm.dn{text-decoration:line-through;color:var(--text4)}
+.pv-ct{font:500 10px 'JetBrains Mono',monospace;color:var(--text4)}
+.pv-sub{background:var(--bg3);height:30px}
+.pv-sub .pv-l{background:var(--bg3);padding-left:24px;font-weight:400}
+.pv-t{position:relative;flex:none;height:100%}
+.pv-dn{position:absolute;top:18px;text-align:center;font-size:10px;color:var(--text3)}
+.pv-dn.we{opacity:.45}
+.pv-dn.td{color:var(--accent2);font-weight:600}
+.pv-mn{position:absolute;top:2px;font:600 10.5px 'Inter',sans-serif;letter-spacing:.04em;text-transform:uppercase;color:var(--text2);white-space:nowrap}
+.pv-td{position:absolute;top:0;bottom:0;width:1.5px;background:var(--accent);opacity:.8;pointer-events:none;z-index:2}
+.pv-dl{position:absolute;top:0;bottom:0;width:0;border-left:1.5px dashed #e6675f88;pointer-events:none;z-index:2}
+.pv-wk{position:absolute;top:0;bottom:0;background:#ffffff08;pointer-events:none}
+.pv-ph{position:absolute;top:9px;height:10px;border-radius:5px;background:#ffffff24;overflow:hidden}
+.pv-ph.open{background:var(--accent-bg,#ffffff30);box-shadow:0 0 0 1px var(--accent-border)}
+.pv-ph i{position:absolute;left:0;top:0;bottom:0;background:var(--accent);opacity:.6}
+.pv-ph.pv-over{background:#e6675f;opacity:.75}
+.pv-nodate{position:absolute;left:10px;top:7px;font-size:11px;color:var(--text4);white-space:nowrap}
+.pv-pill{position:absolute;top:8px;height:14px;border-radius:6px;background:var(--accent);cursor:grab;z-index:3;touch-action:none}
+.pv-pill:active{cursor:grabbing}
+.pv-pill.d{opacity:.4}
+.pv-pill.late{background:#e6675f}
+.pv-h{position:absolute;top:0;bottom:0;width:8px;cursor:ew-resize}
+.pv-len{position:absolute;top:8px;font-size:11px;color:var(--text3);white-space:nowrap;pointer-events:none}
+.pv-ck{width:12px;height:12px;border-radius:50%;border:1.5px solid var(--text4);flex:none;cursor:pointer}
+.pv-ck.d{background:var(--accent);border-color:var(--accent)}
+.pv-plus{width:12px;text-align:center;color:var(--text4);flex:none}
+.pv-in{flex:1;min-width:0;background:transparent;border:none;outline:none;font:inherit;font-size:12px;color:var(--text2);padding:0}
+.pv-addph{height:34px;border-top:1px solid var(--border)}
 .cv-prog{display:flex;align-items:center;gap:10px;padding:2px 2px 10px;flex-shrink:0}
 .cv-prog-bar{flex:1;height:6px;border-radius:6px;background:var(--bg4);overflow:hidden}
 .cv-prog-bar i{display:block;height:100%;background:var(--accent);border-radius:6px;transition:width .4s}
@@ -7920,6 +7968,211 @@ function WrapInput({value,onChange,style,placeholder,onEnter,w,title}){
     onChange:ev=>onChange(ev.target.value.replace(/\n/g,' ')),
     onKeyDown:ev=>{if(ev.key==='Enter'){ev.preventDefault();if(onEnter)onEnter();else ev.target.blur();}},
     style:{flex:1,minWidth:0,background:'transparent',border:'none',outline:'none',resize:'none',overflow:'hidden',padding:0,margin:0,fontFamily:'Inter,sans-serif',lineHeight:1.35,whiteSpace:'pre-wrap',overflowWrap:'anywhere',display:'block',...style}});
+}
+
+// ── Línea de tiempo limpia de fases (vista por defecto) ──
+// Una barra fina por fase; se abre UNA fase a la vez y muestra sus tareas como pastillas de uno o más días
+// (se arrastra el borde para alargar/acortar, el centro para mover). Se recorre con Shift + rueda, con el minimapa o "Ir a hoy".
+function PlanView({steps,commit,updateStep,showDoneSteps,setShowDoneSteps,projDeadline,onSetDeadline}){
+  const DW=30,LW=170,DAYMS=86400000;
+  const today=dayKey();
+  const toTs=k=>new Date(k+'T00:00:00').getTime();
+  const subRange=x=>x.dueDate?{s:(x.startDate&&x.startDate<=x.dueDate)?x.startDate:x.dueDate,n:x.dueDate}:null;
+  const taskSpan=st=>{let a=null,z=null;(st.subtasks||[]).forEach(x=>{const r=subRange(x);if(!r)return;if(!a||r.s<a)a=r.s;if(!z||r.n>z)z=r.n;});return a?{s:a,n:z}:null;};
+  const baseRange=st=>{if(st.startDate&&st.dueDate)return{s:st.startDate,n:st.dueDate};return taskSpan(st);};
+  const updSub=(sid,subId,patch)=>updateStep(sid,st=>({subtasks:(st.subtasks||[]).map(x=>x.id===subId?{...x,...patch}:x)}));
+  const[openId,setOpenId]=useState(()=>{const f=steps.find(x=>!x.done&&(x.subtasks||[]).length);return f?f.id:null;});
+  const[ov,setOv]=useState(null);
+  const dragRef=useRef(null);
+  const scRef=useRef(null);
+  const[sx,setSx]=useState(0);
+  const[vw,setVw]=useState(700);
+  const[newTask,setNewTask]=useState({});
+  const[newPhase,setNewPhase]=useState('');
+
+  const vis=steps.filter(x=>showDoneSteps||!x.done).map(x=>({st:x,r:baseRange(x)}));
+  vis.sort((a,b)=>{if(!a.r&&!b.r)return 0;if(!a.r)return 1;if(!b.r)return -1;return a.r.s<b.r.s?-1:a.r.s>b.r.s?1:0;});
+  const ks=[today];
+  if(projDeadline)ks.push(projDeadline);
+  steps.forEach(st=>{const r=baseRange(st);if(r){ks.push(r.s,r.n);}const t=taskSpan(st);if(t){ks.push(t.s,t.n);}});
+  ks.sort();
+  const origin=addDaysToDateKey(ks[0],-7);
+  const idx=k=>Math.round((toTs(k)-toTs(origin))/DAYMS);
+  const keyAt=i=>addDaysToDateKey(origin,i);
+  const N=Math.max(idx(ks[ks.length-1])+30,45);
+  const W=N*DW;
+  const days=[];
+  for(let i=0;i<N;i++){const k=keyAt(i);const d=new Date(k+'T00:00:00');days.push({i,k,dom:d.getDate(),mon:d.getMonth(),yr:d.getFullYear(),we:d.getDay()===0||d.getDay()===6});}
+
+  useEffect(()=>{
+    const el=scRef.current;if(!el)return;
+    const onWheel=ev=>{if(ev.shiftKey){ev.preventDefault();el.scrollLeft+=(ev.deltaY||ev.deltaX);}};
+    const onSc=()=>{setSx(el.scrollLeft);setVw(el.clientWidth);};
+    el.addEventListener('wheel',onWheel,{passive:false});
+    el.addEventListener('scroll',onSc);
+    el.scrollLeft=Math.max(0,(idx(today)-2)*DW);
+    onSc();
+    return()=>{el.removeEventListener('wheel',onWheel);el.removeEventListener('scroll',onSc);};
+  },[]);
+  function goTo(i){const el=scRef.current;if(el)el.scrollLeft=Math.max(0,i*DW);}
+
+  function startDrag(ev,st,sub,kind){
+    const r=subRange(sub);if(!r)return;
+    ev.preventDefault();ev.stopPropagation();
+    dragRef.current={sid:st.id,id:sub.id,kind,x0:ev.clientX,a0:idx(r.s),z0:idx(r.n),cur:null};
+    const mv=e2=>{
+      const d=dragRef.current;if(!d)return;
+      const dd=Math.round((e2.clientX-d.x0)/DW);
+      let a=d.a0,z=d.z0;
+      if(d.kind==='m'){a=Math.max(0,d.a0+dd);z=a+(d.z0-d.a0);}
+      else if(d.kind==='r'){z=Math.max(d.a0,d.z0+dd);}
+      else{a=Math.max(0,Math.min(d.z0,d.a0+dd));}
+      d.cur={a,z};setOv({id:d.id,a,z});
+    };
+    const up=()=>{
+      window.removeEventListener('pointermove',mv);window.removeEventListener('pointerup',up);
+      const d=dragRef.current;dragRef.current=null;setOv(null);
+      if(d&&d.cur&&(d.cur.a!==d.a0||d.cur.z!==d.z0))updSub(d.sid,d.id,{startDate:keyAt(d.cur.a),dueDate:keyAt(d.cur.z)});
+    };
+    window.addEventListener('pointermove',mv);window.addEventListener('pointerup',up);
+  }
+  function placeSub(st,sub,ev){
+    const tr=ev.currentTarget.getBoundingClientRect();
+    const i=Math.max(0,Math.min(N-1,Math.floor((ev.clientX-tr.left)/DW)));
+    updSub(st.id,sub.id,{startDate:keyAt(i),dueDate:keyAt(i)});
+  }
+  function addTask(st){
+    const t=(newTask[st.id]||'').trim();if(!t)return;
+    updateStep(st.id,x=>({subtasks:[...(x.subtasks||[]),{id:uid(),name:t,done:false}]}));
+    setNewTask(p=>({...p,[st.id]:''}));
+  }
+  function addPhase(){
+    const t=newPhase.trim();if(!t)return;
+    commit([...steps,{id:uid(),name:t,subtasks:[],durationDays:null,dueDate:null,done:false,startDate:null}]);
+    setNewPhase('');
+  }
+
+  // avance general y días que faltan
+  let uT=0,uD=0;
+  steps.forEach(st=>{const sb=st.subtasks||[];if(sb.length){sb.forEach(x=>{uT++;if(x.done||st.done)uD++;});}else{uT++;if(st.done)uD++;}});
+  const pct=uT?Math.round(uD/uT*100):0;
+  const dlDays=projDeadline?Math.round((toTs(projDeadline)-toTs(today))/DAYMS):null;
+
+  const todayLine=e('div',{className:'pv-td',style:{left:idx(today)*DW+DW/2}});
+  const dlLine=projDeadline?e('div',{className:'pv-dl',title:'Fecha límite del proyecto',style:{left:(idx(projDeadline)+1)*DW}}):null;
+  const wkStripes=days.filter(d=>d.we).map(d=>e('div',{key:d.i,className:'pv-wk',style:{left:d.i*DW,width:DW}}));
+
+  const head=e('div',{className:'pv-r',style:{height:34}},
+    e('div',{className:'pv-l',style:{background:'var(--bg2)'}}),
+    e('div',{className:'pv-t',style:{width:W,height:34}},
+      days.map(d=>e('span',{key:d.i,className:'pv-dn'+(d.we?' we':'')+(d.k===today?' td':''),style:{left:d.i*DW,width:DW}},d.dom)),
+      days.filter(d=>d.dom===1||d.i===0).map(d=>e('span',{key:'m'+d.i,className:'pv-mn',style:{left:d.i*DW+3}},MONTHS_SHORT[d.mon]+(d.mon===0?' '+d.yr:'')))
+    )
+  );
+
+  const rows=[];
+  vis.forEach(({st,r})=>{
+    const sb=st.subtasks||[];
+    const dn=st.done?sb.length:sb.filter(x=>x.done).length;
+    const isOpen=openId===st.id;
+    const tspan=taskSpan(st);
+    const over=r&&tspan&&st.startDate&&st.dueDate&&tspan.n>st.dueDate;
+    rows.push(e('div',{key:st.id,className:'pv-r'},
+      e('div',{className:'pv-l pv-lp'+(isOpen?' open':'')+(st.done?' dn':''),title:st.name,onClick:()=>setOpenId(isOpen?null:st.id)},
+        e('span',{className:'pv-car'},isOpen?'▾':'▸'),
+        e('span',{className:'pv-nm'},st.name),
+        sb.length>0&&e('span',{className:'pv-ct'},dn+'/'+sb.length)
+      ),
+      e('div',{className:'pv-t',style:{width:W}},
+        r?e('div',{className:'pv-ph'+(isOpen?' open':''),style:{left:idx(r.s)*DW,width:(idx(r.n)-idx(r.s)+1)*DW}},
+            e('i',{style:{width:(sb.length?Math.round(dn/sb.length*100):(st.done?100:0))+'%'}})):
+          e('span',{className:'pv-nodate'},'sin fechas'),
+        over&&e('div',{className:'pv-ph pv-over',title:'Hay tareas después del cierre de la fase',style:{left:(idx(st.dueDate)+1)*DW,width:(idx(tspan.n)-idx(st.dueDate))*DW}}),
+        dlLine,todayLine
+      )
+    ));
+    if(isOpen){
+      sb.forEach(sub=>{
+        const rr=subRange(sub);
+        let a=rr?idx(rr.s):0,z=rr?idx(rr.n):0;
+        if(ov&&ov.id===sub.id){a=ov.a;z=ov.z;}
+        const late=rr&&st.dueDate&&keyAt(z)>st.dueDate;
+        rows.push(e('div',{key:sub.id,className:'pv-r pv-sub'},
+          e('div',{className:'pv-l pv-ls',title:sub.name},
+            e('span',{className:'pv-ck'+(sub.done||st.done?' d':''),onClick:ev=>{ev.stopPropagation();updSub(st.id,sub.id,{done:!sub.done});}}),
+            e('span',{className:'pv-nm'+(sub.done||st.done?' dn':'')},sub.name)
+          ),
+          e('div',{className:'pv-t',style:{width:W},onClick:rr?undefined:ev=>placeSub(st,sub,ev),title:rr?undefined:'Clic en un día para agendarla'},
+            wkStripes,dlLine,todayLine,
+            rr?e(React.Fragment,null,
+                e('div',{className:'pv-pill'+(sub.done||st.done?' d':'')+(late?' late':''),style:{left:a*DW,width:(z-a+1)*DW},onPointerDown:ev=>startDrag(ev,st,sub,'m')},
+                  e('b',{className:'pv-h',style:{left:0},onPointerDown:ev=>startDrag(ev,st,sub,'l')}),
+                  e('b',{className:'pv-h',style:{right:0},onPointerDown:ev=>startDrag(ev,st,sub,'r')})),
+                e('span',{className:'pv-len',style:{left:(z+1)*DW+6}},(z-a+1)+(z-a+1===1?' día':' días')+(late?' · pasa del cierre':''))
+              ):e('span',{className:'pv-nodate',style:{left:idx(today)*DW+DW}},'sin día — clic para agendar')
+          )
+        ));
+      });
+      rows.push(e('div',{key:st.id+'add',className:'pv-r pv-sub'},
+        e('div',{className:'pv-l pv-ls',style:{width:LW+'px'}},
+          e('span',{className:'pv-plus'},'+'),
+          e('input',{className:'pv-in',placeholder:'Agregar tarea…',value:newTask[st.id]||'',
+            onChange:ev=>setNewTask(p=>({...p,[st.id]:ev.target.value})),
+            onKeyDown:ev=>{if(ev.key==='Enter'){ev.preventDefault();addTask(st);}}})
+        ),
+        e('div',{className:'pv-t',style:{width:W}},wkStripes,dlLine,todayLine)
+      ));
+    }
+  });
+
+  // minimapa: una línea por fase, recuadro = lo que estás viendo, clic para saltar
+  const mmRows=vis.filter(x=>x.r);
+  const step=Math.min(5,Math.max(2.5,38/Math.max(1,mmRows.length)));
+  const vwTrack=Math.max(60,vw-LW);
+  const mm=e('div',{className:'pv-mm',title:'Plan completo — clic para ir a esa zona',onClick:ev=>{
+      const b=ev.currentTarget.getBoundingClientRect();const f=(ev.clientX-b.left)/b.width;
+      const el=scRef.current;if(el)el.scrollLeft=Math.max(0,f*W-vwTrack/2);
+    }},
+    mmRows.map((x,i)=>e('div',{key:x.st.id,className:'pv-mmb'+(x.st.id===openId?' on':''),style:{top:5+i*step,height:Math.max(1.5,step-1.2),left:(idx(x.r.s)/N*100)+'%',width:Math.max(0.6,(idx(x.r.n)-idx(x.r.s)+1)/N*100)+'%'}})),
+    e('div',{className:'pv-mmt',style:{left:((idx(today)+.5)/N*100)+'%'}}),
+    projDeadline&&e('div',{className:'pv-mmd',style:{left:((idx(projDeadline)+1)/N*100)+'%'}}),
+    e('div',{className:'pv-mmv',style:{left:Math.min(100,sx/W*100)+'%',width:Math.min(100,vwTrack/W*100)+'%'}})
+  );
+
+  const hiddenDone=steps.filter(x=>x.done).length;
+  return e('div',{className:'pv-wrap'},
+    e('div',{className:'cv-prog',title:uD+' de '+uT+' tareas hechas'},
+      e('div',{className:'cv-prog-bar'},e('i',{style:{width:pct+'%'}})),
+      e('span',{className:'cv-prog-n'},pct+'%'),
+      e('span',{className:'cv-prog-l'},'del proyecto'),
+      e('div',{className:'cv-dlwrap'+(projDeadline?' set':'')+(dlDays!=null&&dlDays<0?' past':'')},
+        e('span',{className:'cv-dl-l'},'Fecha límite'),
+        e(ChronosDatePicker,{value:projDeadline||'',onChange:v=>onSetDeadline&&onSetDeadline(v||null),style:{width:112}}),
+        projDeadline&&e('span',{className:'cv-dl-d'},dlDays<0?'venció hace '+(-dlDays)+(dlDays===-1?' día':' días'):dlDays===0?'es hoy':'faltan '+dlDays+(dlDays===1?' día':' días')),
+        projDeadline&&e('button',{className:'cv-dl-x',title:'Quitar la fecha límite',onClick:()=>onSetDeadline&&onSetDeadline(null)},'×')
+      )
+    ),
+    e('div',{className:'pv-bar'},
+      e('div',{className:'pv-hint'},'Shift + rueda del mouse para moverte · arrastra el borde de una tarea para alargarla'),
+      hiddenDone>0&&e('button',{className:'pv-btn',onClick:()=>setShowDoneSteps(!showDoneSteps)},showDoneSteps?'Ocultar fases hechas':'Mostrar fases hechas ('+hiddenDone+')'),
+      e('button',{className:'pv-btn',onClick:()=>goTo(idx(today)-2)},'Ir a hoy')
+    ),
+    mmRows.length>0&&mm,
+    e('div',{className:'pv-card'},
+      e('div',{ref:scRef,className:'pv-sc'},
+        e('div',{style:{width:W+LW}},head,rows,
+          e('div',{className:'pv-r pv-addph'},
+            e('div',{className:'pv-l',style:{width:LW}},
+              e('span',{className:'pv-plus'},'+'),
+              e('input',{className:'pv-in',placeholder:'Nueva fase…',value:newPhase,onChange:ev=>setNewPhase(ev.target.value),onKeyDown:ev=>{if(ev.key==='Enter'){ev.preventDefault();addPhase();}}})
+            ),
+            e('div',{className:'pv-t',style:{width:W}})
+          )
+        )
+      )
+    ),
+    steps.length===0&&e('div',{className:'empty',style:{padding:'14px 4px'}},'Sin fases aún. Agrega la primera abajo.')
+  );
 }
 
 function ComboView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,DAY_W,
@@ -16915,7 +17168,7 @@ function TaskExperimentsPanel({task,onUpdateTask,pSystems}){
 // Este orden se guarda a nivel de plataforma: aplica por igual a proyectos y cuentas.
 // El primer elemento del orden es siempre la vista por defecto al abrir cualquier proyecto/cuenta.
 const VIEWTAB_ORDER_KEY='chronos_viewtab_order_v1';
-const VIEWTAB_DEFAULT_ORDER=['combo','mindmap','board','notebook'];
+const VIEWTAB_DEFAULT_ORDER=['plan','combo','mindmap','board','notebook'];
 function getViewTabOrder(){
   try{
     const raw=localStorage.getItem(VIEWTAB_ORDER_KEY);
@@ -16929,6 +17182,7 @@ function getViewTabOrder(){
     const valid=known.filter(k=>VIEWTAB_DEFAULT_ORDER.includes(k));
     if(!valid.length)return VIEWTAB_DEFAULT_ORDER.slice();
     VIEWTAB_DEFAULT_ORDER.forEach(k=>{if(!valid.includes(k))valid.push(k);});
+    if(!parsed.includes('plan')){const ix=valid.indexOf('plan');if(ix>0){valid.splice(ix,1);valid.unshift('plan');}} // la línea de tiempo limpia es la vista por defecto (una sola vez)
     return valid;
   }catch(err){return VIEWTAB_DEFAULT_ORDER.slice();}
 }
@@ -17411,7 +17665,8 @@ function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask,templates,onAddTe
       e('div',{className:'view-tabs'},
         (()=>{
           const TAB_DEFS={
-            combo:{title:'Lista + Calendario',icon:e(DashIcon,{name:'layers',size:13})},
+            plan:{title:'Línea de tiempo',icon:e(DashIcon,{name:'activity',size:13})},
+            combo:{title:'Vista detallada (lista + calendario)',icon:e(DashIcon,{name:'layers',size:13})},
             mindmap:{title:'Mapa mental',icon:e(DashIcon,{name:'network',size:13})},
             board:{title:'Pizarra',icon:e(DashIcon,{name:'image',size:13})},
             notebook:{title:'Libreta',icon:e(DashIcon,{name:'note',size:13})}
@@ -17426,6 +17681,8 @@ function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask,templates,onAddTe
       ),
 
       e('div',{className:'modal-body',style:{flex:1,minHeight:0}},
+        view==='plan'&&e(PlanView,{steps,commit,updateStep,showDoneSteps,setShowDoneSteps,
+          projDeadline:(task&&task.deadline)||null,onSetDeadline:v=>{if(onUpdateTask)onUpdateTask({deadline:v||null});}}),
         view==='combo'&&e(ComboView,{steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,DAY_W,
           phaseStatusPicker,setPhaseStatusPicker,updateStep,deleteStep,addStep,
           newName,setNewName,newDate,setNewDate,
