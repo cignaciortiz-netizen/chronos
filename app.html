@@ -648,6 +648,15 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .pl-row:hover .pl-bar{background:#ffffff38}
 .pl-dt{position:absolute;top:8px;font:500 9.5px 'JetBrains Mono',monospace;color:var(--text4);white-space:nowrap;line-height:14px}
 .pl-today{position:absolute;top:0;bottom:0;width:1px;background:var(--accent-border);pointer-events:none}
+.rc-warn{background:var(--red-bg);border:1px solid var(--red-border);border-radius:10px;padding:12px 14px}
+.rc-warn-t{font-size:12.5px;font-weight:600;color:var(--red)}
+.rc-warn-s{font-size:11.5px;color:var(--text2);margin-top:4px;line-height:1.5}
+.rc-err{margin-top:12px;padding:9px 12px;border-radius:10px;background:var(--red-bg);color:var(--red);font-size:11.5px}
+.rc-sum{margin-top:12px;padding:10px 12px;border-radius:10px;background:var(--bg3);font-size:11.5px;color:var(--text2);line-height:1.6}
+.rc-sum b{color:var(--text0);font-weight:500}
+.rc-sum-n{font-size:11px;color:var(--text3)}
+.rc-sum-d{font-size:13px;color:var(--accent2);font-weight:500;margin-top:2px}
+.rc-sum-w{font-size:10.5px;color:var(--amber);margin-top:4px}
 .cv-prog{display:flex;align-items:center;gap:10px;padding:2px 2px 10px;flex-shrink:0}
 .cv-prog-bar{flex:1;height:6px;border-radius:6px;background:var(--bg4);overflow:hidden}
 .cv-prog-bar i{display:block;height:100%;background:var(--accent);border-radius:6px;transition:width .4s}
@@ -17000,7 +17009,9 @@ function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask,templates,onAddTe
   const[showTplMgr,setShowTplMgr]=useState(false);
   const[showSaveTpl,setShowSaveTpl]=useState(false);
   const[pendingTpl,setPendingTpl]=useState(null); // plantilla esperando fecha de inicio
-  const[showRecalc,setShowRecalc]=useState(false); // recalcular fechas de todo el proyecto desde un nuevo inicio
+  const[showRecalc,setShowRecalc]=useState(false); // recalcular fechas de todo el proyecto entre un inicio y la fecha límite
+  const[rcStart,setRcStart]=useState(null);
+  const[rcBiz,setRcBiz]=useState(null);
   function applyTemplate(tpl){
     if(!tpl)return;
     const hasDurations=(tpl.steps||[]).some(s=>Number.isFinite(s.durationDays)&&s.durationDays>0);
@@ -17020,61 +17031,55 @@ function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask,templates,onAddTe
     }
     setPendingTpl(null);
   }
-  // Recalcula las fechas de TODAS las fases a partir de una nueva fecha de
-  // inicio, conservando la duración que ya tenía cada una (dueDate-startDate)
-  // y el orden en que están — sin tocar nombres, tareas, estado "hecho" ni
-  // actLog. Las fases sin fecha quedan igual (no participan del encadenado).
-  // Sirve para cuando el proyecto arrancó más tarde (o más temprano) de lo
-  // planeado y hay que correr todo el calendario sin perder el trabajo ya hecho.
-  function recalcFromStart(newStart,bizOnly,fresh,perTask){
-    let cursor=bizOnly?alignToBizDayKey(newStart):newStart;
-    // Modo "desde cero": se IGNORAN las fechas y duraciones anteriores. Cada fase dura
-    // lo que sus tareas pendientes necesitan (perTask días por tarea, mínimo 1 día) y
-    // las tareas se asignan una tras otra, en orden, a partir del inicio de la fase.
-    // Las fases y tareas ya hechas no se tocan.
-    const per=Math.max(1,Math.round(Number(perTask)||1));
-    const next=steps.map(s=>{
-      if(fresh){
-        if(s.done)return s;
-        const subsAll=s.subtasks||[];
-        const pend=subsAll.filter(x=>!x.done);
-        const startDate=cursor;
-        const dueDate=addSpanDays(cursor,Math.max(0,Math.max(1,pend.length)*per-1),bizOnly);
-        cursor=nextChainCursor(dueDate,bizOnly);
-        let slot=0;
-        const subtasks=subsAll.map(x=>{
-          if(x.done)return x;
-          const d=addSpanDays(startDate,slot*per,bizOnly);slot++;
-          return{...x,dueDate:d,startDate:d};
-        });
-        return{...s,startDate,dueDate,subtasks};
-      }
-      if(!s.startDate||!s.dueDate)return s; // sin fecha original: se deja tal cual
-      const a=new Date(s.startDate+'T00:00:00'),b=new Date(s.dueDate+'T00:00:00');
-      const dur=Math.max(0,Math.round((b-a)/86400000));
-      const startDate=cursor;
-      const dueDate=addSpanDays(cursor,dur,bizOnly);
-      cursor=nextChainCursor(dueDate,bizOnly); // nunca se pisa con la fase siguiente
-      // Las tareas de la fase se recalculan junto con ella: las que ya tenían día se
-      // reescalan para caer DENTRO del nuevo tramo (de inicio a deadline), conservando
-      // su orden y su agrupación (las que compartían día lo siguen compartiendo); las
-      // pendientes sin día se reparten en orden a lo largo del tramo.
-      const dayDiff=(x,y)=>Math.round((new Date(y+'T00:00:00')-new Date(x+'T00:00:00'))/86400000);
-      const allSubs=s.subtasks||[];
-      const dated=allSubs.map(x=>x.dueDate||x.startDate).filter(Boolean).sort();
-      const dMin=dated[0],dMax=dated[dated.length-1];
-      const span=dated.length?dayDiff(dMin,dMax):0;
-      const moveKey=k=>addSpanDays(startDate,span>0?Math.round(dayDiff(dMin,k)*dur/span):0,bizOnly);
-      const subtasks=allSubs.map((x,i)=>{
-        if(x.dueDate||x.startDate)return{...x,...(x.dueDate?{dueDate:moveKey(x.dueDate)}:{}),...(x.startDate?{startDate:moveKey(x.startDate)}:{})};
+  // Recalcular fechas del proyecto CONSIDERANDO LA FECHA LÍMITE: se reparten las fases pendientes entre la
+  // fecha de inicio y el deadline del proyecto, en proporción a cuántas tareas pendientes tiene cada una (mín. 1 día
+  // por fase cuando alcanzan los días), y las tareas pendientes de cada fase se esparcen en orden dentro de su tramo.
+  // Se ignoran las fechas anteriores. Fases y tareas ya hechas no se tocan. Sin fecha límite no se calcula.
+  function calcDeadlinePlan(start,biz){
+    const dl=task.deadline;
+    if(!dl)return{err:'nodl'};
+    if(!start)return{err:'nostart'};
+    if(start>dl)return{err:'order'};
+    const isW=k=>{const g=new Date(k+'T00:00:00').getDay();return g!==0&&g!==6;};
+    const slots=[];
+    for(let k=start,n=0;k<=dl&&n<3000;k=addDaysToDateKey(k,1),n++){if(!biz||isW(k))slots.push(k);}
+    const N=slots.length;
+    if(N<1)return{err:'noslots'};
+    const todo=steps.filter(x=>!x.done);
+    const P=todo.length;
+    if(!P)return{err:'nophases'};
+    const pendOf=x=>(x.subtasks||[]).filter(t=>!t.done).length;
+    const w=todo.map(x=>Math.max(1,pendOf(x)));
+    const W=w.reduce((x,y)=>x+y,0);
+    const d=w.map(x=>Math.max(1,Math.floor(N*x/W)));
+    let sum=d.reduce((x,y)=>x+y,0);
+    while(sum<N){let bi=0,br=-1;w.forEach((x,i)=>{const rem=N*x/W-d[i];if(rem>br){br=rem;bi=i;}});d[bi]++;sum++;}
+    while(sum>N){let bi=-1,bv=1;d.forEach((x,i)=>{if(x>bv){bv=x;bi=i;}});if(bi<0)break;d[bi]--;sum--;}
+    let pos=0;const per={};
+    todo.forEach((x,j)=>{const a=Math.min(pos,N-1),b=Math.min(N-1,pos+Math.max(1,d[j])-1);per[x.id]={a,b};pos+=d[j];});
+    const T=todo.reduce((x,st)=>x+pendOf(st),0);
+    return{N,P,T,slots,per,perDay:T/N,short:N<P,biz};
+  }
+  function recalcToDeadline(start,biz){
+    const plan=calcDeadlinePlan(start,biz);
+    if(plan.err)return;
+    const next=steps.map(st=>{
+      if(st.done)return st;
+      const r=plan.per[st.id];if(!r)return st;
+      const days=r.b-r.a+1;
+      const subs=st.subtasks||[];
+      const pend=subs.filter(x=>!x.done).length;
+      let j=0;
+      const subtasks=subs.map(x=>{
         if(x.done)return x;
-        const off=allSubs.length<=1?dur:Math.round(i*dur/(allSubs.length-1));
-        return{...x,dueDate:addSpanDays(startDate,off,bizOnly)};
+        const slot=Math.min(r.b,r.a+Math.floor(j*days/Math.max(1,pend)));j++;
+        const k=plan.slots[slot];
+        return{...x,dueDate:k,startDate:k};
       });
-      return{...s,startDate,dueDate,subtasks};
+      return{...st,startDate:plan.slots[r.a],dueDate:plan.slots[r.b],subtasks};
     });
     commit(next);
-    onUpdateTask({datesBizOnly:bizOnly});
+    onUpdateTask({datesBizOnly:biz});
     setShowRecalc(false);
   }
   // Sugerencia de cierre real: entre las fases YA EJECUTADAS de este proyecto,
@@ -17417,7 +17422,7 @@ function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask,templates,onAddTe
             return e('button',{key:k,className:'vtab vtab-icon'+(view===k?' active':''),onClick:()=>setView(k),title:def.title},def.icon);
           });
         })(),
-        steps.some(s=>s.startDate&&s.dueDate)&&e('button',{className:'rec-trigger-btn',title:'Cambiar fecha de inicio y recalcular todas las fases',onClick:()=>setShowRecalc(true)},e(DashIcon,{name:'refresh',size:12}))
+        steps.length>0&&e('button',{className:'rec-trigger-btn',title:'Repartir las fases y tareas entre una fecha de inicio y la fecha límite del proyecto',onClick:()=>{setRcStart(null);setRcBiz(null);setShowRecalc(true);}},e(DashIcon,{name:'refresh',size:12}))
       ),
 
       e('div',{className:'modal-body',style:{flex:1,minHeight:0}},
@@ -17621,45 +17626,59 @@ function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask,templates,onAddTe
       );
     })(),
     showRecalc&&(()=>{
-      // Cambia la fecha de inicio del proyecto y recalcula toda la cadena de
-      // fases (manteniendo la duración que ya tenía cada una), sin borrar ni
-      // recrear nada — nombres, tareas, avance y actLog quedan intactos.
-      const datedSteps=steps.filter(s=>s.startDate&&s.dueDate);
-      const currentFirst=datedSteps.reduce((min,s)=>!min||s.startDate<min?s.startDate:min,null);
+      const startVal=rcStart!=null?rcStart:todayDateKey();
+      const bizVal=rcBiz!=null?rcBiz:!!task.datesBizOnly;
+      const plan=calcDeadlinePlan(startVal,bizVal);
+      const fmtK=k=>Number(k.slice(8))+' '+MONTHS_SHORT[Number(k.slice(5,7))-1].toLowerCase()+' '+k.slice(0,4);
+      const ERR={
+        order:'La fecha de inicio es posterior a la fecha límite del proyecto. Elige un inicio anterior.',
+        noslots:'No hay días disponibles entre el inicio y la fecha límite.',
+        nophases:'No quedan fases pendientes para repartir.',
+        nostart:'Elige una fecha de inicio.'
+      };
+      let perDayTxt='';
+      if(!plan.err){
+        const v=plan.perDay;
+        perDayTxt=v>=1?('≈ '+(Math.round(v*10)/10).toString().replace('.',',')+(Math.round(v*10)/10===1?' tarea por día':' tareas por día')):(plan.T>0?'≈ 1 tarea cada '+Math.max(2,Math.round(1/v))+' días':'sin tareas pendientes');
+      }
       return e('div',{className:'overlay',onClick:ev=>{if(ev.target===ev.currentTarget)setShowRecalc(false);}},
-        e('div',{className:'modal',style:{width:380}},
+        e('div',{className:'modal',style:{width:420}},
           e('div',{className:'modal-head'},e('div',{className:'modal-title'},'Recalcular fechas del proyecto'),e('button',{className:'modal-x',onClick:()=>setShowRecalc(false)},'✕')),
           e('div',{className:'modal-body'},
-            e('div',{style:{fontSize:11.5,color:'var(--text2)',lineHeight:1.6,marginBottom:10}},
-              'Elige la nueva fecha de inicio y las '+datedSteps.length+' fase(s) con fecha se recorren en cadena a partir de ahí, respetando la duración que ya tenía cada una; las tareas de cada fase se recalculan dentro de su nuevo tramo (conservando su orden) y las que no tenían día se reparten dentro de ella. No se pierde ningún nombre, tarea, avance ni fase sin fecha.'
-            ),
-            e('div',{className:'fg'},e('label',{className:'flabel'},'Nueva fecha de inicio'),
-              e('input',{className:'finput',type:'date',id:'recalc-start-date',defaultValue:currentFirst||todayDateKey()})
-            ),
-            e('label',{style:{display:'flex',alignItems:'center',gap:7,fontSize:11.5,color:'var(--text2)',marginTop:8,cursor:'pointer'}},
-              e('input',{type:'checkbox',id:'recalc-biz-only',defaultChecked:!!task.datesBizOnly}),
-              'Contar solo días de semana (excluir sábado y domingo)'
-            ),
-            e('label',{style:{display:'flex',alignItems:'center',gap:7,fontSize:11.5,color:'var(--text2)',marginTop:8,cursor:'pointer'}},
-              e('input',{type:'checkbox',id:'recalc-fresh',defaultChecked:true}),
-              'Ignorar las fechas anteriores y calcular todo desde cero'
-            ),
-            e('div',{style:{display:'flex',alignItems:'center',gap:7,fontSize:11.5,color:'var(--text2)',marginTop:8,paddingLeft:21}},
-              'Días por tarea',
-              e('input',{className:'finput',type:'number',min:1,max:30,id:'recalc-per-task',defaultValue:1,style:{width:56,padding:'4px 8px'}}),
-              e('span',{style:{color:'var(--text4)'}},'cada fase dura lo que suman sus tareas pendientes')
-            )
+            !task.deadline
+              ?e('div',{className:'rc-warn'},
+                  e('div',{className:'rc-warn-t'},'No hay fecha límite definida'),
+                  e('div',{className:'rc-warn-s'},'Este proyecto no tiene deadline, así que no se pueden calcular las fechas. Defínelo aquí para continuar:'),
+                  e(ChronosDatePicker,{value:'',onChange:v=>{if(v&&onUpdateTask)onUpdateTask({deadline:v});},style:{width:140,marginTop:8}})
+                )
+              :e(React.Fragment,null,
+                  e('div',{style:{fontSize:11.5,color:'var(--text2)',lineHeight:1.6,marginBottom:10}},
+                    'Reparte las fases y tareas pendientes entre la fecha de inicio y la fecha límite, según cuántas tareas tiene cada fase. Las fases y tareas ya hechas no se tocan.'
+                  ),
+                  e('div',{className:'fg'},e('label',{className:'flabel'},'Fecha de inicio'),
+                    e('input',{className:'finput',type:'date',value:startVal,onChange:ev=>setRcStart(ev.target.value)})
+                  ),
+                  e('div',{style:{display:'flex',alignItems:'center',gap:8,fontSize:11.5,color:'var(--text2)',marginTop:8}},
+                    'Fecha límite',e('b',{style:{color:'var(--text0)',fontWeight:500}},fmtK(task.deadline)),
+                    e('span',{style:{color:'var(--text4)',fontSize:10.5}},'(se cambia junto a la barra de avance)')
+                  ),
+                  e('label',{style:{display:'flex',alignItems:'center',gap:7,fontSize:11.5,color:'var(--text2)',marginTop:8,cursor:'pointer'}},
+                    e('input',{type:'checkbox',checked:bizVal,onChange:ev=>setRcBiz(ev.target.checked)}),
+                    'Contar solo días de semana (excluir sábado y domingo)'
+                  ),
+                  plan.err
+                    ?e('div',{className:'rc-err'},ERR[plan.err]||'No se puede calcular.')
+                    :e('div',{className:'rc-sum'},
+                        e('div',null,'Del ',e('b',null,fmtK(startVal)),' al ',e('b',null,fmtK(task.deadline))),
+                        e('div',{className:'rc-sum-n'},plan.N+(bizVal?(plan.N===1?' día hábil':' días hábiles'):(plan.N===1?' día':' días'))+' · '+plan.P+(plan.P===1?' fase':' fases')+' · '+plan.T+(plan.T===1?' tarea':' tareas')),
+                        e('div',{className:'rc-sum-d'},perDayTxt),
+                        plan.short&&e('div',{className:'rc-sum-w'},'Hay menos días que fases: algunas fases compartirán día.')
+                      )
+                )
           ),
           e('div',{className:'modal-foot'},
             e('button',{className:'btn',onClick:()=>setShowRecalc(false)},'Cancelar'),
-            e('button',{className:'btn btn-primary',onClick:()=>{
-              const input=document.getElementById('recalc-start-date');
-              const bizInput=document.getElementById('recalc-biz-only');
-              const startFrom=(input&&input.value)||todayDateKey();
-              const freshInput=document.getElementById('recalc-fresh');
-              const perInput=document.getElementById('recalc-per-task');
-              recalcFromStart(startFrom,!!(bizInput&&bizInput.checked),!!(freshInput&&freshInput.checked),perInput?perInput.value:1);
-            }},'Recalcular fechas')
+            e('button',{className:'btn btn-primary',disabled:!task.deadline||!!plan.err,onClick:()=>recalcToDeadline(startVal,bizVal)},'Recalcular fechas')
           )
         )
       );
