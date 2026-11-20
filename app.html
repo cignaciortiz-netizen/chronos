@@ -628,6 +628,16 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .cv-prog-bar i{display:block;height:100%;background:var(--accent);border-radius:6px;transition:width .4s}
 .cv-prog-n{font:600 12px 'JetBrains Mono',monospace;color:var(--text0)}
 .cv-prog-l{font-size:11px;color:var(--text3)}
+.cv-cell.dlx{background:#00000040}
+.cv-cell.dlx.wk,.cv-cell.dlx.td{background:#00000050}
+.cv-cell.dle{box-shadow:inset -2px 0 0 #e6675f99}
+.cv-dlwrap{display:flex;align-items:center;gap:7px;margin-left:10px;flex-shrink:0}
+.cv-dl-l{font-size:10.5px;color:var(--text4);white-space:nowrap}
+.cv-dlwrap.set .cv-dl-l{color:var(--text3)}
+.cv-dl-d{font-size:10.5px;color:var(--text3);white-space:nowrap}
+.cv-dlwrap.past .cv-dl-d{color:var(--red)}
+.cv-dl-x{border:0;background:none;color:var(--text4);font-size:13px;cursor:pointer;padding:0 2px;line-height:1}
+.cv-dl-x:hover{color:var(--red)}
 .cv-left::after{content:"";position:absolute;top:0;bottom:0;right:-3px;width:8px;cursor:col-resize;z-index:9}
 .cv-left{position:sticky;left:0;z-index:3;flex-shrink:0;box-sizing:border-box;border-right:1px solid var(--border2);display:flex;align-items:center}
 .cv-row:hover .combo-ctx-chip{opacity:1!important}
@@ -7880,7 +7890,7 @@ function WrapInput({value,onChange,style,placeholder,onEnter,w,title}){
 
 function ComboView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,DAY_W,
   phaseStatusPicker,setPhaseStatusPicker,updateStep,deleteStep,addStep,
-  newName,setNewName,newDate,setNewDate}){
+  newName,setNewName,newDate,setNewDate,projDeadline,onSetDeadline}){
   const today=dayKey();
   const toTs=d=>new Date(d+'T00:00:00').getTime();
   const sortByDeadline=arr=>[...arr].sort((a,b)=>{if(!a.dueDate&&!b.dueDate)return 0;if(!a.dueDate)return 1;if(!b.dueDate)return -1;return a.dueDate<b.dueDate?-1:a.dueDate>b.dueDate?1:0;});
@@ -7987,6 +7997,7 @@ function ComboView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
 
   // rango de días: desde 2 días antes de lo más antiguo hasta 5 después de lo último (mínimo 3 semanas)
   const allK=[today];
+  if(projDeadline)allK.push(projDeadline);
   visSteps.forEach(s=>{if(s.dueDate)allK.push(s.dueDate);(s.subtasks||[]).forEach(x=>{if(x.dueDate)allK.push(x.dueDate);});});
   allK.sort();
   const rangeStart=addD(allK[0],-2);
@@ -8024,7 +8035,7 @@ function ComboView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
 
   function dayCells(h,render,onPick,canDrop,onDropDay){
     return e('div',{style:{...gridStyle,minHeight:h}},days.map(d=>e('div',{key:d.key,
-      className:'cv-cell'+(d.key===today?' td':(d.dow===0||d.dow===6)?' wk':'')+(onPick?' ck':''),
+      className:'cv-cell'+(d.key===today?' td':(d.dow===0||d.dow===6)?' wk':'')+(onPick?' ck':'')+(projDeadline&&d.key===projDeadline?' dle':'')+(projDeadline&&d.key>projDeadline?' dlx':''),
       onClick:onPick?()=>onPick(d.key):undefined,
       onDragOver:canDrop?ev=>{if(canDrop())ev.preventDefault();}:undefined,
       onDrop:canDrop?ev=>{if(canDrop()){ev.preventDefault();const dr=dragRef.current;dragRef.current=null;onDropDay(d.key,dr);}}:undefined
@@ -8041,6 +8052,11 @@ function ComboView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
   let unitsT=0,unitsD=0;
   steps.forEach(st=>{const sb=st.subtasks||[];if(sb.length){sb.forEach(x=>{unitsT++;if(x.done||st.done)unitsD++;});}else{unitsT++;if(st.done)unitsD++;}});
   const progPct=unitsT?Math.round(unitsD/unitsT*100):0;
+  // fecha límite del proyecto: cuántos días faltan y cuántas fases/tareas se pasan
+  const dlDays=projDeadline?Math.round((new Date(projDeadline+'T00:00:00')-new Date(today+'T00:00:00'))/86400000):null;
+  const overPhases=projDeadline?steps.filter(st=>!st.done&&st.dueDate&&st.dueDate>projDeadline).length:0;
+  const overSubs=projDeadline?allSubs.filter(x=>!x.done&&!x._phaseDone&&x.dueDate&&x.dueDate>projDeadline).length:0;
+  const fmtDl=k=>Number(k.slice(8))+' '+MONTHS_SHORT[Number(k.slice(5,7))-1].toLowerCase()+' '+k.slice(0,4);
   const mutedTxt={fontSize:11,color:'var(--text4)',fontFamily:'Inter,sans-serif'};
   const openRowCtx=(ev,id)=>{
     ev.preventDefault();ev.stopPropagation();
@@ -8057,7 +8073,13 @@ function ComboView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
     e('div',{className:'cv-prog',title:unitsD+' de '+unitsT+' tareas hechas'},
       e('div',{className:'cv-prog-bar'},e('i',{style:{width:progPct+'%'}})),
       e('span',{className:'cv-prog-n'},progPct+'%'),
-      e('span',{className:'cv-prog-l'},'del proyecto')
+      e('span',{className:'cv-prog-l'},'del proyecto'),
+      e('div',{className:'cv-dlwrap'+(projDeadline?' set':'')+(dlDays!=null&&dlDays<0?' past':'')},
+        e('span',{className:'cv-dl-l'},'Fecha límite'),
+        e(ChronosDatePicker,{value:projDeadline||'',onChange:v=>onSetDeadline&&onSetDeadline(v||null),style:{width:112}}),
+        projDeadline&&e('span',{className:'cv-dl-d',title:'Faltan para la fecha límite del proyecto'},dlDays<0?'venció hace '+(-dlDays)+(dlDays===-1?' día':' días'):dlDays===0?'es hoy':'faltan '+dlDays+(dlDays===1?' día':' días')),
+        projDeadline&&e('button',{className:'cv-dl-x',title:'Quitar la fecha límite',onClick:()=>onSetDeadline&&onSetDeadline(null)},'×')
+      )
     ),
 
     // ── barra superior: avance, qué toca hoy, zoom ──
@@ -8068,6 +8090,8 @@ function ComboView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
       todaySubs.length===0&&subsTotal>0&&e('span',{style:mutedTxt},'Nada agendado para hoy'),
       lateSubs.length>0&&e('span',{className:'cv-pill late',title:lateSubs.map(x=>x.name+' — '+x._phase).join('\n')},lateSubs.length+(lateSubs.length===1?' atrasada':' atrasadas')),
       unsched>0&&e('span',{style:mutedTxt,title:'Tareas sin día asignado: haz clic en un día de su fila'},unsched+' sin día'),
+      (overPhases>0||overSubs>0)&&e('span',{className:'cv-pill late',title:'Fases o tareas con fecha posterior a la fecha límite del proyecto ('+fmtDl(projDeadline)+')'},
+        'pasan del límite: '+(overPhases?overPhases+(overPhases===1?' fase':' fases'):'')+(overPhases&&overSubs?' · ':'')+(overSubs?overSubs+(overSubs===1?' tarea':' tareas'):'')),
       e('div',{style:{flex:1}}),
       e('button',{className:'btn',style:{fontSize:10.5,padding:'4px 10px'},onClick:scrollToToday},'Hoy'),
       e('div',{style:{display:'flex',border:'1px solid var(--border2)',borderRadius:'var(--r-md)',overflow:'hidden'}},
@@ -8100,7 +8124,8 @@ function ComboView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
           e('span',{style:{width:112,flexShrink:0,fontSize:9.5,fontWeight:700,textTransform:'uppercase',letterSpacing:'.05em',color:'var(--text4)',fontFamily:'Inter,sans-serif',textAlign:'right',paddingRight:8}},'Deadline')
         ),
         e('div',{style:{...gridStyle,height:HDR_H}},days.map((d,i)=>e('div',{key:d.key,
-          className:'cv-cell'+(d.key===today?' td':(d.dow===0||d.dow===6)?' wk':''),
+          className:'cv-cell'+(d.key===today?' td':(d.dow===0||d.dow===6)?' wk':'')+(projDeadline&&d.key===projDeadline?' dle':'')+(projDeadline&&d.key>projDeadline?' dlx':''),
+          title:projDeadline&&d.key===projDeadline?'Fecha límite del proyecto':undefined,
           style:{flexDirection:'column',justifyContent:'flex-end',paddingBottom:5,overflow:'visible'}},
           (d.dom===1||i===0)&&e('span',{style:{position:'absolute',top:4,left:4,fontSize:9,fontWeight:700,letterSpacing:'.05em',textTransform:'uppercase',color:'var(--text3)',fontFamily:'Inter,sans-serif',whiteSpace:'nowrap',zIndex:1}},MONTHS_SHORT[d.mon]),
           W>=48&&e('span',{style:{fontSize:8.5,color:'var(--text4)',fontFamily:'Inter,sans-serif',lineHeight:1}},DOWS[d.dow]),
@@ -8176,7 +8201,7 @@ function ComboView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
                   onClick:ev=>ev.stopPropagation(),
                   onDragStart:ev=>{dragRef.current={kind:'phase',stepId:s.id};try{ev.dataTransfer.setData('text/plain',s.id);ev.dataTransfer.effectAllowed='move';}catch(err){}},
                   onDragEnd:()=>{dragRef.current=null;},
-                  style:{background:col,textDecoration:s.done?'line-through':'none'}},
+                  style:{background:col,textDecoration:s.done?'line-through':'none',...(projDeadline&&!s.done&&s.dueDate>projDeadline?{boxShadow:'0 0 0 2px var(--red-border)'}:null)}},
                   W>=34?d.dom+' '+MONTHS_SHORT[d.mon].toLowerCase():String(d.dom)));
               }else if(!isExpanded){
                 const here=subs.filter(x=>x.dueDate===d.key);
@@ -8192,7 +8217,7 @@ function ComboView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
 
           // ── filas de tareas ──
           isExpanded&&subsVis.map(sub=>{
-            const late=!sub.done&&sub.dueDate&&((s.dueDate&&sub.dueDate>s.dueDate)||sub.dueDate<today);
+            const late=!sub.done&&sub.dueDate&&((s.dueDate&&sub.dueDate>s.dueDate)||sub.dueDate<today||(projDeadline&&sub.dueDate>projDeadline));
             return e('div',{key:sub.id,className:'cv-row cv-sub',style:{minWidth:rowMinW}},
               e('div',{className:'cv-left',style:{width:LEFT_W,minHeight:SUB_H,background:CVBG,padding:'4px 8px 4px 54px',gap:8}},
                 e('button',{onClick:()=>updSub(s.id,sub.id,{done:!sub.done}),title:sub.done?'Reabrir':'Marcar hecha',
@@ -17305,7 +17330,8 @@ function TaskStepsModal({task,noun,onClose,onSave,onUpdateTask,templates,onAddTe
       e('div',{className:'modal-body',style:{flex:1,minHeight:0}},
         view==='combo'&&e(ComboView,{steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,DAY_W,
           phaseStatusPicker,setPhaseStatusPicker,updateStep,deleteStep,addStep,
-          newName,setNewName,newDate,setNewDate}),
+          newName,setNewName,newDate,setNewDate,
+          projDeadline:(task&&task.deadline)||null,onSetDeadline:v=>{if(onUpdateTask)onUpdateTask({deadline:v||null});}}),
         view==='mindmap'&&e('div',{className:'mm-wrap'},
           steps.length===0&&e('div',{className:'empty',style:{padding:'20px 2px'}},'Sin fases aún. Agrégalas en la vista Lista.'),
           steps.length>0&&(()=>{
