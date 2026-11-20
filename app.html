@@ -623,6 +623,12 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 /* combo row actions — toolbar flotante, no ocupa columna */
 .cv-row{display:flex;border-bottom:1px solid var(--border)}
 .cv-row.cv-sub{border-bottom-color:#ffffff08}
+.cv-prog{display:flex;align-items:center;gap:10px;padding:2px 2px 10px;flex-shrink:0}
+.cv-prog-bar{flex:1;height:6px;border-radius:6px;background:var(--bg4);overflow:hidden}
+.cv-prog-bar i{display:block;height:100%;background:var(--accent);border-radius:6px;transition:width .4s}
+.cv-prog-n{font:600 12px 'JetBrains Mono',monospace;color:var(--text0)}
+.cv-prog-l{font-size:11px;color:var(--text3)}
+.cv-left::after{content:"";position:absolute;top:0;bottom:0;right:-3px;width:8px;cursor:col-resize;z-index:9}
 .cv-left{position:sticky;left:0;z-index:3;flex-shrink:0;box-sizing:border-box;border-right:1px solid var(--border2);display:flex;align-items:center}
 .cv-row:hover .combo-ctx-chip{opacity:1!important}
 .cv-row:hover .combo-sub-del{opacity:.55!important}
@@ -7861,6 +7867,17 @@ function CalendarPanel({steps,updateStep,today,barColor,mode,setMode}){
 }
 
 // ── ComboView: Lista (izq fija) + Calendario (der) ──
+// Campo de texto de una o varias líneas: crece solo según lo escrito (sin recortar con "…") para ver
+// todo el nombre de una fase o tarea mientras se edita. Enter confirma (no inserta saltos de línea).
+function WrapInput({value,onChange,style,placeholder,onEnter,w,title}){
+  const ref=useRef(null);
+  React.useLayoutEffect(()=>{const el=ref.current;if(!el)return;el.style.height='auto';el.style.height=el.scrollHeight+'px';},[value,w]);
+  return e('textarea',{ref,rows:1,value:value||'',title:title||value||'',placeholder,spellCheck:false,
+    onChange:ev=>onChange(ev.target.value.replace(/\n/g,' ')),
+    onKeyDown:ev=>{if(ev.key==='Enter'){ev.preventDefault();if(onEnter)onEnter();else ev.target.blur();}},
+    style:{flex:1,minWidth:0,background:'transparent',border:'none',outline:'none',resize:'none',overflow:'hidden',padding:0,margin:0,fontFamily:'Inter,sans-serif',lineHeight:1.35,whiteSpace:'pre-wrap',overflowWrap:'anywhere',display:'block',...style}});
+}
+
 function ComboView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,DAY_W,
   phaseStatusPicker,setPhaseStatusPicker,updateStep,deleteStep,addStep,
   newName,setNewName,newDate,setNewDate}){
@@ -7946,7 +7963,11 @@ function ComboView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
   }
 
   // ══ Vista unificada: cada fila de la lista es también su fila en la línea de tiempo ══
-  const ROW_H=40,SUB_H=30,HDR_H=40,LEFT_W=400;
+  const ROW_H=40,SUB_H=30,HDR_H=40;
+  // Ancho de la lista (fases/tareas): se ajusta arrastrando el borde derecho de la columna; se recuerda.
+  const[leftW,setLeftW]=useState(()=>{try{const v=Number(localStorage.getItem('chr4_combo_leftw'));return v>=320&&v<=1000?v:400;}catch(err){return 400;}});
+  const LEFT_W=leftW;
+  const resRef=useRef(null);
   const BDR='1px solid var(--border)';
   const CVBG='var(--bg2)';
   const activeStep=steps.find(s=>!s.done);
@@ -8002,7 +8023,7 @@ function ComboView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
   }
 
   function dayCells(h,render,onPick,canDrop,onDropDay){
-    return e('div',{style:{...gridStyle,height:h}},days.map(d=>e('div',{key:d.key,
+    return e('div',{style:{...gridStyle,minHeight:h}},days.map(d=>e('div',{key:d.key,
       className:'cv-cell'+(d.key===today?' td':(d.dow===0||d.dow===6)?' wk':'')+(onPick?' ck':''),
       onClick:onPick?()=>onPick(d.key):undefined,
       onDragOver:canDrop?ev=>{if(canDrop())ev.preventDefault();}:undefined,
@@ -8016,6 +8037,10 @@ function ComboView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
   const todaySubs=allSubs.filter(x=>!x.done&&x.dueDate===today);
   const lateSubs=allSubs.filter(x=>!x.done&&!x._phaseDone&&x.dueDate&&x.dueDate<today);
   const unsched=allSubs.filter(x=>!x.done&&!x._phaseDone&&!x.dueDate).length;
+  // avance del proyecto: cada tarea cuenta una unidad (una fase sin tareas cuenta ella misma); fase hecha = todas sus tareas hechas
+  let unitsT=0,unitsD=0;
+  steps.forEach(st=>{const sb=st.subtasks||[];if(sb.length){sb.forEach(x=>{unitsT++;if(x.done||st.done)unitsD++;});}else{unitsT++;if(st.done)unitsD++;}});
+  const progPct=unitsT?Math.round(unitsD/unitsT*100):0;
   const mutedTxt={fontSize:11,color:'var(--text4)',fontFamily:'Inter,sans-serif'};
   const openRowCtx=(ev,id)=>{
     ev.preventDefault();ev.stopPropagation();
@@ -8027,6 +8052,13 @@ function ComboView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
   };
 
   return e('div',{style:{display:'flex',flexDirection:'column',flex:1,minHeight:0,overflow:'hidden'}},
+
+    // ── avance del proyecto ──
+    e('div',{className:'cv-prog',title:unitsD+' de '+unitsT+' tareas hechas'},
+      e('div',{className:'cv-prog-bar'},e('i',{style:{width:progPct+'%'}})),
+      e('span',{className:'cv-prog-n'},progPct+'%'),
+      e('span',{className:'cv-prog-l'},'del proyecto')
+    ),
 
     // ── barra superior: avance, qué toca hoy, zoom ──
     e('div',{style:{display:'flex',alignItems:'center',gap:10,padding:'0 2px 10px',flexShrink:0,flexWrap:'wrap'}},
@@ -8046,7 +8078,20 @@ function ComboView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
     ),
 
     // ── tabla única con scroll ──
-    e('div',{ref:scrollerRef,style:{flex:1,minHeight:0,overflow:'auto',border:BDR,borderRadius:'var(--r-md)'}},
+    e('div',{ref:scrollerRef,style:{flex:1,minHeight:0,overflow:'auto',border:BDR,borderRadius:'var(--r-md)'},
+      onPointerDown:ev=>{
+        const l=ev.target.closest&&ev.target.closest('.cv-left');if(!l)return;
+        const r=l.getBoundingClientRect();if(ev.clientX<r.right-9)return;
+        resRef.current={x0:ev.clientX,w0:leftW};
+        try{ev.currentTarget.setPointerCapture(ev.pointerId);}catch(err){}
+        ev.preventDefault();
+      },
+      onPointerMove:ev=>{
+        const d=resRef.current;if(!d)return;
+        const sc=scrollerRef.current;const max=Math.max(320,Math.min(1000,sc.clientWidth-160));
+        const nw=Math.max(320,Math.min(max,Math.round(d.w0+ev.clientX-d.x0)));d.last=nw;setLeftW(nw);
+      },
+      onPointerUp:()=>{if(resRef.current){const last=resRef.current.last;try{localStorage.setItem('chr4_combo_leftw',String(last||leftW));}catch(err){}resRef.current=null;}}},
 
       // encabezado
       e('div',{className:'cv-row',style:{minWidth:rowMinW,position:'sticky',top:0,zIndex:6,background:CVBG}},
@@ -8085,7 +8130,7 @@ function ComboView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
 
           // ── fila de fase ──
           e('div',{className:'cv-row',style:{minWidth:rowMinW,opacity:s.done?.6:1},onContextMenu:ev=>openRowCtx(ev,s.id)},
-            e('div',{className:'cv-left',style:{width:LEFT_W,height:ROW_H,background:rowBg,padding:'0 6px 0 8px',zIndex:isOpen?20:3}},
+            e('div',{className:'cv-left',style:{width:LEFT_W,minHeight:ROW_H,background:rowBg,padding:'5px 6px 5px 8px',zIndex:isOpen?20:3}},
               e('button',{title:isExpanded?'Ocultar tareas':'Ver tareas',onClick:()=>{
                 const opening=!expandedRows.has(s.id);
                 toggleExpand(s.id);
@@ -8109,9 +8154,8 @@ function ComboView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
                       isCur&&e('span',{style:{marginLeft:'auto',fontSize:10,opacity:.5}},'✓'));
                   }))
               ),
-              e('input',{value:s.name,title:s.name,onChange:ev=>updateStep(s.id,{name:ev.target.value}),
-                style:{flex:1,minWidth:0,background:'transparent',border:'none',outline:'none',fontSize:12.5,fontWeight:600,fontFamily:'Inter,sans-serif',
-                  color:s.done?'var(--text3)':'var(--text1)',textDecoration:s.done?'line-through':'none',padding:0,textOverflow:'ellipsis'}}),
+              e(WrapInput,{value:s.name,w:LEFT_W,onChange:v=>updateStep(s.id,{name:v}),
+                style:{fontSize:12.5,fontWeight:600,color:s.done?'var(--text3)':'var(--text1)',textDecoration:s.done?'line-through':'none'}}),
               e('div',{title:'Click derecho para opciones',onContextMenu:ev=>openRowCtx(ev,s.id),className:'combo-ctx-chip',
                 style:{display:'flex',alignItems:'center',gap:3,flexShrink:0,padding:'2px 5px',borderRadius:5,cursor:'context-menu',marginLeft:4,
                   border:'1px solid var(--border)',background:'var(--bg3)',opacity:(s.note||s.assignee)?1:0,transition:'opacity .12s'}},
@@ -8150,15 +8194,14 @@ function ComboView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
           isExpanded&&subsVis.map(sub=>{
             const late=!sub.done&&sub.dueDate&&((s.dueDate&&sub.dueDate>s.dueDate)||sub.dueDate<today);
             return e('div',{key:sub.id,className:'cv-row cv-sub',style:{minWidth:rowMinW}},
-              e('div',{className:'cv-left',style:{width:LEFT_W,height:SUB_H,background:CVBG,padding:'0 8px 0 54px',gap:8}},
+              e('div',{className:'cv-left',style:{width:LEFT_W,minHeight:SUB_H,background:CVBG,padding:'4px 8px 4px 54px',gap:8}},
                 e('button',{onClick:()=>updSub(s.id,sub.id,{done:!sub.done}),title:sub.done?'Reabrir':'Marcar hecha',
                   style:{width:13,height:13,borderRadius:'50%',border:'1.5px solid '+(sub.done?'var(--green)':'var(--border4)'),
                     background:sub.done?'var(--green)':'transparent',flexShrink:0,padding:0,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',transition:'all .12s'}},
                   sub.done&&e('svg',{width:7,height:7,viewBox:'0 0 7 7',fill:'none'},
                     e('polyline',{points:'1,3.5 2.8,5.5 6,1.5',stroke:'#fff',strokeWidth:1.5,strokeLinecap:'round',strokeLinejoin:'round'}))),
-                e('input',{value:sub.name,title:sub.name,onChange:ev=>updSub(s.id,sub.id,{name:ev.target.value}),
-                  style:{flex:1,minWidth:0,background:'transparent',border:'none',outline:'none',fontSize:11.5,fontFamily:'Inter,sans-serif',padding:0,textOverflow:'ellipsis',
-                    color:sub.done?'var(--text4)':'var(--text2)',textDecoration:sub.done?'line-through':'none'}}),
+                e(WrapInput,{value:sub.name,w:LEFT_W,onChange:v=>updSub(s.id,sub.id,{name:v}),
+                  style:{fontSize:11.5,color:sub.done?'var(--text4)':'var(--text2)',textDecoration:sub.done?'line-through':'none'}}),
                 !sub.dueDate&&!sub.done&&e('span',{style:{fontSize:9.5,color:'var(--text4)',fontFamily:'Inter,sans-serif',flexShrink:0,whiteSpace:'nowrap'}},'elige un día →'),
                 sub.dueDate&&e('button',{onClick:()=>updSub(s.id,sub.id,{dueDate:null}),title:'Quitar el día',className:'combo-sub-del',
                   style:{border:'none',background:'none',cursor:'pointer',color:'var(--text4)',fontSize:9.5,padding:0,opacity:0,flexShrink:0,fontFamily:"'JetBrains Mono',monospace"}},
@@ -8183,10 +8226,10 @@ function ComboView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
           isExpanded&&!s.done&&e('div',{className:'cv-row cv-sub',style:{minWidth:rowMinW}},
             e('div',{className:'cv-left',style:{width:LEFT_W,height:SUB_H,background:CVBG,padding:'0 8px 0 54px',gap:8}},
               e('span',{style:{width:13,flexShrink:0,textAlign:'center',color:'var(--text4)',fontSize:13,lineHeight:1}},'+'),
-              e('input',{placeholder:'Agregar tarea…'+(pendDate?'':'  (clic en un día para agendarla)'),value:newSubText[s.id]||'',
-                onChange:ev=>setNewSubText(p=>({...p,[s.id]:ev.target.value})),
-                onKeyDown:ev=>{if(ev.key==='Enter'){ev.preventDefault();addSubWithDate(s.id);}},
-                style:{flex:1,minWidth:0,background:'transparent',border:'none',outline:'none',fontSize:11.5,fontFamily:'Inter,sans-serif',color:'var(--text2)',padding:0}}),
+              e(WrapInput,{placeholder:'Agregar tarea…'+(pendDate?'':'  (clic en un día para agendarla)'),value:newSubText[s.id]||'',w:LEFT_W,
+                onChange:v=>setNewSubText(p=>({...p,[s.id]:v})),
+                onEnter:()=>addSubWithDate(s.id),
+                style:{fontSize:11.5,color:'var(--text2)'}}),
               pendDate&&e('button',{onClick:()=>setNewSubDate(p=>({...p,[s.id]:undefined})),title:'Quitar el día elegido',
                 style:{border:'none',background:'none',cursor:'pointer',color:'var(--accent2)',fontSize:9.5,padding:0,flexShrink:0,fontFamily:"'JetBrains Mono',monospace"}},
                 pendDate.slice(8)+'/'+pendDate.slice(5,7)+' ×')
