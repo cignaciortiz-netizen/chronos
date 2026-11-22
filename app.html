@@ -934,7 +934,7 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .dl-g-fxt{min-width:0}
 .dl-g-fxn{font-size:12px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dl-g-fxm{font:500 10px 'JetBrains Mono',monospace;color:var(--text4)}
-.dl-g-free{position:absolute;left:54px;right:10px;border-radius:10px;border:1px dashed var(--border2);pointer-events:none;display:flex;align-items:center;justify-content:center;font-size:10.5px;color:var(--text4)}
+.dl-g-free{position:absolute;left:54px;right:10px;border-radius:10px;pointer-events:none;display:flex;align-items:flex-start;justify-content:flex-start;padding:5px 12px;font-size:10.5px;color:var(--text4)}
 .dl-g-strip{display:flex;gap:18px;flex-wrap:wrap;align-items:center;padding:9px 14px;border-radius:10px;background:var(--accent-bg);border:1px solid var(--accent-border);font-size:12px;color:var(--text2);margin-bottom:10px}
 .dl-g-strip b{font-weight:500;color:var(--accent2)}
 .dl-g-strip-r{margin-left:auto;color:var(--text3)}
@@ -13063,6 +13063,7 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
   const[gridSel,setGridSel]=useState(null);   // bloque elegido (muestra sus tareas)
   const[gdraft,setGdraft]=useState(null);     // vista previa mientras se arrastra: {key,s,e}
   const[gmsg,setGmsg]=useState(null);
+  const[gFull,setGFull]=useState(false);     // ver de 7:00 a 21:00 en vez de ajustar el horario a mi día
   const gref=useRef(null);
   const gdrag=useRef(null);
   const setViewMode=v=>{setViewModeRaw(v);save('chr4_day_view',v);};
@@ -13455,7 +13456,7 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
 
   // ── Vista Horario: se le da un tramo de horas a cada CUENTA (no a cada tarea) ──
   // Se dibuja arrastrando sobre la grilla; el bloque se mueve y se estira. Lo que no alcanza se pospone a mañana.
-  const G_H0=7,G_H1=21,G_HP=44,G_SN=15;
+  const G_FULL0=7,G_FULL1=21,G_HP=44,G_SN=15;
   const dayB=(dayBlocks&&dayBlocks[day])||{};
   // Rutina fija: hábitos marcados como «bloque fijo» que ocurren ese día. Quedan anclados (no se arrastran) y los bloques de cuentas no pueden pisarlos.
   const fixedBlocks=(habits||[]).filter(h=>{
@@ -13463,8 +13464,24 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
     if(!habitOccursOn(h,dateFromDayKey(day)))return false;
     const pj=projects.find(x=>x.id===h.projectId);
     return !(pj&&pj.status==='archived');
-  }).map(h=>{const st=toMin(h.time);return{h,k:h.id,name:h.name,s:st,e:Math.min(G_H1*60,st+(Number(h.durMin)||30)),done:(h.log||[]).includes(day)};})
-    .filter(f=>f.e>f.s&&f.s<G_H1*60&&f.e>G_H0*60).sort((a,b)=>a.s-b.s);
+  }).map(h=>{const st=toMin(h.time);return{h,k:h.id,name:h.name,s:st,e:Math.min(G_FULL1*60,st+(Number(h.durMin)||30)),done:(h.log||[]).includes(day)};})
+    .filter(f=>f.e>f.s&&f.s<G_FULL1*60&&f.e>G_FULL0*60).sort((a,b)=>a.s-b.s);
+  // El horario se ajusta solo a lo que importa, sin quedar tan corto que no se pueda planificar:
+  // · otro día: de 8:00 a 18:00, ampliado si hay algo fuera de ese tramo
+  // · hoy: desde una hora antes de ahora (o de lo que sigue en curso) hasta 6 h más adelante, ampliado si hay algo después
+  // «Ver todo el día» muestra de 7:00 a 21:00.
+  let G_H0=G_FULL0,G_H1=G_FULL1;
+  if(!gFull){
+    const dItems=[...fixedBlocks,...Object.keys(dayB).map(k=>dayB[k])];
+    const nowH=nowMin/60;
+    const rel=isToday?dItems.filter(o=>o.e/60>nowH-1):dItems;
+    let ra=rel.length?Math.floor(Math.min(...rel.map(o=>o.s/60)))-1:99;
+    let rz=rel.length?Math.ceil(Math.max(...rel.map(o=>o.e/60)))+1:-1;
+    if(isToday){ra=Math.min(ra,Math.floor(nowH)-1);rz=Math.max(rz,Math.ceil(nowH)+6);}
+    else{ra=Math.min(ra,8);rz=Math.max(rz,18);}
+    G_H0=Math.min(Math.max(G_FULL0,ra),G_FULL1-5);
+    G_H1=Math.min(G_FULL1,Math.max(rz,G_H0+5));
+  }
   const nextBizDay=(k)=>{let d=addDayKey(k,1);for(let n=0;n<7;n++){const wd=dateFromDayKey(d).getUTCDay();if(wd!==0&&wd!==6)break;d=addDayKey(d,1);}return d;};
   const accMap=new Map();
   work.forEach(i=>{if(!i.proj)return;const k=i.proj.id;if(!accMap.has(k))accMap.set(k,{key:k,proj:i.proj,list:[]});accMap.get(k).list.push(i);});
@@ -13536,14 +13553,14 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
       e('div',{className:'dl-g-hr',style:{top:(h-G_H0)*G_HP}}),
       e('span',{className:'dl-g-hl',style:{top:(h-G_H0)*G_HP}},pad2(h)+':00')
     )),
-    freeShown.map((g,i)=>e('div',{key:'free'+i,className:'dl-g-free',style:{top:(g.s-G_H0*60)/60*G_HP+1,height:(g.e-g.s)/60*G_HP-2}},'Libre '+hrs(g.e-g.s)+' · haz clic para usarlo')),
-    fixedBlocks.map(f=>e('div',{key:'fx'+f.k,'data-gf':f.k,className:'dl-g-fx'+(f.done?' dn':''),title:(f.done?'Hecho · clic para reabrir':'Rutina fija · clic para marcar como hecho'),
+    freeShown.map((g,i)=>e('div',{key:'free'+i,className:'dl-g-free',style:{top:(g.s-G_H0*60)/60*G_HP+1,height:(g.e-g.s)/60*G_HP-2}},'Libre '+hrs(g.e-g.s))),
+    fixedBlocks.filter(f=>f.e>G_H0*60&&f.s<G_H1*60).map(f=>e('div',{key:'fx'+f.k,'data-gf':f.k,className:'dl-g-fx'+(f.done?' dn':''),title:(f.done?'Hecho · clic para reabrir':'Rutina fija · clic para marcar como hecho'),
       onClick:()=>{playUI('click');onToggleHabitLog&&onToggleHabitLog(f.h.id,day);},
       style:{top:(f.s-G_H0*60)/60*G_HP+1,height:Math.max(18,(f.e-f.s)/60*G_HP-2)}},
       e('svg',{width:11,height:11,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round',style:{flexShrink:0,marginTop:2}},e('rect',{x:5,y:11,width:14,height:10,rx:2}),e('path',{d:'M8 11V8a4 4 0 018 0v3'})),
       e('div',{className:'dl-g-fxt'},e('div',{className:'dl-g-fxn'},f.name+(f.done?' ✓':'')),e('div',{className:'dl-g-fxm'},fmtMin(f.s)+' – '+fmtMin(f.e)))
     )),
-    gBlocksShown.map(b=>{
+    gBlocksShown.filter(b=>b.e>G_H0*60&&b.s<G_H1*60).map(b=>{
       const a=accMap.get(b.key);const nm=a?a.proj.name:'Cuenta';
       return e('div',{key:b.key,'data-gb':b.key,className:'dl-g-blk'+(selKeyG===b.key?' sel':''),style:{top:(b.s-G_H0*60)/60*G_HP,height:Math.max(18,(b.e-b.s)/60*G_HP-2)}},
         e('div',{className:'dl-g-bn'},nm),
@@ -13573,7 +13590,7 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
             e('button',{className:'dl-g-btn ghost',onClick:()=>{playUI('click');onSetDayBlock(day,selKeyG,null);setGridSel(null);}},'Quitar el bloque')
           )
         )
-      :e('div',{className:'dl-hint'},gAccounts.length===0?'Nada para hoy.':'Elige una cuenta arriba y haz clic en un hueco libre (o arrastra) para darle sus horas. Toca un bloque para ver sus tareas. Los bloques con candado son tu rutina fija.'),
+      :e('div',{className:'dl-hint'},gAccounts.length===0?'Nada para hoy.':'Toca un bloque para ver sus tareas. Para agregar uno, elige una cuenta y haz clic en un hueco (o arrastra). Los bloques con candado son tu rutina fija.'),
     gmsg&&e('div',{className:'dl-g-msg'},gmsg)
   );
   const gridView=e('div',{className:'dl-g'},
@@ -13581,12 +13598,12 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
       e('span',{className:'dl-g-chl'},'Cuenta activa'),
       gAccounts.map(a=>e('button',{key:a.key,className:'dl-g-chip'+(actKey===a.key?' act':'')+(dayB[a.key]?' has':''),onClick:()=>{playUI('click');setGridAct(a.key);if(dayB[a.key])setGridSel(a.key);},title:dayB[a.key]?'Ya tiene bloque: arrastra para dibujarle otro horario':'Arrastra sobre la grilla para darle horas'},
         a.proj.name,e('span',{className:'dl-g-chn'},gPend(a)))),
-      gAccounts.length===0&&e('span',{className:'dl-hint'},'Nada pendiente hoy.')
+      gAccounts.length===0&&e('span',{className:'dl-hint'},'Nada pendiente hoy.'),
+      e('button',{className:'dl-g-chip',style:{marginLeft:'auto'},title:gFull?'Volver al horario ajustado a mi día':'Mostrar de 7:00 a 21:00',onClick:()=>{playUI('click');setGFull(v=>!v);}},gFull?'Ajustar a mi día':'Ver todo el día')
     ),
-    (slotsAll.length>0||freeG.length>0)&&e('div',{className:'dl-g-strip'},
-      isToday&&e('span',null,'Ahora ',e('b',null,curSl?curSl.n+' hasta '+fmtMin(curSl.e):'sin bloque')),
-      isToday&&e('span',null,'Siguiente ',e('b',null,nxSl?nxSl.n+' · '+fmtMin(nxSl.s):'—')),
-      e('span',{className:'dl-g-strip-r',title:'Rutina fija, bloques de cuentas y tiempo sin asignar (7:00 a 21:00)'},'Rutina '+hrs(fixedMin)+' · Cuentas '+hrs(clientMin)+' · Libre '+hrs(freeMin))
+    isToday&&slotsAll.length>0&&e('div',{className:'dl-g-strip'},
+      e('span',null,'Ahora ',e('b',null,curSl?curSl.n+' hasta '+fmtMin(curSl.e):'sin bloque')),
+      e('span',null,'Siguiente ',e('b',null,nxSl?nxSl.n+' · '+fmtMin(nxSl.s):'—'))
     ),
     e('div',{className:'dl-g-cols'},gridCol,gPanel)
   );
