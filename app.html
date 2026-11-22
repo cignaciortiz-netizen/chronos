@@ -671,7 +671,7 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .pv-card{flex:1;min-height:0;border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden;display:flex;flex-direction:column}
 .pv-sc{flex:1;min-height:0;overflow:auto;user-select:none}
 .pv-r{display:flex;align-items:center;height:28px}
-.pv-l{width:170px;flex:none;position:sticky;left:0;z-index:6;background:var(--bg2);height:100%;display:flex;align-items:center;gap:6px;padding:0 8px 0 12px;box-sizing:border-box;font-size:12px;color:var(--text1);min-width:0}
+.pv-l{width:196px;flex:none;position:sticky;left:0;z-index:6;background:var(--bg2);height:100%;display:flex;align-items:center;gap:6px;padding:0 8px 0 12px;box-sizing:border-box;font-size:12px;color:var(--text1);min-width:0}
 .pv-lp{cursor:pointer;font-weight:500}
 .pv-lp.open{color:var(--accent2)}
 .pv-lp.dn .pv-nm{text-decoration:line-through;color:var(--text4)}
@@ -689,6 +689,14 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .pv-td{position:absolute;top:0;bottom:0;width:1.5px;background:var(--accent);opacity:.8;pointer-events:none;z-index:2}
 .pv-dl{position:absolute;top:0;bottom:0;width:0;border-left:1.5px dashed #e6675f88;pointer-events:none;z-index:2}
 .pv-wk{position:absolute;top:0;bottom:0;background:#ffffff08;pointer-events:none}
+.pv-ms{position:absolute;top:7px;width:14px;height:14px;transform:rotate(45deg);border-radius:3px;border:2px solid var(--accent);background:var(--bg2);box-sizing:border-box;cursor:grab;z-index:3;touch-action:none}
+.pv-ms.d{background:var(--accent)}
+.pv-ms.late{border-color:#e6675f}
+.pv-ms.late.d{background:#e6675f}
+.pv-pen{border:0;background:none;color:var(--text4);font-size:11px;cursor:pointer;padding:0 2px;opacity:0;flex-shrink:0}
+.pv-l:hover .pv-pen{opacity:1}
+.pv-pen:hover{color:var(--accent2)}
+.pv-edit{background:var(--bg4);border-radius:4px;padding:2px 5px;color:var(--text0)}
 .pv-ph{position:absolute;top:9px;height:10px;border-radius:5px;background:#ffffff24;overflow:hidden}
 .pv-ph.open{background:var(--accent-bg,#ffffff30);box-shadow:0 0 0 1px var(--accent-border)}
 .pv-ph i{position:absolute;left:0;top:0;bottom:0;background:var(--accent);opacity:.6}
@@ -7974,12 +7982,12 @@ function WrapInput({value,onChange,style,placeholder,onEnter,w,title}){
 // Una barra fina por fase; se abre UNA fase a la vez y muestra sus tareas como pastillas de uno o más días
 // (se arrastra el borde para alargar/acortar, el centro para mover). Se recorre con Shift + rueda, con el minimapa o "Ir a hoy".
 function PlanView({steps,commit,updateStep,showDoneSteps,setShowDoneSteps,projDeadline,onSetDeadline}){
-  const DW=30,LW=170,DAYMS=86400000;
+  const DW=30,LW=196,DAYMS=86400000;
   const today=dayKey();
   const toTs=k=>new Date(k+'T00:00:00').getTime();
   const subRange=x=>x.dueDate?{s:(x.startDate&&x.startDate<=x.dueDate)?x.startDate:x.dueDate,n:x.dueDate}:null;
   const taskSpan=st=>{let a=null,z=null;(st.subtasks||[]).forEach(x=>{const r=subRange(x);if(!r)return;if(!a||r.s<a)a=r.s;if(!z||r.n>z)z=r.n;});return a?{s:a,n:z}:null;};
-  const baseRange=st=>{if(st.startDate&&st.dueDate)return{s:st.startDate,n:st.dueDate};return taskSpan(st);};
+  const baseRange=st=>st.dueDate?{s:st.dueDate,n:st.dueDate}:null; // solo cuenta la fecha de entrega de la fase
   const updSub=(sid,subId,patch)=>updateStep(sid,st=>({subtasks:(st.subtasks||[]).map(x=>x.id===subId?{...x,...patch}:x)}));
   const[openId,setOpenId]=useState(()=>{const f=steps.find(x=>!x.done&&(x.subtasks||[]).length);return f?f.id:null;});
   const[ov,setOv]=useState(null);
@@ -7989,6 +7997,9 @@ function PlanView({steps,commit,updateStep,showDoneSteps,setShowDoneSteps,projDe
   const[vw,setVw]=useState(700);
   const[newTask,setNewTask]=useState({});
   const[newPhase,setNewPhase]=useState('');
+  const[edit,setEdit]=useState(null); // {sid,id}: id null = nombre de la fase
+  const editDone=useRef(false); // evita guardar dos veces (Enter + blur) o guardar tras Escape
+  const startEdit=o=>{editDone.current=false;setEdit(o);};
 
   const vis=steps.filter(x=>showDoneSteps||!x.done).map(x=>({st:x,r:baseRange(x)}));
   vis.sort((a,b)=>{if(!a.r&&!b.r)return 0;if(!a.r)return 1;if(!b.r)return -1;return a.r.s<b.r.s?-1:a.r.s>b.r.s?1:0;});
@@ -8036,6 +8047,41 @@ function PlanView({steps,commit,updateStep,showDoneSteps,setShowDoneSteps,projDe
     };
     window.addEventListener('pointermove',mv);window.addEventListener('pointerup',up);
   }
+  function startPhaseDrag(ev,st){
+    if(!st.dueDate)return;
+    ev.preventDefault();ev.stopPropagation();
+    dragRef.current={sid:st.id,id:st.id,kind:'p',x0:ev.clientX,a0:idx(st.dueDate),cur:null};
+    const mv=e2=>{
+      const d=dragRef.current;if(!d)return;
+      const a=Math.max(0,d.a0+Math.round((e2.clientX-d.x0)/DW));
+      d.cur={a,z:a};setOv({id:d.id,a,z:a});
+    };
+    const up=()=>{
+      window.removeEventListener('pointermove',mv);window.removeEventListener('pointerup',up);
+      const d=dragRef.current;dragRef.current=null;setOv(null);
+      if(d&&d.cur&&d.cur.a!==d.a0){const k=keyAt(d.cur.a);updateStep(d.sid,x=>({dueDate:k,startDate:(x.startDate&&x.startDate>k)?k:x.startDate}));}
+    };
+    window.addEventListener('pointermove',mv);window.addEventListener('pointerup',up);
+  }
+  function placePhase(st,ev){
+    const tr=ev.currentTarget.getBoundingClientRect();
+    const i=Math.max(0,Math.min(N-1,Math.floor((ev.clientX-tr.left)/DW)));
+    updateStep(st.id,{dueDate:keyAt(i)});
+  }
+  function saveName(v){
+    if(editDone.current)return;
+    editDone.current=true;
+    const ed=edit;setEdit(null);
+    const t=(v||'').trim();if(!t||!ed)return;
+    if(ed.id)updSub(ed.sid,ed.id,{name:t});else updateStep(ed.sid,{name:t});
+  }
+  function nameBox(isEd,name,cls){
+    return isEd?e('input',{className:'pv-in pv-edit',autoFocus:true,defaultValue:name,
+        onClick:ev=>ev.stopPropagation(),onDoubleClick:ev=>ev.stopPropagation(),onFocus:ev=>ev.target.select(),
+        onBlur:ev=>saveName(ev.target.value),
+        onKeyDown:ev=>{if(ev.key==='Enter'){ev.preventDefault();saveName(ev.target.value);}else if(ev.key==='Escape'){editDone.current=true;setEdit(null);}}})
+      :e('span',{className:cls},name);
+  }
   function placeSub(st,sub,ev){
     const tr=ev.currentTarget.getBoundingClientRect();
     const i=Math.max(0,Math.min(N-1,Math.floor((ev.clientX-tr.left)/DW)));
@@ -8076,18 +8122,26 @@ function PlanView({steps,commit,updateStep,showDoneSteps,setShowDoneSteps,projDe
     const dn=st.done?sb.length:sb.filter(x=>x.done).length;
     const isOpen=openId===st.id;
     const tspan=taskSpan(st);
-    const over=r&&tspan&&st.startDate&&st.dueDate&&tspan.n>st.dueDate;
+    const overdue=!st.done&&st.dueDate&&st.dueDate<today;
+    const over=st.dueDate&&tspan&&tspan.n>st.dueDate;
+    const isEd=edit&&edit.sid===st.id&&!edit.id;
+    let pa=r?idx(r.n):0;
+    if(ov&&ov.id===st.id)pa=ov.a;
+    const pk=r?keyAt(pa):null;
+    const pf=pk?(Number(pk.slice(8))+' '+MONTHS_SHORT[Number(pk.slice(5,7))-1].toLowerCase()):'';
     rows.push(e('div',{key:st.id,className:'pv-r'},
-      e('div',{className:'pv-l pv-lp'+(isOpen?' open':'')+(st.done?' dn':''),title:st.name,onClick:()=>setOpenId(isOpen?null:st.id)},
+      e('div',{className:'pv-l pv-lp'+(isOpen?' open':'')+(st.done?' dn':''),title:st.name+' · doble clic para renombrar',onClick:()=>{if(!isEd)setOpenId(isOpen?null:st.id);},onDoubleClick:()=>startEdit({sid:st.id,id:null})},
         e('span',{className:'pv-car'},isOpen?'▾':'▸'),
-        e('span',{className:'pv-nm'},st.name),
-        sb.length>0&&e('span',{className:'pv-ct'},dn+'/'+sb.length)
+        nameBox(isEd,st.name,'pv-nm'),
+        !isEd&&sb.length>0&&e('span',{className:'pv-ct'},dn+'/'+sb.length),
+        !isEd&&e('button',{className:'pv-pen',title:'Renombrar',onClick:ev=>{ev.stopPropagation();startEdit({sid:st.id,id:null});}},'✎')
       ),
-      e('div',{className:'pv-t',style:{width:W}},
-        r?e('div',{className:'pv-ph'+(isOpen?' open':''),style:{left:idx(r.s)*DW,width:(idx(r.n)-idx(r.s)+1)*DW}},
-            e('i',{style:{width:(sb.length?Math.round(dn/sb.length*100):(st.done?100:0))+'%'}})):
-          e('span',{className:'pv-nodate'},'sin fechas'),
-        over&&e('div',{className:'pv-ph pv-over',title:'Hay tareas después del cierre de la fase',style:{left:(idx(st.dueDate)+1)*DW,width:(idx(tspan.n)-idx(st.dueDate))*DW}}),
+      e('div',{className:'pv-t',style:{width:W},onClick:r?undefined:ev=>placePhase(st,ev),title:r?undefined:'Clic en un día para ponerle fecha de entrega'},
+        r?e(React.Fragment,null,
+            e('div',{className:'pv-ms'+(st.done?' d':'')+((overdue||over)?' late':''),style:{left:pa*DW+DW/2-7},
+              title:(overdue?'Venció · ':'')+(over?'Hay tareas después de esta fecha · ':'')+'Entrega '+pf+' — arrastra para cambiarla',onPointerDown:ev=>startPhaseDrag(ev,st)}),
+            e('span',{className:'pv-len',style:{left:pa*DW+DW/2+14,top:6}},pf)
+          ):e('span',{className:'pv-nodate',style:{left:idx(today)*DW+DW}},'sin fecha de entrega — clic para ponerla'),
         dlLine,todayLine
       )
     ));
@@ -8098,9 +8152,10 @@ function PlanView({steps,commit,updateStep,showDoneSteps,setShowDoneSteps,projDe
         if(ov&&ov.id===sub.id){a=ov.a;z=ov.z;}
         const late=rr&&st.dueDate&&keyAt(z)>st.dueDate;
         rows.push(e('div',{key:sub.id,className:'pv-r pv-sub'},
-          e('div',{className:'pv-l pv-ls',title:sub.name},
+          e('div',{className:'pv-l pv-ls',title:sub.name+' · doble clic para renombrar',onDoubleClick:()=>startEdit({sid:st.id,id:sub.id})},
             e('span',{className:'pv-ck'+(sub.done||st.done?' d':''),onClick:ev=>{ev.stopPropagation();updSub(st.id,sub.id,{done:!sub.done});}}),
-            e('span',{className:'pv-nm'+(sub.done||st.done?' dn':'')},sub.name)
+            nameBox(edit&&edit.sid===st.id&&edit.id===sub.id,sub.name,'pv-nm'+(sub.done||st.done?' dn':'')),
+            !(edit&&edit.sid===st.id&&edit.id===sub.id)&&e('button',{className:'pv-pen',title:'Renombrar',onClick:ev=>{ev.stopPropagation();startEdit({sid:st.id,id:sub.id});}},'✎')
           ),
           e('div',{className:'pv-t',style:{width:W},onClick:rr?undefined:ev=>placeSub(st,sub,ev),title:rr?undefined:'Clic en un día para agendarla'},
             wkStripes,dlLine,todayLine,
@@ -8133,7 +8188,7 @@ function PlanView({steps,commit,updateStep,showDoneSteps,setShowDoneSteps,projDe
       const b=ev.currentTarget.getBoundingClientRect();const f=(ev.clientX-b.left)/b.width;
       const el=scRef.current;if(el)el.scrollLeft=Math.max(0,f*W-vwTrack/2);
     }},
-    mmRows.map((x,i)=>e('div',{key:x.st.id,className:'pv-mmb'+(x.st.id===openId?' on':''),style:{top:5+i*step,height:Math.max(1.5,step-1.2),left:(idx(x.r.s)/N*100)+'%',width:Math.max(0.6,(idx(x.r.n)-idx(x.r.s)+1)/N*100)+'%'}})),
+    mmRows.map((x,i)=>e('div',{key:x.st.id,className:'pv-mmb'+(x.st.id===openId?' on':''),style:{top:5+i*step,height:Math.max(2.5,step-1.2),left:(idx(x.r.n)/N*100)+'%',width:Math.max(0.9,100/N)+'%'}})),
     e('div',{className:'pv-mmt',style:{left:((idx(today)+.5)/N*100)+'%'}}),
     projDeadline&&e('div',{className:'pv-mmd',style:{left:((idx(projDeadline)+1)/N*100)+'%'}}),
     e('div',{className:'pv-mmv',style:{left:Math.min(100,sx/W*100)+'%',width:Math.min(100,vwTrack/W*100)+'%'}})
@@ -8153,7 +8208,7 @@ function PlanView({steps,commit,updateStep,showDoneSteps,setShowDoneSteps,projDe
       )
     ),
     e('div',{className:'pv-bar'},
-      e('div',{className:'pv-hint'},'Shift + rueda del mouse para moverte · arrastra el borde de una tarea para alargarla'),
+      e('div',{className:'pv-hint'},'Shift + rueda para moverte · arrastra el rombo para cambiar la entrega de una fase · arrastra el borde de una tarea para alargarla · doble clic en un nombre para renombrar'),
       hiddenDone>0&&e('button',{className:'pv-btn',onClick:()=>setShowDoneSteps(!showDoneSteps)},showDoneSteps?'Ocultar fases hechas':'Mostrar fases hechas ('+hiddenDone+')'),
       e('button',{className:'pv-btn',onClick:()=>goTo(idx(today)-2)},'Ir a hoy')
     ),
