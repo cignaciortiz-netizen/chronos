@@ -8000,6 +8000,13 @@ function PlanView({steps,commit,updateStep,showDoneSteps,setShowDoneSteps,projDe
   const[edit,setEdit]=useState(null); // {sid,id}: id null = nombre de la fase
   const editDone=useRef(false); // evita guardar dos veces (Enter + blur) o guardar tras Escape
   const startEdit=o=>{editDone.current=false;setEdit(o);};
+  const[ctx,setCtx]=useState(null); // menú de clic derecho: {x,y,sid,id} (id null = fase)
+  useEffect(()=>{
+    if(!ctx)return;
+    const close=()=>setCtx(null);
+    const t=setTimeout(()=>{window.addEventListener('mousedown',close);window.addEventListener('scroll',close,true);},0);
+    return()=>{clearTimeout(t);window.removeEventListener('mousedown',close);window.removeEventListener('scroll',close,true);};
+  },[ctx]);
 
   const vis=steps.filter(x=>showDoneSteps||!x.done).map(x=>({st:x,r:baseRange(x)}));
   vis.sort((a,b)=>{if(!a.r&&!b.r)return 0;if(!a.r)return 1;if(!b.r)return -1;return a.r.s<b.r.s?-1:a.r.s>b.r.s?1:0;});
@@ -8062,6 +8069,13 @@ function PlanView({steps,commit,updateStep,showDoneSteps,setShowDoneSteps,projDe
       if(d&&d.cur&&d.cur.a!==d.a0){const k=keyAt(d.cur.a);updateStep(d.sid,x=>({dueDate:k,startDate:(x.startDate&&x.startDate>k)?k:x.startDate}));}
     };
     window.addEventListener('pointermove',mv);window.addEventListener('pointerup',up);
+  }
+  function delSub(sid,id){updateStep(sid,x=>({subtasks:(x.subtasks||[]).filter(t=>t.id!==id)}));}
+  function delPhase(st){
+    const n=(st.subtasks||[]).length;
+    if(n&&!window.confirm('¿Eliminar la fase "'+st.name+'" y sus '+n+(n===1?' tarea':' tareas')+'?'))return;
+    commit(steps.filter(x=>x.id!==st.id));
+    if(openId===st.id)setOpenId(null);
   }
   function placePhase(st,ev){
     const tr=ev.currentTarget.getBoundingClientRect();
@@ -8130,7 +8144,7 @@ function PlanView({steps,commit,updateStep,showDoneSteps,setShowDoneSteps,projDe
     const pk=r?keyAt(pa):null;
     const pf=pk?(Number(pk.slice(8))+' '+MONTHS_SHORT[Number(pk.slice(5,7))-1].toLowerCase()):'';
     rows.push(e('div',{key:st.id,className:'pv-r'},
-      e('div',{className:'pv-l pv-lp'+(isOpen?' open':'')+(st.done?' dn':''),title:st.name+' · doble clic para renombrar',onClick:()=>{if(!isEd)setOpenId(isOpen?null:st.id);},onDoubleClick:()=>startEdit({sid:st.id,id:null})},
+      e('div',{className:'pv-l pv-lp'+(isOpen?' open':'')+(st.done?' dn':''),title:st.name+' · doble clic para renombrar',onClick:()=>{if(!isEd)setOpenId(isOpen?null:st.id);},onDoubleClick:()=>startEdit({sid:st.id,id:null}),onContextMenu:ev=>{ev.preventDefault();setCtx({x:ev.clientX,y:ev.clientY,sid:st.id,id:null});}},
         e('span',{className:'pv-car'},isOpen?'▾':'▸'),
         nameBox(isEd,st.name,'pv-nm'),
         !isEd&&sb.length>0&&e('span',{className:'pv-ct'},dn+'/'+sb.length),
@@ -8151,7 +8165,7 @@ function PlanView({steps,commit,updateStep,showDoneSteps,setShowDoneSteps,projDe
         let a=rr?idx(rr.s):0,z=rr?idx(rr.n):0;
         if(ov&&ov.id===sub.id){a=ov.a;z=ov.z;}
         const late=rr&&st.dueDate&&keyAt(z)>st.dueDate;
-        rows.push(e('div',{key:sub.id,className:'pv-r pv-sub'},
+        rows.push(e('div',{key:sub.id,className:'pv-r pv-sub',onContextMenu:ev=>{ev.preventDefault();setCtx({x:ev.clientX,y:ev.clientY,sid:st.id,id:sub.id});}},
           e('div',{className:'pv-l pv-ls',title:sub.name+' · doble clic para renombrar',onDoubleClick:()=>startEdit({sid:st.id,id:sub.id})},
             e('span',{className:'pv-ck'+(sub.done||st.done?' d':''),onClick:ev=>{ev.stopPropagation();updSub(st.id,sub.id,{done:!sub.done});}}),
             nameBox(edit&&edit.sid===st.id&&edit.id===sub.id,sub.name,'pv-nm'+(sub.done||st.done?' dn':'')),
@@ -8208,7 +8222,7 @@ function PlanView({steps,commit,updateStep,showDoneSteps,setShowDoneSteps,projDe
       )
     ),
     e('div',{className:'pv-bar'},
-      e('div',{className:'pv-hint'},'Shift + rueda para moverte · arrastra el rombo para cambiar la entrega de una fase · arrastra el borde de una tarea para alargarla · doble clic en un nombre para renombrar'),
+      e('div',{className:'pv-hint'},'Shift + rueda para moverte · arrastra el rombo para cambiar la entrega de una fase · arrastra el borde de una tarea para alargarla · doble clic en un nombre para renombrar · clic derecho para eliminar'),
       hiddenDone>0&&e('button',{className:'pv-btn',onClick:()=>setShowDoneSteps(!showDoneSteps)},showDoneSteps?'Ocultar fases hechas':'Mostrar fases hechas ('+hiddenDone+')'),
       e('button',{className:'pv-btn',onClick:()=>goTo(idx(today)-2)},'Ir a hoy')
     ),
@@ -8226,7 +8240,19 @@ function PlanView({steps,commit,updateStep,showDoneSteps,setShowDoneSteps,projDe
         )
       )
     ),
-    steps.length===0&&e('div',{className:'empty',style:{padding:'14px 4px'}},'Sin fases aún. Agrega la primera abajo.')
+    steps.length===0&&e('div',{className:'empty',style:{padding:'14px 4px'}},'Sin fases aún. Agrega la primera abajo.'),
+    ctx&&(()=>{
+      const cs=steps.find(x=>x.id===ctx.sid);if(!cs)return null;
+      const isSub=!!ctx.id;
+      const top=Math.min(ctx.y,window.innerHeight-110),left=Math.min(ctx.x,window.innerWidth-190);
+      return e('div',{className:'combo-ctx-menu',style:{top,left},onMouseDown:ev=>ev.stopPropagation(),onContextMenu:ev=>ev.preventDefault()},
+        e('button',{className:'combo-ctx-item',onClick:()=>{startEdit({sid:ctx.sid,id:ctx.id});setCtx(null);}},
+          e('span',{style:{fontSize:13,lineHeight:1}},'✎'),e('span',{},'Renombrar')),
+        e('div',{className:'combo-ctx-sep'}),
+        e('button',{className:'combo-ctx-item danger',onClick:()=>{setCtx(null);if(isSub)delSub(ctx.sid,ctx.id);else delPhase(cs);}},
+          e('span',{style:{fontSize:13,lineHeight:1}},'🗑'),e('span',{},isSub?'Eliminar tarea':'Eliminar fase'))
+      );
+    })()
   );
 }
 
