@@ -662,12 +662,6 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .pv-hint{flex:1;font-size:11px;color:var(--text4)}
 .pv-btn{border:1px solid var(--border);background:transparent;color:var(--text2);font-size:11px;padding:3px 9px;border-radius:7px;cursor:pointer}
 .pv-btn:hover{color:var(--text0);border-color:var(--border2)}
-.pv-mm{position:relative;height:50px;flex-shrink:0;border-radius:8px;background:var(--bg3);margin-bottom:8px;cursor:pointer;overflow:hidden}
-.pv-mmb{position:absolute;border-radius:2px;background:var(--accent);opacity:.45}
-.pv-mmb.on{opacity:1}
-.pv-mmt{position:absolute;top:0;bottom:0;width:1px;background:var(--accent)}
-.pv-mmd{position:absolute;top:0;bottom:0;width:0;border-left:1px dashed #e6675f99}
-.pv-mmv{position:absolute;top:0;bottom:0;background:#ffffff10;border:1px solid var(--accent-border);border-radius:4px;pointer-events:none}
 .pv-card{flex:1;min-height:0;border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden;display:flex;flex-direction:column}
 .pv-sc{flex:1;min-height:0;overflow:auto;user-select:none}
 .pv-r{display:flex;align-items:center;height:28px}
@@ -689,6 +683,9 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .pv-td{position:absolute;top:0;bottom:0;width:1.5px;background:var(--accent);opacity:.8;pointer-events:none;z-index:2}
 .pv-dl{position:absolute;top:0;bottom:0;width:0;border-left:1.5px dashed #e6675f88;pointer-events:none;z-index:2}
 .pv-wk{position:absolute;top:0;bottom:0;background:#ffffff08;pointer-events:none}
+.pv-dur{position:absolute;top:11px;height:6px;border-radius:3px;background:var(--accent);opacity:.45;pointer-events:none}
+.pv-dur.est{background:transparent;border:1px dashed var(--accent);opacity:.7;box-sizing:border-box}
+.pv-dur.late{border-color:#e6675f;background:#e6675f55}
 .pv-ms{position:absolute;top:7px;width:14px;height:14px;transform:rotate(45deg);border-radius:3px;border:2px solid var(--accent);background:var(--bg2);box-sizing:border-box;cursor:grab;z-index:3;touch-action:none}
 .pv-ms.d{background:var(--accent)}
 .pv-ms.late{border-color:#e6675f}
@@ -7993,8 +7990,6 @@ function PlanView({steps,commit,updateStep,showDoneSteps,setShowDoneSteps,projDe
   const[ov,setOv]=useState(null);
   const dragRef=useRef(null);
   const scRef=useRef(null);
-  const[sx,setSx]=useState(0);
-  const[vw,setVw]=useState(700);
   const[newTask,setNewTask]=useState({});
   const[newPhase,setNewPhase]=useState('');
   const[edit,setEdit]=useState(null); // {sid,id}: id null = nombre de la fase
@@ -8010,8 +8005,18 @@ function PlanView({steps,commit,updateStep,showDoneSteps,setShowDoneSteps,projDe
 
   const vis=steps.filter(x=>showDoneSteps||!x.done).map(x=>({st:x,r:baseRange(x)}));
   vis.sort((a,b)=>{if(!a.r&&!b.r)return 0;if(!a.r)return 1;if(!b.r)return -1;return a.r.s<b.r.s?-1:a.r.s>b.r.s?1:0;});
+  // duración mostrada: de la tarea con fecha más temprana hasta la entrega; sin tareas con fecha, se estima desde que termina la fase anterior (hoy para la primera)
+  const dated=steps.filter(x=>x.dueDate).sort((a,b)=>a.dueDate<b.dueDate?-1:a.dueDate>b.dueDate?1:0);
+  const startOf={};
+  dated.forEach((x,i)=>{
+    const t=taskSpan(x);let k,est=false;
+    if(t&&t.s<=x.dueDate){k=t.s;}
+    else{est=true;k=i>0?addDaysToDateKey(dated[i-1].dueDate,1):today;if(k>x.dueDate)k=x.dueDate;}
+    startOf[x.id]={k,est};
+  });
   const ks=[today];
   if(projDeadline)ks.push(projDeadline);
+  Object.keys(startOf).forEach(id=>ks.push(startOf[id].k));
   steps.forEach(st=>{const r=baseRange(st);if(r){ks.push(r.s,r.n);}const t=taskSpan(st);if(t){ks.push(t.s,t.n);}});
   ks.sort();
   const origin=addDaysToDateKey(ks[0],-7);
@@ -8025,12 +8030,9 @@ function PlanView({steps,commit,updateStep,showDoneSteps,setShowDoneSteps,projDe
   useEffect(()=>{
     const el=scRef.current;if(!el)return;
     const onWheel=ev=>{if(ev.shiftKey){ev.preventDefault();el.scrollLeft+=(ev.deltaY||ev.deltaX);}};
-    const onSc=()=>{setSx(el.scrollLeft);setVw(el.clientWidth);};
     el.addEventListener('wheel',onWheel,{passive:false});
-    el.addEventListener('scroll',onSc);
     el.scrollLeft=Math.max(0,(idx(today)-2)*DW);
-    onSc();
-    return()=>{el.removeEventListener('wheel',onWheel);el.removeEventListener('scroll',onSc);};
+    return()=>{el.removeEventListener('wheel',onWheel);};
   },[]);
   function goTo(i){const el=scRef.current;if(el)el.scrollLeft=Math.max(0,i*DW);}
 
@@ -8142,7 +8144,11 @@ function PlanView({steps,commit,updateStep,showDoneSteps,setShowDoneSteps,projDe
     let pa=r?idx(r.n):0;
     if(ov&&ov.id===st.id)pa=ov.a;
     const pk=r?keyAt(pa):null;
-    const pf=pk?(Number(pk.slice(8))+' '+MONTHS_SHORT[Number(pk.slice(5,7))-1].toLowerCase()):'';
+    const pf0=pk?(Number(pk.slice(8))+' '+MONTHS_SHORT[Number(pk.slice(5,7))-1].toLowerCase()):'';
+    const sk=startOf[st.id];
+    const sa=sk?Math.min(idx(sk.k),pa):pa;
+    const nd=pa-sa+1;
+    const pf=pf0+' · '+nd+(nd===1?' día':' días');
     rows.push(e('div',{key:st.id,className:'pv-r'},
       e('div',{className:'pv-l pv-lp'+(isOpen?' open':'')+(st.done?' dn':''),title:st.name+' · doble clic para renombrar',onClick:()=>{if(!isEd)setOpenId(isOpen?null:st.id);},onDoubleClick:()=>startEdit({sid:st.id,id:null}),onContextMenu:ev=>{ev.preventDefault();setCtx({x:ev.clientX,y:ev.clientY,sid:st.id,id:null});}},
         e('span',{className:'pv-car'},isOpen?'▾':'▸'),
@@ -8152,8 +8158,9 @@ function PlanView({steps,commit,updateStep,showDoneSteps,setShowDoneSteps,projDe
       ),
       e('div',{className:'pv-t',style:{width:W},onClick:r?undefined:ev=>placePhase(st,ev),title:r?undefined:'Clic en un día para ponerle fecha de entrega'},
         r?e(React.Fragment,null,
+            sa<pa&&e('div',{className:'pv-dur'+(sk.est?' est':'')+((overdue||over)?' late':''),title:'Dura '+nd+' días'+(sk.est?' (estimado: desde que termina la fase anterior)':' (desde su primera tarea con fecha)'),style:{left:sa*DW+3,width:(pa-sa+.5)*DW-3}}),
             e('div',{className:'pv-ms'+(st.done?' d':'')+((overdue||over)?' late':''),style:{left:pa*DW+DW/2-7},
-              title:(overdue?'Venció · ':'')+(over?'Hay tareas después de esta fecha · ':'')+'Entrega '+pf+' — arrastra para cambiarla',onPointerDown:ev=>startPhaseDrag(ev,st)}),
+              title:(overdue?'Venció · ':'')+(over?'Hay tareas después de esta fecha · ':'')+'Entrega '+pf0+' — arrastra para cambiarla',onPointerDown:ev=>startPhaseDrag(ev,st)}),
             e('span',{className:'pv-len',style:{left:pa*DW+DW/2+14,top:6}},pf)
           ):e('span',{className:'pv-nodate',style:{left:idx(today)*DW+DW}},'sin fecha de entrega — clic para ponerla'),
         dlLine,todayLine
@@ -8194,20 +8201,6 @@ function PlanView({steps,commit,updateStep,showDoneSteps,setShowDoneSteps,projDe
     }
   });
 
-  // minimapa: una línea por fase, recuadro = lo que estás viendo, clic para saltar
-  const mmRows=vis.filter(x=>x.r);
-  const step=Math.min(5,Math.max(2.5,38/Math.max(1,mmRows.length)));
-  const vwTrack=Math.max(60,vw-LW);
-  const mm=e('div',{className:'pv-mm',title:'Plan completo — clic para ir a esa zona',onClick:ev=>{
-      const b=ev.currentTarget.getBoundingClientRect();const f=(ev.clientX-b.left)/b.width;
-      const el=scRef.current;if(el)el.scrollLeft=Math.max(0,f*W-vwTrack/2);
-    }},
-    mmRows.map((x,i)=>e('div',{key:x.st.id,className:'pv-mmb'+(x.st.id===openId?' on':''),style:{top:5+i*step,height:Math.max(2.5,step-1.2),left:(idx(x.r.n)/N*100)+'%',width:Math.max(0.9,100/N)+'%'}})),
-    e('div',{className:'pv-mmt',style:{left:((idx(today)+.5)/N*100)+'%'}}),
-    projDeadline&&e('div',{className:'pv-mmd',style:{left:((idx(projDeadline)+1)/N*100)+'%'}}),
-    e('div',{className:'pv-mmv',style:{left:Math.min(100,sx/W*100)+'%',width:Math.min(100,vwTrack/W*100)+'%'}})
-  );
-
   const hiddenDone=steps.filter(x=>x.done).length;
   return e('div',{className:'pv-wrap'},
     e('div',{className:'cv-prog',title:uD+' de '+uT+' tareas hechas'},
@@ -8226,7 +8219,6 @@ function PlanView({steps,commit,updateStep,showDoneSteps,setShowDoneSteps,projDe
       hiddenDone>0&&e('button',{className:'pv-btn',onClick:()=>setShowDoneSteps(!showDoneSteps)},showDoneSteps?'Ocultar fases hechas':'Mostrar fases hechas ('+hiddenDone+')'),
       e('button',{className:'pv-btn',onClick:()=>goTo(idx(today)-2)},'Ir a hoy')
     ),
-    mmRows.length>0&&mm,
     e('div',{className:'pv-card'},
       e('div',{ref:scRef,className:'pv-sc'},
         e('div',{style:{width:W+LW}},head,rows,
