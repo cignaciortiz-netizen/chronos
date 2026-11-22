@@ -1365,6 +1365,33 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .notebook-body-text{width:100%;flex:1;background:transparent;border:none;outline:none;color:var(--text1);font-size:13px;line-height:1.8;font-family:'Inter',sans-serif;resize:none;padding:0;min-height:240px}
 .notebook-body-text::placeholder{color:var(--text4)}
 /* Editor de bloques tipo Notion: puntos / numerados / separador, con drag handle */
+.nb-doc-wrap{display:flex;flex-direction:column}
+.nb-doc-bar{position:sticky;top:0;z-index:4;display:flex;flex-wrap:wrap;align-items:center;gap:2px;padding:5px 6px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;margin:6px 0 10px}
+.nb-doc-bar button{border:0;background:none;color:var(--text2);min-width:26px;height:26px;border-radius:6px;cursor:pointer;font:500 12px 'Inter',sans-serif;padding:0 7px;white-space:nowrap}
+.nb-doc-bar button:hover{background:var(--bg4);color:var(--text0)}
+.nb-doc-bar button.on{background:var(--accent-bg);color:var(--accent2)}
+.nb-doc-sep{width:1px;height:16px;background:var(--border);margin:0 5px;flex-shrink:0}
+.nb-doc{position:relative;outline:none;min-height:340px;font-size:14px;line-height:1.65;color:var(--text1);padding:4px 2px 80px;word-break:break-word;caret-color:var(--accent2)}
+.nb-doc.empty::before{content:attr(data-ph);position:absolute;left:2px;top:4px;color:var(--text4);pointer-events:none}
+.nb-doc p{margin:0 0 5px}
+.nb-doc h1{font-size:26px;font-weight:600;margin:18px 0 6px;color:var(--text0);line-height:1.3}
+.nb-doc h2{font-size:21px;font-weight:600;margin:16px 0 5px;color:var(--text0);line-height:1.3}
+.nb-doc h3{font-size:17px;font-weight:600;margin:14px 0 4px;color:var(--text0);line-height:1.35}
+.nb-doc b,.nb-doc strong{font-weight:700;color:var(--text0)}
+.nb-doc ul,.nb-doc ol{margin:2px 0 7px;padding-left:26px}
+.nb-doc li{margin:1px 0}
+.nb-doc ul.nb-check{list-style:none;padding-left:2px}
+.nb-doc ul.nb-check>li{position:relative;padding-left:26px}
+.nb-doc ul.nb-check>li::before{content:"";position:absolute;left:3px;top:.4em;width:15px;height:15px;border-radius:4px;border:1.5px solid var(--text4);box-sizing:border-box;cursor:pointer}
+.nb-doc ul.nb-check>li[data-checked="1"]::before{background:var(--accent);border-color:var(--accent)}
+.nb-doc ul.nb-check>li[data-checked="1"]::after{content:"✓";position:absolute;left:6px;top:.28em;font-size:11px;font-weight:700;color:#1a0a02}
+.nb-doc ul.nb-check>li[data-checked="1"]{color:var(--text4);text-decoration:line-through}
+.nb-doc blockquote{margin:7px 0;padding:2px 0 2px 14px;border-left:3px solid var(--accent-border);color:var(--text2)}
+.nb-doc pre{background:var(--bg3);border-radius:8px;padding:10px 12px;font:12.5px 'JetBrains Mono',monospace;white-space:pre-wrap;margin:7px 0}
+.nb-doc hr{border:0;border-top:1px solid var(--border2);margin:14px 0}
+.nb-doc img{max-width:100%;border-radius:8px;cursor:pointer}
+.nb-doc mark{background:#f2c94c55;color:inherit;border-radius:3px;padding:0 1px}
+.nb-doc a{color:var(--accent2);text-decoration:underline}
 .nb-blocks{flex:1;min-height:240px;padding-bottom:0}
 .nb-end-zone{min-height:140px;cursor:text;flex-shrink:0}
 .nb-end-zone:hover::before{content:'Haz click para escribir';display:block;padding:10px 0 0 26px;font-size:11px;color:var(--text4);font-family:'Inter',sans-serif;pointer-events:none}
@@ -11589,8 +11616,9 @@ function SystemNoteModal({system,project,onPatchProject,onClose}){
             e(NotebookBlockEditor,{
               key:liveEntry.id,
               blocks:liveEntry.blocks,
+              html:liveEntry.html,
               legacyText:liveEntry.text,
-              onChange:blocks=>patch({blocks})
+              onChange:(blocks,html)=>patch({blocks,html})
             })
           )
         :e('div',{className:'empty'},'Creando entrada…')
@@ -16080,7 +16108,391 @@ function renderRetroLine(text){
   const sym=m[1]==='->'?'→':m[1];
   return[e('span',{key:'sym',className:cls},sym),' ',...( [renderInlineMd(m[2])].flat() )];
 }
-function NotebookBlockEditor({blocks,legacyText,onChange}){
+// ═══════════════════════════════════════════
+// EDITOR DE DOCUMENTO (estilo Google Docs) para la Libreta
+// Un solo documento continuo (contentEditable): se puede seleccionar varias líneas y borrarlas de una vez, deshacer/rehacer,
+// y al pegar se conserva el formato (negrita, cursiva, títulos, listas, enlaces, imágenes). Se guarda el HTML (html) y,
+// para que el resto de la app siga entendiendo la nota, también los bloques simples (blocks).
+// ═══════════════════════════════════════════
+function nbEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function nbEscAttr(s){return nbEsc(s).replace(/"/g,'&quot;');}
+function nbInlineToHtml(text){
+  let h=nbEsc(text);
+  h=h.replace(/\*\*([^*\n]+)\*\*/g,'<b>$1</b>').replace(/~~([^~\n]+)~~/g,'<s>$1</s>').replace(/==([^=\n]+)==/g,'<mark>$1</mark>').replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g,'$1<i>$2</i>');
+  return h;
+}
+function nbBlocksToHtml(blocks){
+  const out=[];let i=0;
+  while(i<blocks.length){
+    const b=blocks[i],t=b.type;
+    if(t==='bullet'||t==='numbered'||t==='todo'){
+      const tag=t==='numbered'?'ol':'ul';let items='';
+      while(i<blocks.length&&blocks[i].type===t){const x=blocks[i];items+=t==='todo'?'<li data-checked="'+(x.checked?1:0)+'">'+(nbInlineToHtml(x.text)||'<br>')+'</li>':'<li>'+(nbInlineToHtml(x.text)||'<br>')+'</li>';i++;}
+      out.push('<'+tag+(t==='todo'?' class="nb-check"':'')+'>'+items+'</'+tag+'>');continue;
+    }
+    if(t==='h1'||t==='h2'||t==='h3')out.push('<'+t+'>'+(nbInlineToHtml(b.text)||'<br>')+'</'+t+'>');
+    else if(t==='quote')out.push('<blockquote>'+(nbInlineToHtml(b.text)||'<br>')+'</blockquote>');
+    else if(t==='code')out.push('<pre>'+nbEsc(b.text||'')+'</pre>');
+    else if(t==='divider')out.push('<hr>');
+    else if(t==='image')out.push('<p>'+(b.src?'<img src="'+nbEscAttr(b.src)+'"'+(b.widthPct?' style="width:'+Number(b.widthPct)+'%"':'')+'>':'<br>')+'</p>'+(b.caption?'<p><i>'+nbEsc(b.caption)+'</i></p>':''));
+    else if(t==='toggle'){out.push('<p><b>'+nbEsc(b.text||'')+'</b></p>');if(b.body)String(b.body).split('\n').forEach(l=>out.push('<p>'+(nbInlineToHtml(l)||'<br>')+'</p>'));}
+    else out.push('<p>'+(nbInlineToHtml(b.text)||'<br>')+'</p>');
+    i++;
+  }
+  return out.join('')||'<p><br></p>';
+}
+function nbHtmlToBlocks(html){
+  const d=document.createElement('div');d.innerHTML=html||'';
+  const out=[];
+  const inl=n=>{
+    let s='';
+    n.childNodes.forEach(c=>{
+      if(c.nodeType===3){s+=String(c.nodeValue).replace(/ /g,' ');return;}
+      if(c.nodeType!==1)return;
+      const tg=c.tagName,inner=inl(c),st=c.style||{};
+      if(tg==='BR'){s+=' ';return;}
+      if(tg==='IMG')return;
+      let o=inner;
+      const wrap=m=>{if(o.trim())o=m+o+m;};
+      if(tg==='B'||tg==='STRONG'||st.fontWeight==='bold'||parseInt(st.fontWeight,10)>=600)wrap('**');
+      if(tg==='I'||tg==='EM'||st.fontStyle==='italic')wrap('*');
+      if(tg==='S'||tg==='STRIKE'||tg==='DEL'||/line-through/.test(st.textDecoration||''))wrap('~~');
+      if(tg==='MARK'||(st.backgroundColor&&st.backgroundColor!=='transparent'))wrap('==');
+      s+=o;
+    });
+    return s;
+  };
+  const id=()=>uid();
+  d.childNodes.forEach(n=>{
+    if(n.nodeType===3){const t=String(n.nodeValue).trim();if(t)out.push({id:id(),type:'text',text:t});return;}
+    if(n.nodeType!==1)return;
+    const tg=n.tagName;
+    if(tg==='H1'||tg==='H2'||tg==='H3')out.push({id:id(),type:tg.toLowerCase(),text:inl(n).trim()});
+    else if(tg==='UL'||tg==='OL'){
+      const chk=n.classList.contains('nb-check');
+      [...n.children].forEach(li=>{
+        if(li.tagName!=='LI')return;
+        const t=inl(li).trim();
+        if(chk)out.push({id:id(),type:'todo',text:t,checked:li.getAttribute('data-checked')==='1'});
+        else out.push({id:id(),type:tg==='OL'?'numbered':'bullet',text:t});
+      });
+    }
+    else if(tg==='BLOCKQUOTE')out.push({id:id(),type:'quote',text:inl(n).trim()});
+    else if(tg==='PRE')out.push({id:id(),type:'code',text:n.textContent||''});
+    else if(tg==='HR')out.push({id:id(),type:'divider',text:''});
+    else{
+      const img=n.querySelector&&n.querySelector('img');
+      const txt=inl(n).trim();
+      if(img&&!txt){const w=/(\d+)%/.exec((img.style&&img.style.width)||'');out.push({id:id(),type:'image',text:'',src:img.getAttribute('src')||'',caption:'',...(w?{widthPct:Number(w[1])}:{})});}
+      else out.push({id:id(),type:'text',text:txt});
+    }
+  });
+  return out.length?out:[{id:id(),type:'text',text:''}];
+}
+// Limpia el HTML que viene del portapapeles: se queda con el formato que importa (negrita, cursiva, subrayado, tachado,
+// resaltado, títulos, listas, citas, enlaces, imágenes) y descarta estilos, colores, tamaños y clases ajenas.
+function nbSanitizeHtml(html){
+  const doc=new DOMParser().parseFromString(html,'text/html');
+  const BLOCK=new Set(['P','DIV','H1','H2','H3','H4','H5','H6','UL','OL','LI','BLOCKQUOTE','PRE','HR','TABLE','THEAD','TBODY','TR','SECTION','ARTICLE','HEADER','FOOTER','FIGURE','MAIN','ASIDE','NAV','DL','DT','DD']);
+  const DROP=new Set(['SCRIPT','STYLE','META','LINK','HEAD','TITLE','NOSCRIPT','SVG','BUTTON','INPUT','SELECT','TEXTAREA','IFRAME']);
+  const hasBlock=n=>[...n.childNodes].some(c=>c.nodeType===1&&BLOCK.has(c.tagName));
+  const flat=n=>[...n.childNodes].map(c=>{
+    if(c.nodeType===1&&['P','DIV'].includes(c.tagName)){const w=walk(c);return w.replace(/^<p>/,'').replace(/<\/p>$/,'');}
+    return walk(c);
+  }).join('<br>');
+  function walk(n){
+    if(n.nodeType===3)return nbEsc(String(n.nodeValue).replace(/ /g,' ').replace(/[\r\n]+/g,' '));
+    if(n.nodeType!==1)return '';
+    const tg=n.tagName;
+    if(DROP.has(tg))return '';
+    const kids=()=>[...n.childNodes].map(walk).join('');
+    const st=n.style||{};
+    let inner;
+    switch(tg){
+      case 'BR':return '<br>';
+      case 'HR':return '<hr>';
+      case 'B':case 'STRONG':{inner=kids();const w=st.fontWeight;if(w==='normal'||w==='400')return inner;return inner.trim()?'<b>'+inner+'</b>':inner;}
+      case 'I':case 'EM':inner=kids();return inner.trim()?'<i>'+inner+'</i>':inner;
+      case 'U':inner=kids();return inner.trim()?'<u>'+inner+'</u>':inner;
+      case 'S':case 'STRIKE':case 'DEL':inner=kids();return inner.trim()?'<s>'+inner+'</s>':inner;
+      case 'MARK':inner=kids();return inner.trim()?'<mark>'+inner+'</mark>':inner;
+      case 'A':{inner=kids();const h=n.getAttribute('href')||'';return /^(https?:|mailto:)/i.test(h)?'<a href="'+nbEscAttr(h)+'" target="_blank" rel="noopener">'+inner+'</a>':inner;}
+      case 'IMG':{const src=n.getAttribute('src')||'';return /^(https?:|data:image\/)/i.test(src)?'<img src="'+nbEscAttr(src)+'">':'';}
+      case 'H1':case 'H2':case 'H3':return '<'+tg.toLowerCase()+'>'+(kids()||'<br>')+'</'+tg.toLowerCase()+'>';
+      case 'H4':case 'H5':case 'H6':return '<h3>'+(kids()||'<br>')+'</h3>';
+      case 'UL':case 'OL':{const t=tg.toLowerCase();return '<'+t+'>'+[...n.children].map(walk).join('')+'</'+t+'>';}
+      case 'LI':return '<li>'+((hasBlock(n)?flat(n):kids())||'<br>')+'</li>';
+      case 'BLOCKQUOTE':return '<blockquote>'+((hasBlock(n)?flat(n):kids())||'<br>')+'</blockquote>';
+      case 'PRE':return '<pre>'+nbEsc(n.textContent||'')+'</pre>';
+      case 'TABLE':return [...n.querySelectorAll('tr')].map(tr=>'<p>'+[...tr.children].map(c=>walk(c)).join(' | ')+'</p>').join('');
+      case 'TD':case 'TH':return kids();
+      case 'P':return '<p>'+(kids()||'<br>')+'</p>';
+      case 'SPAN':case 'FONT':{
+        inner=kids();if(!inner.trim())return inner;
+        let o=inner;
+        if(/line-through/.test(st.textDecoration||st.textDecorationLine||''))o='<s>'+o+'</s>';
+        if(/underline/.test(st.textDecoration||st.textDecorationLine||''))o='<u>'+o+'</u>';
+        if(st.fontStyle==='italic')o='<i>'+o+'</i>';
+        if(st.fontWeight==='bold'||st.fontWeight==='bolder'||parseInt(st.fontWeight,10)>=600)o='<b>'+o+'</b>';
+        if(st.backgroundColor&&st.backgroundColor!=='transparent'&&!/rgba?\(\s*(0\s*,\s*0\s*,\s*0\s*,\s*0|255\s*,\s*255\s*,\s*255(\s*,\s*1)?)\s*\)/.test(st.backgroundColor)&&st.backgroundColor!=='white')o='<mark>'+o+'</mark>';
+        return o;
+      }
+      default:
+        if(BLOCK.has(tg)){if(hasBlock(n))return kids();return '<p>'+(kids()||'<br>')+'</p>';}
+        return kids();
+    }
+  }
+  return [...doc.body.childNodes].map(walk).join('');
+}
+// Texto plano con marcas tipo markdown (# títulos, - listas, 1. numeradas, - [ ] tareas, > citas, **negrita**, *cursiva*, ~~tachado~~, ==resaltado==)
+function nbMdToHtml(text){
+  const lines=String(text||'').replace(/\r\n?/g,'\n').split('\n');
+  const out=[];let list=null;
+  const flush=()=>{if(list){out.push('<'+list.tag+(list.cls?' class="'+list.cls+'"':'')+'>'+list.items.join('')+'</'+list.tag+'>');list=null;}};
+  const push=(tag,cls,li)=>{if(!list||list.tag!==tag||list.cls!==cls){flush();list={tag,cls,items:[]};}list.items.push(li);};
+  lines.forEach(l=>{
+    let m;
+    if((m=l.match(/^\s*(#{1,3})\s+(.*)$/))){flush();out.push('<h'+m[1].length+'>'+(nbInlineToHtml(m[2])||'<br>')+'</h'+m[1].length+'>');}
+    else if((m=l.match(/^\s*[-*•]\s+\[( |x|X)\]\s+(.*)$/)))push('ul','nb-check','<li data-checked="'+(m[1]===' '?0:1)+'">'+(nbInlineToHtml(m[2])||'<br>')+'</li>');
+    else if((m=l.match(/^\s*[-*•]\s+(.*)$/)))push('ul','','<li>'+(nbInlineToHtml(m[1])||'<br>')+'</li>');
+    else if((m=l.match(/^\s*\d{1,3}[.)]\s+(.*)$/)))push('ol','','<li>'+(nbInlineToHtml(m[1])||'<br>')+'</li>');
+    else if((m=l.match(/^\s*>\s?(.*)$/))){flush();out.push('<blockquote>'+(nbInlineToHtml(m[1])||'<br>')+'</blockquote>');}
+    else if(/^\s*(-{3,}|_{3,})\s*$/.test(l)){flush();out.push('<hr>');}
+    else{flush();out.push('<p>'+(nbInlineToHtml(l)||'<br>')+'</p>');}
+  });
+  flush();
+  return out.join('');
+}
+function NotebookBlockEditor({blocks,html,legacyText,onChange}){
+  const ref=useRef(null);
+  const saveT=useRef(null);
+  const lastHtml=useRef('');
+  const onChangeRef=useRef(onChange);onChangeRef.current=onChange;
+  const fileRef=useRef(null);
+  const[fmt,setFmt]=useState({});
+  const initial=useMemo(()=>{
+    if(html)return html;
+    if(blocks&&blocks.length)return nbBlocksToHtml(blocks);
+    return nbBlocksToHtml(nbBlocksFromLegacyText(legacyText));
+  },[]); // solo al montar: la página remonta por key al cambiar de entrada
+  const isEmptyDoc=el=>!(el.textContent||'').trim()&&!el.querySelector('img,hr,li');
+  function mark(){const el=ref.current;if(!el)return;el.classList.toggle('empty',isEmptyDoc(el));}
+  function flush(){
+    const el=ref.current;if(!el)return;
+    const h=el.innerHTML;
+    if(h===lastHtml.current)return;
+    lastHtml.current=h;
+    onChangeRef.current(nbHtmlToBlocks(h),h);
+  }
+  // el navegador a veces deja una lista o título dentro de un <p>: se saca para que el documento quede bien armado
+  function normalize(){
+    const el=ref.current;if(!el)return;
+    el.querySelectorAll('p').forEach(pp=>{
+      if(pp.parentNode===el&&pp.querySelector(':scope > ul, :scope > ol, :scope > h1, :scope > h2, :scope > h3, :scope > blockquote, :scope > pre, :scope > hr')){
+        while(pp.firstChild)el.insertBefore(pp.firstChild,pp);
+        pp.remove();
+      }
+    });
+  }
+  function schedule(){normalize();mark();clearTimeout(saveT.current);saveT.current=setTimeout(flush,450);}
+  useEffect(()=>{
+    const el=ref.current;if(!el)return;
+    el.innerHTML=initial;lastHtml.current=initial;mark();
+    try{document.execCommand('defaultParagraphSeparator',false,'p');}catch(err){}
+    return()=>{clearTimeout(saveT.current);flush();};
+    // eslint-disable-next-line
+  },[]);
+  // estado de la barra (negrita activa, lista activa…) según donde esté el cursor
+  useEffect(()=>{
+    let raf=0;
+    const upd=()=>{
+      cancelAnimationFrame(raf);
+      raf=requestAnimationFrame(()=>{
+        const el=ref.current,sel=window.getSelection();
+        if(!el||!sel||!sel.rangeCount||!el.contains(sel.anchorNode))return;
+        const q=c=>{try{return document.queryCommandState(c);}catch(err){return false;}};
+        let blk='p';try{blk=String(document.queryCommandValue('formatBlock')||'p').toLowerCase().replace(/[<>]/g,'');}catch(err){}
+        const li=nbClosest(sel.anchorNode,'LI',el);
+        setFmt({b:q('bold'),i:q('italic'),u:q('underline'),s:q('strikeThrough'),ul:q('insertUnorderedList'),ol:q('insertOrderedList'),chk:!!(li&&li.parentElement&&li.parentElement.classList.contains('nb-check')),blk});
+      });
+    };
+    document.addEventListener('selectionchange',upd);
+    return()=>{document.removeEventListener('selectionchange',upd);cancelAnimationFrame(raf);};
+  },[]);
+  function nbClosest(node,tag,root){
+    while(node&&node!==root){if(node.nodeType===1&&node.tagName===tag)return node;node=node.parentNode;}
+    return null;
+  }
+  function blockOf(node,root){
+    const T=new Set(['P','DIV','H1','H2','H3','LI','BLOCKQUOTE','PRE']);
+    while(node&&node!==root){if(node.nodeType===1&&T.has(node.tagName))return node;node=node.parentNode;}
+    return null;
+  }
+  function run(cmd,val){
+    const el=ref.current;if(!el)return;
+    el.focus();
+    try{document.execCommand(cmd,false,val==null?null:val);}catch(err){}
+    schedule();
+  }
+  function insertHtml(h){run('insertHTML',h);}
+  function insertImg(src){insertHtml('<img src="'+nbEscAttr(src)+'">');}
+  function toggleChecklist(){
+    const el=ref.current;if(!el)return;el.focus();
+    const sel=window.getSelection();if(!sel.rangeCount)return;
+    let li=nbClosest(sel.anchorNode,'LI',el),ul=li&&li.parentElement;
+    if(ul&&ul.classList.contains('nb-check')){ul.classList.remove('nb-check');ul.querySelectorAll('li').forEach(x=>x.removeAttribute('data-checked'));}
+    else{
+      if(!(ul&&ul.tagName==='UL')){document.execCommand('insertUnorderedList');li=nbClosest(window.getSelection().anchorNode,'LI',el);ul=li&&li.parentElement;}
+      if(ul){ul.classList.add('nb-check');ul.querySelectorAll('li').forEach(x=>{if(!x.hasAttribute('data-checked'))x.setAttribute('data-checked','0');});}
+    }
+    schedule();
+  }
+  function toggleHighlight(){
+    const el=ref.current;if(!el)return;el.focus();
+    const sel=window.getSelection();
+    const on=sel&&sel.rangeCount&&(nbClosest(sel.anchorNode,'MARK',el)||(sel.anchorNode&&sel.anchorNode.parentElement&&sel.anchorNode.parentElement.style&&sel.anchorNode.parentElement.style.backgroundColor));
+    try{document.execCommand('styleWithCSS',false,true);document.execCommand('hiliteColor',false,on?'transparent':'#f2c94c66');document.execCommand('styleWithCSS',false,false);}catch(err){}
+    schedule();
+  }
+  function addLink(){
+    const sel=window.getSelection();const saved=sel&&sel.rangeCount?sel.getRangeAt(0).cloneRange():null;
+    const url=window.prompt('Dirección del enlace (https://…)');
+    if(!url)return;
+    if(saved){sel.removeAllRanges();sel.addRange(saved);}
+    run('createLink',/^(https?:|mailto:)/i.test(url)?url:'https://'+url);
+  }
+  // Markdown al escribir (como en Docs): «# » título, «- » viñeta, «1. » numerada, «[] » tarea, «> » cita
+  function autoFormat(){
+    const el=ref.current,sel=window.getSelection();
+    if(!el||!sel||!sel.rangeCount||!sel.isCollapsed)return;
+    const b=blockOf(sel.anchorNode,el);
+    if(!b||!['P','DIV'].includes(b.tagName))return;
+    const raw=(b.textContent||'').replace(/ /g,' ');
+    const m=raw.match(/^(#{1,3}|[-*]|\d{1,2}[.)]|\[\]|>) $/);
+    if(!m)return;
+    const mk=m[1];
+    b.innerHTML='<br>';
+    const r=document.createRange();r.selectNodeContents(b);r.collapse(true);sel.removeAllRanges();sel.addRange(r);
+    if(mk[0]==='#')document.execCommand('formatBlock',false,'<h'+mk.length+'>');
+    else if(mk==='>')document.execCommand('formatBlock',false,'<blockquote>');
+    else if(mk==='[]'){document.execCommand('insertUnorderedList');const li=nbClosest(window.getSelection().anchorNode,'LI',el);if(li&&li.parentElement){li.parentElement.classList.add('nb-check');li.setAttribute('data-checked','0');}}
+    else if(/^\d/.test(mk))document.execCommand('insertOrderedList');
+    else document.execCommand('insertUnorderedList');
+  }
+  function onPaste(ev){
+    const cd=ev.clipboardData;if(!cd)return;
+    const files=[...(cd.files||[])].filter(f=>f.type&&f.type.startsWith('image/'));
+    if(files.length){ev.preventDefault();files.forEach(f=>nbFileToBlock(f,src=>insertImg(src)));return;}
+    const h=cd.getData('text/html'),t=cd.getData('text/plain');
+    ev.preventDefault();
+    let out;
+    if(h&&h.trim()){out=nbSanitizeHtml(h);if(!out.replace(/<[^>]*>/g,'').trim()&&!/<img|<hr/.test(out))out=nbMdToHtml(t);}
+    else{
+      if(t.indexOf('\n')<0&&!/^\s*(#{1,3}\s|[-*•]\s|\d{1,3}[.)]\s|>\s)/.test(t))out=nbInlineToHtml(t);
+      else out=nbMdToHtml(t);
+    }
+    // una sola línea: se pega en línea, sin abrir un párrafo nuevo
+    const one=/^<p>((?:(?!<\/?p>)[\s\S])*)<\/p>$/.exec(out);
+    if(one)out=one[1];
+    else if(/<(h[1-6]|ul|ol|blockquote|hr|p|pre)\b/.test(out))prepareBlockPaste();
+    insertHtml(out);
+  }
+  // Pegar varios bloques con el cursor al final de una lista, título o cita: primero se sale de ese bloque (como en Docs)
+  // para que lo pegado no quede anidado dentro del último punto de la lista.
+  function prepareBlockPaste(){
+    const el=ref.current,sel=window.getSelection();
+    if(!el||!sel||!sel.rangeCount)return;
+    if(!sel.isCollapsed)document.execCommand('delete');
+    if(!sel.rangeCount)return;
+    const b=blockOf(sel.anchorNode,el);if(!b)return;
+    const li=nbClosest(sel.anchorNode,'LI',el);
+    const isHB=['H1','H2','H3','BLOCKQUOTE','PRE'].includes(b.tagName);
+    if(!li&&!isHB)return;
+    const r=document.createRange();r.selectNodeContents(b);r.setStart(sel.anchorNode,sel.anchorOffset);
+    const atEnd=r.toString().length===0,empty=!(b.textContent||'').trim();
+    if(!atEnd&&!empty)return;
+    if(li){if(!empty)document.execCommand('insertParagraph');document.execCommand('insertParagraph');}
+    else if(empty)document.execCommand('formatBlock',false,'<p>');
+    else document.execCommand('insertParagraph');
+  }
+  function onKeyDown(ev){
+    const el=ref.current;
+    if(ev.key==='Tab'){
+      const sel=window.getSelection();
+      if(sel&&sel.rangeCount&&nbClosest(sel.anchorNode,'LI',el)){ev.preventDefault();run(ev.shiftKey?'outdent':'indent');}
+      return;
+    }
+    if(ev.key==='Enter'&&!ev.shiftKey){
+      // una tarea nueva nace sin marcar aunque la anterior estuviera marcada
+      setTimeout(()=>{
+        const sel=window.getSelection();if(!sel||!sel.rangeCount)return;
+        const li=nbClosest(sel.anchorNode,'LI',el);
+        if(li&&li.parentElement&&li.parentElement.classList.contains('nb-check'))li.setAttribute('data-checked','0');
+      },0);
+    }
+    if((ev.ctrlKey||ev.metaKey)&&ev.shiftKey&&(ev.key==='x'||ev.key==='X')){ev.preventDefault();run('strikeThrough');}
+    if((ev.ctrlKey||ev.metaKey)&&!ev.shiftKey&&(ev.key==='k'||ev.key==='K')){ev.preventDefault();addLink();}
+  }
+  function onInput(ev){
+    const ne=ev.nativeEvent;
+    if(ne&&ne.inputType==='insertText'&&ne.data===' ')setTimeout(()=>{autoFormat();schedule();},0); // fuera del evento de entrada, para que el navegador acepte el cambio de formato
+    schedule();
+  }
+  function onMouseDown(ev){
+    // clic sobre el cuadro de una tarea: se marca/desmarca sin mover el cursor
+    const li=ev.target&&ev.target.tagName==='LI'?ev.target:null;
+    if(li&&li.parentElement&&li.parentElement.classList.contains('nb-check')){
+      const r=li.getBoundingClientRect();
+      if(ev.clientX<r.left+24){ev.preventDefault();li.setAttribute('data-checked',li.getAttribute('data-checked')==='1'?'0':'1');schedule();}
+    }
+  }
+  function onDblClick(ev){
+    const t=ev.target;
+    if(t&&t.tagName==='IMG'){const cur=parseInt((t.style&&t.style.width)||'100',10)||100;const next=cur>=100?25:cur>=75?100:cur>=50?75:50;t.style.width=next+'%';schedule();}
+  }
+  function onDrop(ev){
+    const files=[...((ev.dataTransfer&&ev.dataTransfer.files)||[])].filter(f=>f.type&&f.type.startsWith('image/'));
+    if(!files.length)return;
+    ev.preventDefault();files.forEach(f=>nbFileToBlock(f,src=>insertImg(src)));
+  }
+  const btn=(label,title,on,fn,style)=>e('button',{type:'button',className:on?'on':'',title,'aria-label':title,style,onMouseDown:ev=>ev.preventDefault(),onClick:fn},label);
+  const sep=()=>e('span',{className:'nb-doc-sep'});
+  return e('div',{className:'nb-doc-wrap'},
+    e('input',{ref:fileRef,type:'file',accept:'image/*',style:{display:'none'},onChange:ev=>{const f=ev.target.files&&ev.target.files[0];ev.target.value='';if(f){ref.current&&ref.current.focus();nbFileToBlock(f,src=>insertImg(src));}}}),
+    e('div',{className:'nb-doc-bar'},
+      btn('↶','Deshacer (Ctrl+Z)',false,()=>run('undo')),
+      btn('↷','Rehacer (Ctrl+Y)',false,()=>run('redo')),
+      sep(),
+      btn('Texto','Texto normal',fmt.blk==='p'||fmt.blk==='div'||!fmt.blk,()=>run('formatBlock','<p>')),
+      btn('T1','Título 1',fmt.blk==='h1',()=>run('formatBlock','<h1>')),
+      btn('T2','Título 2',fmt.blk==='h2',()=>run('formatBlock','<h2>')),
+      btn('T3','Título 3',fmt.blk==='h3',()=>run('formatBlock','<h3>')),
+      sep(),
+      btn('B','Negrita (Ctrl+B)',fmt.b,()=>run('bold'),{fontWeight:700}),
+      btn('I','Cursiva (Ctrl+I)',fmt.i,()=>run('italic'),{fontStyle:'italic'}),
+      btn('U','Subrayado (Ctrl+U)',fmt.u,()=>run('underline'),{textDecoration:'underline'}),
+      btn('S','Tachado (Ctrl+Mayús+X)',fmt.s,()=>run('strikeThrough'),{textDecoration:'line-through'}),
+      btn('Resaltar','Resaltar texto',false,toggleHighlight),
+      sep(),
+      btn('• Lista','Lista con viñetas',fmt.ul&&!fmt.chk,()=>run('insertUnorderedList')),
+      btn('1. Lista','Lista numerada',fmt.ol,()=>run('insertOrderedList')),
+      btn('☑ Tareas','Lista de tareas (checklist)',fmt.chk,toggleChecklist),
+      btn('❝','Cita',fmt.blk==='blockquote',()=>run('formatBlock','<blockquote>')),
+      sep(),
+      btn('Enlace','Insertar enlace (Ctrl+K)',false,addLink),
+      btn('Imagen','Insertar imagen',false,()=>fileRef.current&&fileRef.current.click()),
+      btn('—','Línea divisoria',false,()=>run('insertHorizontalRule')),
+      btn('Limpiar','Quitar formato',false,()=>run('removeFormat'))
+    ),
+    e('div',{
+      ref,className:'nb-doc',contentEditable:true,suppressContentEditableWarning:true,spellCheck:true,
+      'data-ph':'Escribe aquí… (usa la barra de arriba, o escribe «# » para un título, «- » para una lista, «[] » para tareas)',
+      onInput,onPaste,onKeyDown,onMouseDown,onDoubleClick:onDblClick,onDrop,onBlur:()=>{clearTimeout(saveT.current);flush();}
+    })
+  );
+}
+
+function NotebookBlockEditorLegacy({blocks,legacyText,onChange}){
   const initial=useMemo(()=>(blocks&&blocks.length)?blocks:nbBlocksFromLegacyText(legacyText),[]); // sólo al montar (la página remonta por key al cambiar de entrada)
   const[items,setItems]=useState(initial);
   const inputRefs=useRef({});
@@ -16931,8 +17343,9 @@ function TaskNotebookPanel({task,onUpdateTask}){
       e(NotebookBlockEditor,{
         key:active.id,
         blocks:active.blocks,
+        html:active.html,
         legacyText:active.text,
-        onChange:blocks=>patchEntry(active.id,{blocks})
+        onChange:(blocks,html)=>patchEntry(active.id,{blocks,html})
       })
     )
   );
@@ -17080,8 +17493,9 @@ function AccountNotebookPanel({project,pTasks,pSystems,onPatchProject,onUpdateTa
       e(NotebookBlockEditor,{
         key:active.id,
         blocks:active.blocks,
+        html:active.html,
         legacyText:active.text,
-        onChange:blocks=>patchEntry(active,{blocks})
+        onChange:(blocks,html)=>patchEntry(active,{blocks,html})
       })
     )
   );
@@ -17439,8 +17853,9 @@ function TaskBoardPanel({task,onUpdateTask}){
               e(NotebookBlockEditor,{
                 key:entry.id,
                 blocks:entry.blocks,
+                html:entry.html,
                 legacyText:entry.text,
-                onChange:blocks=>patchNotebookEntry(entry.id,{blocks})
+                onChange:(blocks,html)=>patchNotebookEntry(entry.id,{blocks,html})
               })
             )
           );
