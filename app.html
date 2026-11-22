@@ -928,6 +928,20 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .dl-g-rs{position:absolute;left:0;right:0;bottom:0;height:10px;cursor:ns-resize}
 .dl-g-rs::after{content:"";position:absolute;left:50%;bottom:3px;width:26px;height:3px;margin-left:-13px;border-radius:3px;background:#ffffff40}
 .dl-g-prev{position:absolute;left:54px;right:10px;border-radius:10px;border:1px dashed var(--accent);background:var(--accent-bg);pointer-events:none;padding:5px 10px;font:500 10px 'JetBrains Mono',monospace;color:var(--accent2)}
+.dl-g-ghost{position:absolute;left:54px;right:10px;border-radius:10px;border:1.5px dashed var(--accent);background:var(--accent-bg);pointer-events:none;z-index:5}
+.dl-tr-q{width:100%;margin-bottom:6px}
+.dl-tr-h{font-size:11px;color:var(--text4);margin-bottom:4px;line-height:1.4}
+.dl-tr-a,.dl-tr-g,.dl-tr-t{display:flex;align-items:center;gap:6px;cursor:grab;user-select:none;-webkit-user-select:none}
+.dl-tr-a{padding:7px 8px;border:1px solid var(--border);border-radius:8px;margin-top:6px;font-size:12.5px;color:var(--text1);background:var(--bg3)}
+.dl-tr-g{padding:5px 8px;margin:3px 0 0 18px;border:1px solid var(--border);border-radius:8px;font-size:11.5px;color:var(--text2)}
+.dl-tr-t{padding:3px 8px;margin:2px 0 0 36px;border-radius:6px;font-size:11.5px;color:var(--text2)}
+.dl-tr-a:hover,.dl-tr-g:hover{border-color:var(--accent-border)}
+.dl-tr-t:hover{background:var(--bg4)}
+.dl-tr-gp{color:var(--text4);font-size:11px;flex-shrink:0}
+.dl-tr-tw{cursor:pointer;width:10px;font-size:9px;color:var(--text4);flex-shrink:0}
+.dl-tr-n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dl-tr-c{margin-left:auto;font-size:10.5px;color:var(--text4);flex-shrink:0}
+.dl-tr-as{font-size:10px;color:var(--accent2);flex-shrink:0}
 .dl-g-fx{position:absolute;left:54px;right:10px;border-radius:10px;background:var(--bg3);border:1px solid var(--border);padding:5px 10px;overflow:hidden;cursor:pointer;display:flex;align-items:flex-start;gap:7px;color:var(--text3);z-index:1}
 .dl-g-fx:hover{border-color:var(--border2)}
 .dl-g-fx.dn{opacity:.5}
@@ -13063,6 +13077,9 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
   const[gridSel,setGridSel]=useState(null);   // bloque elegido (muestra sus tareas)
   const[gdraft,setGdraft]=useState(null);     // vista previa mientras se arrastra: {key,s,e}
   const[gmsg,setGmsg]=useState(null);
+  const[trayQ,setTrayQ]=useState('');          // buscador de la bandeja (cuentas → fases → tareas)
+  const[trayOpen,setTrayOpen]=useState({});    // qué cuentas/fases están desplegadas en la bandeja
+  const trayDrag=useRef(null);                 // lo que se está arrastrando desde la bandeja
   const[gFull,setGFull]=useState(true);      // true = 7:00 a 21:00 (por defecto); false = ajustar el horario a mi día
   const gref=useRef(null);
   const gdrag=useRef(null);
@@ -13458,6 +13475,7 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
   // Se dibuja arrastrando sobre la grilla; el bloque se mueve y se estira. Lo que no alcanza se pospone a mañana.
   const G_FULL0=7,G_FULL1=21,G_HP=44,G_SN=15;
   const dayB=(dayBlocks&&dayBlocks[day])||{};
+  const bProj=k=>{const b=dayB[k];return (b&&b.p)||k;}; // cuenta de un bloque (los bloques antiguos usan la cuenta como id)
   // Rutina fija: hábitos marcados como «bloque fijo» que ocurren ese día. Quedan anclados (no se arrastran) y los bloques de cuentas no pueden pisarlos.
   const fixedBlocks=(habits||[]).filter(h=>{
     if(!h.fixed||!h.time)return false;
@@ -13485,10 +13503,11 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
   const nextBizDay=(k)=>{let d=addDayKey(k,1);for(let n=0;n<7;n++){const wd=dateFromDayKey(d).getUTCDay();if(wd!==0&&wd!==6)break;d=addDayKey(d,1);}return d;};
   const accMap=new Map();
   work.forEach(i=>{if(!i.proj)return;const k=i.proj.id;if(!accMap.has(k))accMap.set(k,{key:k,proj:i.proj,list:[]});accMap.get(k).list.push(i);});
-  Object.keys(dayB).forEach(k=>{if(!accMap.has(k)){const pr=projects.find(x=>x.id===k);if(pr)accMap.set(k,{key:k,proj:pr,list:[]});}});
-  const gAccounts=[...accMap.values()];
+  Object.keys(dayB).forEach(k=>{const pk=bProj(k);if(!accMap.has(pk)){const pr=projects.find(x=>x.id===pk);if(pr)accMap.set(pk,{key:pk,proj:pr,list:[]});}});
   const gPend=a=>a.list.filter(i=>!i.done).length;
-  const actKey=(gridAct&&accMap.has(gridAct))?gridAct:((gAccounts.find(a=>!dayB[a.key])||gAccounts[0]||{}).key||null);
+  const gAccounts=[...accMap.values()].sort((a,b)=>gPend(b)-gPend(a)||String(a.proj.name).localeCompare(String(b.proj.name)));
+  // Tareas de un bloque: las elegidas (b.k) o, si no eligió ninguna (bloque antiguo o cuenta entera), todas las de su cuenta
+  const bItems=k=>{const bl=dayB[k];if(!bl)return[];const a=accMap.get(bProj(k));const list=a?a.list:[];return Array.isArray(bl.k)?list.filter(i=>bl.k.includes(i.k)):list;};
   const selKeyG=(gridSel&&dayB[gridSel])?gridSel:null;
   const gy=ev=>{const r=gref.current.getBoundingClientRect();return ev.clientY-r.top;};
   const gm=y=>Math.max(G_H0*60,Math.min(G_H1*60,G_H0*60+Math.round(y/G_HP*60/G_SN)*G_SN));
@@ -13500,30 +13519,42 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
     const rs=ev.target.closest('[data-grs]'),bl=ev.target.closest('[data-gb]');
     if(rs){const k=rs.getAttribute('data-grs');gdrag.current={k:'rs',key:k};setGridSel(k);gSetDraft({key:k,s:dayB[k].s,e:dayB[k].e});}
     else if(bl){const k=bl.getAttribute('data-gb');gdrag.current={k:'mv',key:k,off:gm(gy(ev))-dayB[k].s,len:dayB[k].e-dayB[k].s};setGridSel(k);gSetDraft({key:k,s:dayB[k].s,e:dayB[k].e});}
-    else if(actKey){const m=gm(gy(ev));gdrag.current={k:'new',key:actKey,a:m};gSetDraft({key:actKey,s:m,e:Math.min(G_H1*60,m+G_SN)});}
-    else return;
+    else{if(gridSel)setGridSel(null);return;}
     try{ev.currentTarget.setPointerCapture(ev.pointerId);}catch(err){}
   }
   function gMove(ev){
     const d=gdrag.current;if(!d)return;
     const m=gm(gy(ev));
-    if(d.k==='new')gSetDraft({key:d.key,s:Math.min(d.a,m),e:Math.max(Math.max(d.a,m),Math.min(d.a,m)+G_SN)});
-    else if(d.k==='rs'){const b=dayB[d.key];gSetDraft({key:d.key,s:b.s,e:Math.max(b.s+G_SN,m)});}
+    if(d.k==='rs'){const b=dayB[d.key];gSetDraft({key:d.key,s:b.s,e:Math.max(b.s+G_SN,m)});}
     else{const ns=Math.max(G_H0*60,Math.min(G_H1*60-d.len,m-d.off));gSetDraft({key:d.key,s:ns,e:ns+d.len});}
   }
   function gUp(){
     const d=gdrag.current,dr=d&&d.dr;gdrag.current=null;setGdraft(null);
     if(!d||!dr)return;
-    let e2=Math.min(G_H1*60,dr.e);
-    if(d.k==='new'&&e2-dr.s<=G_SN){
-      const obs=[...Object.keys(dayB).filter(k=>k!==dr.key).map(k=>dayB[k].s),...fixedBlocks.map(f=>f.s)].filter(x=>x>=dr.s);
-      e2=Math.min(G_H1*60,dr.s+60,...obs);
-    }
+    const e2=Math.min(G_H1*60,dr.e);
     if(e2-dr.s<G_SN||gOverlap(dr.key,dr.s,e2))return;
     const cur=dayB[dr.key];
     if(cur&&cur.s===dr.s&&cur.e===e2){setGridSel(dr.key);return;}
-    onSetDayBlock(day,dr.key,{s:dr.s,e:e2});setGridSel(dr.key);
-    if(d.k==='new'){const nx=gAccounts.find(a=>a.key!==dr.key&&!dayB[a.key]);if(nx)setGridAct(nx.key);}
+    onSetDayBlock(day,dr.key,{...cur,s:dr.s,e:e2}); // conserva la cuenta y las tareas del bloque
+    setGridSel(dr.key);
+  }
+  // ── arrastrar desde la bandeja (cuenta, fase o tarea) hasta la grilla ──
+  function trayStart(ev,info){trayDrag.current=info;try{ev.dataTransfer.setData('text/plain','chronos');ev.dataTransfer.effectAllowed='copy';}catch(err){}}
+  function gGhost(m,len){const g=gref.current;if(!g)return;let el=g.querySelector('.dl-g-ghost');if(!el){el=document.createElement('div');el.className='dl-g-ghost';g.appendChild(el);}el.style.top=((m-G_H0*60)/60*G_HP)+'px';el.style.height=Math.max(14,len/60*G_HP-2)+'px';}
+  function gGhostOff(){const g=gref.current;const el=g&&g.querySelector('.dl-g-ghost');if(el)el.remove();}
+  function gOver(ev){const td=trayDrag.current;if(!td)return;ev.preventDefault();try{ev.dataTransfer.dropEffect='copy';}catch(err){}gGhost(gm(gy(ev)),td.len);}
+  function gLeave(ev){if(!ev.currentTarget.contains(ev.relatedTarget))gGhostOff();}
+  function gDrop(ev){
+    ev.preventDefault();gGhostOff();
+    const td=trayDrag.current;trayDrag.current=null;if(!td)return;
+    const m=gm(gy(ev));
+    if(fixedBlocks.some(f=>m>=f.s&&m<f.e)||Object.keys(dayB).some(k=>m>=dayB[k].s&&m<dayB[k].e)){gSay('Ese horario ya está ocupado. Suéltalo en un hueco libre.');return;}
+    let e2=Math.min(G_H1*60,m+td.len);
+    [...Object.keys(dayB).map(k=>dayB[k].s),...fixedBlocks.map(f=>f.s)].forEach(x=>{if(x>=m)e2=Math.min(e2,x);});
+    if(e2-m<G_SN){gSay('No hay espacio suficiente en ese hueco.');return;}
+    const id=uid();
+    onSetDayBlock(day,id,{s:m,e:e2,p:td.projId,k:td.keys});
+    setGridSel(id);
   }
   function gSay(t){setGmsg(t);setTimeout(()=>setGmsg(null),4500);}
   function postponeItems(list){
@@ -13536,19 +13567,16 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
     onPostpone(ups);
     gSay(ups.length+(ups.length===1?' pasó':' pasaron')+' a '+dateFromDayKey(nb).toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'short',timeZone:'UTC'}));
   }
-  const gSel=selKeyG?accMap.get(selKeyG):null;
   const gBlocksShown=Object.keys(dayB).map(k=>({key:k,...dayB[k],...(gdraft&&gdraft.key===k?{s:gdraft.s,e:gdraft.e}:{})}));
-  const gNewDraft=gdraft&&!dayB[gdraft.key]?gdraft:null;
   const hoursG=[];for(let h=G_H0;h<=G_H1;h++)hoursG.push(h);
   const occ=[...fixedBlocks.map(f=>({s:f.s,e:f.e})),...Object.keys(dayB).map(k=>({s:dayB[k].s,e:dayB[k].e}))].sort((a,b)=>a.s-b.s);
   const freeG=[];{let c=G_H0*60;occ.forEach(o=>{if(o.s>c)freeG.push({s:c,e:o.s});c=Math.max(c,o.e);});if(c<G_H1*60)freeG.push({s:c,e:G_H1*60});}
   const freeShown=freeG.map(g=>isToday?{s:Math.max(g.s,nowMin),e:g.e}:g).filter(g=>g.e-g.s>=60);
   const hrs=m=>(Math.round(m/6)/10).toString().replace('.',',')+' h';
-  const fixedMin=fixedBlocks.reduce((a,f)=>a+f.e-f.s,0),clientMin=Object.keys(dayB).reduce((a,k)=>a+dayB[k].e-dayB[k].s,0),freeMin=freeG.reduce((a,g)=>a+g.e-g.s,0);
-  const slotsAll=[...fixedBlocks.map(f=>({n:f.name,s:f.s,e:f.e})),...Object.keys(dayB).map(k=>{const a=accMap.get(k);return{n:a?a.proj.name:'Cuenta',s:dayB[k].s,e:dayB[k].e};})].sort((a,b)=>a.s-b.s);
+  const slotsAll=[...fixedBlocks.map(f=>({n:f.name,s:f.s,e:f.e})),...Object.keys(dayB).map(k=>{const a=accMap.get(bProj(k));return{n:a?a.proj.name:'Cuenta',s:dayB[k].s,e:dayB[k].e};})].sort((a,b)=>a.s-b.s);
   const curSl=isToday?slotsAll.find(x=>x.s<=nowMin&&x.e>nowMin):null;
   const nxSl=isToday?slotsAll.find(x=>x.s>nowMin):null;
-  const gridCol=e('div',{className:'dl-g-grid',ref:gref,style:{height:(G_H1-G_H0)*G_HP},onPointerDown:gDown,onPointerMove:gMove,onPointerUp:gUp,onPointerCancel:gUp},
+  const gridCol=e('div',{className:'dl-g-grid',ref:gref,style:{height:(G_H1-G_H0)*G_HP},onPointerDown:gDown,onPointerMove:gMove,onPointerUp:gUp,onPointerCancel:gUp,onDragOver:gOver,onDragLeave:gLeave,onDrop:gDrop},
     hoursG.map(h=>e(React.Fragment,{key:'h'+h},
       e('div',{className:'dl-g-hr',style:{top:(h-G_H0)*G_HP}}),
       e('span',{className:'dl-g-hl',style:{top:(h-G_H0)*G_HP}},pad2(h)+':00')
@@ -13561,44 +13589,99 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
       e('div',{className:'dl-g-fxt'},e('div',{className:'dl-g-fxn'},f.name+(f.done?' ✓':'')),e('div',{className:'dl-g-fxm'},fmtMin(f.s)+' – '+fmtMin(f.e)))
     )),
     gBlocksShown.filter(b=>b.e>G_H0*60&&b.s<G_H1*60).map(b=>{
-      const a=accMap.get(b.key);const nm=a?a.proj.name:'Cuenta';
-      return e('div',{key:b.key,'data-gb':b.key,className:'dl-g-blk'+(selKeyG===b.key?' sel':''),style:{top:(b.s-G_H0*60)/60*G_HP,height:Math.max(18,(b.e-b.s)/60*G_HP-2)}},
-        e('div',{className:'dl-g-bn'},nm),
-        e('div',{className:'dl-g-bt'},fmtMin(b.s)+' – '+fmtMin(b.e)+(a?' · '+gPend(a)+' pend.':'')),
+      const a=accMap.get(bProj(b.key));const nm=a?a.proj.name:'Cuenta';
+      const its=bItems(b.key),pend=its.filter(i=>!i.done).length;
+      const spec=Array.isArray(dayB[b.key].k);
+      const sum=spec&&its.length?(its.length===1?its[0].name:its.length+' tareas'):'';
+      return e('div',{key:b.key,'data-gb':b.key,className:'dl-g-blk'+(selKeyG===b.key?' sel':''),title:nm+(sum?' · '+sum:''),style:{top:(b.s-G_H0*60)/60*G_HP,height:Math.max(18,(b.e-b.s)/60*G_HP-2)}},
+        e('div',{className:'dl-g-bn'},nm+(sum?' · '+sum:'')),
+        e('div',{className:'dl-g-bt'},fmtMin(b.s)+' – '+fmtMin(b.e)+(a?' · '+pend+' pend.':'')),
         e('div',{className:'dl-g-rs','data-grs':b.key})
       );
     }),
-    gNewDraft&&e('div',{className:'dl-g-prev',style:{top:(gNewDraft.s-G_H0*60)/60*G_HP,height:(gNewDraft.e-gNewDraft.s)/60*G_HP}},
-      e('span',null,fmtMin(gNewDraft.s)+' – '+fmtMin(gNewDraft.e))),
     isToday&&nowMin>=G_H0*60&&nowMin<=G_H1*60&&e('div',{className:'dl-g-now',style:{top:(nowMin-G_H0*60)/60*G_HP}})
   );
+
+  // ── Bandeja: cuentas → fases → tareas (se arrastra cualquier nivel a la grilla) ──
+  const grpKeyOf=i=>i.type==='sub'?(i.t.name+' · '+i.st.name):(i.type==='rem'?'Recordatorios':'Hábitos');
+  const tq=trayQ.trim().toLowerCase();
+  const assigned=new Set();Object.keys(dayB).forEach(k=>{const bl=dayB[k];if(Array.isArray(bl.k))bl.k.forEach(x=>assigned.add(x));});
+  const trayEnd=()=>{trayDrag.current=null;gGhostOff();};
+  const trayNodes=[];
+  gAccounts.forEach(a=>{
+    const pend=a.list.filter(i=>!i.done&&!(i.type==='hab'&&i.h&&i.h.fixed)); // la rutina fija ya está en la grilla
+    if(!pend.length)return;
+    const groups=new Map();pend.forEach(i=>{const g=grpKeyOf(i);if(!groups.has(g))groups.set(g,[]);groups.get(g).push(i);});
+    const nameHit=!tq||String(a.proj.name).toLowerCase().includes(tq);
+    const shownG=[...groups.entries()].map(([g,list])=>[g,list.filter(i=>!tq||nameHit||g.toLowerCase().includes(tq)||String(i.name).toLowerCase().includes(tq))]).filter(x=>x[1].length);
+    if(!shownG.length)return;
+    const aOpen=tq?true:!!trayOpen[a.key];
+    trayNodes.push(e('div',{key:'a'+a.key,className:'dl-tr-a',draggable:true,title:'Arrastra la cuenta a la grilla',onDragStart:ev=>trayStart(ev,{projId:a.key,keys:null,len:60}),onDragEnd:trayEnd},
+      e('span',{className:'dl-tr-gp'},'⠿'),
+      e('span',{className:'dl-tr-tw',onClick:()=>setTrayOpen(pv=>({...pv,[a.key]:!pv[a.key]}))},aOpen?'▾':'▸'),
+      e('span',{className:'dl-tr-n'},a.proj.name),
+      e('span',{className:'dl-tr-c'},pend.length+' pend.')));
+    if(aOpen)shownG.forEach(([g,list])=>{
+      const gk=a.key+'|'+g,gOpen=tq?true:!!trayOpen[gk];
+      trayNodes.push(e('div',{key:'g'+gk,className:'dl-tr-g',draggable:true,title:'Arrastra la fase con todas sus tareas',onDragStart:ev=>trayStart(ev,{projId:a.key,keys:list.map(i=>i.k),len:Math.max(60,Math.min(180,list.length*30))}),onDragEnd:trayEnd},
+        e('span',{className:'dl-tr-gp'},'⠿'),
+        e('span',{className:'dl-tr-tw',onClick:()=>setTrayOpen(pv=>({...pv,[gk]:!pv[gk]}))},gOpen?'▾':'▸'),
+        e('span',{className:'dl-tr-n'},g),
+        e('span',{className:'dl-tr-c'},list.length)));
+      if(gOpen)list.forEach(i=>trayNodes.push(e('div',{key:'t'+i.k,className:'dl-tr-t'+(assigned.has(i.k)?' as':''),draggable:true,title:'Arrastra la tarea a la grilla',onDragStart:ev=>trayStart(ev,{projId:a.key,keys:[i.k],len:60}),onDragEnd:trayEnd},
+        e('span',{className:'dl-tr-gp'},'⠿'),
+        e('span',{className:'dl-tr-n'},i.name),
+        assigned.has(i.k)&&e('span',{className:'dl-tr-as'},'en bloque'))));
+    });
+  });
+  const tray=e(React.Fragment,null,
+    e('input',{className:'finput dl-tr-q',placeholder:'Buscar cuenta, fase o tarea…',value:trayQ,onChange:ev=>setTrayQ(ev.target.value)}),
+    e('div',{className:'dl-tr-h'},'Arrastra una cuenta, una fase o una tarea a la grilla. Toca un bloque para ver y ajustar sus tareas.'),
+    trayNodes,
+    trayNodes.length===0&&e('div',{className:'dl-hint'},tq?'Nada coincide con esa búsqueda.':'Nada pendiente para este día.')
+  );
+
+  // ── Detalle del bloque elegido ──
+  const bk=selKeyG?dayB[selKeyG]:null;
+  const bAcc=selKeyG?accMap.get(bProj(selKeyG)):null;
+  const bIts=selKeyG?bItems(selKeyG):[];
+  const bSpec=!!bk&&Array.isArray(bk.k);
+  const bOthers=bSpec&&bAcc?bAcc.list.filter(i=>!i.done&&!bk.k.includes(i.k)):[];
+  const bPend=bIts.filter(i=>!i.done).length;
+  const setBk=ks=>onSetDayBlock(day,selKeyG,{...bk,k:ks});
   const gPanel=e('div',{className:'dl-g-panel'},
-    gSel
+    bk
       ?e(React.Fragment,null,
-          e('div',{className:'dl-g-ph'},e('span',{className:'dl-g-pn'},gSel.proj.name),e('span',{className:'dl-g-pm'},fmtMin(dayB[selKeyG].s)+' – '+fmtMin(dayB[selKeyG].e)+' · '+gPend(gSel)+' pendientes')),
-          gSel.list.length===0&&e('div',{className:'dl-hint'},'Esta cuenta no tiene nada para hoy.'),
-          gSel.list.slice().sort((a,b)=>(Number(a.done)-Number(b.done))||(Number(!!b.late)-Number(!!a.late))).map(i=>
+          e('div',{className:'dl-g-ph'},e('span',{className:'dl-g-pn'},bAcc?bAcc.proj.name:'Cuenta'),e('span',{className:'dl-g-pm'},fmtMin(bk.s)+' – '+fmtMin(bk.e)+' · '+bPend+' pendientes'),
+            e('button',{className:'dl-g-btn ghost',style:{marginLeft:'auto'},onClick:()=>{playUI('click');setGridSel(null);}},'← Bandeja')),
+          bIts.length===0&&e('div',{className:'dl-hint'},bSpec?'Este bloque no tiene tareas. Agrega algunas abajo.':'Esta cuenta no tiene nada para este día.'),
+          bIts.slice().sort((a,b)=>(Number(a.done)-Number(b.done))||(Number(!!b.late)-Number(!!a.late))).map(i=>
             e('div',{key:i.k,className:'dl-g-tk'+(i.done?' dn':'')},
               e('button',{className:'dl-ck'+(i.done?' on':''),onClick:()=>toggle(i),title:i.done?'Reabrir':'Marcar como hecho'},i.done?'✓':''),
               e('span',{className:'dl-lic'},iconFor(i)),
               e('span',{className:'dl-g-n',title:i.name},i.name),
               e('span',{className:'dl-g-m'},i.type==='sub'?i.meta:(i.type==='rem'?'Recordatorio':'Hábito')+(i.late?' · atrasado':'')),
-              !i.done&&i.type!=='hab'&&e('button',{className:'dl-g-mj',onClick:()=>{playUI('click');postponeItems([i]);},title:'Pasar a mañana'},'Mañana')
+              !i.done&&i.type!=='hab'&&e('button',{className:'dl-g-mj',onClick:()=>{playUI('click');postponeItems([i]);},title:'Pasar a mañana'},'Mañana'),
+              bSpec&&e('button',{className:'dl-g-mj',onClick:()=>{playUI('click');setBk(bk.k.filter(x=>x!==i.k));},title:'Quitar de este bloque (la tarea sigue pendiente)'},'✕')
             )),
+          !bSpec&&bAcc&&bAcc.list.some(i=>!i.done)&&e('button',{className:'dl-g-btn',style:{marginTop:8},onClick:()=>{playUI('click');setBk(bAcc.list.filter(i=>!i.done).map(i=>i.k));}},'Elegir qué tareas van en este bloque'),
+          bSpec&&bOthers.length>0&&e('div',{className:'dl-sec-t',style:{marginTop:10}},'Agregar a este bloque · '+bOthers.length),
+          bSpec&&bOthers.map(i=>e('div',{key:'o'+i.k,className:'dl-g-tk'},
+            e('button',{className:'dl-ck',onClick:()=>{playUI('click');setBk([...bk.k,i.k]);},title:'Agregar a este bloque'},'+'),
+            e('span',{className:'dl-lic'},iconFor(i)),
+            e('span',{className:'dl-g-n',title:i.name},i.name),
+            e('span',{className:'dl-g-m'},i.type==='sub'?i.meta:(i.type==='rem'?'Recordatorio':'Hábito'))
+          )),
           e('div',{className:'dl-g-acts'},
-            gPend(gSel)>0&&e('button',{className:'dl-g-btn',onClick:()=>{playUI('click');postponeItems(gSel.list.filter(i=>!i.done&&i.type!=='hab'));}},'Posponer lo pendiente a mañana'),
+            bPend>0&&e('button',{className:'dl-g-btn',onClick:()=>{playUI('click');postponeItems(bIts.filter(i=>!i.done&&i.type!=='hab'));}},'Posponer lo pendiente a mañana'),
             e('button',{className:'dl-g-btn ghost',onClick:()=>{playUI('click');onSetDayBlock(day,selKeyG,null);setGridSel(null);}},'Quitar el bloque')
           )
         )
-      :e('div',{className:'dl-hint'},gAccounts.length===0?'Nada para hoy.':'Toca un bloque para ver sus tareas. Para agregar uno, elige una cuenta y haz clic en un hueco (o arrastra). Los bloques con candado son tu rutina fija.'),
+      :tray,
     gmsg&&e('div',{className:'dl-g-msg'},gmsg)
   );
   const gridView=e('div',{className:'dl-g'},
     e('div',{className:'dl-g-chips'},
-      e('span',{className:'dl-g-chl'},'Cuenta activa'),
-      gAccounts.map(a=>e('button',{key:a.key,className:'dl-g-chip'+(actKey===a.key?' act':'')+(dayB[a.key]?' has':''),onClick:()=>{playUI('click');setGridAct(a.key);if(dayB[a.key])setGridSel(a.key);},title:dayB[a.key]?'Ya tiene bloque: arrastra para dibujarle otro horario':'Arrastra sobre la grilla para darle horas'},
-        a.proj.name,e('span',{className:'dl-g-chn'},gPend(a)))),
-      gAccounts.length===0&&e('span',{className:'dl-hint'},'Nada pendiente hoy.'),
       e('button',{className:'dl-g-chip',style:{marginLeft:'auto'},title:gFull?'Volver al horario ajustado a mi día':'Mostrar de 7:00 a 21:00',onClick:()=>{playUI('click');setGFull(v=>!v);}},gFull?'Ajustar a mi día':'Ver todo el día')
     ),
     isToday&&slotsAll.length>0&&e('div',{className:'dl-g-strip'},
