@@ -13063,7 +13063,7 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
   const[gridSel,setGridSel]=useState(null);   // bloque elegido (muestra sus tareas)
   const[gdraft,setGdraft]=useState(null);     // vista previa mientras se arrastra: {key,s,e}
   const[gmsg,setGmsg]=useState(null);
-  const[gFull,setGFull]=useState(false);     // ver de 7:00 a 21:00 en vez de ajustar el horario a mi día
+  const[gFull,setGFull]=useState(true);      // true = 7:00 a 21:00 (por defecto); false = ajustar el horario a mi día
   const gref=useRef(null);
   const gdrag=useRef(null);
   const setViewMode=v=>{setViewModeRaw(v);save('chr4_day_view',v);};
