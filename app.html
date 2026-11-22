@@ -929,6 +929,11 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .dl-g-rs::after{content:"";position:absolute;left:50%;bottom:3px;width:26px;height:3px;margin-left:-13px;border-radius:3px;background:#ffffff40}
 .dl-g-prev{position:absolute;left:54px;right:10px;border-radius:10px;border:1px dashed var(--accent);background:var(--accent-bg);pointer-events:none;padding:5px 10px;font:500 10px 'JetBrains Mono',monospace;color:var(--accent2)}
 .dl-g-ghost{position:absolute;left:54px;right:10px;border-radius:10px;border:1.5px dashed var(--accent);background:var(--accent-bg);pointer-events:none;z-index:5}
+.dl-fx-sec{margin-top:12px;padding-top:8px;border-top:1px solid var(--border)}
+.dl-fx-h{font-size:11.5px;color:var(--text2);cursor:pointer;display:flex;align-items:center;gap:6px;user-select:none}
+.dl-fx-r{display:flex;align-items:center;gap:8px;padding:4px 0;font-size:12px;color:var(--text2)}
+.dl-fx-t{font:500 10.5px 'JetBrains Mono',monospace;color:var(--text3);width:38px;flex-shrink:0}
+.dl-fx-d{background:var(--bg3);border:1px solid var(--border);border-radius:6px;font-size:11px;color:var(--text2);padding:2px 4px;flex-shrink:0}
 .dl-tr-q{width:100%;margin-bottom:6px}
 .dl-tr-h{font-size:11px;color:var(--text4);margin-bottom:4px;line-height:1.4}
 .dl-tr-a,.dl-tr-g,.dl-tr-t{display:flex;align-items:center;gap:6px;cursor:grab;user-select:none;-webkit-user-select:none}
@@ -5099,6 +5104,7 @@ function App(){
               setTasks(ts=>ts.map(t=>!byTask[t.id]?t:{...t,steps:(t.steps||[]).map(st=>({...st,subtasks:(st.subtasks||[]).map(x=>{const u=byTask[t.id][x.id];return u?{...x,time:u.time||null,dueDate:u.dueDate,block:u.block||null}:x;})}))}));
               forceSync();
             },
+            onPatchHabit:(id,patch)=>{setHabits(hs=>hs.map(x=>x.id===id?{...x,...patch}:x));forceSync();},
             onSetHabitTime:(id,time)=>{
               setHabits(hs=>hs.map(x=>x.id===id?{...x,time:time||null}:x));
               forceSync();
@@ -13055,7 +13061,7 @@ function AreaChart({buckets,width=560,height=170}){
 // (steps[].subtasks[] con dueDate = ese día), recordatorios y hábitos. Las tareas
 // pueden tener una hora opcional (subtask.time 'HH:MM'); las que no la tienen
 // quedan abajo en "Sin hora" y se les asigna con un selector de hora.
-function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTime,onToggleReminder,onSetReminderTime,onSetHabitTime,onToggleHabitLog,onOpenProject,onApplyPlan,focusNode,onStartProj,dayBlocks,onSetDayBlock,onPostpone}){
+function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTime,onToggleReminder,onSetReminderTime,onSetHabitTime,onToggleHabitLog,onOpenProject,onApplyPlan,focusNode,focusIdle,onStartProj,dayBlocks,onSetDayBlock,onPostpone,onPatchHabit}){
   const today=dayKey();
   const isToday=day===today;
   const RECENT_DAYS=3; // solo se consideran "atrasadas" las de los últimos 3 días; lo más viejo se oculta
@@ -13080,6 +13086,8 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
   const[trayQ,setTrayQ]=useState('');          // buscador de la bandeja (cuentas → fases → tareas)
   const[trayOpen,setTrayOpen]=useState({});    // qué cuentas/fases están desplegadas en la bandeja
   const trayDrag=useRef(null);                 // lo que se está arrastrando desde la bandeja
+  const[fixOpen,setFixOpen]=useState(false);   // sección «Rutina: hábitos para fijar»
+  const[fixDur,setFixDur]=useState({});        // duración elegida por hábito (min)
   const[gFull,setGFull]=useState(true);      // true = 7:00 a 21:00 (por defecto); false = ajustar el horario a mi día
   const gref=useRef(null);
   const gdrag=useRef(null);
@@ -13635,11 +13643,52 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
         e('span',{className:'dl-tr-n'},i.name))));
     });
   });
+  // ── Rutina: los hábitos de este día que aún no son bloque fijo. Se fijan a su hora; si esa hora está ocupada, al próximo hueco libre ──
+  const fixOcc=[...fixedBlocks.map(f=>({s:f.s,e:f.e})),...Object.keys(dayB).map(k=>({s:dayB[k].s,e:dayB[k].e}))];
+  const placeAt=(occ,s0,dur)=>{
+    const fits=t=>t>=G_FULL0*60&&t+dur<=G_FULL1*60&&!occ.some(o=>t<o.e&&t+dur>o.s);
+    if(fits(s0))return s0;
+    const starts=[...new Set([G_FULL0*60,...occ.map(o=>o.e)])].sort((x,y)=>x-y);
+    const after=starts.find(c=>c>=s0&&fits(c));
+    return after!=null?after:starts.find(c=>fits(c));
+  };
+  const fixCands=(habits||[]).filter(h=>{
+    if(h.fixed||!h.time)return false;
+    if(!habitOccursOn(h,dateFromDayKey(day)))return false;
+    const pj=projects.find(x=>x.id===h.projectId);
+    return !(pj&&pj.status==='archived');
+  }).sort((x,y)=>String(x.time).localeCompare(String(y.time)));
+  function fixHabit(h,occ){
+    const dur=Number(fixDur[h.id])||30;
+    const t=placeAt(occ,toMin(h.time),dur);
+    if(t==null){gSay('No hay espacio libre para «'+h.name+'».');return null;}
+    onPatchHabit&&onPatchHabit(h.id,{fixed:true,durMin:dur,time:fmtMin(t)});
+    return{s:t,e:t+dur};
+  }
+  function fixAll(){const occ=fixOcc.slice();fixCands.forEach(h=>{const r=fixHabit(h,occ);if(r)occ.push(r);});}
+  const fixSection=fixCands.length>0&&onPatchHabit&&e('div',{className:'dl-fx-sec'},
+    e('div',{className:'dl-fx-h',onClick:()=>setFixOpen(v=>!v)},e('span',{className:'dl-tr-tw'},fixOpen?'▾':'▸'),'Rutina: hábitos para fijar · '+fixCands.length),
+    fixOpen&&e(React.Fragment,null,
+      e('div',{className:'dl-tr-h'},'Se fijan con candado a su hora. Si esa hora está ocupada, pasan al próximo hueco libre.'),
+      fixCands.map(h=>{
+        const dur=Number(fixDur[h.id])||30,t=placeAt(fixOcc,toMin(h.time),dur),moved=t!=null&&t!==toMin(h.time);
+        return e('div',{key:'fx'+h.id,className:'dl-fx-r'},
+          e('span',{className:'dl-fx-t'},t==null?'—':fmtMin(t)),
+          e('span',{className:'dl-tr-n',title:h.name},h.name),
+          moved&&e('span',{className:'dl-tr-c',title:'Su hora ('+h.time+') está ocupada'},'se mueve'),
+          e('select',{className:'dl-fx-d',value:dur,onChange:ev=>setFixDur(pv=>({...pv,[h.id]:Number(ev.target.value)}))},[15,30,45,60,90].map(m=>e('option',{key:m,value:m},m+' min'))),
+          e('button',{className:'dl-g-btn',disabled:t==null,onClick:()=>{playUI('click');fixHabit(h,fixOcc);}},'Fijar')
+        );
+      }),
+      e('button',{className:'dl-g-btn',style:{marginTop:6},onClick:()=>{playUI('click');fixAll();}},'Fijar todos')
+    )
+  );
   const tray=e(React.Fragment,null,
     e('input',{className:'finput dl-tr-q',placeholder:'Buscar cuenta, fase o tarea…',value:trayQ,onChange:ev=>setTrayQ(ev.target.value)}),
     e('div',{className:'dl-tr-h'},'Arrastra una cuenta, una fase o una tarea a la grilla. Toca un bloque para ver y ajustar sus tareas.'),
     trayNodes,
-    trayNodes.length===0&&e('div',{className:'dl-hint'},tq?'Nada coincide con esa búsqueda.':(gAccounts.some(a=>gPend(a)>0)?'Todo lo pendiente ya está en un bloque.':'Nada pendiente para este día.'))
+    trayNodes.length===0&&e('div',{className:'dl-hint'},tq?'Nada coincide con esa búsqueda.':(gAccounts.some(a=>gPend(a)>0)?'Todo lo pendiente ya está en un bloque.':'Nada pendiente para este día.')),
+    fixSection
   );
 
   // ── Detalle del bloque elegido ──
@@ -13708,10 +13757,18 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
 
   const plan=showPlan?computePlan():null;
   const overloaded=loadToday>cap;
+  // «Iniciar enfoque» sigue al bloque que tocaste en el horario: sin bloque elegido no hay botón
+  const focusEl=focusIdle
+    ?e('div',{className:'dl-focus'},
+        e('span',{className:'dl-focus-dot'}),
+        e('span',{className:'dl-focus-n'},'Sin sesión activa'),
+        bk&&bAcc&&onStartProj&&e('button',{className:'dl-focus-go',onClick:()=>{playUI('click');onStartProj(bAcc.proj.id);},title:'Iniciar un enfoque con '+bAcc.proj.name},'▶ Iniciar enfoque · '+bAcc.proj.name)
+      )
+    :focusNode;
   return e('div',{className:'dl-wrap'},
     e('div',{className:'dl-head'},
       e('span',{className:'dl-title'},isToday?'Tu día':'Ese día'),
-      focusNode
+      focusEl
     ),
     showPool&&pool,
     e('div',{className:'dl-cols one'},gridView),
@@ -13761,7 +13818,7 @@ function HomeResumen(props){
     realBlocks,liveBlock,tick,selectedDay,setSelectedDay,
     tState,activeSess,activeProj,activeTask,workElapsed,todayTotal,
     onPauseTimer,onStopTimer,onQuickToggleTask,
-    onToggleSub,onSetSubTime,onToggleReminder,onSetReminderTime,onSetHabitTime,onApplyPlan,dayBlocks,onSetDayBlock,onPostpone,
+    onToggleSub,onSetSubTime,onToggleReminder,onSetReminderTime,onSetHabitTime,onPatchHabit,onApplyPlan,dayBlocks,onSetDayBlock,onPostpone,
     onOpenProject,onStartProj,onUpdateSystem,onToggleHabitLog,
     blocks,onEditBlock,onNewBlock,onNewProject,onSetPriority,
     onArchiveProject,onUnarchiveProject,showArchived,setShowArchived,
@@ -13918,11 +13975,7 @@ function HomeResumen(props){
         e('button',{className:'dl-focus-b',onClick:onPauseTimer,title:tState==='paused'?'Reanudar':'Pausar'},tState==='paused'?'▶':'❚❚'),
         e('button',{className:'dl-focus-b',onClick:onStopTimer,title:'Terminar la sesión'},'■')
       )
-    :e('div',{className:'dl-focus'},
-        e('span',{className:'dl-focus-dot'}),
-        e('span',{className:'dl-focus-n'},'Sin sesión activa'),
-        recentProjects[0]&&e('button',{className:'dl-focus-go',onClick:()=>onStartProj(recentProjects[0].proj.id),title:'Iniciar un enfoque con '+recentProjects[0].proj.name},'▶ Iniciar enfoque · '+recentProjects[0].proj.name)
-      );
+    :null; // en reposo lo dibuja «Tu día» según el bloque elegido
   const heroNode=e('div',{className:'bento-blk bento-hero'},
           tState!=='idle'&&activeSess
             ?e(React.Fragment,null,
@@ -13987,7 +14040,7 @@ function HomeResumen(props){
       )
     ),
     e('div',{className:'dash-body'},
-      focusMode&&e(HomeDayLine,{day:selectedDay,projects,tasks,habits,reminders,onToggleSub,onSetSubTime,onToggleReminder,onSetReminderTime,onSetHabitTime,onToggleHabitLog,onOpenProject,onApplyPlan,focusNode,onStartProj,dayBlocks,onSetDayBlock,onPostpone}),
+      focusMode&&e(HomeDayLine,{day:selectedDay,projects,tasks,habits,reminders,onToggleSub,onSetSubTime,onToggleReminder,onSetReminderTime,onSetHabitTime,onToggleHabitLog,onOpenProject,onApplyPlan,focusNode,focusIdle:!(tState!=='idle'&&activeSess),onStartProj,dayBlocks,onSetDayBlock,onPostpone,onPatchHabit}),
       !focusMode&&e(React.Fragment,null,
       e('div',{className:'bento-row'},
 
