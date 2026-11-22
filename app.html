@@ -13605,18 +13605,20 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
   // ── Bandeja: cuentas → fases → tareas (se arrastra cualquier nivel a la grilla) ──
   const grpKeyOf=i=>i.type==='sub'?(i.t.name+' · '+i.st.name):(i.type==='rem'?'Recordatorios':'Hábitos');
   const tq=trayQ.trim().toLowerCase();
-  const assigned=new Set();Object.keys(dayB).forEach(k=>{const bl=dayB[k];if(Array.isArray(bl.k))bl.k.forEach(x=>assigned.add(x));});
+  // lo que ya está en un bloque (tareas elegidas, o toda la cuenta si es un bloque antiguo) no se muestra en la bandeja
+  const assigned=new Set();
+  Object.keys(dayB).forEach(k=>{const bl=dayB[k];if(Array.isArray(bl.k))bl.k.forEach(x=>assigned.add(x));else{const ac=accMap.get(bProj(k));if(ac)ac.list.forEach(i=>assigned.add(i.k));}});
   const trayEnd=()=>{trayDrag.current=null;gGhostOff();};
   const trayNodes=[];
   gAccounts.forEach(a=>{
-    const pend=a.list.filter(i=>!i.done&&!(i.type==='hab'&&i.h&&i.h.fixed)); // la rutina fija ya está en la grilla
+    const pend=a.list.filter(i=>!i.done&&!assigned.has(i.k)&&!(i.type==='hab'&&i.h&&i.h.fixed)); // la rutina fija ya está en la grilla
     if(!pend.length)return;
     const groups=new Map();pend.forEach(i=>{const g=grpKeyOf(i);if(!groups.has(g))groups.set(g,[]);groups.get(g).push(i);});
     const nameHit=!tq||String(a.proj.name).toLowerCase().includes(tq);
     const shownG=[...groups.entries()].map(([g,list])=>[g,list.filter(i=>!tq||nameHit||g.toLowerCase().includes(tq)||String(i.name).toLowerCase().includes(tq))]).filter(x=>x[1].length);
     if(!shownG.length)return;
     const aOpen=tq?true:!!trayOpen[a.key];
-    trayNodes.push(e('div',{key:'a'+a.key,className:'dl-tr-a',draggable:true,title:'Arrastra la cuenta a la grilla',onDragStart:ev=>trayStart(ev,{projId:a.key,keys:null,len:60}),onDragEnd:trayEnd},
+    trayNodes.push(e('div',{key:'a'+a.key,className:'dl-tr-a',draggable:true,title:'Arrastra la cuenta a la grilla',onDragStart:ev=>trayStart(ev,{projId:a.key,keys:pend.map(i=>i.k),len:60}),onDragEnd:trayEnd},
       e('span',{className:'dl-tr-gp'},'⠿'),
       e('span',{className:'dl-tr-tw',onClick:()=>setTrayOpen(pv=>({...pv,[a.key]:!pv[a.key]}))},aOpen?'▾':'▸'),
       e('span',{className:'dl-tr-n'},a.proj.name),
@@ -13628,17 +13630,16 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
         e('span',{className:'dl-tr-tw',onClick:()=>setTrayOpen(pv=>({...pv,[gk]:!pv[gk]}))},gOpen?'▾':'▸'),
         e('span',{className:'dl-tr-n'},g),
         e('span',{className:'dl-tr-c'},list.length)));
-      if(gOpen)list.forEach(i=>trayNodes.push(e('div',{key:'t'+i.k,className:'dl-tr-t'+(assigned.has(i.k)?' as':''),draggable:true,title:'Arrastra la tarea a la grilla',onDragStart:ev=>trayStart(ev,{projId:a.key,keys:[i.k],len:60}),onDragEnd:trayEnd},
+      if(gOpen)list.forEach(i=>trayNodes.push(e('div',{key:'t'+i.k,className:'dl-tr-t',draggable:true,title:'Arrastra la tarea a la grilla',onDragStart:ev=>trayStart(ev,{projId:a.key,keys:[i.k],len:60}),onDragEnd:trayEnd},
         e('span',{className:'dl-tr-gp'},'⠿'),
-        e('span',{className:'dl-tr-n'},i.name),
-        assigned.has(i.k)&&e('span',{className:'dl-tr-as'},'en bloque'))));
+        e('span',{className:'dl-tr-n'},i.name))));
     });
   });
   const tray=e(React.Fragment,null,
     e('input',{className:'finput dl-tr-q',placeholder:'Buscar cuenta, fase o tarea…',value:trayQ,onChange:ev=>setTrayQ(ev.target.value)}),
     e('div',{className:'dl-tr-h'},'Arrastra una cuenta, una fase o una tarea a la grilla. Toca un bloque para ver y ajustar sus tareas.'),
     trayNodes,
-    trayNodes.length===0&&e('div',{className:'dl-hint'},tq?'Nada coincide con esa búsqueda.':'Nada pendiente para este día.')
+    trayNodes.length===0&&e('div',{className:'dl-hint'},tq?'Nada coincide con esa búsqueda.':(gAccounts.some(a=>gPend(a)>0)?'Todo lo pendiente ya está en un bloque.':'Nada pendiente para este día.'))
   );
 
   // ── Detalle del bloque elegido ──
@@ -13646,7 +13647,7 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
   const bAcc=selKeyG?accMap.get(bProj(selKeyG)):null;
   const bIts=selKeyG?bItems(selKeyG):[];
   const bSpec=!!bk&&Array.isArray(bk.k);
-  const bOthers=bSpec&&bAcc?bAcc.list.filter(i=>!i.done&&!bk.k.includes(i.k)):[];
+  const bOthers=bSpec&&bAcc?bAcc.list.filter(i=>!i.done&&!bk.k.includes(i.k)&&!assigned.has(i.k)):[];
   const bPend=bIts.filter(i=>!i.done).length;
   const setBk=ks=>onSetDayBlock(day,selKeyG,{...bk,k:ks});
   const gPanel=e('div',{className:'dl-g-panel'},
@@ -13710,23 +13711,10 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
   return e('div',{className:'dl-wrap'},
     e('div',{className:'dl-head'},
       e('span',{className:'dl-title'},isToday?'Tu día':'Ese día'),
-      e('span',{className:'dl-count'},total===0?'sin pendientes':(total-doneN)+' pendientes · '+doneN+' hechos'),
-      e('span',{className:'dl-cap'+(overloaded?' over':''),title:'Tareas de fase pendientes hoy frente a tu tope diario (se cambia en «Planificar mi día»)'},loadToday+' / '+cap+' hoy'),
-      e('button',{className:'btn btn-primary dl-plan-btn',onClick:()=>{playUI('click');setShowPlan(true);}},'Planificar mi día'),
-      e('div',{className:'dl-vsw',title:'Cambiar cómo se ve tu día'},
-        e('button',{className:viewMode==='grid'?'on':'',onClick:()=>{playUI('click');setViewMode('grid');}},'Horario'),
-        e('button',{className:viewMode==='blocks'?'on':'',onClick:()=>{playUI('click');setViewMode('blocks');}},'Bloques'),
-        e('button',{className:viewMode==='lista'?'on':'',onClick:()=>{playUI('click');setViewMode('lista');}},'Lista')
-      ),
-      e('button',{className:'dl-poolpill'+(showPool?' on':'')+(overPool?' over':''),onClick:()=>{playUI('click');setShowPool(v=>!v);},
-        onDragOver:ev=>{if(dragRef.current&&dragRef.current.type==='sub'){ev.preventDefault();setOverPool(true);}},
-        onDragLeave:()=>setOverPool(false),
-        onDrop:ev=>{ev.preventDefault();dropOnPool();},
-        title:'Tareas y avisos de hoy que aún no tienen hora. También puedes soltar aquí una tarea para quitarle la hora.'},'Por agendar · '+poolN),
       focusNode
     ),
     showPool&&pool,
-    e('div',{className:'dl-cols one'},viewMode==='lista'?listView:(viewMode==='grid'?gridView:blocksView)),
+    e('div',{className:'dl-cols one'},gridView),
     showPlan&&plan&&e('div',{className:'overlay',onClick:ev=>{if(ev.target===ev.currentTarget)setShowPlan(false);}},
       e('div',{className:'modal',style:{width:520,maxHeight:'88vh'}},
         e('div',{className:'modal-head'},e('div',{className:'modal-title'},'Planificar '+(isToday?'mi día':'ese día')),e('button',{className:'modal-x',onClick:()=>setShowPlan(false)},'✕')),
