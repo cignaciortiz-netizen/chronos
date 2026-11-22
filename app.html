@@ -14244,7 +14244,7 @@ function SobrioTodayPanel({tasks,day,onUpdateTaskSteps,onOpen}){
 // Una barra por proyecto activo de ESTA cuenta, con su avance dentro de la barra. Eje con fechas: el día del mes de
 // cada lunes, el mes arriba, una marca por día, "hoy" con su fecha y las fechas de inicio y fin junto a cada barra.
 // Sin conteos, sin leyendas y sin marcas de fecha límite. Clic en una barra abre las fases del proyecto.
-function ProjectsTimeline({tasks,onOpen,activeTaskId,onPlay,onFinish,onCycleTaskStatus,onDeleteTask,onSetPriority}){
+function ProjectsTimeline({tasks,onOpen,activeTaskId,onPlay,onFinish,onCycleTaskStatus,onDeleteTask,onSetPriority,onAdd,addTitle}){
   const DAY=86400000;
   const toTs=k=>new Date(k+'T00:00:00').getTime();
   const todayK=dayKey(),T=toTs(todayK);
@@ -14263,7 +14263,6 @@ function ProjectsTimeline({tasks,onOpen,activeTaskId,onPlay,onFinish,onCycleTask
     (t.steps||[]).forEach(st=>{const sb=st.subtasks||[];if(sb.length){sb.forEach(x=>{uT++;if(x.done||st.done)uD++;});}else{uT++;if(st.done)uD++;}});
     rows.push({t,s:toTs(ks[0]),e:toTs(ks[ks.length-1])+DAY,pct:uT?uD/uT*100:0,uD,uT});
   });
-  if(!rows.length&&!nodate.length)return null;
   rows.sort((a,b)=>a.s-b.s);
   // ventana: desde 2 semanas antes de hoy, con el número de semanas elegido
   const w0=T-14*DAY,w1=w0+weeks*7*DAY,span=w1-w0,days=Math.round(span/DAY);
@@ -14296,11 +14295,13 @@ function ProjectsTimeline({tasks,onOpen,activeTaskId,onPlay,onFinish,onCycleTask
   return e('div',{className:'dash-panel pl-panel'},
     e('div',{className:'dash-panel-hdr'},
       e('span',{className:'dash-panel-title'},'Proyectos'),
+      onAdd&&e('button',{className:'ghost-btn',onClick:onAdd,title:addTitle||'Añadir'},'＋'),
       e('span',{className:'pl-act'},active+(active===1?' activo':' activos')),
       e('div',{className:'pl-zoom',title:'Semanas visibles'},[6,10,20].map(w=>e('button',{key:w,className:weeks===w?'on':'',onClick:()=>{playUI('click');setWeeks(w);}},w)),e('span',null,'sem'))
     ),
     e('div',{className:'pl-body'},
-      e('div',{className:'pl-axw'},axis,e('span',{className:'pl-tdy',style:{left:pc(T)+'%'}},'hoy '+new Date(T).getDate())),
+      !rows.length&&!nodate.length&&e('div',{className:'empty'},'Sin proyectos aún.'),
+      (rows.length>0||nodate.length>0)&&e('div',{className:'pl-axw'},axis,e('span',{className:'pl-tdy',style:{left:pc(T)+'%'}},'hoy '+new Date(T).getDate())),
       rows.map(r=>{
         const l=pc(Math.max(r.s,w0)),rr=pc(Math.min(r.e,w1)),w=Math.max(1.2,rr-l);
         const showS=r.s>=w0&&l>7,showE=r.e<=w1&&rr<93;
@@ -14699,18 +14700,7 @@ function ProjectDashboard(props){
         e(StatCard,{icon:'habit',color:'#2fb87a',label:'Hábitos',value:`${pHabits.filter(h=>(h.log||[]).includes(selectedDay)).length} / ${pHabits.length||0}`,sub:pHabits.length?Math.round(pHabits.filter(h=>(h.log||[]).includes(selectedDay)).length/pHabits.length*100)+'% completados':'Sin hábitos',progress:{value:pHabits.filter(h=>(h.log||[]).includes(selectedDay)).length,max:pHabits.length||1},custom:statCfg.habitos,onChangeCustom:(icon,color)=>setStatCustom('habitos',icon,color),onResetCustom:statCfg.habitos?()=>resetStatCustom('habitos'):null})
       ),
       e('div',{className:'dash-top-row'},
-        e('div',{className:'dash-panel'},
-          e('div',{className:'dash-panel-hdr'},
-            e(EditableLabel,{value:labels.tareas,onSave:v=>renameLabel('tareas',v)}),
-            e('button',{className:'ghost-btn',onClick:openAddTask,title:'Añadir '+taskNoun},'＋'),
-            e(SortMenuButton,{value:sortModes.tareas,onChange:m=>setSortMode('tareas',m),title:'Ordenar tareas'}),
-            null
-          ),
-          e('div',{className:'dash-panel-body'},
-            pendingTasks.length===0&&e('div',{className:'empty'},'Sin tareas pendientes.'),
-            pendingTasks.slice(0,6).map(t=>e(TaskRow,{key:t.id,t,onCycleTaskStatus,onDeleteTask,isActive:isRunningHere&&activeSess.taskId===t.id,onPlay:onPlayTask,onFinish:onFinishTask,onOpenSteps:setStepsForTask,icon:project.icon,color:project.color,onSetPriority:(id,p)=>onUpdateTask(id,{priority:p})}))
-          )
-        ),
+        e(ProjectsTimeline,{tasks:tasks.filter(t=>t.projectId===project.id),onOpen:setStepsForTask,activeTaskId:isRunningHere&&activeSess?activeSess.taskId:null,onPlay:onPlayTask,onFinish:onFinishTask,onCycleTaskStatus,onDeleteTask,onSetPriority:(id,pr)=>onUpdateTask(id,{priority:pr}),onAdd:openAddTask,addTitle:'Añadir '+taskNoun}),
         e(SobrioTodayPanel,{tasks:pendingTasks,day:selectedDay,onUpdateTaskSteps,onOpen:setStepsForTask}),
         e(QuickNotesPanel,{notes,onAddNote,onDeleteNote,onToggleNoteDone,onSetNoteReminder,onEditNoteText,onOpenAll:()=>setTab('notas')}),
         e('div',{className:'dash-panel habitos-mini-panel'},
@@ -14752,7 +14742,6 @@ function ProjectDashboard(props){
           )
         )
       ),
-      e(ProjectsTimeline,{tasks:tasks.filter(t=>t.projectId===project.id),onOpen:setStepsForTask,activeTaskId:isRunningHere&&activeSess?activeSess.taskId:null,onPlay:onPlayTask,onFinish:onFinishTask,onCycleTaskStatus,onDeleteTask,onSetPriority:(id,pr)=>onUpdateTask(id,{priority:pr})}),
     )),
 
     tab==='tareas'&&e('div',{className:'dash-body'},
