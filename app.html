@@ -629,7 +629,7 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .pl-zoom button.on{background:var(--bg4);color:var(--text1)}
 .pl-zoom span{font-size:10px;color:var(--text4);margin-left:2px}
 .pl-body{padding:4px 16px 14px}
-.pl-axw{position:relative;height:44px;margin-left:160px;margin-right:96px}
+.pl-axw{position:relative;height:44px;margin-left:290px;margin-right:34px}
 .pl-mon{position:absolute;top:0;font:600 9.5px 'Inter',sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--text2);white-space:nowrap}
 .pl-lb{position:absolute;top:15px;font:500 10px 'JetBrains Mono',monospace;color:var(--text2);white-space:nowrap;transform:translateX(-50%)}
 .pl-tk{position:absolute;bottom:0;width:1px;height:5px;background:#ffffff22}
@@ -637,9 +637,10 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .pl-tk.m{height:13px;background:#ffffff66}
 .pl-tdy{position:absolute;top:11px;transform:translateX(-50%);background:var(--accent);color:#231703;border-radius:20px;padding:2px 8px;font:600 10px 'JetBrains Mono',monospace;white-space:nowrap;z-index:3}
 .pl-row{display:flex;align-items:center;height:30px;cursor:pointer}
-.pl-nm{width:160px;flex-shrink:0;padding-right:10px;font-size:11.5px;color:var(--text1);display:flex;align-items:center;gap:7px;min-width:0;box-sizing:border-box}
-.pl-nmt{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.pl-acts{display:flex;align-items:center;gap:8px;width:96px;flex-shrink:0;justify-content:flex-end}
+.pl-nm{width:290px;flex-shrink:0;padding-right:14px;font-size:11.5px;color:var(--text1);display:flex;align-items:center;gap:7px;min-width:0;box-sizing:border-box}
+.pl-nmt{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pl-inl{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.pl-acts{display:flex;align-items:center;width:34px;flex-shrink:0;justify-content:flex-end}
 .pl-acts .rem-del{opacity:.55}
 .pl-row:hover .pl-acts .rem-del{opacity:1}
 .pl-nodate{position:absolute;left:0;top:8px;font-size:10.5px;color:var(--text4)}
@@ -14281,12 +14282,15 @@ function ProjectsTimeline({tasks,onOpen,activeTaskId,onPlay,onFinish,onCycleTask
   }
   axis.push(e('span',{key:'m0',className:'pl-mon',style:{left:0}},MONTHS_SHORT[new Date(w0).getMonth()]));
   const active=rows.filter(r=>r.s<=T+DAY&&r.e>=T).length;
-  // botones de cada proyecto: pomodoro, terminado y eliminar (los mismos de la lista de proyectos)
-  const plActs=t=>e('span',{className:'pl-acts',onClick:ev=>ev.stopPropagation()},
+  // junto al nombre: bandera de prioridad, pomodoro y terminado; la X queda a la derecha de la fila
+  const plInl=t=>e('span',{className:'pl-inl',onClick:ev=>ev.stopPropagation()},
+    onSetPriority&&e(TaskFlag,{t,onSetPriority}),
     activeTaskId===t.id
       ?e('button',{className:'task-play-btn stop',onClick:()=>{playUI('click');onFinish&&onFinish();},title:'Finalizar sesión'},e(StopIcon,null))
       :e('button',{className:'task-play-btn',onClick:()=>{playUI('click');onPlay&&onPlay(t.id);},title:'Iniciar Pomodoro'},e(PlayIcon,null)),
-    e('div',{className:'task-check'+(t.status==='inprog'?' inprog':''),onClick:()=>{playUI('click');onCycleTaskStatus&&onCycleTaskStatus(t.id);},title:'Marcar como hecho'}),
+    e('div',{className:'task-check'+(t.status==='inprog'?' inprog':''),onClick:()=>{playUI('click');onCycleTaskStatus&&onCycleTaskStatus(t.id);},title:'Marcar como hecho'})
+  );
+  const plActs=t=>e('span',{className:'pl-acts',onClick:ev=>ev.stopPropagation()},
     e('button',{className:'rem-del',onClick:()=>{playUI('click');onDeleteTask&&onDeleteTask(t.id);},title:'Eliminar'},'✕')
   );
   return e('div',{className:'dash-panel pl-panel'},
@@ -14301,7 +14305,7 @@ function ProjectsTimeline({tasks,onOpen,activeTaskId,onPlay,onFinish,onCycleTask
         const l=pc(Math.max(r.s,w0)),rr=pc(Math.min(r.e,w1)),w=Math.max(1.2,rr-l);
         const showS=r.s>=w0&&l>7,showE=r.e<=w1&&rr<93;
         return e('div',{key:r.t.id,className:'pl-row',onClick:()=>{playUI('click');onOpen&&onOpen(r.t);},title:r.t.name+' · '+fd(r.s)+' → '+fd(r.e-DAY)+' · '+Math.round(r.pct)+'% ('+r.uD+' de '+r.uT+' tareas)'},
-          e('span',{className:'pl-nm'},onSetPriority&&e(TaskFlag,{t:r.t,onSetPriority}),e('span',{className:'pl-nmt'},r.t.name)),
+          e('span',{className:'pl-nm'},e('span',{className:'pl-nmt'},r.t.name),plInl(r.t)),
           e('span',{className:'pl-tr'},
             we,gl,
             e('span',{className:'pl-bar',style:{left:l+'%',width:w+'%'}},e('i',{style:{width:r.pct+'%'}})),
@@ -14313,7 +14317,7 @@ function ProjectsTimeline({tasks,onOpen,activeTaskId,onPlay,onFinish,onCycleTask
         );
       }),
       nodate.map(t=>e('div',{key:t.id,className:'pl-row',onClick:()=>{playUI('click');onOpen&&onOpen(t);},title:t.name+' · sin fechas'},
-        e('span',{className:'pl-nm'},onSetPriority&&e(TaskFlag,{t,onSetPriority}),e('span',{className:'pl-nmt'},t.name)),
+        e('span',{className:'pl-nm'},e('span',{className:'pl-nmt'},t.name),plInl(t)),
         e('span',{className:'pl-tr'},e('span',{className:'pl-nodate'},'sin fechas')),
         plActs(t)
       ))
