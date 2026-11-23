@@ -13365,6 +13365,8 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
   (habits||[]).forEach(h=>{
     if(loteHabitSet.has(h.id))return;
     if(!habitOccursOn(h,dateFromDayKey(day)))return;
+    // un hábito fijo que ya se ve con candado en el horario no se repite como pendiente de su cuenta
+    if(h.fixed&&h.time){const st0=toMin(h.time);if(st0<21*60&&st0+(Number(h.durMin)||30)>7*60)return;}
     const proj=projects.find(x=>x.id===h.projectId);
     if(proj&&proj.status==='archived')return;
     items.push({k:'h'+h.id,type:'hab',h,proj,name:h.name,meta:'Hábito',time:h.time||null,done:(h.log||[]).includes(day),late:false});
