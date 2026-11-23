@@ -937,6 +937,10 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .dl-g-rs{position:absolute;left:0;right:0;bottom:0;height:10px;cursor:ns-resize}
 .dl-g-rs::after{content:"";position:absolute;left:50%;bottom:3px;width:26px;height:3px;margin-left:-13px;border-radius:3px;background:#ffffff40}
 .dl-g-prev{position:absolute;left:54px;right:10px;border-radius:10px;border:1px dashed var(--accent);background:var(--accent-bg);pointer-events:none;padding:5px 10px;font:500 10px 'JetBrains Mono',monospace;color:var(--accent2)}
+.dl-g-blk.dl-g-lote{border-color:var(--accent-border);box-shadow:inset 3px 0 0 var(--accent)}
+.dl-g-blk.dl-g-lote.sel{border-color:var(--accent)}
+.dl-lt-bar{height:4px;border-radius:4px;background:var(--bg4);overflow:hidden;margin:2px 0 8px}
+.dl-lt-bar i{display:block;height:100%;background:var(--accent)}
 .dl-g-ghost{position:absolute;left:54px;right:10px;border-radius:10px;border:1.5px dashed var(--accent);background:var(--accent-bg);pointer-events:none;z-index:5}
 .dl-fx-sec{margin-top:12px;padding-top:8px;border-top:1px solid var(--border)}
 .dl-fx-h{font-size:11.5px;color:var(--text2);cursor:pointer;display:flex;align-items:center;gap:6px;user-select:none}
@@ -3776,6 +3780,9 @@ function App(){
   // Bloques de tiempo por cuenta y por día: { 'YYYY-MM-DD': { <idCuenta>: {s:minutoInicio, e:minutoFin} } }
   const[dayBlocks,setDayBlocks]=useState(()=>load('chr4_dayblocks',{}));
   useEffect(()=>save('chr4_dayblocks',dayBlocks),[dayBlocks]);
+  // Lotes: grupos de hábitos que se hacen de corrido en un tramo fijo ({id,name,habitIds,s (min desde 0:00),dur (min),days (1=lun…7=dom)})
+  const[lotes,setLotes]=useState(()=>load('chr4_lotes',[]));
+  useEffect(()=>save('chr4_lotes',lotes),[lotes]);
   const[sessions,setSessions]=useState(()=>load('chr4_sess',INIT_SESSIONS));
   const[blocks,setBlocks]=useState(()=>load('chr4_blocks',INIT_BLOCKS));
   const[ctxs,setCtxs]=useState(()=>load('chr4_ctxs',INIT_CTXS));
@@ -4332,6 +4339,7 @@ function App(){
       if(remote.sysTemplates?.length) setSysTemplates(remote.sysTemplates);
       if(remote.subStatuses?.length){ setSubStatuses(remote.subStatuses); saveSubStatuses(remote.subStatuses); }
       if(remote.dayBlocks&&typeof remote.dayBlocks==='object'&&!Array.isArray(remote.dayBlocks)) setDayBlocks(remote.dayBlocks);
+      if(Array.isArray(remote.lotes)) setLotes(remote.lotes);
   }
   async function refreshFromRemote(notify){
     try{
@@ -4361,7 +4369,7 @@ function App(){
         let hasLocal=false;
         try{ hasLocal=!!localStorage.getItem('chr4_proj'); }catch(e){}
         if(hasLocal&&(await SB.remoteAt())===0){
-          await SB.push({projects,intenciones,tasks,blocks,habits,reminders,ctxs,systems,notes,panelLabels,panelVisibility,panelSortModes,templates,sysTemplates,subStatuses,dayBlocks},{force:true});
+          await SB.push({projects,intenciones,tasks,blocks,habits,reminders,ctxs,systems,notes,panelLabels,panelVisibility,panelSortModes,templates,sysTemplates,subStatuses,dayBlocks,lotes},{force:true});
           await SB.pushSessions(sessions);
           SB.markSynced();
         }
@@ -4372,7 +4380,7 @@ function App(){
           let rAt=0;
           try{ rAt=await SB.remoteAt(); }catch(e){}
           if(rAt<=dirtyAt){
-            await SB.push({projects,sessions,intenciones,tasks,blocks,habits,reminders,ctxs,systems,notes,panelLabels,panelVisibility,panelSortModes,templates,sysTemplates,subStatuses,dayBlocks},{force:true});
+            await SB.push({projects,sessions,intenciones,tasks,blocks,habits,reminders,ctxs,systems,notes,panelLabels,panelVisibility,panelSortModes,templates,sysTemplates,subStatuses,dayBlocks,lotes},{force:true});
             SB.markSynced();
           }
           // NO hacemos return: leemos igual para restaurar recordatorios
@@ -4458,7 +4466,7 @@ function App(){
     sbSyncRef.current=setTimeout(async()=>{
       setSbSyncing(true);
       try{
-        await SB.push({projects,intenciones,tasks,blocks,habits,reminders,ctxs,systems,notes,panelLabels,panelVisibility,panelSortModes,templates,sysTemplates,subStatuses,dayBlocks});
+        await SB.push({projects,intenciones,tasks,blocks,habits,reminders,ctxs,systems,notes,panelLabels,panelVisibility,panelSortModes,templates,sysTemplates,subStatuses,dayBlocks,lotes});
         SB.markSynced();
         sbFailStreakRef.current=0;
       }catch(e){
@@ -4475,7 +4483,7 @@ function App(){
       setSbSyncing(false);
     },backoff);
     return()=>clearTimeout(sbSyncRef.current);
-  },[projects,intenciones,tasks,blocks,habits,reminders,ctxs,systems,notes,panelLabels,panelVisibility,panelSortModes,templates,sysTemplates,subStatuses,dayBlocks,sbStatus]);
+  },[projects,intenciones,tasks,blocks,habits,reminders,ctxs,systems,notes,panelLabels,panelVisibility,panelSortModes,templates,sysTemplates,subStatuses,dayBlocks,lotes,sbStatus]);
 
   // Sesiones — efecto aparte, con su propio debounce y su propio backoff.
   // Solo se dispara cuando el historial de sesiones realmente cambia
@@ -4557,7 +4565,7 @@ function App(){
   // always sends fresh data, not a stale closure from when the listener was added
   const sbLatestRef=useRef(null);
   useEffect(()=>{
-    sbLatestRef.current={projects,sessions,intenciones,tasks,blocks,habits,reminders,ctxs,systems,notes,panelLabels,panelVisibility,panelSortModes,templates,sysTemplates,subStatuses,dayBlocks};
+    sbLatestRef.current={projects,sessions,intenciones,tasks,blocks,habits,reminders,ctxs,systems,notes,panelLabels,panelVisibility,panelSortModes,templates,sysTemplates,subStatuses,dayBlocks,lotes};
   });
   // Mirrors of activeSess/tState kept fresh every render (no dep array) so the
   // beforeunload flush and the periodic checkpoint below always see the real
@@ -5119,6 +5127,10 @@ function App(){
               });
               forceSync();
             },
+            lotes,
+            onSaveLote:l=>{setLotes(ls=>ls.some(x=>x.id===l.id)?ls.map(x=>x.id===l.id?l:x):[...ls,l]);forceSync();},
+            onPatchLote:(id,patch)=>{setLotes(ls=>ls.map(x=>x.id===id?{...x,...patch}:x));forceSync();},
+            onDeleteLote:id=>{setLotes(ls=>ls.filter(x=>x.id!==id));forceSync();},
             onPostpone:list=>{
               const subMap={},remMap={};
               (list||[]).forEach(u=>{if(u.type==='sub')(subMap[u.taskId]=subMap[u.taskId]||{})[u.subId]=u;else if(u.type==='rem')remMap[u.id]=u;});
@@ -5685,7 +5697,7 @@ function App(){
       onDisconnect:()=>{ SB.disconnect(); setSbStatus('disconnected'); },
       onManualSync:async()=>{
         setSbSyncing(true);
-        try{ await SB.push({projects,sessions,intenciones,tasks,blocks,habits,reminders,ctxs,systems,notes,panelLabels,panelVisibility,panelSortModes,templates,sysTemplates,subStatuses,dayBlocks},{force:true}); SB.markSynced(); showNotif('☁ Sincronizado ✓'); }
+        try{ await SB.push({projects,sessions,intenciones,tasks,blocks,habits,reminders,ctxs,systems,notes,panelLabels,panelVisibility,panelSortModes,templates,sysTemplates,subStatuses,dayBlocks,lotes},{force:true}); SB.markSynced(); showNotif('☁ Sincronizado ✓'); }
         catch(e){ console.warn(e); }
         setSbSyncing(false);
       },
@@ -13106,7 +13118,8 @@ function AreaChart({buckets,width=560,height=170}){
 // pueden tener una hora opcional (subtask.time 'HH:MM'); las que no la tienen
 // quedan abajo en "Sin hora" y se les asigna con un selector de hora.
 // ── Mi rutina fija: elegir qué hábitos son bloques fijos (hora y duración), o crear uno nuevo ──
-function FixedRoutineModal({habits,projects,onPatchHabit,onCreateHabit,onClose}){
+function nbHab(n){return n+(n===1?' hábito':' hábitos');}
+function FixedRoutineModal({habits,projects,onPatchHabit,onCreateHabit,lotes,onSaveLote,onDeleteLote,initLote,onClose}){
   const act=(projects||[]).filter(p=>p.status!=='archived');
   const pName=id=>((projects||[]).find(x=>x.id===id)||{}).name||'';
   const[nm,setNm]=useState('');
@@ -13115,7 +13128,87 @@ function FixedRoutineModal({habits,projects,onPatchHabit,onCreateHabit,onClose})
   const[du,setDu]=useState(60);
   const[dy,setDy]=useState('daily');
   const[err,setErr]=useState('');
-  const hs=(habits||[]).filter(h=>{const p=(projects||[]).find(x=>x.id===h.projectId);return !(p&&p.status==='archived');});
+  const hsAll=(habits||[]).filter(h=>{const p=(projects||[]).find(x=>x.id===h.projectId);return !(p&&p.status==='archived');});
+  const inLote=new Set();(lotes||[]).forEach(l=>(l.habitIds||[]).forEach(id=>inLote.add(id)));
+  const hs=hsAll.filter(h=>!inLote.has(h.id)); // los hábitos de un lote se manejan desde su lote
+  // ── Lotes: grupos de hábitos que se hacen de corrido; el tiempo se ajusta luego arrastrando en el horario ──
+  const pad2m=n=>String(n).padStart(2,'0');
+  const m2s=m=>pad2m(Math.floor(m/60)%24)+':'+pad2m(m%60);
+  const s2m=t=>{const a=String(t||'08:00').split(':').map(Number);return (a[0]||0)*60+(a[1]||0);};
+  const LDN=['L','M','X','J','V','S','D'];
+  const[lf,setLf]=useState(()=>{
+    const l=initLote&&(lotes||[]).find(x=>x.id===initLote);
+    return l?{id:l.id,name:l.name,habitIds:(l.habitIds||[]).slice(),s:m2s(l.s),days:(l.days||[]).slice(),dur:l.dur,open:false,q:'',err:''}:null;
+  });
+  const patchLf=o=>setLf(pv=>({...pv,...o}));
+  const lfDur=f=>f.id?f.dur:15*f.habitIds.length;
+  function loteConflict(f){
+    if(!f.habitIds.length)return null;
+    const s0=s2m(f.s),e0=s0+lfDur(f);
+    for(const l of (lotes||[])){
+      if(l.id===f.id)continue;
+      if(!(l.days||[]).some(x=>f.days.includes(x)))continue;
+      if(s0<l.s+l.dur&&e0>l.s)return l.name+' ('+m2s(l.s)+'–'+m2s(l.s+l.dur)+')';
+    }
+    for(const h of (habits||[])){
+      if(!h.fixed||!h.time||inLote.has(h.id))continue;
+      const hs0=s2m(h.time),he0=hs0+(Number(h.durMin)||30);
+      if(s0<he0&&e0>hs0)return h.name+' ('+h.time+')';
+    }
+    return null;
+  }
+  function saveLf(){
+    const f=lf;
+    if(!f.name.trim()){patchLf({err:'Ponle un nombre al lote.'});return;}
+    if(!f.habitIds.length){patchLf({err:'Elige al menos un hábito.'});return;}
+    if(!f.days.length){patchLf({err:'Elige al menos un día.'});return;}
+    if(loteConflict(f)){patchLf({err:'Choca con otra rutina. Cambia la hora.'});return;}
+    onSaveLote({id:f.id||uid(),name:f.name.trim(),habitIds:f.habitIds.slice(),s:s2m(f.s),dur:lfDur(f),days:f.days.slice().sort()});
+    setLf(null);
+  }
+  const lotesUI=e('div',null,
+    e('div',{style:{fontSize:11,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.5px',marginBottom:4}},'Lotes · '+((lotes||[]).length)),
+    (lotes||[]).length===0&&!lf&&e('div',{className:'dl-hint'},'Un lote junta hábitos parecidos (por ejemplo «Monitorear campañas» de todos tus clientes) para hacerlos de corrido en un solo bloque.'),
+    (lotes||[]).map(l=>e('div',{key:l.id,style:{display:'flex',alignItems:'center',gap:8,padding:'7px 0',borderTop:'1px solid var(--border)',fontSize:12.5}},
+      e('div',{style:{flex:1,minWidth:0}},
+        e('div',{style:{color:'var(--text0)'}},l.name),
+        e('div',{style:{fontSize:10.5,color:'var(--text4)'}},m2s(l.s)+'–'+m2s(l.s+l.dur)+' · '+(l.days||[]).map(d=>LDN[d-1]).join(' ')+' · '+nbHab((l.habitIds||[]).length))),
+      e('button',{className:'btn',style:{padding:'3px 10px',fontSize:11.5},onClick:()=>setLf({id:l.id,name:l.name,habitIds:(l.habitIds||[]).slice(),s:m2s(l.s),days:(l.days||[]).slice(),dur:l.dur,open:false,q:'',err:''})},'Editar'),
+      e('button',{className:'btn',style:{padding:'3px 10px',fontSize:11.5},onClick:()=>{if(window.confirm('¿Eliminar el lote «'+l.name+'»?'))onDeleteLote(l.id);}},'Eliminar'))),
+    !lf&&e('button',{className:'btn',style:{marginTop:8,padding:'4px 12px',fontSize:12},onClick:()=>setLf({name:'',habitIds:[],s:'08:00',days:[1,2,3,4,5],dur:0,open:false,q:'',err:''})},'+ Nuevo lote'),
+    lf&&(()=>{
+      const f=lf,ql=(f.q||'').toLowerCase(),c=loteConflict(f),d=lfDur(f),s0=s2m(f.s);
+      const toggleH=id=>setLf(pv=>({...pv,habitIds:pv.habitIds.includes(id)?pv.habitIds.filter(x=>x!==id):[...pv.habitIds,id],err:''}));
+      return e('div',{style:{border:'1px solid var(--border2)',borderRadius:'var(--r-md)',padding:'12px 14px',marginTop:8}},
+        e('input',{className:'finput',style:{fontSize:15},placeholder:'Nombre del lote, ej. Monitoreo de la mañana',value:f.name,autoFocus:true,onChange:ev=>patchLf({name:ev.target.value,err:''})}),
+        e('div',{style:{display:'flex',flexWrap:'wrap',gap:6,margin:'10px 0 4px',alignItems:'center'}},
+          f.habitIds.map(id=>{const h=hsAll.find(x=>x.id===id);if(!h)return null;const pj=(projects||[]).find(x=>x.id===h.projectId);
+            return e('span',{key:id,style:{display:'inline-flex',alignItems:'center',gap:6,borderRadius:20,padding:'3px 6px 3px 11px',fontSize:12,background:'var(--accent-bg)',color:'var(--accent2)',border:'1px solid var(--accent-border)'}},h.name+(pj?' · '+pj.name:''),
+              e('button',{style:{border:0,background:'none',color:'inherit',cursor:'pointer',padding:'0 3px'},onClick:()=>toggleH(id)},'✕'));}),
+          e('button',{style:{border:'1px dashed var(--border2)',background:'none',borderRadius:20,padding:'3px 12px',fontSize:12,color:'var(--text2)',cursor:'pointer'},onClick:()=>patchLf({open:!f.open})},f.open?'Cerrar':'+ Hábito')),
+        f.open&&e('div',{style:{border:'1px solid var(--border)',borderRadius:'var(--r-md)',padding:'8px 10px',margin:'8px 0'}},
+          e('input',{className:'finput',placeholder:'Buscar hábito o cuenta…',value:f.q||'',style:{marginBottom:4},onChange:ev=>patchLf({q:ev.target.value})}),
+          e('div',{style:{maxHeight:200,overflowY:'auto'}},
+            hsAll.filter(h=>{const pj=(projects||[]).find(x=>x.id===h.projectId);return !ql||((h.name||'')+(pj?pj.name:'')).toLowerCase().includes(ql);}).map(h=>{
+              const on=f.habitIds.includes(h.id),other=(lotes||[]).find(l=>l.id!==f.id&&(l.habitIds||[]).includes(h.id)),pj=(projects||[]).find(x=>x.id===h.projectId);
+              return e('div',{key:h.id,style:{display:'flex',alignItems:'center',gap:8,padding:'5px 2px',fontSize:12.5,cursor:other?'default':'pointer',opacity:other?.4:1},onClick:()=>{if(!other)toggleH(h.id);}},
+                e('span',{style:{width:15,height:15,borderRadius:4,border:'1.5px solid '+(on?'var(--accent)':'var(--text4)'),background:on?'var(--accent)':'transparent',color:'#1a0a02',fontSize:11,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}},on?'✓':''),
+                e('span',{style:{flex:1}},h.name),
+                e('span',{style:{fontSize:11,color:'var(--text4)'}},other?'en «'+other.name+'»':(pj?pj.name:'')));
+            }))),
+        e('div',{style:{display:'flex',alignItems:'center',gap:10,flexWrap:'wrap',marginTop:14,fontSize:12.5,color:'var(--text2)'}},
+          'Desde',e('input',{type:'time',style:{background:'var(--bg3)',border:'1px solid var(--border)',borderRadius:6,fontSize:11.5,color:'var(--text1)',padding:'3px 5px',fontFamily:"'JetBrains Mono',monospace"},value:f.s,onChange:ev=>patchLf({s:ev.target.value||f.s,err:''})}),
+          f.habitIds.length>0&&e('span',null,'→ hasta ',e('b',{style:{color:'var(--text0)',fontWeight:500}},m2s(s0+d)),' · '+(d>=60?(Math.floor(d/60)+' h'+(d%60?' '+(d%60)+' min':'')):d+' min'))),
+        f.habitIds.length>0&&!f.id&&e('div',{style:{fontSize:11,color:'var(--text4)',marginTop:4}},'Parte con 15 min por hábito. Luego ajusta el tiempo arrastrando el borde del lote en tu horario.'),
+        e('div',{style:{marginTop:12}},LDN.map((x,i)=>e('span',{key:i,onClick:()=>setLf(pv=>({...pv,days:pv.days.includes(i+1)?pv.days.filter(z=>z!==i+1):[...pv.days,i+1],err:''})),
+          style:{width:28,height:28,borderRadius:'50%',border:'1px solid '+(f.days.includes(i+1)?'var(--accent-border)':'var(--border)'),background:f.days.includes(i+1)?'var(--accent-bg)':'transparent',color:f.days.includes(i+1)?'var(--accent2)':'var(--text3)',display:'inline-flex',alignItems:'center',justifyContent:'center',fontSize:12,cursor:'pointer',marginRight:3}},x))),
+        c&&e('div',{style:{color:'var(--red,#e05555)',fontSize:11.5,marginTop:8}},'Choca con «'+c+'». Cambia la hora.'),
+        f.err&&e('div',{style:{color:'var(--red,#e05555)',fontSize:11.5,marginTop:8}},f.err),
+        e('div',{style:{display:'flex',gap:8,marginTop:14}},
+          e('button',{className:'btn btn-primary',style:{padding:'4px 14px'},onClick:saveLf},f.id?'Guardar cambios':('Confirmar'+(f.habitIds.length?' · '+m2s(s0)+'–'+m2s(s0+d):''))),
+          e('button',{className:'btn',style:{padding:'4px 14px'},onClick:()=>setLf(null)},'Cancelar')));
+    })()
+  );
   const fixed=hs.filter(h=>h.fixed).sort((a,b)=>String(a.time||'').localeCompare(String(b.time||'')));
   const other=hs.filter(h=>!h.fixed).sort((a,b)=>pName(a.projectId).localeCompare(pName(b.projectId))||String(a.name).localeCompare(String(b.name)));
   const DUR=[15,30,45,60,90,120,180];
@@ -13147,7 +13240,8 @@ function FixedRoutineModal({habits,projects,onPatchHabit,onCreateHabit,onClose})
         e('div',{style:{flex:1}},e('div',{className:'modal-title'},'Mi rutina fija'),e('div',{className:'modal-sub'},'Los hábitos fijos aparecen con candado en tu día, a su hora, todos los días que les toque.')),
         e('button',{className:'modal-x',onClick:onClose},'✕')),
       e('div',{className:'modal-body',style:{overflowY:'auto'}},
-        e('div',{style:{fontSize:11,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.5px',marginBottom:2}},'Fijos · '+fixed.length),
+        lotesUI,
+        e('div',{style:{fontSize:11,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.5px',margin:'18px 0 2px'}},'Fijos · '+fixed.length),
         fixed.length===0&&e('div',{className:'dl-hint'},'Todavía no tienes ninguno. Fija uno de tus hábitos de abajo o crea uno nuevo.'),
         fixed.map(h=>row(h,true)),
         e('div',{style:{fontSize:11,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.5px',margin:'16px 0 2px'}},'Tus otros hábitos · '+other.length),
@@ -13169,7 +13263,7 @@ function FixedRoutineModal({habits,projects,onPatchHabit,onCreateHabit,onClose})
   );
 }
 
-function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTime,onToggleReminder,onSetReminderTime,onSetHabitTime,onToggleHabitLog,onOpenProject,onApplyPlan,focusNode,focusIdle,onStartProj,dayBlocks,onSetDayBlock,onPostpone,onPatchHabit,onCreateHabit}){
+function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTime,onToggleReminder,onSetReminderTime,onSetHabitTime,onToggleHabitLog,onOpenProject,onApplyPlan,focusNode,focusIdle,onStartProj,dayBlocks,onSetDayBlock,onPostpone,onPatchHabit,onCreateHabit,lotes,onSaveLote,onPatchLote,onDeleteLote}){
   const today=dayKey();
   const isToday=day===today;
   const RECENT_DAYS=3; // solo se consideran "atrasadas" las de los últimos 3 días; lo más viejo se oculta
@@ -13195,6 +13289,7 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
   const[trayOpen,setTrayOpen]=useState({});    // qué cuentas/fases están desplegadas en la bandeja
   const trayDrag=useRef(null);                 // lo que se está arrastrando desde la bandeja
   const[showRoutine,setShowRoutine]=useState(false); // ventana «Mi rutina fija»
+  const[routineInit,setRoutineInit]=useState(null);  // id de un lote a editar al abrirla
   const[gFull,setGFull]=useState(true);      // true = 7:00 a 21:00 (por defecto); false = ajustar el horario a mi día
   const gref=useRef(null);
   const gdrag=useRef(null);
@@ -13242,7 +13337,10 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
     const d=new Date(r.dueAt);
     items.push({k:'r'+r.id,type:'rem',r,proj:rproj,name:r.title,meta:'Recordatorio',time:late?null:pad2(d.getHours())+':'+pad2(d.getMinutes()),done:!!r.done,late});
   });
+  const loteHabitSet=new Set();
+  (lotes||[]).forEach(l=>(l.habitIds||[]).forEach(id=>loteHabitSet.add(id))); // estos hábitos aparecen dentro de su lote, no sueltos
   (habits||[]).forEach(h=>{
+    if(loteHabitSet.has(h.id))return;
     if(!habitOccursOn(h,dateFromDayKey(day)))return;
     const proj=projects.find(x=>x.id===h.projectId);
     if(proj&&proj.status==='archived')return;
@@ -13589,11 +13687,22 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
   // ── Vista Horario: se le da un tramo de horas a cada CUENTA (no a cada tarea) ──
   // Se dibuja arrastrando sobre la grilla; el bloque se mueve y se estira. Lo que no alcanza se pospone a mañana.
   const G_FULL0=7,G_FULL1=21,G_SN=15;
-  const dayB=(dayBlocks&&dayBlocks[day])||{};
+  const dayBStored=(dayBlocks&&dayBlocks[day])||{};
+  // Los lotes que tocan este día entran al horario como bloques (se mueven y se estiran como cualquier otro y cambian el lote)
+  const dowN=((dateFromDayKey(day).getUTCDay()+6)%7)+1; // 1=lunes … 7=domingo
+  const loteB={};
+  (lotes||[]).forEach(l=>{
+    if(!(l.days||[]).includes(dowN))return;
+    const hs=(l.habitIds||[]).map(id=>(habits||[]).find(x=>x.id===id)).filter(h=>h&&habitOccursOn(h,dateFromDayKey(day)));
+    if(!hs.length)return;
+    loteB['L'+l.id]={s:l.s,e:Math.min(1440,l.s+l.dur),lote:l.id,n:l.name,hs};
+  });
+  const dayB={...dayBStored,...loteB};
   const bProj=k=>{const b=dayB[k];return (b&&b.p)||k;}; // cuenta de un bloque (los bloques antiguos usan la cuenta como id)
   // Rutina fija: hábitos marcados como «bloque fijo» que ocurren ese día. Quedan anclados (no se arrastran) y los bloques de cuentas no pueden pisarlos.
   const fixedBlocks=(habits||[]).filter(h=>{
     if(!h.fixed||!h.time)return false;
+    if(loteHabitSet.has(h.id))return false;
     if(!habitOccursOn(h,dateFromDayKey(day)))return false;
     const pj=projects.find(x=>x.id===h.projectId);
     return !(pj&&pj.status==='archived');
@@ -13653,7 +13762,8 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
     if(e2-dr.s<G_SN||gOverlap(dr.key,dr.s,e2))return;
     const cur=dayB[dr.key];
     if(cur&&cur.s===dr.s&&cur.e===e2){setGridSel(dr.key);return;}
-    onSetDayBlock(day,dr.key,{...cur,s:dr.s,e:e2}); // conserva la cuenta y las tareas del bloque
+    if(cur&&cur.lote){onPatchLote&&onPatchLote(cur.lote,{s:dr.s,dur:e2-dr.s});} // un lote: cambia el lote (vale para todos sus días)
+    else onSetDayBlock(day,dr.key,{...cur,s:dr.s,e:e2}); // conserva la cuenta y las tareas del bloque
     setGridSel(dr.key);
   }
   // ── arrastrar desde la bandeja (cuenta, fase o tarea) hasta la grilla ──
@@ -13691,7 +13801,7 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
   const freeG=[];{let c=G_H0*60;occ.forEach(o=>{if(o.s>c)freeG.push({s:c,e:o.s});c=Math.max(c,o.e);});if(c<G_H1*60)freeG.push({s:c,e:G_H1*60});}
   const freeShown=freeG.map(g=>isToday?{s:Math.max(g.s,nowMin),e:g.e}:g).filter(g=>g.e-g.s>=60);
   const hrs=m=>(Math.round(m/6)/10).toString().replace('.',',')+' h';
-  const slotsAll=[...fixedBlocks.map(f=>({n:f.name,s:f.s,e:f.e})),...Object.keys(dayB).map(k=>{const a=accMap.get(bProj(k));return{n:a?a.proj.name:'Cuenta',s:dayB[k].s,e:dayB[k].e};})].sort((a,b)=>a.s-b.s);
+  const slotsAll=[...fixedBlocks.map(f=>({n:f.name,s:f.s,e:f.e})),...Object.keys(dayB).map(k=>{const a=accMap.get(bProj(k));return{n:dayB[k].n||(a?a.proj.name:'Cuenta'),s:dayB[k].s,e:dayB[k].e};})].sort((a,b)=>a.s-b.s);
   const curSl=isToday?slotsAll.find(x=>x.s<=nowMin&&x.e>nowMin):null;
   const nxSl=isToday?slotsAll.find(x=>x.s>nowMin):null;
   const gridCol=e('div',{className:'dl-g-grid',ref:gref,style:{height:(G_H1-G_H0)*G_HP},onPointerDown:gDown,onPointerMove:gMove,onPointerUp:gUp,onPointerCancel:gUp,onDragOver:gOver,onDragLeave:gLeave,onDrop:gDrop},
@@ -13707,6 +13817,15 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
       e('div',{className:'dl-g-fxt'},e('div',{className:'dl-g-fxn'},f.name+(f.done?' ✓':'')),e('div',{className:'dl-g-fxm'},fmtMin(f.s)+' – '+fmtMin(f.e)))
     )),
     gBlocksShown.filter(b=>b.e>G_H0*60&&b.s<G_H1*60).map(b=>{
+      if(b.lote){
+        const hpL=(b.e-b.s)/60*G_HP-2,szL=hpL<18?' xs':(hpL<40?' sm':'');
+        const dnL=(b.hs||[]).filter(h=>(h.log||[]).includes(day)).length;
+        return e('div',{key:b.key,'data-gb':b.key,className:'dl-g-blk dl-g-lote'+szL+(selKeyG===b.key?' sel':''),title:b.n+' · '+nbHab((b.hs||[]).length)+' · '+fmtMin(b.s)+' – '+fmtMin(b.e),style:{top:(b.s-G_H0*60)/60*G_HP,height:Math.max(14,hpL)}},
+          e('div',{className:'dl-g-bn'},b.n+' · '+nbHab((b.hs||[]).length)),
+          e('div',{className:'dl-g-bt'},fmtMin(b.s)+' – '+fmtMin(b.e)+' · '+dnL+'/'+(b.hs||[]).length+' hechos'),
+          e('div',{className:'dl-g-rs','data-grs':b.key})
+        );
+      }
       const a=accMap.get(bProj(b.key));const nm=a?a.proj.name:'Cuenta';
       const its=bItems(b.key),pend=its.filter(i=>!i.done).length;
       const spec=Array.isArray(dayB[b.key].k);
@@ -13769,8 +13888,29 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
   const bOthers=bSpec&&bAcc?bAcc.list.filter(i=>!i.done&&!bk.k.includes(i.k)&&!assigned.has(i.k)):[];
   const bPend=bIts.filter(i=>!i.done).length;
   const setBk=ks=>onSetDayBlock(day,selKeyG,{...bk,k:ks});
+  const loteSel=bk&&bk.lote?(lotes||[]).find(x=>x.id===bk.lote):null;
+  const lotePanel=loteSel?(()=>{
+    const hs=bk.hs||[],dn=hs.filter(h=>(h.log||[]).includes(day)).length;
+    return e(React.Fragment,null,
+      e('div',{className:'dl-g-ph'},e('span',{className:'dl-g-pn'},loteSel.name),e('span',{className:'dl-g-pm'},fmtMin(bk.s)+' – '+fmtMin(bk.e)+' · '+dn+' de '+hs.length+' hechos'),
+        e('button',{className:'dl-g-btn ghost',style:{marginLeft:'auto'},onClick:()=>{playUI('click');setGridSel(null);}},'← Bandeja')),
+      e('div',{className:'dl-lt-bar'},e('i',{style:{width:(hs.length?dn/hs.length*100:0)+'%'}})),
+      hs.map(h=>{
+        const done=(h.log||[]).includes(day),pj=projects.find(x=>x.id===h.projectId);
+        return e('div',{key:h.id,className:'dl-g-tk'+(done?' dn':'')},
+          e('button',{className:'dl-ck'+(done?' on':''),onClick:()=>{playUI('click');onToggleHabitLog&&onToggleHabitLog(h.id,day);},title:done?'Reabrir':'Marcar como hecho'},done?'✓':''),
+          e('span',{className:'dl-g-n',title:h.name},h.name),
+          e('span',{className:'dl-g-m'},pj?pj.name:''));
+      }),
+      e('div',{className:'dl-tr-h',style:{marginTop:8}},'Para cambiar el tiempo del lote, arrastra su borde de abajo en el horario; para moverlo, arrástralo.'),
+      e('div',{className:'dl-g-acts'},
+        e('button',{className:'dl-g-btn',onClick:()=>{playUI('click');setRoutineInit(loteSel.id);setShowRoutine(true);}},'Editar lote'),
+        e('button',{className:'dl-g-btn ghost',onClick:()=>{if(window.confirm('¿Eliminar el lote «'+loteSel.name+'»? Sus hábitos vuelven a verse sueltos.')){onDeleteLote&&onDeleteLote(loteSel.id);setGridSel(null);}}},'Eliminar lote')
+      )
+    );
+  })():null;
   const gPanel=e('div',{className:'dl-g-panel'},
-    bk
+    bk&&bk.lote?lotePanel:bk
       ?e(React.Fragment,null,
           e('div',{className:'dl-g-ph'},e('span',{className:'dl-g-pn'},bAcc?bAcc.proj.name:'Cuenta'),e('span',{className:'dl-g-pm'},fmtMin(bk.s)+' – '+fmtMin(bk.e)+' · '+bPend+' pendientes'),
             e('button',{className:'dl-g-btn ghost',style:{marginLeft:'auto'},onClick:()=>{playUI('click');setGridSel(null);}},'← Bandeja')),
@@ -13802,7 +13942,7 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
   );
   const gridView=e('div',{className:'dl-g'},
     e('div',{className:'dl-g-chips'},
-      onCreateHabit&&e('button',{className:'dl-g-chip',style:{marginLeft:'auto'},title:'Elegir qué hábitos son bloques fijos de tu día (hora y duración) o crear uno nuevo',onClick:()=>{playUI('click');setShowRoutine(true);}},'Rutina fija'+((habits||[]).filter(h=>h.fixed).length?' · '+(habits||[]).filter(h=>h.fixed).length:'')),
+      onCreateHabit&&e('button',{className:'dl-g-chip',style:{marginLeft:'auto'},title:'Elegir qué hábitos son bloques fijos de tu día (hora y duración) o crear uno nuevo',onClick:()=>{playUI('click');setRoutineInit(null);setShowRoutine(true);}},'Rutina fija'+((habits||[]).filter(h=>h.fixed).length?' · '+(habits||[]).filter(h=>h.fixed).length:'')),
       e('button',{className:'dl-g-chip',style:onCreateHabit?null:{marginLeft:'auto'},title:gFull?'Volver al horario ajustado a mi día':'Mostrar de 7:00 a 21:00',onClick:()=>{playUI('click');setGFull(v=>!v);}},gFull?'Ajustar a mi día':'Ver todo el día')
     ),
     isToday&&slotsAll.length>0&&e('div',{className:'dl-g-strip'},
@@ -13843,7 +13983,7 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
     ),
     showPool&&pool,
     e('div',{className:'dl-cols one'},gridView),
-    showRoutine&&onCreateHabit&&e(FixedRoutineModal,{habits,projects,onPatchHabit,onCreateHabit,onClose:()=>setShowRoutine(false)}),
+    showRoutine&&onCreateHabit&&e(FixedRoutineModal,{habits,projects,onPatchHabit,onCreateHabit,lotes,onSaveLote,onDeleteLote,initLote:routineInit,onClose:()=>{setShowRoutine(false);setRoutineInit(null);}}),
     showPlan&&plan&&e('div',{className:'overlay',onClick:ev=>{if(ev.target===ev.currentTarget)setShowPlan(false);}},
       e('div',{className:'modal',style:{width:520,maxHeight:'88vh'}},
         e('div',{className:'modal-head'},e('div',{className:'modal-title'},'Planificar '+(isToday?'mi día':'ese día')),e('button',{className:'modal-x',onClick:()=>setShowPlan(false)},'✕')),
@@ -13890,7 +14030,7 @@ function HomeResumen(props){
     realBlocks,liveBlock,tick,selectedDay,setSelectedDay,
     tState,activeSess,activeProj,activeTask,workElapsed,todayTotal,
     onPauseTimer,onStopTimer,onQuickToggleTask,
-    onToggleSub,onSetSubTime,onToggleReminder,onSetReminderTime,onSetHabitTime,onPatchHabit,onCreateHabit,onApplyPlan,dayBlocks,onSetDayBlock,onPostpone,
+    onToggleSub,onSetSubTime,onToggleReminder,onSetReminderTime,onSetHabitTime,onPatchHabit,onCreateHabit,onApplyPlan,dayBlocks,onSetDayBlock,onPostpone,lotes,onSaveLote,onPatchLote,onDeleteLote,
     onOpenProject,onStartProj,onUpdateSystem,onToggleHabitLog,
     blocks,onEditBlock,onNewBlock,onNewProject,onSetPriority,
     onArchiveProject,onUnarchiveProject,showArchived,setShowArchived,
@@ -14112,7 +14252,7 @@ function HomeResumen(props){
       )
     ),
     e('div',{className:'dash-body'},
-      focusMode&&e(HomeDayLine,{day:selectedDay,projects,tasks,habits,reminders,onToggleSub,onSetSubTime,onToggleReminder,onSetReminderTime,onSetHabitTime,onToggleHabitLog,onOpenProject,onApplyPlan,focusNode,focusIdle:!(tState!=='idle'&&activeSess),onStartProj,dayBlocks,onSetDayBlock,onPostpone,onPatchHabit,onCreateHabit}),
+      focusMode&&e(HomeDayLine,{day:selectedDay,projects,tasks,habits,reminders,onToggleSub,onSetSubTime,onToggleReminder,onSetReminderTime,onSetHabitTime,onToggleHabitLog,onOpenProject,onApplyPlan,focusNode,focusIdle:!(tState!=='idle'&&activeSess),onStartProj,dayBlocks,onSetDayBlock,onPostpone,onPatchHabit,onCreateHabit,lotes,onSaveLote,onPatchLote,onDeleteLote}),
       !focusMode&&e(React.Fragment,null,
       e('div',{className:'bento-row'},
 
