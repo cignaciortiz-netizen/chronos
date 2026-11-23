@@ -13216,12 +13216,13 @@ function FixedRoutineModal({habits,projects,onPatchHabit,onCreateHabit,lotes,onS
               return e('div',{key:h.id,style:{display:'flex',alignItems:'center',gap:8,padding:'5px 2px',fontSize:12.5,cursor:other?'default':'pointer',opacity:other?.4:1},onClick:()=>{if(!other)toggleH(h.id);}},
                 e('span',{style:{width:15,height:15,borderRadius:4,border:'1.5px solid '+(on?'var(--accent)':'var(--text4)'),background:on?'var(--accent)':'transparent',color:'#1a0a02',fontSize:11,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}},on?'✓':''),
                 e('span',{style:{flex:1}},h.name),
-                e('span',{style:{fontSize:11,color:'var(--text4)'}},other?'en «'+other.name+'»':(pj?pj.name:'')));
+                e('span',{style:{fontSize:11,color:'var(--text4)'}},other?'en «'+other.name+'»':((pj?pj.name+' · ':'')+recurrenceLabel(h.recurrence))));
             }))),
         e('div',{style:{display:'flex',alignItems:'center',gap:10,flexWrap:'wrap',marginTop:14,fontSize:12.5,color:'var(--text2)'}},
           'Desde',e('input',{type:'time',style:{background:'var(--bg3)',border:'1px solid var(--border)',borderRadius:6,fontSize:11.5,color:'var(--text1)',padding:'3px 5px',fontFamily:"'JetBrains Mono',monospace"},value:f.s,onChange:ev=>patchLf({s:ev.target.value||f.s,err:''})}),
           f.habitIds.length>0&&e('span',null,'→ hasta ',e('b',{style:{color:'var(--text0)',fontWeight:500}},m2s(s0+d)),' · '+(d>=60?(Math.floor(d/60)+' h'+(d%60?' '+(d%60)+' min':'')):d+' min'))),
         f.habitIds.length>0&&!f.id&&e('div',{style:{fontSize:11,color:'var(--text4)',marginTop:4}},'Parte con 15 min por hábito. Luego ajusta el tiempo arrastrando el borde del lote en tu horario.'),
+        f.habitIds.length>0&&e('div',{style:{fontSize:11,color:'var(--text4)',marginTop:4}},'Cada hábito aparece solo los días que le tocan (según su propia repetición) y dentro de los días del lote.'),
         e('div',{style:{marginTop:12}},LDN.map((x,i)=>e('span',{key:i,onClick:()=>setLf(pv=>({...pv,days:pv.days.includes(i+1)?pv.days.filter(z=>z!==i+1):[...pv.days,i+1],err:''})),
           style:{width:28,height:28,borderRadius:'50%',border:'1px solid '+(f.days.includes(i+1)?'var(--accent-border)':'var(--border)'),background:f.days.includes(i+1)?'var(--accent-bg)':'transparent',color:f.days.includes(i+1)?'var(--accent2)':'var(--text3)',display:'inline-flex',alignItems:'center',justifyContent:'center',fontSize:12,cursor:'pointer',marginRight:3}},x))),
         c&&e('div',{style:{color:'var(--red,#e05555)',fontSize:11.5,marginTop:8}},'Choca con «'+c+'». Cambia la hora.'),
@@ -13724,7 +13725,7 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
   const loteB={};
   (lotes||[]).forEach(l=>{
     if(!(l.days||[]).includes(dowN))return;
-    const hs=(l.habitIds||[]).map(id=>(habits||[]).find(x=>x.id===id)).filter(h=>!!h); // el lote manda: sus hábitos salen todos los días del lote, aunque su propia repetición diga otra cosa
+    const hs=(l.habitIds||[]).map(id=>(habits||[]).find(x=>x.id===id)).filter(h=>h&&habitOccursOn(h,dateFromDayKey(day))); // cada hábito sale solo los días que le tocan según su propia repetición (y siempre dentro de los días del lote)
     if(!hs.length)return;
     loteB['L'+l.id]={s:l.s,e:Math.min(1440,l.s+l.dur),lote:l.id,n:l.name,hs};
   });
