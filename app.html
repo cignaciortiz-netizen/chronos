@@ -13718,7 +13718,7 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
   const loteB={};
   (lotes||[]).forEach(l=>{
     if(!(l.days||[]).includes(dowN))return;
-    const hs=(l.habitIds||[]).map(id=>(habits||[]).find(x=>x.id===id)).filter(h=>h&&habitOccursOn(h,dateFromDayKey(day)));
+    const hs=(l.habitIds||[]).map(id=>(habits||[]).find(x=>x.id===id)).filter(h=>!!h); // el lote manda: sus hábitos salen todos los días del lote, aunque su propia repetición diga otra cosa
     if(!hs.length)return;
     loteB['L'+l.id]={s:l.s,e:Math.min(1440,l.s+l.dur),lote:l.id,n:l.name,hs};
   });
