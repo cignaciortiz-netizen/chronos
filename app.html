@@ -13963,7 +13963,6 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
       e('div',{className:'dl-g-ph'},e('span',{className:'dl-g-pn'},loteSel.name),e('span',{className:'dl-g-pm'},fmtMin(bk.s)+' – '+fmtMin(bk.e)+' · '+dn+' de '+hs.length+' hechos'),
         e('button',{className:'dl-g-btn ghost',style:{marginLeft:'auto'},onClick:()=>{playUI('click');setGridSel(null);}},'← Bandeja')),
       e('div',{className:'dl-lt-bar'},e('i',{style:{width:(hs.length?dn/hs.length*100:0)+'%'}})),
-      hs.length>0&&e('button',{className:'btn btn-primary',style:{margin:'2px 0 10px'},onClick:()=>{playUI('click');startGuide();}},'▶ Empezar lote · un cliente a la vez'),
       hs.map(h=>{
         const done=(h.log||[]).includes(day),pj=projects.find(x=>x.id===h.projectId);
         return e('div',{key:h.id,className:'dl-g-tk'+(done?' dn':'')},
