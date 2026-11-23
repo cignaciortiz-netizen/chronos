@@ -3603,7 +3603,7 @@ const GlobalSidebar=React.memo(function GlobalSidebar({projects,habits,systems,t
       if(t.projectId!==p.id||t.status==='done')return;
       (t.steps||[]).forEach(st=>{
         if(st.done)return;
-        (st.subtasks||[]).forEach(x=>{if(!x.done&&x.dueDate===todayK)n++;});
+        (st.subtasks||[]).forEach(x=>{if(!x.done&&(x.dueDate===todayK||(x.startDate&&x.startDate<=todayK&&todayK<x.dueDate)))n++;});
       });
     });
     return n;
@@ -8530,7 +8530,7 @@ function ComboView({steps,commit,showDoneSteps,setShowDoneSteps,doneCount,total,
   // resumen superior
   const allSubs=[];steps.forEach(s=>(s.subtasks||[]).forEach(x=>allSubs.push({...x,_phase:s.name,_phaseDone:s.done})));
   const subsTotal=allSubs.length,subsDone=allSubs.filter(x=>x.done).length;
-  const todaySubs=allSubs.filter(x=>!x.done&&x.dueDate===today);
+  const todaySubs=allSubs.filter(x=>!x.done&&(x.dueDate===today||(x.startDate&&x.startDate<=today&&today<x.dueDate)));
   const lateSubs=allSubs.filter(x=>!x.done&&!x._phaseDone&&x.dueDate&&x.dueDate<today);
   const unsched=allSubs.filter(x=>!x.done&&!x._phaseDone&&!x.dueDate).length;
   // avance del proyecto: cada tarea cuenta una unidad (una fase sin tareas cuenta ella misma); fase hecha = todas sus tareas hechas
@@ -13350,9 +13350,11 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
       (st.subtasks||[]).forEach(x=>{
         if(!x.dueDate)return;
         const late=isToday&&!x.done&&x.dueDate<day;
-        if(x.dueDate!==day&&!late)return;
+        // tarea de varios días: sigue pendiente cada día de su tramo (desde su inicio hasta su fecha) hasta que se termine
+        const ranged=!!x.startDate&&x.startDate<=day&&day<x.dueDate;
+        if(x.dueDate!==day&&!late&&!ranged)return;
         if(late&&x.dueDate<minKey&&!showOld){oldHidden++;return;}
-        items.push({k:'s'+x.id,type:'sub',t,st,x,proj,name:x.name,meta:t.name,time:late?null:(x.time||null),done:!!x.done,late});
+        items.push({k:'s'+x.id,type:'sub',t,st,x,proj,name:x.name,meta:t.name+((x.startDate&&x.startDate<x.dueDate&&x.startDate<=day&&day<=x.dueDate)?' · día '+(Math.round((new Date(day+'T00:00:00')-new Date(x.startDate+'T00:00:00'))/864e5)+1)+' de '+(Math.round((new Date(x.dueDate+'T00:00:00')-new Date(x.startDate+'T00:00:00'))/864e5)+1):''),time:late?null:(x.time||null),done:!!x.done,late});
       });
     });
   });
@@ -14702,7 +14704,8 @@ function SobrioTodayPanel({tasks,day,onUpdateTaskSteps,onOpen}){
     (s.subtasks||[]).forEach(x=>{
       if(!x.dueDate)return;
       const late=!x.done&&x.dueDate<today&&day===today;
-      if(x.dueDate===day||late)items.push({t,s,x,late});
+      const ranged=!!x.startDate&&x.startDate<=day&&day<x.dueDate; // varios días: pendiente en todo su tramo
+      if(x.dueDate===day||late||ranged)items.push({t,s,x,late});
     });
   }));
   items.sort((a,b)=>(Number(!!a.x.done)-Number(!!b.x.done))||(a.x.dueDate<b.x.dueDate?-1:a.x.dueDate>b.x.dueDate?1:0));
