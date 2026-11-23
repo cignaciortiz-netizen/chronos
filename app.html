@@ -939,6 +939,22 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .dl-g-prev{position:absolute;left:54px;right:10px;border-radius:10px;border:1px dashed var(--accent);background:var(--accent-bg);pointer-events:none;padding:5px 10px;font:500 10px 'JetBrains Mono',monospace;color:var(--accent2)}
 .dl-g-blk.dl-g-lote{border-color:var(--accent-border);box-shadow:inset 3px 0 0 var(--accent)}
 .dl-g-blk.dl-g-lote.sel{border-color:var(--accent)}
+.dl-gd{background:var(--accent-bg);border:1px solid var(--accent-border);border-radius:14px;padding:22px 24px}
+.dl-gd-k{font-size:11.5px;color:var(--accent2);letter-spacing:.3px}
+.dl-gd-n{font-size:28px;font-weight:600;color:var(--text0);margin:8px 0 2px;line-height:1.2}
+.dl-gd-s{font-size:13px;color:var(--text2)}
+.dl-gd-t{font:600 22px 'JetBrains Mono',monospace;color:var(--text0);margin-top:16px}
+.dl-gd-t span{font:400 12px 'Inter',sans-serif;color:var(--text3)}
+.dl-gd-t.over{color:var(--accent2)}
+.dl-gd-bar{height:5px;border-radius:5px;background:var(--bg4);overflow:hidden;margin-top:8px}
+.dl-gd-bar i{display:block;height:100%;background:var(--accent);transition:width 1s linear}
+.dl-gd-go{padding:9px 20px;font-size:13px}
+.dl-gd-dots{display:flex;gap:7px;margin-top:20px;flex-wrap:wrap}
+.dl-gd-dots i{width:10px;height:10px;border-radius:50%;background:var(--bg5,#3a3a40)}
+.dl-gd-dots i.d{background:var(--accent)}
+.dl-gd-dots i.s{background:transparent;border:1.5px dashed var(--text4)}
+.dl-gd-dots i.c{box-shadow:0 0 0 2px var(--accent-border);background:var(--accent2)}
+.dl-gd-nx{font-size:12px;color:var(--text3);margin-top:10px}
 .dl-lt-bar{height:4px;border-radius:4px;background:var(--bg4);overflow:hidden;margin:2px 0 8px}
 .dl-lt-bar i{display:block;height:100%;background:var(--accent)}
 .dl-g-ghost{position:absolute;left:54px;right:10px;border-radius:10px;border:1.5px dashed var(--accent);background:var(--accent-bg);pointer-events:none;z-index:5}
@@ -13290,6 +13306,13 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
   const trayDrag=useRef(null);                 // lo que se está arrastrando desde la bandeja
   const[showRoutine,setShowRoutine]=useState(false); // ventana «Mi rutina fija»
   const[routineInit,setRoutineInit]=useState(null);  // id de un lote a editar al abrirla
+  const[guide,setGuide]=useState(null);              // modo guiado de un lote: {loteId,i (hábito actual),t0,T0,skip[]}
+  const[,setGTick]=useState(0);
+  useEffect(()=>{
+    if(!guide)return;
+    const t=setInterval(()=>setGTick(x=>x+1),1000); // reloj del cliente actual
+    return()=>clearInterval(t);
+  },[!!guide]);
   const[gFull,setGFull]=useState(true);      // true = 7:00 a 21:00 (por defecto); false = ajustar el horario a mi día
   const gref=useRef(null);
   const gdrag=useRef(null);
@@ -13889,12 +13912,56 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
   const bPend=bIts.filter(i=>!i.done).length;
   const setBk=ks=>onSetDayBlock(day,selKeyG,{...bk,k:ks});
   const loteSel=bk&&bk.lote?(lotes||[]).find(x=>x.id===bk.lote):null;
+  // Modo guiado: un solo cliente a la vez, con su tiempo y un botón grande
+  const guidedView=(hs,dn)=>{
+    const n=hs.length,g=guide,fin=g.i>=n,h=fin?null:hs[g.i];
+    const perMin=Math.max(1,Math.round(loteSel.dur/Math.max(n,1)));
+    const el=Math.floor((Date.now()-g.t0)/1000),over=el>perMin*60;
+    const mmss=sec=>Math.floor(sec/60)+':'+String(sec%60).padStart(2,'0');
+    const isDone=x=>(x.log||[]).includes(day);
+    const skipN=g.skip.filter((id,k,a)=>a.indexOf(id)===k&&hs.some(x=>x.id===id&&!isDone(x))).length; // saltados que siguen pendientes
+    const nextFrom=i=>{let j=i+1;while(j<n&&isDone(hs[j]))j++;return j;};
+    const advance=mark=>{
+      if(mark&&h&&!isDone(h)&&onToggleHabitLog)onToggleHabitLog(h.id,day);
+      setGuide({...g,i:nextFrom(g.i),t0:Date.now(),skip:(!mark&&h)?[...g.skip,h.id]:g.skip});
+    };
+    const back=()=>{if(g.i>0)setGuide({...g,i:g.i-1,t0:Date.now()});};
+    const dots=e('div',{className:'dl-gd-dots'},hs.map((x,i)=>e('i',{key:x.id,title:x.name,className:(isDone(x)?'d':'')+(i===g.i?' c':'')+(g.skip.includes(x.id)&&!isDone(x)?' s':'')})));
+    if(fin){
+      const tot=Math.floor((Date.now()-g.T0)/1000);
+      return e('div',{className:'dl-gd'},
+        e('div',{className:'dl-gd-k'},'Lote terminado'),
+        e('div',{className:'dl-gd-n'},loteSel.name),
+        e('div',{className:'dl-gd-s'},dn+' de '+n+' hechos en '+mmss(tot)+(skipN?' · '+skipN+(skipN===1?' saltado':' saltados'):'')),
+        dots,
+        e('div',{style:{display:'flex',gap:8,marginTop:16}},
+          e('button',{className:'btn btn-primary',onClick:()=>setGuide(null)},'Cerrar'),
+          skipN>0&&e('button',{className:'btn',onClick:()=>{const i=hs.findIndex(x=>!isDone(x));setGuide({...g,i:i<0?n:i,t0:Date.now(),skip:[]});}},'Retomar los saltados')));
+    }
+    const pj=projects.find(x=>x.id===h.projectId),j=nextFrom(g.i);
+    return e('div',{className:'dl-gd'},
+      e('div',{className:'dl-gd-k'},loteSel.name+' · '+(g.i+1)+' de '+n),
+      e('div',{className:'dl-gd-n'},pj?pj.name:h.name),
+      e('div',{className:'dl-gd-s'},h.name),
+      e('div',{className:'dl-gd-t'+(over?' over':'')},mmss(el),e('span',null,' de ≈ '+perMin+' min')),
+      e('div',{className:'dl-gd-bar'},e('i',{style:{width:Math.min(100,el/(perMin*60)*100)+'%'}})),
+      e('div',{style:{display:'flex',gap:8,marginTop:18,flexWrap:'wrap'}},
+        e('button',{className:'btn btn-primary dl-gd-go',onClick:()=>{playUI('click');advance(true);}},'Listo, siguiente'),
+        e('button',{className:'btn',onClick:()=>{playUI('click');advance(false);}},'Saltar'),
+        g.i>0&&e('button',{className:'btn',onClick:()=>{playUI('click');back();}},'← Anterior'),
+        e('button',{className:'btn',style:{marginLeft:'auto'},onClick:()=>setGuide(null)},'Salir')),
+      dots,
+      e('div',{className:'dl-gd-nx'},j<n?'Sigue: '+(((projects.find(x=>x.id===hs[j].projectId))||{}).name||hs[j].name):'Es el último'));
+  };
   const lotePanel=loteSel?(()=>{
     const hs=bk.hs||[],dn=hs.filter(h=>(h.log||[]).includes(day)).length;
+    if(guide&&guide.loteId===loteSel.id)return guidedView(hs,dn);
+    const startGuide=()=>{const i=hs.findIndex(h=>!(h.log||[]).includes(day));setGuide({loteId:loteSel.id,i:i<0?hs.length:i,t0:Date.now(),T0:Date.now(),skip:[]});};
     return e(React.Fragment,null,
       e('div',{className:'dl-g-ph'},e('span',{className:'dl-g-pn'},loteSel.name),e('span',{className:'dl-g-pm'},fmtMin(bk.s)+' – '+fmtMin(bk.e)+' · '+dn+' de '+hs.length+' hechos'),
         e('button',{className:'dl-g-btn ghost',style:{marginLeft:'auto'},onClick:()=>{playUI('click');setGridSel(null);}},'← Bandeja')),
       e('div',{className:'dl-lt-bar'},e('i',{style:{width:(hs.length?dn/hs.length*100:0)+'%'}})),
+      hs.length>0&&e('button',{className:'btn btn-primary',style:{margin:'2px 0 10px'},onClick:()=>{playUI('click');startGuide();}},'▶ Empezar lote · un cliente a la vez'),
       hs.map(h=>{
         const done=(h.log||[]).includes(day),pj=projects.find(x=>x.id===h.projectId);
         return e('div',{key:h.id,className:'dl-g-tk'+(done?' dn':'')},
