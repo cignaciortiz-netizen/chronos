@@ -13173,15 +13173,21 @@ function FixedRoutineModal({habits,projects,onPatchHabit,onCreateHabit,lotes,onS
     }
     return null;
   }
-  function saveLf(){
+  // Guarda el lote que se está editando. Devuelve false si falta algo (y muestra el aviso en el formulario).
+  function trySaveLf(){
     const f=lf;
-    if(!f.name.trim()){patchLf({err:'Ponle un nombre al lote.'});return;}
-    if(!f.habitIds.length){patchLf({err:'Elige al menos un hábito.'});return;}
-    if(!f.days.length){patchLf({err:'Elige al menos un día.'});return;}
-    if(loteConflict(f)){patchLf({err:'Choca con otra rutina. Cambia la hora.'});return;}
+    if(!f)return true;
+    if(!f.id&&!f.name.trim()&&!f.habitIds.length)return true; // lote nuevo sin tocar: nada que guardar
+    if(!f.name.trim()){patchLf({err:'Ponle un nombre al lote.'});return false;}
+    if(!f.habitIds.length){patchLf({err:'Elige al menos un hábito.'});return false;}
+    if(!f.days.length){patchLf({err:'Elige al menos un día.'});return false;}
+    if(loteConflict(f)){patchLf({err:'Choca con otra rutina. Cambia la hora.'});return false;}
     onSaveLote({id:f.id||uid(),name:f.name.trim(),habitIds:f.habitIds.slice(),s:s2m(f.s),dur:lfDur(f),days:f.days.slice().sort()});
-    setLf(null);
+    return true;
   }
+  function saveLf(){if(trySaveLf())setLf(null);}
+  // cerrar la ventana (Listo, ✕ o clic afuera) también guarda el lote que estabas editando, para no perder lo elegido
+  const closeAll=()=>{if(trySaveLf())onClose();};
   const lotesUI=e('div',null,
     e('div',{style:{fontSize:11,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.5px',marginBottom:4}},'Lotes · '+((lotes||[]).length)),
     (lotes||[]).length===0&&!lf&&e('div',{className:'dl-hint'},'Un lote junta hábitos parecidos (por ejemplo «Monitorear campañas» de todos tus clientes) para hacerlos de corrido en un solo bloque.'),
@@ -13250,11 +13256,11 @@ function FixedRoutineModal({habits,projects,onPatchHabit,onCreateHabit,lotes,onS
       ?e('button',{className:'btn',style:{padding:'3px 10px',fontSize:11.5},title:'Deja de ser bloque fijo (el hábito sigue existiendo)',onClick:()=>onPatchHabit(h.id,{fixed:false})},'Quitar')
       :e('button',{className:'btn btn-primary',style:{padding:'3px 10px',fontSize:11.5},onClick:()=>onPatchHabit(h.id,{fixed:true,durMin:Number(h.durMin)||30,time:h.time||'09:00'})},'Fijar')
   );
-  return e('div',{className:'overlay',onClick:ev=>{if(ev.target===ev.currentTarget)onClose();}},
+  return e('div',{className:'overlay',onClick:ev=>{if(ev.target===ev.currentTarget)closeAll();}},
     e('div',{className:'modal',style:{width:600,maxHeight:'88vh'}},
       e('div',{className:'modal-head'},
         e('div',{style:{flex:1}},e('div',{className:'modal-title'},'Mi rutina fija'),e('div',{className:'modal-sub'},'Los hábitos fijos aparecen con candado en tu día, a su hora, todos los días que les toque.')),
-        e('button',{className:'modal-x',onClick:onClose},'✕')),
+        e('button',{className:'modal-x',onClick:closeAll},'✕')),
       e('div',{className:'modal-body',style:{overflowY:'auto'}},
         lotesUI,
         e('div',{style:{fontSize:11,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'.5px',margin:'18px 0 2px'}},'Fijos · '+fixed.length),
@@ -13274,7 +13280,7 @@ function FixedRoutineModal({habits,projects,onPatchHabit,onCreateHabit,lotes,onS
         ),
         err&&e('div',{style:{color:'var(--red,#e05555)',fontSize:11.5,marginTop:6}},err)
       ),
-      e('div',{className:'modal-foot'},e('button',{className:'btn btn-primary',onClick:onClose},'Listo'))
+      e('div',{className:'modal-foot'},e('button',{className:'btn btn-primary',onClick:closeAll},'Listo'))
     )
   );
 }
