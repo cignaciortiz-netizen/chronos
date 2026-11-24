@@ -1044,7 +1044,11 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .sb-today-ck.on{background:var(--text2);border-color:var(--text2)}
 .sb-today-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12.5px;color:var(--text0)}
 .sb-today-name.done{color:var(--text4);text-decoration:line-through}
-.sb-today-proj{font-size:10.5px;color:var(--text3);cursor:pointer;flex-shrink:0;max-width:40%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sb-today-act{display:flex;gap:4px;flex-shrink:0}
+.sb-today-act .act-btn{width:20px;height:20px;font-size:10px}
+.sb-today-ph{color:var(--text4)}
+.sb-today-late{font-weight:500}
+.sb-today-proj{font-size:10.5px;color:var(--text3);cursor:pointer;flex-shrink:0;max-width:48%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sb-today-proj:hover{color:var(--text1)}
 .sb-today-proj.late{color:var(--red)}
 .sb-today-count{font-size:10.5px;color:var(--accent2);margin-left:auto}
@@ -14696,7 +14700,7 @@ function CalendarView({tasks,project,onOpenSteps}){
 }
 // Bloque "Hoy" del panel de cuenta (tema Sobrio): tareas de las fases agendadas
 // para el día seleccionado, más las atrasadas cuando se mira el día de hoy.
-function SobrioTodayPanel({tasks,day,onUpdateTaskSteps,onOpen}){
+function SobrioTodayPanel({tasks,day,onUpdateTaskSteps,onOpen,onUpdateTask}){
   const today=dayKey();
   const items=[];
   (tasks||[]).forEach(t=>(t.steps||[]).forEach(s=>{
@@ -14711,6 +14715,8 @@ function SobrioTodayPanel({tasks,day,onUpdateTaskSteps,onOpen}){
   items.sort((a,b)=>(Number(!!a.x.done)-Number(!!b.x.done))||(a.x.dueDate<b.x.dueDate?-1:a.x.dueDate>b.x.dueDate?1:0));
   const pend=items.filter(i=>!i.x.done).length;
   const toggle=i=>onUpdateTaskSteps(i.t.id,(i.t.steps||[]).map(s=>s.id===i.s.id?{...s,subtasks:(s.subtasks||[]).map(x=>x.id===i.x.id?{...x,done:!x.done}:x)}:s));
+  // ✓ «avancé hoy en este proyecto» / ✕ «no avancé» (el mismo registro del modal de fases); clic de nuevo = deshacer
+  const setAct=(t,val)=>{if(!onUpdateTask)return;const log={...(t.actLog||{})};if(log[day]===val)delete log[day];else log[day]=val;onUpdateTask(t.id,{actLog:log});};
   return e('div',{className:'dash-panel sb-today'},
     e('div',{className:'dash-panel-hdr'},
       e('span',{className:'dash-panel-title'},day===today?'Hoy':'Ese día'),
@@ -14721,7 +14727,11 @@ function SobrioTodayPanel({tasks,day,onUpdateTaskSteps,onOpen}){
       items.map(i=>e('div',{key:i.x.id,className:'sb-today-row'},
         e('div',{className:'sb-today-ck'+(i.x.done?' on':''),onClick:()=>{playUI('click');toggle(i);},title:i.x.done?'Reabrir':'Marcar hecha'}),
         e('span',{className:'sb-today-name'+(i.x.done?' done':''),title:i.x.name+' — '+i.s.name},i.x.name),
-        e('span',{className:'sb-today-proj'+(i.late?' late':''),onClick:()=>onOpen&&onOpen(i.t),title:'Abrir '+i.t.name},i.late?'atrasada':i.t.name)
+        e('span',{className:'sb-today-proj'+(i.late?' late':''),onClick:()=>onOpen&&onOpen(i.t),title:'Abrir '+i.t.name+' · fase '+i.s.name},
+          i.late&&e('b',{className:'sb-today-late'},'atrasada · '),i.t.name,e('span',{className:'sb-today-ph'},' › '+i.s.name)),
+        onUpdateTask&&!i.x.done&&e('span',{className:'sb-today-act'},
+          e('button',{className:'act-btn yes'+((i.t.actLog||{})[day]==='yes'?' on':''),title:'Avancé hoy en este proyecto',onClick:()=>{playUI('click');setAct(i.t,'yes');}},'✓'),
+          e('button',{className:'act-btn no'+((i.t.actLog||{})[day]==='no'?' on':''),title:'No avancé hoy en este proyecto',onClick:()=>{playUI('click');setAct(i.t,'no');}},'✕'))
       ))
     )
   );
@@ -15188,7 +15198,7 @@ function ProjectDashboard(props){
       ),
       e('div',{className:'dash-top-row'},
         e(ProjectsTimeline,{tasks:tasks.filter(t=>t.projectId===project.id),onOpen:setStepsForTask,activeTaskId:isRunningHere&&activeSess?activeSess.taskId:null,onPlay:onPlayTask,onFinish:onFinishTask,onCycleTaskStatus,onDeleteTask,onSetPriority:(id,pr)=>onUpdateTask(id,{priority:pr}),onAdd:openAddTask,addTitle:'Añadir '+taskNoun}),
-        e(SobrioTodayPanel,{tasks:pendingTasks,day:selectedDay,onUpdateTaskSteps,onOpen:setStepsForTask}),
+        e(SobrioTodayPanel,{tasks:pendingTasks,day:selectedDay,onUpdateTaskSteps,onOpen:setStepsForTask,onUpdateTask}),
         e(QuickNotesPanel,{notes,onAddNote,onDeleteNote,onToggleNoteDone,onSetNoteReminder,onEditNoteText,onOpenAll:()=>setTab('notas')}),
         e('div',{className:'dash-panel habitos-mini-panel'},
           e('div',{className:'dash-panel-hdr'},
