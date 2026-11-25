@@ -958,6 +958,17 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .dl-lt-bar{height:4px;border-radius:4px;background:var(--bg4);overflow:hidden;margin:2px 0 8px}
 .dl-lt-bar i{display:block;height:100%;background:var(--accent)}
 .dl-tr-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;background:var(--accent)}
+.dd{margin:6px 0 2px;min-width:0}
+.dd-row{display:flex;gap:4px;flex-wrap:wrap}
+.dd-c{width:24px;height:24px;border-radius:50%;border:1.5px solid var(--border2,#ffffff30);background:transparent;color:var(--text3);font:500 10.5px 'Inter',sans-serif;padding:0;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.dd-c.ok{background:#2fae7f;border-color:#2fae7f;color:#fff}
+.dd-c.hoy{border-color:var(--accent);color:var(--accent2);background:var(--accent-bg)}
+.dd-c.mis{border:1.5px dashed #e5645f;color:#e5645f}
+.dd-c.fut{cursor:default;opacity:.7}
+.dd-bar .dd-row{gap:3px;flex-wrap:nowrap}
+.dd-bar .dd-c{flex:1;min-width:6px;max-width:40px;height:8px;border-radius:4px;border:none;background:var(--bg4)}
+.dd-bar .dd-c.ok{background:#2fae7f}.dd-bar .dd-c.hoy{background:var(--accent)}.dd-bar .dd-c.mis{background:transparent;border:1px dashed #e5645f}
+.dd-t{display:block;font-size:11.5px;color:var(--text3);margin-top:5px}
 .dl-g-ghost{position:absolute;left:54px;right:10px;border-radius:10px;border:1.5px dashed var(--accent);background:var(--accent-bg);pointer-events:none;z-index:5}
 .dl-fx-sec{margin-top:12px;padding-top:8px;border-top:1px solid var(--border)}
 .dl-fx-h{font-size:11.5px;color:var(--text2);cursor:pointer;display:flex;align-items:center;gap:6px;user-select:none}
@@ -999,7 +1010,7 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .dl-g-ph{display:flex;align-items:baseline;gap:8px;margin-bottom:6px;flex-wrap:wrap}
 .dl-g-pn{color:var(--text0);font-weight:500;font-size:14px}
 .dl-g-pm{font-size:11px;color:var(--text2)}
-.dl-g-tk{display:flex;align-items:center;gap:10px;padding:8px 2px;border-top:1px solid #ffffff08;min-width:0}
+.dl-g-tk{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:8px 2px;border-top:1px solid #ffffff08;min-width:0}
 .dl-g-tk.dn{opacity:.5}
 .dl-g-tk.dn .dl-g-n{text-decoration:line-through;color:var(--text3)}
 .dl-g-n{flex:1;min-width:0;font-size:12.5px;color:var(--text0);white-space:normal;overflow-wrap:anywhere;line-height:1.35}
@@ -1039,7 +1050,7 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .dl-plan-note{font-size:10.5px;color:var(--text3);line-height:1.5}
 /* ── Tema Sobrio ── */
 .gsb-proj-count,.sb-task-bar,.sb-task-due,.sb-hero-bar,.sb-today{display:none}
-.sb-today-row{display:flex;align-items:center;gap:10px;background:var(--bg1);border-radius:10px;padding:9px 12px}
+.sb-today-row{display:flex;flex-wrap:wrap;align-items:center;gap:10px;background:var(--bg1);border-radius:10px;padding:9px 12px}
 .sb-today-ck{width:14px;height:14px;border-radius:50%;border:1.5px solid var(--text4);flex-shrink:0;cursor:pointer;transition:all .12s}
 .sb-today-ck:hover{border-color:var(--text1)}
 .sb-today-ck.on{background:var(--text2);border-color:var(--text2)}
@@ -14090,6 +14101,7 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
               e('span',{className:'dl-g-m'},i.type==='sub'?i.meta:(i.type==='rem'?'Recordatorio':'Hábito')+(i.late?' · atrasado':'')),
               i.type==='sub'&&!i.done&&i.x.startDate&&i.x.startDate<i.x.dueDate&&onSubAct&&e('button',{className:'dl-g-mj dl-g-av'+((i.x.actLog||{})[day]==='yes'?' on':''),onClick:()=>{playUI('click');onSubAct(i.t.id,i.st.id,i.x.id,day,'yes');},title:'Tarea de varios días: marca que hoy avanzaste (sigue pendiente)'},(i.x.actLog||{})[day]==='yes'?'✓ avancé':'Avancé'),
               !i.done&&i.type!=='hab'&&e('button',{className:'dl-g-mj',onClick:()=>{playUI('click');postponeItems([i]);},title:'Pasar a mañana'},'Mañana'),
+              i.type==='sub'&&!i.done&&onSubAct&&i.x.startDate&&i.x.startDate<i.x.dueDate&&e('div',{style:{flexBasis:'100%',paddingLeft:30}},e(DayDots,{x:i.x,onMark:d=>onSubAct(i.t.id,i.st.id,i.x.id,d,'yes')})),
               bSpec&&e('button',{className:'dl-g-mj',onClick:()=>{playUI('click');setBk(bk.k.filter(x=>x!==i.k));},title:'Quitar de este bloque (la tarea sigue pendiente)'},'✕')
             )),
           !bSpec&&bAcc&&bAcc.list.some(i=>!i.done)&&e('button',{className:'dl-g-btn',style:{marginTop:8},onClick:()=>{playUI('click');setBk(bAcc.list.filter(i=>!i.done).map(i=>i.k));}},'Elegir qué tareas van en este bloque'),
@@ -14786,6 +14798,27 @@ function CalendarView({tasks,project,onOpenSteps}){
 }
 // Bloque "Hoy" del panel de cuenta (tema Sobrio): tareas de las fases agendadas
 // para el día seleccionado, más las atrasadas cuando se mira el día de hoy.
+// ── Días trabajados de una tarea de varios días: un círculo por día (verde = trabajado, ámbar = hoy, rojo punteado = pasó sin marcar) ──
+function DayDots({x,onMark,compact}){
+  if(!x||!x.startDate||!x.dueDate||x.startDate>=x.dueDate)return null;
+  const today=dayKey(),DAY=864e5;
+  const t0=new Date(x.startDate+'T00:00:00').getTime(),t1=new Date(x.dueDate+'T00:00:00').getTime();
+  const n=Math.round((t1-t0)/DAY)+1;
+  if(n>40)return null;
+  const days=[];
+  for(let i=0;i<n;i++){const d=new Date(t0+i*DAY);days.push(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'));}
+  const log=x.actLog||{};
+  const ok=days.filter(d=>log[d]==='yes').length;
+  const idx=days.indexOf(today);
+  const bar=n>10||compact;
+  const st=d=>log[d]==='yes'?'ok':d===today?'hoy':d<today?'mis':'';
+  const tip=d=>{const dt=new Date(d+'T00:00:00');return dt.toLocaleDateString('es-CL',{weekday:'short',day:'numeric',month:'short'})+(log[d]==='yes'?' · trabajado':d>today?'':' · sin marcar')};
+  const click=(d,ev)=>{ev.stopPropagation();if(d<=today&&onMark){playUI('click');onMark(d);}};
+  return e('div',{className:'dd'+(bar?' dd-bar':''),onClick:ev=>ev.stopPropagation()},
+    e('div',{className:'dd-row'},days.map(d=>e('button',{key:d,className:'dd-c '+st(d)+(d>today?' fut':''),title:tip(d),onClick:ev=>click(d,ev)},bar?'':String(Number(d.slice(8)))))),
+    e('span',{className:'dd-t'},ok+' de '+n+' días trabajados'+(idx>=0?' · hoy es el día '+(idx+1):(today<days[0]?' · empieza pronto':''))));
+}
+
 function SobrioTodayPanel({tasks,day,onUpdateTaskSteps,onOpen,onUpdateTask}){
   const today=dayKey();
   const items=[];
@@ -14803,11 +14836,12 @@ function SobrioTodayPanel({tasks,day,onUpdateTaskSteps,onOpen,onUpdateTask}){
   const toggle=i=>onUpdateTaskSteps(i.t.id,(i.t.steps||[]).map(s=>s.id===i.s.id?{...s,subtasks:(s.subtasks||[]).map(x=>x.id===i.x.id?{...x,done:!x.done}:x)}:s));
   // ✓ «avancé hoy en este proyecto» / ✕ «no avancé» (el mismo registro del modal de fases); clic de nuevo = deshacer
   const multi=x=>!!x.startDate&&x.startDate<x.dueDate; // tarea que abarca más de un día
-  const setAct=(i,val)=>{
-    const log={...(i.x.actLog||{})},was=log[day];
-    if(was===val)delete log[day];else log[day]=val;
+  const setAct=(i,val,dd)=>{
+    const dy=dd||day;
+    const log={...(i.x.actLog||{})},was=log[dy];
+    if(was===val)delete log[dy];else log[dy]=val;
     onUpdateTaskSteps(i.t.id,(i.t.steps||[]).map(s=>s.id===i.s.id?{...s,subtasks:(s.subtasks||[]).map(x=>x.id===i.x.id?{...x,actLog:log}:x)}:s));
-    if(val==='yes'&&was!=='yes'&&onUpdateTask){const pl={...(i.t.actLog||{})};pl[day]='yes';onUpdateTask(i.t.id,{actLog:pl});} // también cuenta como avance del proyecto
+    if(val==='yes'&&was!=='yes'&&onUpdateTask){const pl={...(i.t.actLog||{})};pl[dy]='yes';onUpdateTask(i.t.id,{actLog:pl});} // también cuenta como avance del proyecto
   };
   return e('div',{className:'dash-panel sb-today'},
     e('div',{className:'dash-panel-hdr'},
@@ -14823,7 +14857,8 @@ function SobrioTodayPanel({tasks,day,onUpdateTaskSteps,onOpen,onUpdateTask}){
           i.late&&e('b',{className:'sb-today-late'},'atrasada · '),i.t.name,e('span',{className:'sb-today-ph'},' › '+i.s.name)),
         !i.x.done&&multi(i.x)&&e('span',{className:'sb-today-act'},
           e('button',{className:'act-btn yes'+((i.x.actLog||{})[day]==='yes'?' on':''),title:'Avancé hoy en esta tarea (sigue pendiente)',onClick:()=>{playUI('click');setAct(i,'yes');}},'✓'),
-          e('button',{className:'act-btn no'+((i.x.actLog||{})[day]==='no'?' on':''),title:'Hoy no avancé en esta tarea',onClick:()=>{playUI('click');setAct(i,'no');}},'✕'))
+          e('button',{className:'act-btn no'+((i.x.actLog||{})[day]==='no'?' on':''),title:'Hoy no avancé en esta tarea',onClick:()=>{playUI('click');setAct(i,'no');}},'✕')),
+        !i.x.done&&multi(i.x)&&e('div',{style:{flexBasis:'100%',paddingLeft:24}},e(DayDots,{x:i.x,compact:true,onMark:d=>setAct(i,'yes',d)}))
       ))
     )
   );
