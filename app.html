@@ -961,6 +961,7 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .mc{width:18px;height:18px;border-radius:50%;border:1.5px solid var(--text3);background:transparent;flex-shrink:0;cursor:pointer;padding:0;position:relative;transition:background .25s,border-color .25s}
 .mc:after{content:'';position:absolute;left:5px;top:1.5px;width:4px;height:8px;border:solid transparent;border-width:0 2px 2px 0;transform:rotate(45deg);transition:border-color .2s}
 .mc:before{content:'';position:absolute;inset:-2px;border-radius:50%;border:2px solid #2fae7f;opacity:0;pointer-events:none}
+.mc.sm{width:16px;height:16px}.mc.sm:after{left:4px;top:1px}
 .mc.adv{border-color:#2fae7f}.mc.adv:after{border-color:#2fae7f}
 .mc.fin{background:#2fae7f;border-color:#2fae7f}.mc.fin:after{border-color:#fff}
 .mc.fx-adv,.mc.fx-fin{animation:mcpop .5s}
@@ -13577,7 +13578,7 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
     return e('div',{key:i.k,className:'dl-row'+(i.done?' dn':'')+(hot?' hot':''),draggable:!i.done,
       onDragStart:ev=>{dragRef.current=i;try{ev.dataTransfer.setData('text/plain',i.k);ev.dataTransfer.effectAllowed='move';}catch(err){}},
       onDragEnd:()=>{dragRef.current=null;setOverBlock(null);setOverPool(false);}},
-      e('button',{className:'dl-ck'+(i.done?' on':''),onClick:()=>toggle(i),title:i.done?'Reabrir':'Marcar como hecho'},i.done?'✓':''),
+      e(PopCheck,{done:!!i.done,onToggle:()=>toggle(i)}),
       e('span',{className:'dl-ic'},iconFor(i)),
       e('div',{className:'dl-main'},
         e('div',{className:'dl-name',title:i.name},i.name),
@@ -13651,7 +13652,7 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
     return e('div',{key:i.k,className:'dl-tk'+(i.done?' dn':'')+(i.type!=='sub'?' rem':''),draggable:!i.done&&i.type==='sub',
       onDragStart:ev=>{dragRef.current=i;try{ev.dataTransfer.setData('text/plain',i.k);ev.dataTransfer.effectAllowed='move';}catch(err){}},
       onDragEnd:()=>{dragRef.current=null;setOverBlock(null);setOverPool(false);}},
-      e('button',{className:'dl-ck'+(i.done?' on':''),onClick:()=>toggle(i),title:i.done?'Reabrir':'Marcar como hecho'},i.done?'✓':''),
+      e(PopCheck,{done:!!i.done,onToggle:()=>toggle(i)}),
       i.type!=='sub'&&e('span',{className:'dl-tk-bell',title:i.type==='rem'?'Recordatorio':'Hábito'},i.type==='rem'?e(BellIcon,{active:!i.done,size:12,color:'var(--accent2)'}):e(ProjIconSVG,{iconKey:i.h.icon||'target',size:12,color:'var(--accent2)'})),
       e('span',{className:'dl-tk-n',title:i.name},i.name),
       e('span',{className:'dl-tk-m',onClick:()=>{if(i.proj&&onOpenProject)onOpenProject(i.proj.id);},title:'Abrir la cuenta'},(other?i.proj.name+' · ':'')+i.meta),
@@ -13797,7 +13798,7 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
       e('span',{className:'dl-lt'},i.time),
       e('span',{className:'dl-lbar'+(grpAcc?' on':'')}),
       e('div',{className:'dl-lc'},
-        e('button',{className:'dl-ck'+(i.done?' on':''),onClick:()=>toggle(i),title:i.done?'Reabrir':'Marcar como hecho'},i.done?'✓':''),
+        e(PopCheck,{done:!!i.done,onToggle:()=>toggle(i)}),
         e('span',{className:'dl-lic'},iconFor(i)),
         e('span',{className:'dl-ln',title:i.name},i.name),
         e('span',{className:'dl-la',onClick:()=>{if(i.proj&&onOpenProject)onOpenProject(i.proj.id);}},(!grpAcc&&i.proj?i.proj.name+' · ':'')+(i.type==='sub'?i.meta:(i.type==='rem'?'Recordatorio':'Hábito'))),
@@ -14084,7 +14085,7 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
       hs.map(h=>{
         const done=(h.log||[]).includes(day),pj=projects.find(x=>x.id===h.projectId);
         return e('div',{key:h.id,className:'dl-g-tk'+(done?' dn':'')},
-          e('button',{className:'dl-ck'+(done?' on':''),onClick:()=>{playUI('click');onToggleHabitLog&&onToggleHabitLog(h.id,day);},title:done?'Reabrir':'Marcar como hecho'},done?'✓':''),
+          e(PopCheck,{done:!!done,onToggle:()=>{playUI('click');onToggleHabitLog&&onToggleHabitLog(h.id,day);}}),
           e('span',{className:'dl-g-n',title:h.name},h.name),
           e('span',{className:'dl-g-m'},pj?pj.name:''));
       }),
@@ -14108,7 +14109,7 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
                   onAdv:()=>onSubAct(i.t.id,i.st.id,i.x.id,day,'yes'),
                   onFin:()=>{if((i.x.actLog||{})[day]!=='yes')onSubAct(i.t.id,i.st.id,i.x.id,day,'yes');if(!i.done)onToggleSub(i.t.id,i.st.id,i.x.id);},
                   onReopen:()=>onToggleSub(i.t.id,i.st.id,i.x.id)})
-                :e('button',{className:'dl-ck'+(i.done?' on':''),onClick:()=>toggle(i),title:i.done?'Reabrir':'Marcar como hecho'},i.done?'✓':''),
+                :e(PopCheck,{done:!!i.done,onToggle:()=>toggle(i)}),
               e('span',{className:'dl-lic'},iconFor(i)),
               e('span',{className:'dl-g-n',title:i.name},i.name),
               e('span',{className:'dl-g-m'},i.type==='sub'?i.meta:(i.type==='rem'?'Recordatorio':'Hábito')+(i.late?' · atrasado':'')),
@@ -14810,6 +14811,12 @@ function CalendarView({tasks,project,onOpenSteps}){
 }
 // Bloque "Hoy" del panel de cuenta (tema Sobrio): tareas de las fases agendadas
 // para el día seleccionado, más las atrasadas cuando se mira el día de hoy.
+// ── Check de una tarea de un solo día: mismo rebote y onda que el de varios días, solo al marcar ──
+function PopCheck({done,onToggle,small,title}){
+  const[fx,setFx]=useState(false);
+  return e('button',{className:'mc'+(small?' sm':'')+(done?' fin':'')+(fx?' fx-fin':''),title:title||(done?'Reabrir':'Marcar como hecho'),
+    onClick:ev=>{ev.stopPropagation();if(!done){setFx(true);setTimeout(()=>setFx(false),750);}onToggle();}});
+}
 // ── Tareas de varios días: un solo check. Toque = avancé hoy · doble toque o mantener = terminar ──
 function MultiCheck({x,day,done,onAdv,onFin,onReopen}){
   const[fx,setFx]=useState(''),[hold,setHold]=useState(false);
@@ -14893,7 +14900,7 @@ function SobrioTodayPanel({tasks,day,onUpdateTaskSteps,onOpen,onUpdateTask}){
               if(onUpdateTask){const pl={...(i.t.actLog||{})};pl[dy]='yes';onUpdateTask(i.t.id,{actLog:pl});}
             },
             onReopen:()=>toggle(i)})
-          :e('div',{className:'sb-today-ck'+(i.x.done?' on':''),onClick:()=>{playUI('click');toggle(i);},title:i.x.done?'Reabrir':'Marcar hecha'}),
+          :e(PopCheck,{small:true,done:!!i.x.done,onToggle:()=>{playUI('click');toggle(i);}}),
         e('span',{className:'sb-today-name'+(i.x.done?' done':''),title:i.x.name+' — '+i.s.name},i.x.name),
         e('span',{className:'sb-today-proj'+(i.late?' late':''),onClick:()=>onOpen&&onOpen(i.t),title:'Abrir '+i.t.name+' · fase '+i.s.name},
           i.late&&e('b',{className:'sb-today-late'},'atrasada · '),i.t.name,e('span',{className:'sb-today-ph'},' › '+i.s.name)),
