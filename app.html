@@ -1044,6 +1044,7 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .sb-today-ck.on{background:var(--text2);border-color:var(--text2)}
 .sb-today-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12.5px;color:var(--text0)}
 .sb-today-name.done{color:var(--text4);text-decoration:line-through}
+.dl-g-av.on{background:var(--accent-bg);color:var(--accent2);border-color:var(--accent-border)}
 .sb-today-act{display:flex;gap:4px;flex-shrink:0}
 .sb-today-act .act-btn{width:20px;height:20px;font-size:10px}
 .sb-today-ph{color:var(--text4)}
@@ -5145,6 +5146,17 @@ function App(){
                 if(!Object.keys(d).length)delete n[day];
                 return n;
               });
+              forceSync();
+            },
+            onSubAct:(taskId,stepId,subId,day,val)=>{
+              setTasks(ts=>ts.map(t=>t.id!==taskId?t:{...t,
+                actLog:val==='yes'?{...(t.actLog||{}),[day]:'yes'}:t.actLog,
+                steps:(t.steps||[]).map(st=>st.id!==stepId?st:{...st,subtasks:(st.subtasks||[]).map(x=>{
+                  if(x.id!==subId)return x;
+                  const log={...(x.actLog||{})};
+                  if(log[day]===val)delete log[day];else log[day]=val;
+                  return{...x,actLog:log};
+                })})}));
               forceSync();
             },
             lotes,
@@ -13290,7 +13302,7 @@ function FixedRoutineModal({habits,projects,onPatchHabit,onCreateHabit,lotes,onS
   );
 }
 
-function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTime,onToggleReminder,onSetReminderTime,onSetHabitTime,onToggleHabitLog,onOpenProject,onApplyPlan,focusNode,focusIdle,onStartProj,dayBlocks,onSetDayBlock,onPostpone,onPatchHabit,onCreateHabit,lotes,onSaveLote,onPatchLote,onDeleteLote}){
+function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTime,onToggleReminder,onSetReminderTime,onSetHabitTime,onToggleHabitLog,onOpenProject,onApplyPlan,focusNode,focusIdle,onStartProj,dayBlocks,onSetDayBlock,onPostpone,onPatchHabit,onCreateHabit,onSubAct,lotes,onSaveLote,onPatchLote,onDeleteLote}){
   const today=dayKey();
   const isToday=day===today;
   const RECENT_DAYS=3; // solo se consideran "atrasadas" las de los últimos 3 días; lo más viejo se oculta
@@ -14002,6 +14014,7 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
               e('span',{className:'dl-lic'},iconFor(i)),
               e('span',{className:'dl-g-n',title:i.name},i.name),
               e('span',{className:'dl-g-m'},i.type==='sub'?i.meta:(i.type==='rem'?'Recordatorio':'Hábito')+(i.late?' · atrasado':'')),
+              i.type==='sub'&&!i.done&&i.x.startDate&&i.x.startDate<i.x.dueDate&&onSubAct&&e('button',{className:'dl-g-mj dl-g-av'+((i.x.actLog||{})[day]==='yes'?' on':''),onClick:()=>{playUI('click');onSubAct(i.t.id,i.st.id,i.x.id,day,'yes');},title:'Tarea de varios días: marca que hoy avanzaste (sigue pendiente)'},(i.x.actLog||{})[day]==='yes'?'✓ avancé':'Avancé'),
               !i.done&&i.type!=='hab'&&e('button',{className:'dl-g-mj',onClick:()=>{playUI('click');postponeItems([i]);},title:'Pasar a mañana'},'Mañana'),
               bSpec&&e('button',{className:'dl-g-mj',onClick:()=>{playUI('click');setBk(bk.k.filter(x=>x!==i.k));},title:'Quitar de este bloque (la tarea sigue pendiente)'},'✕')
             )),
@@ -14111,7 +14124,7 @@ function HomeResumen(props){
     realBlocks,liveBlock,tick,selectedDay,setSelectedDay,
     tState,activeSess,activeProj,activeTask,workElapsed,todayTotal,
     onPauseTimer,onStopTimer,onQuickToggleTask,
-    onToggleSub,onSetSubTime,onToggleReminder,onSetReminderTime,onSetHabitTime,onPatchHabit,onCreateHabit,onApplyPlan,dayBlocks,onSetDayBlock,onPostpone,lotes,onSaveLote,onPatchLote,onDeleteLote,
+    onToggleSub,onSetSubTime,onToggleReminder,onSetReminderTime,onSetHabitTime,onPatchHabit,onCreateHabit,onApplyPlan,dayBlocks,onSetDayBlock,onPostpone,onSubAct,lotes,onSaveLote,onPatchLote,onDeleteLote,
     onOpenProject,onStartProj,onUpdateSystem,onToggleHabitLog,
     blocks,onEditBlock,onNewBlock,onNewProject,onSetPriority,
     onArchiveProject,onUnarchiveProject,showArchived,setShowArchived,
@@ -14332,7 +14345,7 @@ function HomeResumen(props){
       )
     ),
     e('div',{className:'dash-body'},
-      focusMode&&e(HomeDayLine,{day:selectedDay,projects,tasks,habits,reminders,onToggleSub,onSetSubTime,onToggleReminder,onSetReminderTime,onSetHabitTime,onToggleHabitLog,onOpenProject,onApplyPlan,focusNode,focusIdle:!(tState!=='idle'&&activeSess),onStartProj,dayBlocks,onSetDayBlock,onPostpone,onPatchHabit,onCreateHabit,lotes,onSaveLote,onPatchLote,onDeleteLote}),
+      focusMode&&e(HomeDayLine,{day:selectedDay,projects,tasks,habits,reminders,onToggleSub,onSetSubTime,onToggleReminder,onSetReminderTime,onSetHabitTime,onToggleHabitLog,onOpenProject,onApplyPlan,focusNode,focusIdle:!(tState!=='idle'&&activeSess),onStartProj,dayBlocks,onSetDayBlock,onPostpone,onPatchHabit,onCreateHabit,onSubAct,lotes,onSaveLote,onPatchLote,onDeleteLote}),
       !focusMode&&e(React.Fragment,null,
       e('div',{className:'bento-row'},
 
@@ -14715,7 +14728,13 @@ function SobrioTodayPanel({tasks,day,onUpdateTaskSteps,onOpen,onUpdateTask}){
   const pend=items.filter(i=>!i.x.done).length;
   const toggle=i=>onUpdateTaskSteps(i.t.id,(i.t.steps||[]).map(s=>s.id===i.s.id?{...s,subtasks:(s.subtasks||[]).map(x=>x.id===i.x.id?{...x,done:!x.done}:x)}:s));
   // ✓ «avancé hoy en este proyecto» / ✕ «no avancé» (el mismo registro del modal de fases); clic de nuevo = deshacer
-  const setAct=(t,val)=>{if(!onUpdateTask)return;const log={...(t.actLog||{})};if(log[day]===val)delete log[day];else log[day]=val;onUpdateTask(t.id,{actLog:log});};
+  const multi=x=>!!x.startDate&&x.startDate<x.dueDate; // tarea que abarca más de un día
+  const setAct=(i,val)=>{
+    const log={...(i.x.actLog||{})},was=log[day];
+    if(was===val)delete log[day];else log[day]=val;
+    onUpdateTaskSteps(i.t.id,(i.t.steps||[]).map(s=>s.id===i.s.id?{...s,subtasks:(s.subtasks||[]).map(x=>x.id===i.x.id?{...x,actLog:log}:x)}:s));
+    if(val==='yes'&&was!=='yes'&&onUpdateTask){const pl={...(i.t.actLog||{})};pl[day]='yes';onUpdateTask(i.t.id,{actLog:pl});} // también cuenta como avance del proyecto
+  };
   return e('div',{className:'dash-panel sb-today'},
     e('div',{className:'dash-panel-hdr'},
       e('span',{className:'dash-panel-title'},day===today?'Hoy':'Ese día'),
@@ -14728,9 +14747,9 @@ function SobrioTodayPanel({tasks,day,onUpdateTaskSteps,onOpen,onUpdateTask}){
         e('span',{className:'sb-today-name'+(i.x.done?' done':''),title:i.x.name+' — '+i.s.name},i.x.name),
         e('span',{className:'sb-today-proj'+(i.late?' late':''),onClick:()=>onOpen&&onOpen(i.t),title:'Abrir '+i.t.name+' · fase '+i.s.name},
           i.late&&e('b',{className:'sb-today-late'},'atrasada · '),i.t.name,e('span',{className:'sb-today-ph'},' › '+i.s.name)),
-        onUpdateTask&&!i.x.done&&e('span',{className:'sb-today-act'},
-          e('button',{className:'act-btn yes'+((i.t.actLog||{})[day]==='yes'?' on':''),title:'Avancé hoy en este proyecto',onClick:()=>{playUI('click');setAct(i.t,'yes');}},'✓'),
-          e('button',{className:'act-btn no'+((i.t.actLog||{})[day]==='no'?' on':''),title:'No avancé hoy en este proyecto',onClick:()=>{playUI('click');setAct(i.t,'no');}},'✕'))
+        !i.x.done&&multi(i.x)&&e('span',{className:'sb-today-act'},
+          e('button',{className:'act-btn yes'+((i.x.actLog||{})[day]==='yes'?' on':''),title:'Avancé hoy en esta tarea (sigue pendiente)',onClick:()=>{playUI('click');setAct(i,'yes');}},'✓'),
+          e('button',{className:'act-btn no'+((i.x.actLog||{})[day]==='no'?' on':''),title:'Hoy no avancé en esta tarea',onClick:()=>{playUI('click');setAct(i,'no');}},'✕'))
       ))
     )
   );
