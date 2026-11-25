@@ -957,6 +957,25 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .dl-gd-nx{font-size:12px;color:var(--text3);margin-top:10px}
 .dl-lt-bar{height:4px;border-radius:4px;background:var(--bg4);overflow:hidden;margin:2px 0 8px}
 .dl-lt-bar i{display:block;height:100%;background:var(--accent)}
+.dl-wrap{background:radial-gradient(760px 300px at 92% -12%,#4a3a7a55,transparent 62%),radial-gradient(620px 260px at -4% 112%,#c89a5726,transparent 62%),#0f111a;border:1px solid #ffffff12;border-radius:22px;padding:20px 22px 22px;box-shadow:0 20px 60px #0007}
+.dl-wrap .dl-title{font-size:24px;font-weight:600;letter-spacing:-.3px;color:#f3f2f7}
+.dl-wrap .dl-focus{background:#ffffff0d;border:1px solid #ffffff16;backdrop-filter:blur(8px)}
+.dl-wrap .dl-g-grid{background:#ffffff08;border:1px solid #ffffff12;border-radius:18px;box-shadow:inset 0 1px 0 #ffffff10}
+.dl-wrap .dl-g-hr{border-top-color:#ffffff10}
+.dl-wrap .dl-g-hl{color:#8e90a6}
+.dl-wrap .dl-g-blk{--bc:var(--accent);border-radius:12px;background:linear-gradient(color-mix(in srgb,var(--bc) 22%,transparent),color-mix(in srgb,var(--bc) 9%,transparent)),#1a1c27;border:1px solid color-mix(in srgb,var(--bc) 45%,transparent);box-shadow:inset 3px 0 0 var(--bc)}
+.dl-wrap .dl-g-blk .dl-g-bn{color:color-mix(in srgb,var(--bc) 50%,#fff)}
+.dl-wrap .dl-g-blk .dl-g-bt{color:color-mix(in srgb,var(--bc) 30%,#b8bacb)}
+.dl-wrap .dl-g-blk.sel{border-color:var(--bc);box-shadow:inset 3px 0 0 var(--bc),0 0 0 2px color-mix(in srgb,var(--bc) 35%,transparent),0 8px 24px #0006;background:linear-gradient(color-mix(in srgb,var(--bc) 30%,transparent),color-mix(in srgb,var(--bc) 14%,transparent)),#1a1c27}
+.dl-wrap .dl-g-blk.dl-g-lote{--bc:var(--accent2)}
+.dl-wrap .dl-g-fx{background:#ffffff0a;border:1px solid #ffffff14;border-radius:12px}
+.dl-wrap .dl-g-panel{background:#ffffff0b;border:1px solid #ffffff16;border-radius:18px;backdrop-filter:blur(12px);box-shadow:0 10px 36px #0005,inset 0 1px 0 #ffffff12;padding:16px 18px}
+.dl-wrap .dl-g-pn{font-size:17px;font-weight:600;letter-spacing:-.2px}
+.dl-wrap .dl-tr-a{background:#ffffff0a;border:1px solid #ffffff14;border-radius:12px}
+.dl-wrap .dl-tr-g{border-color:#ffffff12;border-radius:10px}
+.dl-wrap .dl-g-strip{background:#ffffff0a;border-color:#ffffff16;border-radius:14px}
+.dl-wrap .dl-g-chip{background:#ffffff0d;border:1px solid #ffffff14}
+.dl-tr-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;background:var(--accent)}
 .dl-g-ghost{position:absolute;left:54px;right:10px;border-radius:10px;border:1.5px dashed var(--accent);background:var(--accent-bg);pointer-events:none;z-index:5}
 .dl-fx-sec{margin-top:12px;padding-top:8px;border-top:1px solid var(--border)}
 .dl-fx-h{font-size:11.5px;color:var(--text2);cursor:pointer;display:flex;align-items:center;gap:6px;user-select:none}
@@ -13881,7 +13900,7 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
       const spec=Array.isArray(dayB[b.key].k);
       const sum=spec&&its.length?(its.length===1?its[0].name:its.length+' tareas'):'';
       const hpx=(b.e-b.s)/60*G_HP-2,sz=hpx<18?' xs':(hpx<40?' sm':'');
-      return e('div',{key:b.key,'data-gb':b.key,className:'dl-g-blk'+sz+(selKeyG===b.key?' sel':''),title:nm+(sum?' · '+sum:'')+' · '+fmtMin(b.s)+' – '+fmtMin(b.e),style:{top:(b.s-G_H0*60)/60*G_HP,height:Math.max(14,hpx)}},
+      return e('div',{key:b.key,'data-gb':b.key,className:'dl-g-blk'+sz+(selKeyG===b.key?' sel':''),title:nm+(sum?' · '+sum:'')+' · '+fmtMin(b.s)+' – '+fmtMin(b.e),style:{top:(b.s-G_H0*60)/60*G_HP,height:Math.max(14,hpx),'--bc':(a&&a.proj&&a.proj.color)||undefined}},
         e('div',{className:'dl-g-bn'},nm+(sum?' · '+sum:'')),
         e('div',{className:'dl-g-bt'},fmtMin(b.s)+' – '+fmtMin(b.e)+(a?' · '+pend+' pend.':'')),
         e('div',{className:'dl-g-rs','data-grs':b.key})
@@ -13909,6 +13928,7 @@ function HomeDayLine({day,projects,tasks,habits,reminders,onToggleSub,onSetSubTi
     trayNodes.push(e('div',{key:'a'+a.key,className:'dl-tr-a',draggable:true,title:'Arrastra la cuenta a la grilla',onDragStart:ev=>trayStart(ev,{projId:a.key,keys:pend.map(i=>i.k),len:60}),onDragEnd:trayEnd},
       e('span',{className:'dl-tr-gp'},'⠿'),
       e('span',{className:'dl-tr-tw',onClick:()=>setTrayOpen(pv=>({...pv,[a.key]:!pv[a.key]}))},aOpen?'▾':'▸'),
+      e('span',{className:'dl-tr-dot',style:{background:a.proj.color||'var(--accent)'}}),
       e('span',{className:'dl-tr-n'},a.proj.name),
       e('span',{className:'dl-tr-c'},pend.length+' pend.')));
     if(aOpen)shownG.forEach(([g,list])=>{
