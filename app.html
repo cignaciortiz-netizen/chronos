@@ -14118,7 +14118,7 @@ function HomeResumen(props){
     fmtWhen,fmtS,fmt,pStats
   }=props;
 
-  const[focusMode,setFocusModeRaw]=useState(()=>load('chr4_home_focus',true));
+  const[focusMode,setFocusModeRaw]=useState(true); // el Inicio es siempre «Tu día» (se quitó el botón de Vista completa)
   function setFocusMode(v){setFocusModeRaw(v);save('chr4_home_focus',v);}
   const[blockView,setBlockView]=useState(()=>load('chr4_blockview','vertical'));
   function changeBlockView(v){setBlockView(v);save('chr4_blockview',v);}
@@ -14321,7 +14321,6 @@ function HomeResumen(props){
             e('span',{className:'dash-date-lbl',onClick:()=>setSelectedDay(dayKey()),title:'Ir a hoy'},dayLabelStr),
             e('button',{className:'dash-date-btn',onClick:()=>shiftDay(1),title:'Día siguiente'},e(DashIcon,{name:'chevR',size:12}))
           ),
-          e('button',{className:'dash-date-btn dl-mode-btn',onClick:()=>{playUI('click');setFocusMode(!focusMode);},title:focusMode?'Mostrar todos los paneles':'Mostrar solo lo esencial'},focusMode?'Vista completa':'Modo enfoque'),
           e('button',{className:'dash-date-btn',onClick:()=>setShowArchived(true),title:'Ver proyectos archivados'},
             e('svg',{width:12,height:12,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},
               e('rect',{x:2,y:4,width:20,height:5,rx:1}),
