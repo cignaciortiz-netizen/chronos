@@ -670,18 +670,18 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .pv-btn:hover{color:var(--text0);border-color:var(--border2)}
 .pv-card{flex:1;min-height:0;border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden;display:flex;flex-direction:column}
 .pv-sc{flex:1;min-height:0;overflow:auto;user-select:none}
-.pv-r{display:flex;align-items:center;height:28px}
-.pv-l{width:196px;flex:none;position:sticky;left:0;z-index:6;background:var(--bg2);height:100%;display:flex;align-items:center;gap:6px;padding:0 8px 0 12px;box-sizing:border-box;font-size:12px;color:var(--text1);min-width:0}
+.pv-r{display:flex;align-items:stretch;min-height:28px}
+.pv-l{width:250px;flex:none;position:sticky;left:0;z-index:6;background:var(--bg2);display:flex;align-items:center;gap:6px;padding:4px 8px 4px 12px;box-sizing:border-box;font-size:12px;color:var(--text1);min-width:0}
 .pv-lp{cursor:pointer;font-weight:500}
 .pv-lp.open{color:var(--accent2)}
 .pv-lp.dn .pv-nm{text-decoration:line-through;color:var(--text4)}
 .pv-car{width:10px;flex:none;color:var(--text4);font-size:10px}
-.pv-nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pv-nm{flex:1;min-width:0;white-space:normal;overflow-wrap:anywhere;line-height:1.3}
 .pv-nm.dn{text-decoration:line-through;color:var(--text4)}
 .pv-ct{font:500 10px 'JetBrains Mono',monospace;color:var(--text4)}
-.pv-sub{background:var(--bg3);height:30px}
+.pv-sub{background:var(--bg3);min-height:30px}
 .pv-sub .pv-l{background:var(--bg3);padding-left:24px;font-weight:400}
-.pv-t{position:relative;flex:none;height:100%}
+.pv-t{position:relative;flex:none;align-self:stretch}
 .pv-dn{position:absolute;top:18px;text-align:center;font-size:10px;color:var(--text3)}
 .pv-dn.we{opacity:.45}
 .pv-dn.td{color:var(--accent2);font-weight:600}
@@ -689,10 +689,10 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .pv-td{position:absolute;top:0;bottom:0;width:1.5px;background:var(--accent);opacity:.8;pointer-events:none;z-index:2}
 .pv-dl{position:absolute;top:0;bottom:0;width:0;border-left:1.5px dashed #e6675f88;pointer-events:none;z-index:2}
 .pv-wk{position:absolute;top:0;bottom:0;background:#ffffff08;pointer-events:none}
-.pv-dur{position:absolute;top:11px;height:6px;border-radius:3px;background:var(--accent);opacity:.45;pointer-events:none}
+.pv-dur{position:absolute;top:calc(50% - 3px);height:6px;border-radius:3px;background:var(--accent);opacity:.45;pointer-events:none}
 .pv-dur.est{background:transparent;border:1px dashed var(--accent);opacity:.7;box-sizing:border-box}
 .pv-dur.late{border-color:#e6675f;background:#e6675f55}
-.pv-ms{position:absolute;top:7px;width:14px;height:14px;transform:rotate(45deg);border-radius:3px;border:2px solid var(--accent);background:var(--bg2);box-sizing:border-box;cursor:grab;z-index:3;touch-action:none}
+.pv-ms{position:absolute;top:calc(50% - 7px);width:14px;height:14px;transform:rotate(45deg);border-radius:3px;border:2px solid var(--accent);background:var(--bg2);box-sizing:border-box;cursor:grab;z-index:3;touch-action:none}
 .pv-ms.d{background:var(--accent)}
 .pv-ms.late{border-color:#e6675f}
 .pv-ms.late.d{background:#e6675f}
@@ -700,17 +700,17 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .pv-l:hover .pv-pen{opacity:1}
 .pv-pen:hover{color:var(--accent2)}
 .pv-edit{background:var(--bg4);border-radius:4px;padding:2px 5px;color:var(--text0)}
-.pv-ph{position:absolute;top:9px;height:10px;border-radius:5px;background:#ffffff24;overflow:hidden}
+.pv-ph{position:absolute;top:calc(50% - 5px);height:10px;border-radius:5px;background:#ffffff24;overflow:hidden}
 .pv-ph.open{background:var(--accent-bg,#ffffff30);box-shadow:0 0 0 1px var(--accent-border)}
 .pv-ph i{position:absolute;left:0;top:0;bottom:0;background:var(--accent);opacity:.6}
 .pv-ph.pv-over{background:#e6675f;opacity:.75}
-.pv-nodate{position:absolute;left:10px;top:7px;font-size:11px;color:var(--text4);white-space:nowrap}
-.pv-pill{position:absolute;top:8px;height:14px;border-radius:6px;background:var(--accent);cursor:grab;z-index:3;touch-action:none}
+.pv-nodate{position:absolute;left:10px;top:calc(50% - 8px);font-size:11px;color:var(--text4);white-space:nowrap}
+.pv-pill{position:absolute;top:calc(50% - 7px);height:14px;border-radius:6px;background:var(--accent);cursor:grab;z-index:3;touch-action:none}
 .pv-pill:active{cursor:grabbing}
 .pv-pill.d{opacity:.4}
 .pv-pill.late{background:#e6675f}
 .pv-h{position:absolute;top:0;bottom:0;width:8px;cursor:ew-resize}
-.pv-len{position:absolute;top:8px;font-size:11px;color:var(--text3);white-space:nowrap;pointer-events:none}
+.pv-len{position:absolute;top:calc(50% - 8px);font-size:11px;color:var(--text3);white-space:nowrap;pointer-events:none}
 .pv-ck{width:12px;height:12px;border-radius:50%;border:1.5px solid var(--text4);flex:none;cursor:pointer}
 .pv-ck.d{background:var(--accent);border-color:var(--accent)}
 .pv-plus{width:12px;text-align:center;color:var(--text4);flex:none}
@@ -973,7 +973,7 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .dl-tr-t:hover{background:var(--bg4)}
 .dl-tr-gp{color:var(--text4);font-size:11px;flex-shrink:0}
 .dl-tr-tw{cursor:pointer;width:10px;font-size:9px;color:var(--text4);flex-shrink:0}
-.dl-tr-n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dl-tr-n{flex:1;min-width:0;white-space:normal;overflow-wrap:anywhere;line-height:1.3}
 .dl-tr-c{margin-left:auto;font-size:10.5px;color:var(--text4);flex-shrink:0}
 .dl-tr-as{font-size:10px;color:var(--accent2);flex-shrink:0}
 .dl-g-fx{position:absolute;left:54px;right:10px;border-radius:10px;background:var(--bg3);border:1px solid var(--border);padding:5px 10px;overflow:hidden;cursor:pointer;display:flex;align-items:flex-start;gap:7px;color:var(--text3);z-index:1}
@@ -1001,7 +1001,7 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .dl-g-tk{display:flex;align-items:center;gap:10px;padding:8px 2px;border-top:1px solid #ffffff08;min-width:0}
 .dl-g-tk.dn{opacity:.5}
 .dl-g-tk.dn .dl-g-n{text-decoration:line-through;color:var(--text3)}
-.dl-g-n{flex:1;min-width:0;font-size:12.5px;color:var(--text0);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dl-g-n{flex:1;min-width:0;font-size:12.5px;color:var(--text0);white-space:normal;overflow-wrap:anywhere;line-height:1.35}
 .dl-g-m{font-size:10.5px;color:var(--text3);flex-shrink:0;max-width:34%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .dl-g-mj{border:0;background:var(--bg4);color:var(--text1);border-radius:20px;padding:3px 10px;font-size:10.5px;cursor:pointer;flex-shrink:0;font-family:'Inter',sans-serif}
 .dl-g-mj:hover{background:var(--bg5);color:var(--text0)}
@@ -1042,7 +1042,7 @@ html,body,#root{height:100%;background:var(--bg0);color:var(--text0);font-family
 .sb-today-ck{width:14px;height:14px;border-radius:50%;border:1.5px solid var(--text4);flex-shrink:0;cursor:pointer;transition:all .12s}
 .sb-today-ck:hover{border-color:var(--text1)}
 .sb-today-ck.on{background:var(--text2);border-color:var(--text2)}
-.sb-today-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12.5px;color:var(--text0)}
+.sb-today-name{flex:1;min-width:0;white-space:normal;overflow-wrap:anywhere;line-height:1.35;font-size:12.5px;color:var(--text0)}
 .sb-today-name.done{color:var(--text4);text-decoration:line-through}
 .dl-g-av.on{background:var(--accent-bg);color:var(--accent2);border-color:var(--accent-border)}
 .sb-today-act{display:flex;gap:4px;flex-shrink:0}
@@ -8120,7 +8120,7 @@ function WrapInput({value,onChange,style,placeholder,onEnter,w,title}){
 // Una barra fina por fase; se abre UNA fase a la vez y muestra sus tareas como pastillas de uno o más días
 // (se arrastra el borde para alargar/acortar, el centro para mover). Se recorre con Shift + rueda, con el minimapa o "Ir a hoy".
 function PlanView({steps,commit,updateStep,showDoneSteps,setShowDoneSteps,projDeadline,onSetDeadline}){
-  const DW=30,LW=196,DAYMS=86400000;
+  const DW=30,LW=250,DAYMS=86400000;
   const today=dayKey();
   const toTs=k=>new Date(k+'T00:00:00').getTime();
   const subRange=x=>x.dueDate?{s:(x.startDate&&x.startDate<=x.dueDate)?x.startDate:x.dueDate,n:x.dueDate}:null;
@@ -8302,7 +8302,7 @@ function PlanView({steps,commit,updateStep,showDoneSteps,setShowDoneSteps,projDe
             sa<pa&&e('div',{className:'pv-dur'+(sk.est?' est':'')+((overdue||over)?' late':''),title:'Dura '+nd+' días'+(sk.est?' (estimado: desde que termina la fase anterior)':' (desde su primera tarea con fecha)'),style:{left:sa*DW+3,width:(pa-sa+.5)*DW-3}}),
             e('div',{className:'pv-ms'+(st.done?' d':'')+((overdue||over)?' late':''),style:{left:pa*DW+DW/2-7},
               title:(overdue?'Venció · ':'')+(over?'Hay tareas después de esta fecha · ':'')+'Entrega '+pf0+' — arrastra para cambiarla',onPointerDown:ev=>startPhaseDrag(ev,st)}),
-            e('span',{className:'pv-len',style:{left:pa*DW+DW/2+14,top:6}},pf)
+            e('span',{className:'pv-len',style:{left:pa*DW+DW/2+14}},pf)
           ):e('span',{className:'pv-nodate',style:{left:idx(today)*DW+DW}},'sin fecha de entrega — clic para ponerla'),
         dlLine,todayLine
       )
